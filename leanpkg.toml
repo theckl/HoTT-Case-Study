@@ -1,0 +1,9 @@
+[package]
+name = "HoTT-Case-Study"
+version = "0.1"
+path = "src"
+lean_version = "leanprover-community/lean:3.7.0"
+
+[dependencies]
+
+hott3 = { path = "../hott3" }
