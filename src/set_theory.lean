@@ -18,14 +18,25 @@ def empty_Set : Set :=
 
 @[hott]
 def id_map (A : Set) : A -> A :=
-  (id : A -> A)    
+  (id : A -> A)  
 
 @[hott]
-lemma id_map_is_right_neutral {A B : Set} (map : A -> B) :
+lemma id_map_eq {A : Set} : ∀ x : A, id_map A x = x :=
+begin
+intro, unfold id_map,
+end         
+
+set_option pp.universes true
+
+@[hott]
+lemma id_map_is_right_neutral {A B : Set.{u}} (map : A -> B) :
   map ∘ (id_map A) = map :=
 begin
-  simp,
-  
+  hsimp, 
+  unfold id_map,
+  unfold id,
+  hsimp,
+  exact (refl map)
 end      
 
 end set
