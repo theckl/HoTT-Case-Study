@@ -6,6 +6,13 @@ hott_theory
 namespace hott
 open is_trunc 
 
+/- Should be in [init.function]. -/
+@[inline, reducible] def function.comp {α β φ : Type _} (f : β → φ) (g : α → β) : α → φ :=
+λ x, f (g x)
+
+hott_theory_cmd "local infixr  ` ∘ `:80      := hott.function.comp"
+
+
 namespace set
 
 /- We need the empty set, the identity map between sets and some properties of maps between sets. They can be 
@@ -22,20 +29,10 @@ def id {A : Type u} (a : A) : A := a
 @[hott, hsimp, reducible]
 def id_map (A : Set) : A -> A := @id A   
 
-/- The following lemma (not the proof) produces a universe error.
-   We replace it by the next lemma until the possible bug is 
-   resolved. -/
-/- 
 @[hott]
 lemma id_map_is_right_neutral {A B : Set} (map : A -> B) :
   map ∘ (id_map A) = map :=  
-by { hsimp, exact rfl }   
--/
-
-@[hott, hsimp, reducible]
-lemma id_map_rn {A B : Set} (map : A -> B) :
-  forall a : A, (map ∘ (id_map A)) a = map a :=
-assume a, refl (map a) 
+by hsimp   
 
 @[hott]
 class is_set_injective {A B : Set} (f : B -> A) := 
@@ -112,6 +109,37 @@ have H : forall fb1 fb2 : fiber f a, fb1 = fb2, from
     apd011 fiber.mk eqb eqbeq 
   end,  
 is_prop.mk H 
+
+/- This is the universal property of injective maps. -/
+@[hott]
+lemma univ_prop_of_inj {A B : Set} (i : A -> B) (i_inj : is_set_injective i) : 
+  forall (C : Set) (f g : C -> A), i ∘ f = i ∘ g -> f = g :=
+assume C f g comp_eq, 
+have i_hom : forall c : C, i (f c) = i (g c), from 
+  assume c, 
+  calc i (f c) = (i ∘ f) c : by reflexivity
+           ... = (i ∘ g) c : by rwr comp_eq
+           ... = i (g c) : by reflexivity,  
+let i_inj_imp := i_inj.inj_imp in           
+have hom : f ~ g, from assume c, i_inj_imp (f c) (g c) (i_hom c),         
+eq_of_homotopy hom  
+
+@[hott]
+class is_set_surjective {A B : Set} (f : B -> A) := 
+ (pre_im : forall a : A, image f a)
+
+@[hott, instance]
+lemma is_set_surj_is_prop {A B : Set} (f : B -> A): 
+  is_prop (is_set_surjective f) :=
+have forall a : A, is_prop (image f a), from assume a, by apply_instance, 
+have pre_im_is_prop : is_prop (forall a : A, image f a), from
+  is_prop_dprod this,
+have surj_eq : forall surj1 surj2 : is_set_surjective f, surj1 = surj2, from
+  assume surj1 surj2, 
+  match surj1, surj2 with is_set_surjective.mk pre_im1, is_set_surjective.mk pre_im2 :=
+    ap is_set_surjective.mk (@is_prop.elim _ pre_im_is_prop pre_im1 pre_im2)
+  end,  
+is_prop.mk surj_eq   
 
 end set
 
