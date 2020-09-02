@@ -34,9 +34,9 @@ lemma id_map_is_right_neutral {A B : Set} (map : A -> B) :
   map ∘ (id_map A) = map :=  
 by hsimp   
 
-@[hott]
-class is_set_injective {A B : Set} (f : B -> A) := 
-  (inj_imp : forall b1 b2 : B, f b1 = f b2 -> b1 = b2)
+@[hott, class]
+def is_set_injective {A B : Set} (f : B -> A) := 
+  forall b1 b2 : B, f b1 = f b2 -> b1 = b2
 
 /- The next 2 lemmas should be (and are?) in one of the trunc-files. -/
 @[hott]
@@ -85,26 +85,18 @@ have eq_imp : forall b1 b2 : B, is_prop (f b1 = f b2 -> b1 = b2), from
   assume b1 b2, is_prop_map (is_trunc_eq -1 b1 b2),
 have eq_b2 : forall b1 : B, is_prop (forall b2 : B, f b1 = f b2 -> b1 = b2), from
   assume b1, is_prop_dprod (eq_imp b1),
-have is_prop_inj_imp : is_prop (forall b1 b2 : B, f b1 = f b2 -> b1 = b2), from 
-  let P := assume b1, forall b2 : B, f b1 = f b2 -> b1 = b2 in 
-  @is_prop_dprod B P eq_b2,   
-have eq_is_inj : forall inj1 inj2 : is_set_injective f, inj1 = inj2, from
-  assume inj1 inj2,
-  match inj1, inj2 with is_set_injective.mk inj_imp1, is_set_injective.mk inj_imp2 :=
-    ap is_set_injective.mk (@is_prop.elim _ is_prop_inj_imp inj_imp1 inj_imp2)
-  end,  
-is_prop.mk eq_is_inj
+let P := assume b1, forall b2 : B, f b1 = f b2 -> b1 = b2 in 
+@is_prop_dprod B P eq_b2   
 
 /- fibers of injective maps only contain one element. -/
 @[hott]
 theorem set_inj_implies_unique_fib {A B : Set} (f : B -> A) : 
   is_set_injective f -> forall a : A, is_prop (fiber f a) :=
 assume f_inj a,
-let inj_imp_f := f_inj.inj_imp in
 have H : forall fb1 fb2 : fiber f a, fb1 = fb2, from
   assume fb1 fb2,
   match fb1, fb2 with fiber.mk b1 e1, fiber.mk b2 e2 :=    
-    have eqb : b1 = b2, from inj_imp_f b1 b2 (e1 ⬝ e2⁻¹), 
+    have eqb : b1 = b2, from f_inj b1 b2 (e1 ⬝ e2⁻¹), 
     have eqbeq : e1 =[eqb;(λ b : B, f b = a)] e2, from pathover_of_tr_eq (is_set.elim _ _),
     apd011 fiber.mk eqb eqbeq 
   end,  
@@ -119,14 +111,13 @@ have i_hom : forall c : C, i (f c) = i (g c), from
   assume c, 
   calc i (f c) = (i ∘ f) c : by reflexivity
            ... = (i ∘ g) c : by rwr comp_eq
-           ... = i (g c) : by reflexivity,  
-let i_inj_imp := i_inj.inj_imp in           
-have hom : f ~ g, from assume c, i_inj_imp (f c) (g c) (i_hom c),         
+           ... = i (g c) : by reflexivity,             
+have hom : f ~ g, from assume c, i_inj (f c) (g c) (i_hom c),         
 eq_of_homotopy hom  
 
-@[hott]
-class is_set_surjective {A B : Set} (f : B -> A) := 
- (pre_im : forall a : A, image f a)
+@[hott, class]
+def is_set_surjective {A B : Set} (f : B -> A) :=
+  forall a : A, image f a
 
 @[hott, instance]
 lemma is_set_surj_is_prop {A B : Set} (f : B -> A): 
@@ -136,10 +127,74 @@ have pre_im_is_prop : is_prop (forall a : A, image f a), from
   is_prop_dprod this,
 have surj_eq : forall surj1 surj2 : is_set_surjective f, surj1 = surj2, from
   assume surj1 surj2, 
-  match surj1, surj2 with is_set_surjective.mk pre_im1, is_set_surjective.mk pre_im2 :=
-    ap is_set_surjective.mk (@is_prop.elim _ pre_im_is_prop pre_im1 pre_im2)
-  end,  
+  @is_prop.elim _ pre_im_is_prop surj1 surj2,  
 is_prop.mk surj_eq   
+
+@[hott]
+class is_set_bijective {A B : Set} (f : B -> A) := 
+ (inj : is_set_injective f) (surj : is_set_surjective f)
+
+@[hott, instance]
+lemma is_set_bij_is_prop {A B : Set} (f : B -> A) : 
+  is_prop (is_set_bijective f) :=
+have H : forall bij1 bij2 : is_set_bijective f, bij1 = bij2, from
+  assume bij1 bij2,
+  match bij1, bij2 with (is_set_bijective.mk inj1 surj1), (is_set_bijective.mk inj2 surj2) := 
+    ap011 is_set_bijective.mk (is_prop.elim inj1 inj2)(is_prop.elim surj1 surj2) 
+  end,
+is_prop.mk H
+
+/- Bijective maps, bundled up and provided with a coercion. -/
+@[hott]
+structure bijection (A B : Set) :=
+  (map: A -> B) (bij : is_set_bijective map)
+
+@[hott]
+instance bij_to_map (A B : Set) : 
+  has_coe_to_fun (bijection A B) :=
+has_coe_to_fun.mk (λ _, A -> B) (λ f, f.map)
+
+attribute [instance] bijection.bij 
+
+@[hott]
+lemma bijection_eq_from_map_eq {A B : Set} : 
+  forall f g : bijection A B, bijection.map f = bijection.map g -> f = g  
+| (bijection.mk map1 bij1) (bijection.mk map2 bij2) := 
+   assume map_eq, 
+   have tr_eq : map_eq ▸ bij1 = bij2, from
+     is_prop.elim (map_eq ▸ bij1) (bij2), 
+   have is_bij_eq : bij1 =[map_eq] bij2, from pathover_of_tr_eq tr_eq,
+   apd011 bijection.mk map_eq is_bij_eq
+
+@[hott]
+lemma map_eq_from_bijection_eq {A B : Set} :
+  forall f g : bijection A B, f = g -> bijection.map f = bijection.map g :=
+assume f g map_eq, ap bijection.map map_eq
+
+/- Note that equality of two bijections and equality of the two underlying sets
+   are propositions (not proven), so constructing an equivalence is useless. 
+   Similarly, the idpaths must be mapped to each other. -/
+
+@[hott]
+def is_set_right_inverse_of {A B : Set} (f : A -> B) (g : B -> A) :=
+  forall b, f (g b) = b
+
+@[hott]
+def is_set_left_inverse_of {A B : Set} (f : A -> B) (g : B -> A) :=
+  forall a, g (f a) = a
+
+@[hott]
+class is_set_inverse_of {A B : Set} (f : A -> B) (g : B -> A) := 
+  (r_inv : is_set_right_inverse_of f g) (l_inv : is_set_left_inverse_of f g)
+
+@[hott]
+lemma id_is_inv_to_id (A : Set) : is_set_inverse_of (id_map A) (id_map A) :=
+  let i := id_map A in
+  have r_inv : is_set_right_inverse_of i i, from 
+    assume a, calc i (i a) = a : by reflexivity,
+  have l_inv : is_set_left_inverse_of i i, from 
+    assume a, calc i (i a) = a : by reflexivity,
+  is_set_inverse_of.mk r_inv l_inv
 
 end set
 
