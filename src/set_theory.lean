@@ -4,7 +4,7 @@ universes u v w
 hott_theory
 
 namespace hott
-open is_trunc 
+open is_trunc trunc
 
 /- Should be in [init.function]. -/
 @[inline, reducible] def function.comp {α β φ : Type _} (f : β → φ) (g : α → β) : α → φ :=
@@ -90,7 +90,7 @@ let P := assume b1, forall b2 : B, f b1 = f b2 -> b1 = b2 in
 
 /- fibers of injective maps only contain one element. -/
 @[hott]
-theorem set_inj_implies_unique_fib {A B : Set} (f : B -> A) : 
+def set_inj_implies_unique_fib {A B : Set} (f : B -> A) : 
   is_set_injective f -> forall a : A, is_prop (fiber f a) :=
 assume f_inj a,
 have H : forall fb1 fb2 : fiber f a, fb1 = fb2, from
@@ -188,13 +188,139 @@ class is_set_inverse_of {A B : Set} (f : A -> B) (g : B -> A) :=
   (r_inv : is_set_right_inverse_of f g) (l_inv : is_set_left_inverse_of f g)
 
 @[hott]
-lemma id_is_inv_to_id (A : Set) : is_set_inverse_of (id_map A) (id_map A) :=
+def id_is_inv_to_id (A : Set) : is_set_inverse_of (id_map A) (id_map A) :=
   let i := id_map A in
   have r_inv : is_set_right_inverse_of i i, from 
     assume a, calc i (i a) = a : by reflexivity,
   have l_inv : is_set_left_inverse_of i i, from 
     assume a, calc i (i a) = a : by reflexivity,
   is_set_inverse_of.mk r_inv l_inv
+
+/- The inverse is uniquely determined. -/
+@[hott]
+lemma inv_is_unique {A B : Set} (f : A -> B) (g : B -> A) (g' : B -> A) :
+  is_set_inverse_of f g -> is_set_inverse_of f g' -> g = g' :=
+assume inv_g inv_g', 
+have hom : g ~ g', from assume b,
+  calc g b = g (f (g' b)) : 
+       by rwr (@is_set_inverse_of.r_inv A B f g' inv_g' b)
+       ... = g' b : 
+       by rwr (@is_set_inverse_of.l_inv A B f g inv_g (g' b)),
+eq_of_homotopy hom /- here, function extensionality is used -/
+
+/- Constructing the inverse of a bijection -/
+@[hott, reducible, hsimp] 
+def inv_of_bijection {A B : Set} (f : bijection A B) : 
+  Σ (g : B -> A), is_set_inverse_of f g :=
+let f_inj := is_set_bijective.inj f, f_surj := is_set_bijective.surj f in
+have inv_f : forall b : B, fiber f b, from assume b, 
+  have fp : is_prop (fiber f b), from 
+    set_inj_implies_unique_fib _ (f_inj) _, 
+  @untrunc_of_is_trunc _ _ fp (f_surj b), 
+let g := λ b : B, fiber.point (inv_f b) in
+have r_inv_f : is_set_right_inverse_of f g, from 
+  assume b, fiber.point_eq (inv_f b),
+have l_inv_f : is_set_left_inverse_of f g, from assume a, 
+  have fpa : is_prop (fiber f (f a)), from 
+    set_inj_implies_unique_fib _ (f_inj) _, 
+  ap fiber.point (@is_prop.elim _ fpa (inv_f (f a)) (fiber.mk a (idpath (f a)))), 
+sigma.mk g (is_set_inverse_of.mk r_inv_f l_inv_f) 
+
+/- Functions with inverses are bijective. -/
+@[hott, reducible, hsimp]
+def has_inverse_to_bijection {A B : Set} (f : A -> B) (g : B -> A) :
+  is_set_inverse_of f g -> bijection A B :=
+assume inv_f_g,
+have f_inj : is_set_injective f, from assume a1 a2 feq,
+  calc a1 = g (f a1) : by rwr (@is_set_inverse_of.l_inv _ _ f g inv_f_g a1)
+      ... = g (f a2) : by rwr feq
+      ... = a2 : by rwr (@is_set_inverse_of.l_inv _ _ f g inv_f_g a2),
+have f_surj : is_set_surjective f, from assume b, 
+  have af : fiber f b, from 
+    fiber.mk (g b) (@is_set_inverse_of.r_inv _ _ f g inv_f_g b),
+  tr af,
+have is_bij : is_set_bijective f, from is_set_bijective.mk f_inj f_surj,
+bijection.mk f is_bij
+
+/- The inverse of a bijection is a bijection. -/
+@[hott]
+def set_inv_inv {A B : Set} (f : A -> B) (g : B -> A) :
+  is_set_inverse_of f g -> is_set_inverse_of g f :=
+assume inv_f_g,
+is_set_inverse_of.mk (@is_set_inverse_of.l_inv _ _ f g inv_f_g) 
+                     (@is_set_inverse_of.r_inv _ _ f g inv_f_g)
+
+@[hott, reducible, hsimp]
+def inv_bijection_of {A B : Set} (f : bijection A B) : bijection B A :=
+  let g := (inv_of_bijection f).1, inv_f_g := (inv_of_bijection f).2 in
+  has_inverse_to_bijection g f (set_inv_inv f g inv_f_g)
+
+@[hott]
+lemma inv_bij_is_inv {A B : Set} (f : bijection A B) :
+  is_set_inverse_of f (inv_bijection_of f) := 
+(inv_of_bijection f).2
+
+/- The identity map is a bijection. -/
+@[hott, reducible, hsimp]
+def identity (A : Set) : bijection A A := 
+  let i := id_map A in
+  have id_inv : is_set_inverse_of i i, from id_is_inv_to_id A, 
+  has_inverse_to_bijection i i id_inv
+
+@[hott]
+lemma identity_to_id_map (A : Set) :
+  bijection.map (identity A) = id_map A :=
+by hsimp
+
+/- The inverse of the identity map is the identity map itself. -/
+@[hott]
+lemma inv_bij_of_id_id {A : Set} : 
+  inv_bijection_of (identity A) = identity A := 
+let inv_bij := bijection.map (inv_bijection_of (identity A)) in  
+have map_inv_id_id : inv_bij = id_map A, from
+  inv_is_unique (id_map A) inv_bij (id_map A) 
+                (inv_of_bijection (identity A)).2 (id_is_inv_to_id A), 
+bijection_eq_from_map_eq (inv_bijection_of (identity A)) (identity A) map_inv_id_id
+
+/- Equalities between two sets correspond to bijections between the two sets. 
+   To make the construction of the equivalence more transparent we split off some 
+   auxiliary definitions and lemmas. 
+   The equivalence is constructed as a composition of intermediate equivalences. 
+   To show right and left inverses we use the behaviour of the equivalence functions
+   on the respective identity elements. -/
+local notation `car` A := trunctype.carrier A
+
+/- The equivalence between [Set] equalities and equalities of their carriers is also 
+   constructed by [trunctype_eq_equiv] in [type.trunc] but it is not reducible, 
+   hence cannot be used for calculations. Instead we construct the equivalence
+   from scratch, making the functions reducible. -/
+@[hott, hsimp]   
+def set_eq_to_car_eq {A B : Set} : (A = B) -> ((car A) = (car B)) :=
+  assume e, ap trunctype.carrier e
+
+@[hott]
+definition idp_set_to_idp_car {A : Set} : set_eq_to_car_eq (idpath A) = idpath (car A) :=
+  by hsimp
+
+@[hott, reducible, hsimp]
+def car_eq_to_set_eq : Π {A B : Set}, ((car A) = (car B)) -> (A = B) 
+| (trunctype.mk car1 struct1) (trunctype.mk car2 struct2) := 
+  assume ec, 
+  have est : struct1 =[ec] struct2, from 
+    pathover_of_tr_eq (is_prop.elim (ec ▸ struct1) struct2), 
+  apd011 Set.mk ec est  
+
+/- It's complicated to do calculations with [car_eq_to_set_eq].-/
+@[hott]
+def idp_car_to_idp_set : 
+  Π {A : Set}, car_eq_to_set_eq (idpath (car A)) = idpath A 
+| (trunctype.mk carr struct) :=  
+  begin
+    hsimp,
+    have est_eq : pathover_of_tr_eq idp = idpatho struct, from 
+      is_prop.elim (pathover_of_tr_eq _) (idpatho struct),
+    rwr est_eq
+  end
 
 end set
 
