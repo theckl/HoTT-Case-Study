@@ -4,7 +4,7 @@ universes u v w
 hott_theory
 
 namespace hott
-open is_trunc trunc
+open is_trunc trunc equiv is_equiv
 
 /- Should be in [init.function]. -/
 @[inline, reducible] def function.comp {α β φ : Type _} (f : β → φ) (g : α → β) : α → φ :=
@@ -306,12 +306,11 @@ definition idp_set_to_idp_car {A : Set} : set_eq_to_car_eq (idpath A) = idpath (
 def car_eq_to_set_eq : Π {A B : Set}, ((car A) = (car B)) -> (A = B) 
 | (trunctype.mk car1 struct1) (trunctype.mk car2 struct2) := 
   assume ec, 
-  have est : struct1 =[ec] struct2, from 
-    pathover_of_tr_eq (is_prop.elim (ec ▸ struct1) struct2), 
+  let est := pathover_of_tr_eq (is_prop.elim (ec ▸ struct1) struct2) in
   apd011 Set.mk ec est  
 
 /- It's complicated to do calculations with [car_eq_to_set_eq].-/
-@[hott]
+@[hott, hsimp]
 def idp_car_to_idp_set : 
   Π {A : Set}, car_eq_to_set_eq (idpath (car A)) = idpath A 
 | (trunctype.mk carr struct) :=  
@@ -321,6 +320,69 @@ def idp_car_to_idp_set :
       is_prop.elim (pathover_of_tr_eq _) (idpatho struct),
     rwr est_eq
   end
+
+@[hott]
+def linv_set_eq_car_eq {A B : Set} : forall (es : A = B),
+  car_eq_to_set_eq (set_eq_to_car_eq es) = es :=
+let car_set := λ (A B : Set) (e : A = B), car_eq_to_set_eq (set_eq_to_car_eq e) = e in   
+have H : forall (A : Set), car_set A A idp, from 
+  assume A,
+  calc  car_eq_to_set_eq (set_eq_to_car_eq (idpath A)) = 
+              car_eq_to_set_eq (idpath (car A)) : by hsimp
+        ... = idpath A : idp_car_to_idp_set,
+assume es, rec_unbased H es
+
+/- This should be shown for general structures consisting of a type and
+   a dependent proposition. -/
+@[hott]   
+lemma ap_car_apd011_set_mk {cA cB: Type _} :
+  Π (ec :cA = cB) [s : is_set cA] [t : is_set cB] (est : s =[ec] t), 
+  ap trunctype.carrier (apd011 Set.mk ec est) = ec := 
+have H_ec : Π (cA : Type _) (s t : is_set cA) (est : s =[idpath cA] t), 
+         ap trunctype.carrier (apd011 Set.mk (idpath cA) est) = idpath cA, from
+  assume cA s t est,
+  have H_est : Π (s : is_set cA), 
+    ap trunctype.carrier (apd011 Set.mk (idpath cA) (idpatho s)) = idpath cA, from
+    assume s, by reflexivity, 
+  let P := λ (t : is_set cA) (est : s =[idpath cA] t), 
+     ap trunctype.carrier (apd011 Set.mk (idpath cA) est) = idpath cA in   
+  @idp_rec_on _ _ _ _ P _ est (H_est s),  
+let P := λ (cA cB) (ec : cA = cB), Π (s : is_set cA) (t : is_set cB) 
+     (est : s =[ec] t), ap trunctype.carrier (apd011 Set.mk ec est) = ec in 
+assume ec, @rec_unbased _ P H_ec _ _ ec
+
+@[hott]
+lemma rinv_set_eq_car_eq : Π {A B : Set}, forall (ec : (car A) = (car B)),
+  set_eq_to_car_eq (car_eq_to_set_eq ec) = ec
+| (trunctype.mk carr1 struct1) (trunctype.mk carr2 struct2) := 
+  assume ec, 
+  let est := pathover_of_tr_eq (is_prop.elim (ec ▸ struct1) struct2) in  
+  calc set_eq_to_car_eq (car_eq_to_set_eq ec) = ap trunctype.carrier (car_eq_to_set_eq ec) : 
+       by hsimp 
+       ... = ap trunctype.carrier (apd011 Set.mk ec est) : 
+       by reflexivity
+       ... = ec : by rwr @ap_car_apd011_set_mk _ _ ec struct1 struct2 est
+
+@[hott]
+def set_eq_equiv_car_eq {A B : Set} : (A = B) ≃ ((car A) = (car B)) :=
+  equiv.mk set_eq_to_car_eq (hott.is_equiv.adjointify set_eq_to_car_eq car_eq_to_set_eq 
+                                        rinv_set_eq_car_eq linv_set_eq_car_eq)
+
+@[hott]
+def car_eq_equiv_car_eqv {A B : Set} : ((car A) = (car B)) ≃ ((car A) ≃ (car B)) :=
+  eq_equiv_equiv _ _    /- Here, univalence is used. -/
+
+@[hott]
+def car_eq_to_car_eqv {A B : Set} : ((car A) = (car B)) -> ((car A) ≃ (car B)) :=
+  equiv.to_fun car_eq_equiv_car_eqv
+
+@[hott]
+def car_eqv_to_car_eq {A B : Set} : ((car A) ≃ (car B)) -> ((car A) = (car B)) :=
+  (equiv.to_fun car_eq_equiv_car_eqv)⁻¹ᶠ
+
+@[hott]
+def id_map_eqv (A : Set) : (car A) ≃ (car A) :=
+  equiv.mk (id_map A) (hott.is_equiv.is_equiv_id (car A))
 
 end set
 
