@@ -12,7 +12,6 @@ open is_trunc trunc equiv is_equiv
 
 hott_theory_cmd "local infixr  ` ∘ `:80      := hott.function.comp"
 
-
 namespace set
 
 /- We need the empty set, the identity map between sets and some properties of maps between sets. They can be 
@@ -30,7 +29,7 @@ def id {A : Type u} (a : A) : A := a
 def id_map (A : Set) : A -> A := @id A   
 
 @[hott]
-lemma id_map_is_right_neutral {A B : Set} (map : A -> B) :
+def id_map_is_right_neutral {A B : Set} (map : A -> B) :
   map ∘ (id_map A) = map :=  
 by hsimp   
 
@@ -268,7 +267,7 @@ def identity (A : Set) : bijection A A :=
   has_inverse_to_bijection i i id_inv
 
 @[hott]
-lemma identity_to_id_map (A : Set) :
+def identity_to_id_map (A : Set) :
   bijection.map (identity A) = id_map A :=
 by hsimp
 
