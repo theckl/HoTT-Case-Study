@@ -1,15 +1,18 @@
-import hott.init set_theory
+import set_theory
 
 universes u v w
 hott_theory
 
 namespace hott
-open hott.set hott.is_trunc hott.is_equiv eq hott.trunc hott.sigma
+open hott.set hott.is_trunc hott.is_equiv hott.eq hott.trunc hott.sigma
 
 namespace subset
 
 /- We define subsets of sets [A] as a set [B] together with an injective map [i: B -> A],
    implemented as a bundled structure.  -/
+
+/- Should be in [init.path]. -/
+notation eq `▸[`:50 P:0 `]`:0 b:50 := transport P eq b 
 
 @[hott]
 structure Subset (A : Set) :=
@@ -60,11 +63,11 @@ def image_is_set {A B : Set} (f : A -> B) : is_set (total_image f) :=
                 q2 := tr_eq_of_pathover q..2 in
             have Heq_pq : p2 = q2, from is_prop.elim p2 q2,
             have H_equiv : equiv (c.2 =[q..1; λ (b : B), image f b] d.2) 
-                                 (transport (λ (b : B), image f b) q..1 c.2 = d.2), 
+                                 (q..1 ▸[λ (b : B), image f b] c.2 = d.2), 
               from pathover_equiv_tr_eq _ _ _,
             let F := (equiv.to_fun H_equiv)⁻¹ᶠ, fib := fiber f c.1 in
             have HF : is_equiv F, from is_equiv_inv (equiv.to_fun H_equiv),
-            have H_trunc1 : is_prop (transport (λ (b : B), image f b) q..1 c.2 = d.2), 
+            have H_trunc1 : is_prop (q..1 ▸[λ (b : B), image f b] c.2 = d.2), 
               from 
               have H_prop : is_prop (trunc -1 fib), from is_trunc_trunc -1 _ ,
               have H_set : is_set (trunc -1 fib), from is_trunc_succ _ _,
@@ -138,6 +141,56 @@ lemma sset_ident_to_ident {A : Set} : Π (B : Subset A),
   (sset_identity B).1 = identity (Subset.carrier B)
 | (Subset.mk carB mapB injB) :=
   by reflexivity
+
+@[hott]
+lemma bij_eq_bij_comp_eq {A : Set} {B C : Subset A} : 
+  forall fc gc : sset_bijection B C, fc.1 = gc.1 -> fc = gc :=
+assume fc gc bij_eq,
+let P := λ (bij : bijection ↥B ↥C), C.map ∘ bij.map = B.map in
+have tr_eq : bij_eq ▸[P] fc.2 = gc.2, from is_prop.elim (bij_eq ▸[P] fc.2) gc.2,
+have comp_eq : fc.2 =[bij_eq;P] gc.2, from pathover_of_tr_eq tr_eq,
+sigma_eq bij_eq comp_eq
+
+@[hott]
+def sset_eq_to_bij {A : Set} {B C : Subset A} : 
+  B = C -> sset_bijection B C := 
+let sset_eq := λ (B C : Subset A) (eq : B = C), sset_bijection B C in
+have H : Π (B : Subset A), sset_eq B B idp, from
+  assume B, sset_identity B,
+assume eq, rec_unbased H eq
+
+@[hott]
+lemma sset_id_to_identity {A : Set} {B : Subset A} :
+  sset_eq_to_bij (idpath B) = sset_identity B :=
+by reflexivity
+
+@[hott]
+/- Should be in [init.path] with [A], [B], [C] types, but the elaborator can't handle it. -/
+lemma tr_fun_ext {A B C : Set} (p : A = B) : 
+  forall (h : B -> C) (a : A), (p⁻¹ ▸ h) a = h (p ▸ a) :=
+let P := λ (A B : Set) (p : A = B), 
+         forall (h : B -> C) (a : A), (p⁻¹ ▸ h) a = h (p ▸ a) in  
+have H : Π (A : Set), P A A idp, from
+  assume A h a, by reflexivity, 
+rec_unbased H p
+
+/- Equalities of a structure like [Subset] consisting of 3 dependent fields are difficult to handle. 
+   We need some auxiliary definitions and lemmas focussing on [Subset]-structures constructed with
+   [Subset.mk] - they will be used in inductive arguments. -/
+@[hott, reducible]
+def bij_to_sset_map_eq {A : Set} : Π {B C : Subset A} (ss_bij : sset_bijection B C),
+  Subset.map B =[bij_to_set_eq ss_bij.1; λ (B : Set), B -> A] Subset.map C
+| (Subset.mk carB mapB injB) (Subset.mk carC mapC injC) :=
+  let P := λ (B : Set), B -> A in
+  assume ss_bij,
+  show mapB =[bij_to_set_eq ss_bij.1; P] mapC, from
+  let f := ss_bij.1, car_eq := bij_to_set_eq f in
+  let tr_map_C := car_eq⁻¹ ▸[P] mapC, fm := bijection.map f in 
+  have comp : mapC ∘ fm = mapB, from ss_bij.2,
+  have comp_hom : tr_map_C ~ mapC ∘ fm, from assume b,
+    calc tr_map_C b = mapC (car_eq ▸ b) : by exact tr_fun_ext car_eq mapC b
+         ... = mapC (fm b) : by rwr <-bij_hom_tr_eq f b,
+  pathover_of_eq_tr (comp⁻¹ ⬝ (eq_of_homotopy comp_hom)⁻¹)
 
 end subset
 
