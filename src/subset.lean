@@ -110,13 +110,11 @@ def Image {A B : Set} (f : A -> B) : Subset B :=
 lemma ap_car_ap_sset_mk {A : Set} (carB : Set) (mapB : carB -> A) 
   {inj1 inj2 : is_set_injective mapB} : forall (inj_eq : inj1 = inj2), 
   ap Subset.carrier (ap (Subset.mk carB mapB) inj_eq) = idpath carB :=
-let car_sset := λ (inj1 inj2 : is_set_injective mapB) (inj_eq : inj1 = inj2),
-                  ap Subset.carrier (ap (Subset.mk carB mapB) inj_eq) = idpath carB in
-have H : Π (inj1 : is_set_injective mapB), car_sset inj1 inj1 idp, from
-  assume inj1, 
-  show ap Subset.carrier (ap (Subset.mk carB mapB) (idpath inj1)) = idpath carB,
-    by reflexivity,
-assume inj_eq, rec_unbased H inj_eq
+begin 
+  intro inj_eq,
+  hinduction inj_eq,
+  reflexivity
+end   
 
 /- The type of subsets of [A] is a set: the power set. 
    To show this we first characterize equalities of subsets : they correspond to
@@ -154,10 +152,11 @@ sigma_eq bij_eq comp_eq
 @[hott]
 def sset_eq_to_bij {A : Set} {B C : Subset A} : 
   B = C -> sset_bijection B C := 
-let sset_eq := λ (B C : Subset A) (eq : B = C), sset_bijection B C in
-have H : Π (B : Subset A), sset_eq B B idp, from
-  assume B, sset_identity B,
-assume eq, rec_unbased H eq
+begin 
+intro p,
+hinduction p,
+exact sset_identity B
+end   
 
 @[hott]
 lemma sset_id_to_identity {A : Set} {B : Subset A} :
@@ -168,11 +167,11 @@ by reflexivity
 /- Should be in [init.path] with [A], [B], [C] types, but the elaborator can't handle it. -/
 lemma tr_fun_ext {A B C : Set} (p : A = B) : 
   forall (h : B -> C) (a : A), (p⁻¹ ▸ h) a = h (p ▸ a) :=
-let P := λ (A B : Set) (p : A = B), 
-         forall (h : B -> C) (a : A), (p⁻¹ ▸ h) a = h (p ▸ a) in  
-have H : Π (A : Set), P A A idp, from
-  assume A h a, by reflexivity, 
-rec_unbased H p
+begin 
+  hinduction p,
+  intros A h,
+  reflexivity
+end   
 
 /- Equalities of a structure like [Subset] consisting of 3 dependent fields are difficult to handle. 
    We need some auxiliary definitions and lemmas focussing on [Subset]-structures constructed with
@@ -191,6 +190,69 @@ def bij_to_sset_map_eq {A : Set} : Π {B C : Subset A} (ss_bij : sset_bijection 
     calc tr_map_C b = mapC (car_eq ▸ b) : by exact tr_fun_ext car_eq mapC b
          ... = mapC (fm b) : by rwr <-bij_hom_tr_eq f b,
   pathover_of_eq_tr (comp⁻¹ ⬝ (eq_of_homotopy comp_hom)⁻¹)
+
+@[hott]
+def sset_comp_eq {A : Set} (car1 car2 : Set) (map1 : car1 -> A) (map2 : car2 -> A) :=
+  Σ (car_eq : car1 = car2), map1 =[car_eq; λ (B : Set), B -> A] map2
+
+/- This is a subtle point: The equality of maps induced by the equality of subsets is
+   already induced by the induced equality of carrier sets. This can be shown using
+   [pathover_ap] in [init.pathover]. -/
+@[hott]   
+def sset_mk_eq_to_comp_eq {A : Set} {car1 car2 : Set} 
+  {map1 : car1 -> A} {map2 : car2 -> A}
+  [inj1 : is_set_injective map1] [inj2 : is_set_injective map2] : 
+  (Subset.mk car1 map1 inj1 = Subset.mk car2 map2 inj2) -> 
+    (sset_comp_eq car1 car2 map1 map2) :=
+assume mk_eq, let car_eq := ap Subset.carrier mk_eq in
+let map_mk_eq := apd Subset.map mk_eq in
+have map_car_eq : map1 =[car_eq; λ (B : Set), B -> A] map2, from 
+  pathover_ap (λ (carr : Set), carr -> A) Subset.carrier map_mk_eq,
+dpair car_eq map_car_eq
+
+@[hott, reducible, hsimp]
+def sset_comp_eq_to_mk_eq {A : Set} {car1 car2 : Set} :
+  Π (car_eq : car1 = car2) 
+  {map1 : car1 -> A} {map2 : car2 -> A} 
+  (map_eq : map1 =[car_eq; λ (B : Set), B -> A] map2) 
+  [inj1 : is_set_injective map1] [inj2 : is_set_injective map2],  
+  Subset.mk car1 map1 inj1 = Subset.mk car2 map2 inj2 :=
+begin
+intro car_eq,
+hinduction car_eq,
+  intros map1 map2 map_eq,
+  hinduction map_eq,
+    intros inj1 inj2,
+    exact ap (Subset.mk car1 map1) (is_prop.elim inj1 inj2)
+end    
+
+@[hott, reducible]
+def sset_comp_eq_to_sset_eq {A : Set} : Π {B C : Subset A}
+  (car_eq : Subset.carrier B = Subset.carrier C) 
+  (map_eq : Subset.map B =[car_eq; λ (B : Set), B -> A] Subset.map C), 
+  B = C 
+| (Subset.mk carB mapB injB) (Subset.mk carC mapC injC) :=
+  assume car_eq map_eq,
+  @sset_comp_eq_to_mk_eq _ _ _ car_eq _ _ map_eq injB injC
+
+@[hott, reducible]
+def ap_sset_comp_to_car {A : Set} {car1 car2 : Set} :
+  Π (car_eq : car1 = car2) 
+  {map1 : car1 -> A} {map2 : car2 -> A} 
+  (map_eq : map1 =[car_eq; λ (B : Set), B -> A] map2) 
+  [inj1 : is_set_injective map1] [inj2 : is_set_injective map2],
+  ap Subset.carrier (@sset_comp_eq_to_mk_eq _ _ _ car_eq _ _ map_eq inj1 inj2) = car_eq := 
+begin  
+intro car_eq,  
+hinduction car_eq with car_id,
+  intros map1 map2 map_eq,
+  hinduction map_eq,
+    intros inj1 inj2,
+    have eq1 : @sset_comp_eq_to_mk_eq _ _ _ (idpath car1) _ _ (idpatho map1) inj1 inj2 = 
+                   ap (Subset.mk car1 map1) (is_prop.elim inj1 inj2), by reflexivity,
+    rwr eq1, 
+    rwr (ap_car_ap_sset_mk car1 map1 (is_prop.elim inj1 inj2))               
+end    
 
 end subset
 
