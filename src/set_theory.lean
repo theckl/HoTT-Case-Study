@@ -323,13 +323,11 @@ def idp_car_to_idp_set :
 @[hott]
 def linv_set_eq_car_eq {A B : Set} : forall (es : A = B),
   car_eq_to_set_eq (set_eq_to_car_eq es) = es :=
-let car_set := λ (A B : Set) (e : A = B), car_eq_to_set_eq (set_eq_to_car_eq e) = e in   
-have H : forall (A : Set), car_set A A idp, from 
-  assume A,
-  calc  car_eq_to_set_eq (set_eq_to_car_eq (idpath A)) = 
-              car_eq_to_set_eq (idpath (car A)) : by hsimp
-        ... = idpath A : idp_car_to_idp_set,
-assume es, rec_unbased H es
+begin 
+  intro es,
+  hinduction es,
+  hsimp 
+end   
 
 /- This should be shown for general structures consisting of a type and
    a dependent proposition. -/
@@ -337,18 +335,13 @@ assume es, rec_unbased H es
 lemma ap_car_apd011_set_mk {cA cB: Type _} :
   Π (ec :cA = cB) [s : is_set cA] [t : is_set cB] (est : s =[ec] t), 
   ap trunctype.carrier (apd011 Set.mk ec est) = ec := 
-have H_ec : Π (cA : Type _) (s t : is_set cA) (est : s =[idpath cA] t), 
-         ap trunctype.carrier (apd011 Set.mk (idpath cA) est) = idpath cA, from
-  assume cA s t est,
-  have H_est : Π (s : is_set cA), 
-    ap trunctype.carrier (apd011 Set.mk (idpath cA) (idpatho s)) = idpath cA, from
-    assume s, by reflexivity, 
-  let P := λ (t : is_set cA) (est : s =[idpath cA] t), 
-     ap trunctype.carrier (apd011 Set.mk (idpath cA) est) = idpath cA in   
-  @idp_rec_on _ _ _ _ P _ est (H_est s),  
-let P := λ (cA cB) (ec : cA = cB), Π (s : is_set cA) (t : is_set cB) 
-     (est : s =[ec] t), ap trunctype.carrier (apd011 Set.mk ec est) = ec in 
-assume ec, @rec_unbased _ P H_ec _ _ ec
+begin 
+  intro ec,
+  hinduction ec,
+    intros s t est,
+    hinduction est,
+    reflexivity
+end   
 
 @[hott]
 lemma rinv_set_eq_car_eq : Π {A B : Set}, forall (ec : (car A) = (car B)),
@@ -497,10 +490,11 @@ def right_inv_set_eq_bij {A B : Set} (f : bijection A B) :
 @[hott]
 lemma hom_eq_tr_eq {A B : Set} (e : A = B) :
   forall a : A, set_eq_to_bij e a = e ▸ a :=
-have H : Π (A : Set), forall a : A, @set_eq_to_bij A A idp a = idp ▸ a, from 
-  assume A a, by reflexivity,
-let P := λ (A B : Set) (e : A = B), forall a : A, set_eq_to_bij e a = e ▸ a in  
-@rec_unbased _ P H _ _ e
+begin 
+  intro a,
+  hinduction e,
+  reflexivity
+end   
 
 @[hott]
 lemma bij_hom_tr_eq {A B : Set} (f : bijection A B) : 
