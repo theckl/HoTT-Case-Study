@@ -158,7 +158,7 @@ hinduction p,
 exact sset_identity B
 end   
 
-@[hott]
+@[hott, hsimp]
 lemma sset_id_to_identity {A : Set} {B : Subset A} :
   sset_eq_to_bij (idpath B) = sset_identity B :=
 by reflexivity
@@ -252,7 +252,120 @@ hinduction car_eq with car_id,
                    ap (Subset.mk car1 map1) (is_prop.elim inj1 inj2), by reflexivity,
     rwr eq1, 
     rwr (ap_car_ap_sset_mk car1 map1 (is_prop.elim inj1 inj2))               
+end  
+
+@[hott]
+def idp_comp_to_sset_id {A : Set} : Π (B : Subset A), 
+  sset_comp_eq_to_sset_eq (idpath (Subset.carrier B)) (idpatho (Subset.map B)) = 
+  idpath B 
+| (Subset.mk carB mapB injB) := 
+  have inj_eq_eq : is_prop.elim injB injB = idpath injB, from is_set.elim _ _,
+  calc sset_comp_eq_to_sset_eq idp idpo = 
+            @sset_comp_eq_to_mk_eq _ _ _ idp _ _ idpo injB injB : by reflexivity
+       ... = ap (Subset.mk carB mapB) (is_prop.elim injB injB) : 
+       by  reflexivity
+       ... = ap (Subset.mk carB mapB) (idpath injB) : by rwr inj_eq_eq   
+       ... = idpath (Subset.mk carB mapB injB) : by hsimp 
+
+@[hott, reducible]
+def bij_to_sset_eq {A : Set}: Π {B C : Subset A}, 
+  sset_bijection B C -> B = C 
+| (Subset.mk carB mapB injB) (Subset.mk carC mapC injC) := 
+  assume comp_bij, let f := comp_bij.1 in 
+  let car_eq := bij_to_set_eq f,
+      map_eq := bij_to_sset_map_eq comp_bij in
+  @sset_comp_eq_to_mk_eq _ _ _ car_eq _ _ map_eq injB injC
+
+@[hott]
+lemma bij_to_sset_eq_unf_eq {A : Set} : Π {B C : Subset A}
+  (sset_bij : sset_bijection B C), 
+  bij_to_sset_eq (sset_bij) = sset_comp_eq_to_sset_eq (bij_to_set_eq sset_bij.1) (bij_to_sset_map_eq sset_bij) 
+| (Subset.mk carB mapB injB) (Subset.mk carC mapC injC) :=
+  assume sset_bij, by refl
+
+@[hott]
+lemma identity_to_sset_id {A : Set} : Π (B : Subset A),
+  bij_to_sset_eq (sset_identity B) = idpath B := 
+assume B,
+let carB := Subset.carrier B, mapB := Subset.map B,
+    injB := Subset.inj B in 
+let f := (sset_identity B).1 in
+let car_eq := bij_to_set_eq f in
+have car_eq_idp : car_eq = idpath carB, from 
+  calc car_eq = bij_to_set_eq (sset_identity B).1 : by refl
+       ... = bij_to_set_eq (identity carB) : by rwr sset_ident_to_ident B
+       ... = idpath carB : identity_to_idp, 
+let map_eq := bij_to_sset_map_eq (sset_identity B) in
+have map_eq_eqv : (mapB =[idpath carB; λ (B : Set), B -> A] mapB) ≃ (mapB = mapB), from 
+  pathover_idp (λ (B : Set), B -> A) mapB mapB,
+have P : is_prop (mapB = mapB), from @is_trunc_eq _ -1 is_set_map mapB mapB,
+have prop_map_eq : is_prop (mapB =[idpath carB; λ (B : Set), B -> A] mapB), from 
+  is_trunc_equiv_closed_rev -1 map_eq_eqv P,
+have change_po : change_path car_eq_idp map_eq = idpatho mapB, from 
+  @is_prop.elim _ prop_map_eq _ _,
+let E := λ (e : carB = carB), mapB =[e; λ (B : Set), B -> A] mapB in   
+have map_eq_idpo : map_eq =[car_eq_idp; E] idpatho mapB, from 
+  pathover_of_change_path car_eq_idp map_eq (idpatho mapB) change_po,
+have unf_eq : bij_to_sset_eq (sset_identity B) = 
+                sset_comp_eq_to_sset_eq car_eq map_eq, from
+  bij_to_sset_eq_unf_eq (sset_identity B),
+calc bij_to_sset_eq (sset_identity B) = sset_comp_eq_to_sset_eq car_eq map_eq : 
+     by rwr unf_eq
+     ... = sset_comp_eq_to_sset_eq (idpath carB) (idpatho mapB) : 
+     apd011 (λ (eq1 : carB = carB) (eq2 : mapB =[eq1; λ (B : Set), B -> A] mapB), 
+               sset_comp_eq_to_sset_eq eq1 eq2) car_eq_idp map_eq_idpo
+     ... = idpath B : idp_comp_to_sset_id B
+
+@[hott]
+lemma sset_bij_eq_set_bij {A : Set} (B C : Subset A) : forall e : B = C, 
+  (sset_eq_to_bij e).1 = set_eq_to_bij (ap Subset.carrier e) := 
+begin
+  intro e,
+  hinduction e,
+    hsimp, rwr sset_ident_to_ident
 end    
+
+@[hott]
+lemma bij_sset_eq_bij_set {A : Set} : forall (B C : Subset A)  
+  (sset_bij : sset_bijection B C) (b : Subset.carrier B), 
+  ap Subset.carrier (bij_to_sset_eq sset_bij) ▸ b = bij_to_set_eq sset_bij.1 ▸ b 
+| (Subset.mk carB mapB injB) (Subset.mk carC mapC injC) := 
+  assume sset_bij b, 
+  let car_eq := bij_to_set_eq sset_bij.1,
+      map_eq := bij_to_sset_map_eq sset_bij, 
+      sset_comp_eq := @sset_comp_eq_to_mk_eq _ _ _ car_eq _ _ map_eq injB injC in
+  have eq1 : bij_to_sset_eq sset_bij = sset_comp_eq, by refl,
+  have eq2 : ap Subset.carrier sset_comp_eq = car_eq, from 
+    @ap_sset_comp_to_car _ _ _ car_eq _ _ map_eq injB injC,
+  begin rwr eq1, rwr eq2 end
+
+@[hott]
+def sset_eq_equiv_bij {A : Set} (B C : Subset A) : 
+  B = C ≃ sset_bijection B C := 
+have rinv : forall (fc : sset_bijection B C), 
+              sset_eq_to_bij (@bij_to_sset_eq A B C fc) = fc, from 
+  let F := @sset_eq_to_bij A B C, G := @bij_to_sset_eq A B C in
+  assume fc, let f := fc.1, FGf := (F (G fc)).1 in 
+  have bijmap_hom : bijection.map FGf ~ bijection.map f, from 
+    assume b, 
+    calc bijection.map FGf b = bijection.map (set_eq_to_bij (ap Subset.carrier (G fc))) b : 
+         apd10 (ap bijection.map (sset_bij_eq_set_bij B C (G fc))) b
+         ... = (ap Subset.carrier (G fc)) ▸ b : 
+         hom_eq_tr_eq (ap Subset.carrier (G fc)) b
+         ... = (bij_to_set_eq f) ▸ b : bij_sset_eq_bij_set B C fc b
+         ... = (bijection.map f) b : by rwr <-bij_hom_tr_eq f b,
+  have bij_eq : FGf = f, from
+    have bijmap_eq : bijection.map FGf = bijection.map f, from
+      eq_of_homotopy bijmap_hom,
+    bijection_eq_from_map_eq _ _ bijmap_eq,
+  bij_eq_bij_comp_eq _ _ bij_eq,
+have linv : forall e : B = C, bij_to_sset_eq (sset_eq_to_bij e) = e, 
+  begin 
+    intro e,
+    hinduction e,
+      rwr sset_id_to_identity, rwr identity_to_sset_id
+  end,  
+equiv.mk sset_eq_to_bij (adjointify sset_eq_to_bij bij_to_sset_eq rinv linv)
 
 end subset
 
