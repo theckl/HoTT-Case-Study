@@ -412,13 +412,105 @@ def sset_to_pred {A : Set} : Π (B : Subset A), Setpred A :=
   assume B, λ (a : A), image (Subset.map B) a
 
 @[hott]
-lemma is_set_pred {A : Set} : Π (pred : Setpred A), is_set (Σ (a : A), ↥(pred a)) :=
+def is_set_pred {A : Set} : Π (pred : Setpred A), is_set (Σ (a : A), ↥(pred a)) :=
   assume pred, 
   have forall (a : A), is_set (pred a), from 
     assume a, 
     have is_prop (pred a), from trunctype.struct (pred a),
     is_trunc_succ (pred a) -1, 
   is_trunc_sigma (λ a : A, ↥(pred a)) 0  
+
+/- Should be in one of the library files on the sigma type.
+   [subtype_eq] is the subtype-version in [types.sigma]. -/
+@[hott]   
+def sigma_prop_pr1_inj {A : Type} {B : A -> Prop} :
+  forall (b c : Σ (a : A), B a), b.1 = c.1 -> b = c :=
+assume b c pr1_eq,
+have pr2_tr : pr1_eq ▸[λ a : A, B a] b.2 = c.2, from is_prop.elim _ _, 
+have pr2_eq : b.2 =[pr1_eq; λ a : A, B a] c.2, from pathover_of_tr_eq pr2_tr,
+sigma_eq pr1_eq pr2_eq
+
+/- We construct carrier, map and a proof of injectivity of the subset defined 
+   by a predicate separately, to be able to use these components in 
+   later calculations. -/
+@[hott, reducible]   
+def pred_to_sset_car {A : Set} (pred : Setpred A) : Set :=
+  let predset := Σ (a : A), trunctype.carrier (pred a)  in
+  Set.mk predset (is_set_pred pred)  
+
+@[hott, reducible]
+def pred_to_sset_map {A : Set} (pred : Setpred A) :
+  pred_to_sset_car pred -> A :=
+let carr := pred_to_sset_car pred in
+λ (b : carr), b.1 
+
+@[hott, reducible]
+def pred_to_sset_inj {A : Set} (pred : Setpred A) :
+  is_set_injective (pred_to_sset_map pred) := 
+let map := pred_to_sset_map pred in
+assume b1 b2 map_eq, 
+have map_eq_b : (b1).1 = (b2).1, from
+  calc (b1).1 = map b1 : by refl
+       ... = map b2 : map_eq
+       ... = (b2).1 : by refl,
+sigma_prop_pr1_inj b1 b2 map_eq_b
+
+@[hott, reducible]
+def pred_to_sset {A : Set} (pred : Setpred A) : 
+  Subset A :=
+Subset.mk (pred_to_sset_car pred) (pred_to_sset_map pred) (pred_to_sset_inj pred)
+
+@[hott]
+def pred_to_im {A : Set} (pred : Setpred A) (a : A) : 
+  pred a -> image (Subset.map (pred_to_sset pred)) a :=
+let B := pred_to_sset pred,
+    mapB := Subset.map B in
+assume p, let apr := dpair a p in /- an element in [predset] -/
+have im_a : mapB apr = a, by refl, /- mapped to a -/
+have fib_a : fiber mapB a, from fiber.mk apr im_a,
+tr fib_a
+
+@[hott]
+def im_to_pred {A : Set} (pred : Setpred A) (a : A) :
+  image (Subset.map (pred_to_sset pred)) a -> pred a :=
+let B := pred_to_sset pred,
+    mapB := Subset.map B,
+    injB := Subset.inj B in
+assume im, 
+have H : is_prop (fiber mapB a), from set_inj_implies_unique_fib mapB injB a,
+have fib_a : fiber mapB a, from @untrunc_of_is_trunc _ _ H im,
+have eq_a : fib_a.point.1 = a, from fiber.point_eq fib_a,
+eq_a ▸[λ a : A, pred a] (fiber.point fib_a).2
+
+/- Should be in one of the trunc files. -/
+@[hott]
+lemma prop_iff_eq : Π {A B : Prop} (imp1 : A -> B) (imp2 : B -> A), A = B 
+| (trunctype.mk carA structA) (trunctype.mk carB structB) :=
+  assume imp1 imp2, 
+  have car_eqv : carA ≃ carB, from 
+    have rinv : forall (b : carB), imp1 (imp2 b) = b, from 
+      assume b, @is_prop.elim _ structB _ _,
+    have linv : forall (a : carA), imp2 (imp1 a) = a, from 
+      assume a, @is_prop.elim _ structA _ _,
+    equiv.mk imp1 (adjointify imp1 imp2 rinv linv),
+  have car_eq : carA = carB, from ua car_eqv, /- Do you really need univalence here? -/
+  have struct_tr : car_eq ▸ structA = structB, from 
+    is_prop.elim _ _,
+  have struct_eq : structA =[car_eq] structB, from pathover_of_tr_eq struct_tr,
+  apd011 Prop.mk car_eq struct_eq
+
+@[hott, reducible]
+def map_pred_sset {A : Set} (B : Subset A) :
+  Subset.carrier (pred_to_sset (sset_to_pred B)) -> Subset.carrier B :=
+let mapB := Subset.map B,
+    injB := Subset.inj B in
+let pred := sset_to_pred B, 
+    B_pred := pred_to_sset pred in
+assume b_pred, 
+let a := b_pred.1 in
+have H : is_prop (fiber mapB a), from set_inj_implies_unique_fib mapB injB a,
+have fib_a : fiber mapB a, from @untrunc_of_is_trunc _ _ H b_pred.2,
+fiber.point fib_a 
 
 end subset
 
