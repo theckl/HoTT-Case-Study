@@ -367,6 +367,59 @@ have linv : forall e : B = C, bij_to_sset_eq (sset_eq_to_bij e) = e,
   end,  
 equiv.mk sset_eq_to_bij (adjointify sset_eq_to_bij bij_to_sset_eq rinv linv)
 
+@[hott]
+def Powerset_is_set {A : Set} : is_set (Subset A) := 
+have H_eq : forall B C : Subset A, is_prop (B = C), from 
+  assume B C,
+  let mapB := Subset.map B, mapC := Subset.map C in
+  have bij_eq_is_prop : is_prop (sset_bijection B C), from 
+    have H_bij_eq : forall (beq1 beq2 : sset_bijection B C), beq1 = beq2, 
+      from assume beq1 beq2,
+      let f := beq1.1, g := beq2.1 in  
+      have p_map : (bijection.map f) = (bijection.map g), from 
+        have i_comp_eq : mapC ∘ f = mapC ∘ g, from 
+          calc mapC ∘ f = mapB : by exact beq1.2
+               ... = mapC ∘ g : by exact (beq2.2)⁻¹, 
+        univ_prop_of_inj mapC (Subset.inj C) (Subset.carrier B) f g i_comp_eq, 
+      have p : f = g, from bijection_eq_from_map_eq f g p_map,
+      let P := λ h : bijection ↥B ↥C, C.map ∘ h.map = B.map in
+      have tr_eq : p ▸[P] beq1.2 = beq2.2, from 
+        is_prop.elim (p ▸[P] beq1.2) beq2.2,
+      have q : beq1.2 =[p;P] beq2.2, from pathover_of_tr_eq tr_eq,  
+      sigma_eq p q, 
+    is_prop.mk H_bij_eq, 
+  let F := equiv.to_fun (sset_eq_equiv_bij B C) in  
+  @is_trunc_is_equiv_closed _ _ -1 F⁻¹ᶠ (is_equiv_inv F) bij_eq_is_prop,
+@is_trunc_succ_intro (Subset A) -1 H_eq 
+
+@[hott]
+def Powerset (A : Set) : Set :=
+  Set.mk (Subset A) Powerset_is_set
+
+/- Subsets of [A : Set] can also be defined by predicates [P : A -> Prop]. Vice versa,  
+   predicates can be extracted from a subset of [A]; this yields an equivalence.
+   The subset defined by a predicate uses a bundled version of the [subtype] in [types.sigma].
+   TODO: Introduce the standard notation {x : A | P a} for subsets given by predicates
+         overwriting the notation for subtypes. -/
+@[hott, reducible]
+def Setpred (A : Set) := A -> Prop 
+/- The 0 sorts out universe troubles. It can be replaced by 1. 
+   I don't know whether it causes troubles when constructing predicates;
+   this is connected to propositional resizing. -/
+
+@[hott]
+def sset_to_pred {A : Set} : Π (B : Subset A), Setpred A :=
+  assume B, λ (a : A), image (Subset.map B) a
+
+@[hott]
+lemma is_set_pred {A : Set} : Π (pred : Setpred A), is_set (Σ (a : A), ↥(pred a)) :=
+  assume pred, 
+  have forall (a : A), is_set (pred a), from 
+    assume a, 
+    have is_prop (pred a), from trunctype.struct (pred a),
+    is_trunc_succ (pred a) -1, 
+  is_trunc_sigma (λ a : A, ↥(pred a)) 0  
+
 end subset
 
 end hott
