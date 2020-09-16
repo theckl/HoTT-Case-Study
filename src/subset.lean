@@ -403,9 +403,6 @@ def Powerset (A : Set) : Set :=
          overwriting the notation for subtypes. -/
 @[hott, reducible]
 def Setpred (A : Set) := A -> Prop 
-/- The 0 sorts out universe troubles. It can be replaced by 1. 
-   I don't know whether it causes troubles when constructing predicates;
-   this is connected to propositional resizing. -/
 
 @[hott]
 def sset_to_pred {A : Set} : Π (B : Subset A), Setpred A :=
@@ -511,6 +508,123 @@ let a := b_pred.1 in
 have H : is_prop (fiber mapB a), from set_inj_implies_unique_fib mapB injB a,
 have fib_a : fiber mapB a, from @untrunc_of_is_trunc _ _ H b_pred.2,
 fiber.point fib_a 
+
+@[hott]
+lemma map_map_pred_sset {A : Set} (B : Subset A) : 
+  forall (b_pred : Subset.carrier (pred_to_sset (sset_to_pred B))),
+  Subset.map B (map_pred_sset B b_pred) = b_pred.1 :=
+let mapB := Subset.map B, 
+    injB := Subset.inj B in
+assume b_pred, 
+let a := b_pred.1, im_a := b_pred.2 in
+let H_prop := set_inj_implies_unique_fib mapB injB a in
+let fib_a := @untrunc_of_is_trunc (fiber mapB a) -1 H_prop im_a in
+calc mapB (map_pred_sset B b_pred) = mapB fib_a.point : by refl
+     ... = a : fib_a.point_eq
+
+@[hott]
+def map_sset_pred {A : Set} (B : Subset A) : 
+  Subset.carrier B -> Subset.carrier (pred_to_sset (sset_to_pred B)) :=
+let mapB := Subset.map B in
+assume b, 
+let a := mapB b in
+dpair a (tr (fiber.mk b idp))
+
+@[hott]
+def inv_pred_sset {A : Set} (B : Subset A) : 
+  is_set_inverse_of (map_pred_sset B) (map_sset_pred B) :=
+let f := map_pred_sset B, g := map_sset_pred B in
+let mapB := Subset.map B,
+    injB := Subset.inj B in
+have rinv : is_set_right_inverse_of f g, from 
+  assume b, by refl,
+have linv : is_set_left_inverse_of f g, from 
+  assume b_pred, 
+  have pr1_eq : (g (f b_pred)).1 = b_pred.1, from
+    calc (g (f b_pred)).1 = mapB (f b_pred) : by refl 
+         ... = b_pred.1 : map_map_pred_sset B b_pred,
+  sigma_prop_pr1_inj _ _ pr1_eq,
+is_set_inverse_of.mk rinv linv
+
+@[hott]
+def bij_pred_sset {A : Set} (B : Subset A) :
+  bijection (Subset.carrier (pred_to_sset (sset_to_pred B))) (Subset.carrier B) :=
+has_inverse_to_bijection (map_pred_sset B) (map_sset_pred B) (inv_pred_sset B)
+
+@[hott]
+def sset_bij_pred_sset  {A : Set} (B : Subset A) :
+  sset_bijection (pred_to_sset (sset_to_pred B)) B :=
+let f := bij_pred_sset B in
+have comp_hom : (Subset.map B) ∘ (bijection.map f) ~ 
+                   Subset.map (pred_to_sset (sset_to_pred B)), from
+  assume b_pred, 
+  calc Subset.map B (bijection.map f b_pred) = b_pred.1 : 
+      map_map_pred_sset B b_pred
+       ... = Subset.map (pred_to_sset (sset_to_pred B)) b_pred : by refl,
+have comp_eq : (Subset.map B) ∘ (bijection.map f) = Subset.map (pred_to_sset (sset_to_pred B)), from
+  eq_of_homotopy comp_hom,
+dpair f comp_eq
+
+@[hott]
+def sset_pred_linv {A : Set} (B : Subset A) : pred_to_sset (sset_to_pred B) = B := 
+  bij_to_sset_eq (sset_bij_pred_sset B) 
+
+@[hott]
+def Subset_equiv_Setpred (A : Set) : Subset A ≃ Setpred A :=
+  have rinv : forall (pred : Setpred A), sset_to_pred (pred_to_sset pred) = pred, from 
+    assume pred, 
+    have hom : sset_to_pred (pred_to_sset pred) ~ pred, from 
+      assume a, 
+      calc sset_to_pred (pred_to_sset pred) a = 
+                 image (Subset.map (pred_to_sset pred)) a : by refl
+           ... = pred a : prop_iff_eq (im_to_pred pred a) (pred_to_im pred a),
+    eq_of_homotopy hom,
+  have linv : forall (B : Subset A), pred_to_sset (sset_to_pred B) = B, from
+    sset_pred_linv,
+  equiv.mk sset_to_pred (adjointify sset_to_pred pred_to_sset rinv linv)  
+
+@[hott]
+def sset_pred_inj {A : Set} : forall (B C : Subset A),
+  sset_to_pred B = sset_to_pred C -> B = C :=
+assume B C pred_eq,
+have sset_pred_eq : @pred_to_sset A (@sset_to_pred A B) = pred_to_sset (sset_to_pred C), from
+  ap pred_to_sset pred_eq,
+calc B = pred_to_sset (sset_to_pred B) : (sset_pred_linv B)⁻¹ 
+     ... = pred_to_sset (sset_to_pred C) : sset_pred_eq
+     ... = C : sset_pred_linv C 
+
+/- On subsets we can introduce the standard notations of set theory and prove some 
+   facts of (naive) set theory. -/
+notation [parsing_only] a `∈` B := sset_to_pred B a
+
+@[hott]
+def is_subset_of {A : Set} (B C : Subset A) :=
+  forall a : A, a ∈ B -> a ∈ C
+
+notation [parsing_only] B `⊆` C := is_subset_of B C
+
+/- Two subsets are equal iff they are subsets of each other. -/
+@[hott]
+def sset_eq_iff_inclusion {A : Set} (B C : Subset A) :
+  B = C ↔ (B ⊆ C) × (C ⊆ B) :=
+have imp1 : B = C -> (B ⊆ C) × (C ⊆ B), from 
+  assume sset_eq, 
+  have incl1 : B ⊆ C, from assume a a_in_B,
+    sset_eq ▸ a_in_B,
+  have incl2 : C ⊆ B, from assume a a_in_C,
+    sset_eq⁻¹ ▸ a_in_C,
+  prod.mk incl1 incl2,
+have imp2 : (B ⊆ C) × (C ⊆ B) -> B = C, from 
+  assume incl, let incl1 := prod.fst incl, incl2 := prod.snd incl in 
+  have pred_hom : sset_to_pred B ~ sset_to_pred C, from 
+    assume a, prop_iff_eq (incl1 a) (incl2 a),
+  have pred_eq : sset_to_pred B = sset_to_pred C, from 
+    eq_of_homotopy pred_hom,
+  sset_pred_inj B C pred_eq, 
+prod.mk imp1 imp2
+
+/- TODO : Introduce operations of boolean algebra and prove formulas, 
+          in new file [boolean_algebra] -/
 
 end subset
 
