@@ -501,8 +501,6 @@ def map_pred_sset {A : Set} (B : Subset A) :
   Subset.carrier (pred_to_sset (sset_to_pred B)) -> Subset.carrier B :=
 let mapB := Subset.map B,
     injB := Subset.inj B in
-let pred := sset_to_pred B, 
-    B_pred := pred_to_sset pred in
 assume b_pred, 
 let a := b_pred.1 in
 have H : is_prop (fiber mapB a), from set_inj_implies_unique_fib mapB injB a,
@@ -623,8 +621,8 @@ have imp2 : (B ⊆ C) × (C ⊆ B) -> B = C, from
   sset_pred_inj B C pred_eq, 
 prod.mk imp1 imp2
 
-/- TODO : Introduce operations of boolean algebra and prove formulas, 
-          in new file [boolean_algebra] -/
+/- TODO : Introduce operations of boolean algebra on subsets and prove formulas, 
+          in new file [setalgebra] -/
 
 end subset
 
