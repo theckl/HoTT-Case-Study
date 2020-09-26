@@ -405,6 +405,10 @@ def Powerset (A : Set) : Set :=
 def Setpred (A : Set) := A -> Prop 
 
 @[hott]
+def Setpred_of {A : Set} (P : A -> Prop) : Setpred A :=
+  P
+
+@[hott]
 def sset_to_pred {A : Set} : Π (B : Subset A), Setpred A :=
   assume B, λ (a : A), image (Subset.map B) a
 
@@ -420,7 +424,7 @@ def is_set_pred {A : Set} : Π (pred : Setpred A), is_set (Σ (a : A), ↥(pred 
 /- Should be in one of the library files on the sigma type.
    [subtype_eq] is the subtype-version in [types.sigma]. -/
 @[hott]   
-def sigma_prop_pr1_inj {A : Type} {B : A -> Prop} :
+def sigma_prop_pr1_inj {A : Type _} {B : A -> Prop} :
   forall (b c : Σ (a : A), B a), b.1 = c.1 -> b = c :=
 assume b c pr1_eq,
 have pr2_tr : pr1_eq ▸[λ a : A, B a] b.2 = c.2, from is_prop.elim _ _, 
@@ -444,13 +448,8 @@ let carr := pred_to_sset_car pred in
 @[hott, reducible]
 def pred_to_sset_inj {A : Set} (pred : Setpred A) :
   is_set_injective (pred_to_sset_map pred) := 
-let map := pred_to_sset_map pred in
 assume b1 b2 map_eq, 
-have map_eq_b : (b1).1 = (b2).1, from
-  calc (b1).1 = map b1 : by refl
-       ... = map b2 : map_eq
-       ... = (b2).1 : by refl,
-sigma_prop_pr1_inj b1 b2 map_eq_b
+sigma_prop_pr1_inj b1 b2 map_eq
 
 @[hott, reducible]
 def pred_to_sset {A : Set} (pred : Setpred A) : 
@@ -593,7 +592,23 @@ calc B = pred_to_sset (sset_to_pred B) : (sset_pred_linv B)⁻¹
 
 /- On subsets we can introduce the standard notations of set theory and prove some 
    facts of (naive) set theory. -/
-notation [parsing_only] a `∈` B := sset_to_pred B a
+variables {A : Set}
+
+@[hott]
+protected def elem (a : A) (S : Subset A) :=
+sset_to_pred S a
+
+hott_theory_cmd "local infix  `∈` := hott.subset.elem"
+
+notation `{ ` binder ` ∈ ` B ` | ` P:scoped  ` }` := @pred_to_sset B P
+
+@[hott]
+def P : A -> Prop := λ a : A, sset_to_pred (total_Subset A) a
+
+@[hott]
+def test : Subset A := { a ∈ A | P a }
+
+#print notation {}   
 
 @[hott]
 def is_subset_of {A : Set} (B C : Subset A) :=
