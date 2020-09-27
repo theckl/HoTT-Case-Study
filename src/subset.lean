@@ -598,17 +598,9 @@ variables {A : Set}
 protected def elem (a : A) (S : Subset A) :=
 sset_to_pred S a
 
-hott_theory_cmd "local infix  `∈` := hott.subset.elem"
+hott_theory_cmd "local infix  `∈`:70 := hott.subset.elem"
 
-notation `{ ` binder ` ∈ ` B ` | ` P:scoped  ` }` := @pred_to_sset B P
-
-@[hott]
-def P : A -> Prop := λ a : A, sset_to_pred (total_Subset A) a
-
-@[hott]
-def test : Subset A := { a ∈ A | P a }
-
-#print notation {}   
+notation `{ ` binder ` ∈ ` B ` | ` P:scoped  ` }` := @pred_to_sset B P 
 
 @[hott]
 def is_subset_of {A : Set} (B C : Subset A) :=
