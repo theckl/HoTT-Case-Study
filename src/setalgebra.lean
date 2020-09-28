@@ -25,6 +25,11 @@ protected def inter (S₁ S₂ : Subset A) : Subset A :=
 instance : has_inter (Subset A) :=
 ⟨subset.inter⟩
 
+@[hott, reducible]
+def sUnion (S : Subset (𝒫 A)) : Subset A := {t ∈ A | ∃ B ∈ S, t ∈ B}
+
+hott_theory_cmd "local prefix `⋃₀`:110 := hott.subset.sUnion"
+
 end subset
 
 end hott
