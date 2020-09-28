@@ -396,6 +396,8 @@ have H_eq : forall B C : Subset A, is_prop (B = C), from
 def Powerset (A : Set) : Set :=
   Set.mk (Subset A) Powerset_is_set
 
+hott_theory_cmd "local prefix `𝒫`:100 := hott.subset.Powerset"  
+
 /- Subsets of [A : Set] can also be defined by predicates [P : A -> Prop]. Vice versa,  
    predicates can be extracted from a subset of [A]; this yields an equivalence.
    The subset defined by a predicate uses a bundled version of the [subtype] in [types.sigma].
@@ -607,6 +609,14 @@ def is_subset_of {A : Set} (B C : Subset A) :=
   forall a : A, a ∈ B -> a ∈ C
 
 notation [parsing_only] B `⊆` C := is_subset_of B C
+
+@[hott]   
+inductive exists_elem {A : Set} (P : A → Prop) 
+| intro (w : A) (h : P w) : exists_elem
+
+attribute [intro] exists_elem.intro
+
+notation `∃` binder `∈` B `,` P:scoped := @exists_elem B P 
 
 /- Two subsets are equal iff they are subsets of each other. -/
 @[hott]
