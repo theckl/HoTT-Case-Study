@@ -3,6 +3,9 @@ import set_theory
 universes u v w
 hott_theory
 
+set_option pp.universes true
+set_option pp.implicit true
+
 namespace hott
 open hott.set hott.is_trunc hott.is_equiv hott.eq hott.trunc hott.sigma
 
@@ -15,8 +18,8 @@ namespace subset
 notation eq `▸[`:50 P:0 `]`:0 b:50 := transport P eq b 
 
 @[hott]
-structure Subset (A : Set) :=
-   (carrier : Set) (map : carrier -> A) (inj : is_set_injective map)
+structure Subset (A : Set.{u}) :=
+   (carrier : Set.{u}) (map : carrier -> A)  (inj : is_set_injective map) 
 
 @[hott]
 instance sset_to_set (A : Set) : has_coe_to_sort (Subset A) := 
@@ -34,7 +37,7 @@ def total_Subset (A : Set) : Subset A :=
   Subset.mk A (id_map A) id_is_inj 
 
 /- The empty set is a subset of every set [A], an elegant consequence of the construction 
-   of subsets. -/
+   of subsets. Caveat: [empty_Set] is of type [0], so [A] also must be of type [0]. -/
 @[hott]   
 def empty_Subset (A : Set) : Subset A := 
   have f : empty_Set -> A, from assume e, empty.elim e,
@@ -49,7 +52,7 @@ def empty_Subset (A : Set) : Subset A :=
      injective.
    * Now we have all the ingredients to construct the image as a subset of the codomain. -/  
 @[hott]
-def image_is_set {A B : Set} (f : A -> B) : is_set (total_image f) :=
+def image_is_set {A B : Set.{u}} (f : A -> B) : is_set (total_image f) :=
     have H : forall c d : total_image f, is_prop (c = d), from 
       assume c d, 
       have forall p q : c = d, p = q, from 
@@ -81,7 +84,7 @@ def image_is_set {A B : Set} (f : A -> B) : is_set (total_image f) :=
     is_trunc_succ_intro H
 
 @[hott]
-def image_Set {A B : Set} (f : A -> B) := 
+def image_Set {A B : Set.{u}} (f : A -> B) := 
   Set.mk (total_image f) (image_is_set f)
 
 @[hott]
@@ -165,7 +168,7 @@ by reflexivity
 
 @[hott]
 /- Should be in [init.path] with [A], [B], [C] types, but the elaborator can't handle it. -/
-lemma tr_fun_ext {A B C : Set} (p : A = B) : 
+lemma tr_fun_ext {A B C : Set.{u}} (p : A = B) : 
   forall (h : B -> C) (a : A), (p⁻¹ ▸ h) a = h (p ▸ a) :=
 begin 
   hinduction p,
@@ -192,14 +195,14 @@ def bij_to_sset_map_eq {A : Set} : Π {B C : Subset A} (ss_bij : sset_bijection 
   pathover_of_eq_tr (comp⁻¹ ⬝ (eq_of_homotopy comp_hom)⁻¹)
 
 @[hott]
-def sset_comp_eq {A : Set} (car1 car2 : Set) (map1 : car1 -> A) (map2 : car2 -> A) :=
+def sset_comp_eq {A : Set.{u}} (car1 car2 : Set.{u}) (map1 : car1 -> A) (map2 : car2 -> A) :=
   Σ (car_eq : car1 = car2), map1 =[car_eq; λ (B : Set), B -> A] map2
 
 /- This is a subtle point: The equality of maps induced by the equality of subsets is
    already induced by the induced equality of carrier sets. This can be shown using
    [pathover_ap] in [init.pathover]. -/
 @[hott]   
-def sset_mk_eq_to_comp_eq {A : Set} {car1 car2 : Set} 
+def sset_mk_eq_to_comp_eq {A : Set.{u}} {car1 car2 : Set} 
   {map1 : car1 -> A} {map2 : car2 -> A}
   [inj1 : is_set_injective map1] [inj2 : is_set_injective map2] : 
   (Subset.mk car1 map1 inj1 = Subset.mk car2 map2 inj2) -> 
@@ -340,7 +343,7 @@ lemma bij_sset_eq_bij_set {A : Set} : forall (B C : Subset A)
   begin rwr eq1, rwr eq2 end
 
 @[hott]
-def sset_eq_equiv_bij {A : Set} (B C : Subset A) : 
+def sset_eq_equiv_bij {A : Set.{u}} (B C : Subset A) : 
   B = C ≃ sset_bijection B C := 
 have rinv : forall (fc : sset_bijection B C), 
               sset_eq_to_bij (@bij_to_sset_eq A B C fc) = fc, from 
@@ -368,7 +371,7 @@ have linv : forall e : B = C, bij_to_sset_eq (sset_eq_to_bij e) = e,
 equiv.mk sset_eq_to_bij (adjointify sset_eq_to_bij bij_to_sset_eq rinv linv)
 
 @[hott]
-def Powerset_is_set {A : Set} : is_set (Subset A) := 
+def Powerset_is_set {A : Set.{u}} : is_set (Subset A) := 
 have H_eq : forall B C : Subset A, is_prop (B = C), from 
   assume B C,
   let mapB := Subset.map B, mapC := Subset.map C in
@@ -392,7 +395,7 @@ have H_eq : forall B C : Subset A, is_prop (B = C), from
   @is_trunc_is_equiv_closed _ _ -1 F⁻¹ᶠ (is_equiv_inv F) bij_eq_is_prop,
 @is_trunc_succ_intro (Subset A) -1 H_eq 
 
-@[hott]
+@[hott, reducible]
 def Powerset (A : Set) : Set :=
   Set.mk (Subset A) Powerset_is_set
 
@@ -404,7 +407,7 @@ hott_theory_cmd "local prefix `𝒫`:100 := hott.subset.Powerset"
    TODO: Introduce the standard notation {x : A | P a} for subsets given by predicates
          overwriting the notation for subtypes. -/
 @[hott, reducible]
-def Setpred (A : Set) := A -> Prop 
+def Setpred (A : Set.{u}) := A -> (trunctype.{u} -1) /- Here should be [Prop]. -/ 
 
 @[hott]
 def Setpred_of {A : Set} (P : A -> Prop) : Setpred A :=
@@ -415,7 +418,7 @@ def sset_to_pred {A : Set} : Π (B : Subset A), Setpred A :=
   assume B, λ (a : A), image (Subset.map B) a
 
 @[hott]
-def is_set_pred {A : Set} : Π (pred : Setpred A), is_set (Σ (a : A), ↥(pred a)) :=
+def is_set_pred {A : Set.{u}} : Π (pred : Setpred A), is_set (Σ (a : A), ↥(pred a)) :=
   assume pred, 
   have forall (a : A), is_set (pred a), from 
     assume a, 
@@ -426,7 +429,7 @@ def is_set_pred {A : Set} : Π (pred : Setpred A), is_set (Σ (a : A), ↥(pred 
 /- Should be in one of the library files on the sigma type.
    [subtype_eq] is the subtype-version in [types.sigma]. -/
 @[hott]   
-def sigma_prop_pr1_inj {A : Type _} {B : A -> Prop} :
+def sigma_prop_pr1_inj {A : Type u} {B : A -> trunctype.{u} -1} : /- Should be [Prop]. -/
   forall (b c : Σ (a : A), B a), b.1 = c.1 -> b = c :=
 assume b c pr1_eq,
 have pr2_tr : pr1_eq ▸[λ a : A, B a] b.2 = c.2, from is_prop.elim _ _, 
@@ -551,7 +554,7 @@ def bij_pred_sset {A : Set} (B : Subset A) :
 has_inverse_to_bijection (map_pred_sset B) (map_sset_pred B) (inv_pred_sset B)
 
 @[hott]
-def sset_bij_pred_sset  {A : Set} (B : Subset A) :
+def sset_bij_pred_sset  {A : Set.{u}} (B : Subset A) :
   sset_bijection (pred_to_sset (sset_to_pred B)) B :=
 let f := bij_pred_sset B in
 have comp_hom : (Subset.map B) ∘ (bijection.map f) ~ 
@@ -594,27 +597,30 @@ calc B = pred_to_sset (sset_to_pred B) : (sset_pred_linv B)⁻¹
 
 /- On subsets we can introduce the standard notations of set theory and prove some 
    facts of (naive) set theory. -/
-variables {A : Set}
+variables {A : Set.{u}}
 
 @[hott]
 protected def elem (a : A) (S : Subset A) :=
-sset_to_pred S a
+sset_to_pred S a 
 
 hott_theory_cmd "local infix  `∈`:70 := hott.subset.elem"
 
 notation `{ ` binder ` ∈ ` B ` | ` P:scoped  ` }` := @pred_to_sset B P 
 
 @[hott]
-def is_subset_of {A : Set} (B C : Subset A) :=
+def is_subset_of (B C : Subset A) :=
   forall a : A, a ∈ B -> a ∈ C
 
 notation [parsing_only] B `⊆` C := is_subset_of B C
 
 @[hott]   
-inductive exists_elem {A : Set} (P : A → Prop) 
-| intro (w : A) (h : P w) : exists_elem
+inductive construct_elem (P : A → trunctype.{u} -1) /- Should be [Prop]. -/
+| intro (w : A) (h : P w) : construct_elem
 
-attribute [intro] exists_elem.intro
+attribute [intro] construct_elem.intro
+
+def exists_elem {A : Set} (P : A → Prop) : Prop :=
+  ∥ construct_elem P ∥ 
 
 notation `∃` binder `∈` B `,` P:scoped := @exists_elem B P 
 
