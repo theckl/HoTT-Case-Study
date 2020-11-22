@@ -3,6 +3,9 @@ import subset hott.types.prod
 universes u v w
 hott_theory
 
+set_option pp.universes true
+set_option pp.implicit true
+
 namespace hott
 open hott.set hott.subset prod
 
@@ -15,18 +18,25 @@ protected def and (P Q : Prop) : Prop :=
 infix `and`:50 := hott.and 
 
 namespace subset
-variables {A : Set}
+variables {A : Set.{u}}
 
 @[hott]
 protected def inter (S₁ S₂ : Subset A) : Subset A :=
 {a ∈ A | a ∈ S₁ and a ∈ S₂ }
 
-@[hott]
-instance : has_inter (Subset A) :=
+@[hott, instance]
+def subset_inter : has_inter (Subset A) :=
 ⟨subset.inter⟩
 
+@[hott]
+axiom prop_resize : trunctype.{u+1} -1 -> trunctype.{u} -1
+
 @[hott, reducible]
-def sUnion (S : Subset (𝒫 A)) : Subset A := {t ∈ A | ∃ B ∈ S, t ∈ B}
+def sUnion (S : Subset (𝒫 A)) : Subset A := 
+  {t ∈ A | prop_resize (@exists_elem _ (λ (B : 𝒫 A), B ∈ S and t ∈ B))}
+
+#check Powerset_is_set
+#check sUnion
 
 hott_theory_cmd "local prefix `⋃₀`:110 := hott.subset.sUnion"
 
