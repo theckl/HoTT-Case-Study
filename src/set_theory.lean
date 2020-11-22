@@ -18,6 +18,7 @@ namespace set
    derived from properties of general (n-)types, in [function], but we give them separate definitions adapted 
    to sets, to make them more accessible. -/
 
+/- The empty set is of [Type 0] because [empty] is of [Type 0] -/
 @[hott]
 def empty_Set : Set := 
   Set.mk empty (is_trunc_succ empty -1)
@@ -26,20 +27,20 @@ def empty_Set : Set :=
 def id {A : Type u} (a : A) : A := a 
 
 @[hott, hsimp, reducible]
-def id_map (A : Set) : A -> A := @id A   
+def id_map (A : Set) : A -> A := @id A  
 
 @[hott]
-def id_map_is_right_neutral {A B : Set} (map : A -> B) :
+def id_map_is_right_neutral {A B : Set.{u}} (map : A -> B) :
   map ∘ (id_map A) = map :=  
 by hsimp   
 
 @[hott, class]
-def is_set_injective {A B : Set} (f : B -> A) := 
+def is_set_injective {A B : Set.{u}} (f : B -> A) := 
   forall b1 b2 : B, f b1 = f b2 -> b1 = b2
 
 /- The next 2 lemmas should be (and are?) in one of the trunc-files. -/
 @[hott]
-lemma is_prop_map {A B : Type _} (pB : is_prop B) : is_prop (A -> B) :=
+lemma is_prop_map {A B : Type u} (pB : is_prop B) : is_prop (A -> B) :=
 have eq_map : forall f1 f2 : A -> B, f1 = f2, from 
   assume f1 f2, 
   have map_hom : f1 ~ f2, from 
@@ -48,7 +49,7 @@ have eq_map : forall f1 f2 : A -> B, f1 = f2, from
 is_prop.mk eq_map 
 
 @[hott]
-lemma is_prop_dprod {A : Type _} {P : A -> Type _} 
+lemma is_prop_dprod {A : Type u} {P : A -> Type u} 
     (pP : forall a : A, is_prop (P a)) : 
   is_prop (forall a : A, P a) :=
 have eq_prod : forall dP1 dP2 : (forall a : A, P a), dP1 = dP2, from 
@@ -62,7 +63,7 @@ is_prop.mk eq_prod
 /- Maps between two given sets are sets. 
    Looks like a HoTT-ism, but is actually a rule to construct sets from known sets. -/
 @[hott]
-lemma is_set_map {A B : Set} : is_set (A -> B) :=
+lemma is_set_map {A B : Set.{u}} : is_set (A -> B) :=
 have H : forall (f g : A -> B) (p q : f = g), p = q, from   
   assume f g p q, 
   have eq_eqv_hom : (f = g) ≃ (f ~ g), from 
@@ -103,8 +104,8 @@ is_prop.mk H
 
 /- This is the universal property of injective maps. -/
 @[hott]
-lemma univ_prop_of_inj {A B : Set} (i : A -> B) (i_inj : is_set_injective i) : 
-  forall (C : Set) (f g : C -> A), i ∘ f = i ∘ g -> f = g :=
+lemma univ_prop_of_inj {A B : Set.{u}} (i : A -> B) (i_inj : is_set_injective i) : 
+  forall (C : Set.{u}) (f g : C -> A), i ∘ f = i ∘ g -> f = g :=
 assume C f g comp_eq, 
 have i_hom : forall c : C, i (f c) = i (g c), from 
   assume c, 
@@ -115,7 +116,7 @@ have hom : f ~ g, from assume c, i_inj (f c) (g c) (i_hom c),
 eq_of_homotopy hom  
 
 @[hott, class]
-def is_set_surjective {A B : Set} (f : B -> A) :=
+def is_set_surjective {A B : Set.{u}} (f : B -> A) :=
   forall a : A, image f a
 
 @[hott, instance]
@@ -149,7 +150,7 @@ structure bijection (A B : Set) :=
   (map: A -> B) (bij : is_set_bijective map)
 
 @[hott]
-instance bij_to_map (A B : Set) : 
+instance bij_to_map (A B : Set.{u}) : 
   has_coe_to_fun (bijection A B) :=
 has_coe_to_fun.mk (λ _, A -> B) (λ f, f.map)
 
@@ -175,11 +176,11 @@ assume f g map_eq, ap bijection.map map_eq
    Similarly, the idpaths must be mapped to each other. -/
 
 @[hott]
-def is_set_right_inverse_of {A B : Set} (f : A -> B) (g : B -> A) :=
+def is_set_right_inverse_of {A B : Set.{u}} (f : A -> B) (g : B -> A) :=
   forall b, f (g b) = b
 
 @[hott]
-def is_set_left_inverse_of {A B : Set} (f : A -> B) (g : B -> A) :=
+def is_set_left_inverse_of {A B : Set.{u}} (f : A -> B) (g : B -> A) :=
   forall a, g (f a) = a
 
 @[hott]
@@ -209,7 +210,7 @@ eq_of_homotopy hom /- here, function extensionality is used -/
 
 /- Constructing the inverse of a bijection -/
 @[hott, reducible, hsimp] 
-def inv_of_bijection {A B : Set} (f : bijection A B) : 
+def inv_of_bijection {A B : Set.{u}} (f : bijection A B) : 
   Σ (g : B -> A), is_set_inverse_of f g :=
 let f_inj := is_set_bijective.inj f, f_surj := is_set_bijective.surj f in
 have inv_f : forall b : B, fiber f b, from assume b, 
@@ -422,7 +423,7 @@ eq_G ▸ eq_F
 
 /- The next 2 lemmas should be in [init.equiv]. -/
 @[hott]
-def equiv_eq_from_fun_eq {A B : Type _} : forall e1 e2 : A ≃ B, 
+def equiv_eq_from_fun_eq {A B : Type u} : forall e1 e2 : A ≃ B, 
   equiv.to_fun e1 = equiv.to_fun e2 -> e1 = e2
 | (equiv.mk fun1 is_eqv1) (equiv.mk fun2 is_eqv2) := 
   assume fun_eq, 
@@ -432,9 +433,9 @@ def equiv_eq_from_fun_eq {A B : Type _} : forall e1 e2 : A ≃ B,
   apd011 equiv.mk fun_eq is_equiv_eq
 
 @[hott]
-def fun_eqv_trans_comp_eqv {A B C : Type _} : Π (F : A ≃ B) (G : B ≃ C), 
+def fun_eqv_trans_comp_eqv {A B C : Type u} : Π (F : A ≃ B) (G : B ≃ C), 
   equiv.to_fun (equiv.trans F G) = (equiv.to_fun G) ∘ (equiv.to_fun F) :=
-assume F G, by reflexivity
+assume F G, by reflexivity 
 
 @[hott]
 def car_eqv_equiv_bij {A B : Set} : ((car A) ≃ (car B)) ≃ (bijection A B) :=
