@@ -1,4 +1,4 @@
-import hott.init hott.types.trunc
+import hott.init hott.types.trunc prop_logic
 
 universes u v w
 hott_theory
@@ -18,10 +18,11 @@ namespace set
    derived from properties of general (n-)types, in [function], but we give them separate definitions adapted 
    to sets, to make them more accessible. -/
 
-/- The empty set is of [Type 0] because [empty] is of [Type 0] -/
+/- The empty set is polyversic as [false] is polyversic. If we defined it instead
+   with [empty] it would be of [Type 0] because [empty] is of [Type 0] -/
 @[hott]
 def empty_Set : Set := 
-  Set.mk empty (is_trunc_succ empty -1)
+  Set.mk false (is_trunc_succ false -1)
 
 @[hott, hsimp, reducible]
 def id {A : Type u} (a : A) : A := a 
