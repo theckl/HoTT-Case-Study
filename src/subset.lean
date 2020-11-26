@@ -37,11 +37,11 @@ def total_Subset (A : Set) : Subset A :=
   Subset.mk A (id_map A) id_is_inj 
 
 /- The empty set is a subset of every set [A], an elegant consequence of the construction 
-   of subsets. Caveat: [empty_Set] is of type [0], so [A] also must be of type [0]. -/
+   of subsets. -/
 @[hott]   
 def empty_Subset (A : Set) : Subset A := 
-  have f : empty_Set -> A, from assume e, empty.elim e,
-  have is_inj_f : is_set_injective f, from assume e, empty.elim e,
+  have f : empty_Set -> A, by intro e; induction e,
+  have is_inj_f : is_set_injective f, by intro e; induction e,
   Subset.mk empty_Set f is_inj_f
 
 /- The image of a map betweens sets is a subset of the codomain. We show this in several steps:
