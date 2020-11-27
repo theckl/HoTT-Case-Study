@@ -7,7 +7,18 @@ set_option pp.universes true
 set_option pp.implicit true
 
 namespace hott
-open is_trunc trunc equiv is_equiv
+open hott.is_trunc hott.trunc hott.equiv hott.is_equiv hott.sigma 
+
+/- This is contained as [is_set_pred] in [subset.lean]. But we want to avoid
+   dependencies.  -/
+@[hott]   
+def Sigma_Set_Prop_is_set (X : Set.{u}) (P : X -> trunctype.{u} -1) : 
+  is_set (Σ x : X, P x) := 
+have forall (x : X), is_set (P x), from 
+  assume x, 
+  have is_prop (P x), from trunctype.struct (P x),
+  is_trunc_succ (P x) -1, 
+is_trunc_sigma (λ x : X, ↥(P x)) 0    
 
 /- The two versions of the Axiom of Choice, as presented in the HoTT-Book, (3.8.1)
    and (3.8.3). By Lem.3.8.2, the two are equivalent. -/
@@ -36,8 +47,11 @@ lemma AxChoice_equiv : AxChoice.{u} ↔ AxChoice_nonempty.{u} :=
     sorry,
   have imp2 : AxChoice_nonempty -> AxChoice, from 
     assume AxCh_ne, assume X A P pi_trunc, 
+    have sigma_P_is_set : Π x : X, is_set (Σ (a : A x), P x a), from 
+      assume x, Sigma_Set_Prop_is_set (A x) (P x),
+    let Sigma_P := λ x, Set.mk (Σ (a : A x), P x a) (sigma_P_is_set x) in 
     have trunc_pi : ∥ Π (x : X), Σ (a : A x), P x a ∥, from 
-      AxCh_ne X (λ (x : X), Σ (a : A x), P x a) pi_trunc,
+      AxCh_ne X Sigma_P pi_trunc,
     sorry,
   (imp1, imp2)
 
