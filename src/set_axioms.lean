@@ -7,7 +7,13 @@ set_option pp.universes true
 set_option pp.implicit true
 
 namespace hott
-open hott.is_trunc hott.trunc hott.equiv hott.is_equiv hott.sigma 
+open hott.is_trunc hott.trunc hott.equiv hott.is_equiv hott.sigma hott.susp
+
+/- Should be in a separate section/file in the folder [types]. -/
+@[hott]
+inductive Two : Type _ 
+| zero : Two 
+| one : Two 
 
 /- Looks like a HoTT-ism but is a way to construct sets - which can be interpreted
    as subsets. Therefore it is also contained as [is_set_pred] in [subset.lean]. 
@@ -76,11 +82,13 @@ axiom LEM : LawExcludedMiddle
    The first step is a lemma stating that the suspension (see HoTT-book, Sec.6.5) of a 
    mere proposition is a set. -/
 @[hott]
-def susp_of_prop_is_set (A : Type u) [is_prop A] : is_set (susp A) :=
+def susp_of_prop_is_set (A : Type u) [is_prop A] : is_set (⅀ A) :=
   sorry
 
 @[hott] 
 def AC_implies_LEM : AxChoice_nonempty -> LawExcludedMiddle :=
+  assume AC, assume A h, 
+  have f : Two -> ⅀ A, from assume pt, Two.rec north south pt,
   sorry
 
 end hott
