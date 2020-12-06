@@ -11,11 +11,61 @@ open hott.is_trunc hott.trunc hott.equiv hott.is_equiv hott.sigma hott.susp
 
 /- Should be in a separate section/file in the folder [types]. -/
 @[hott]
+inductive Zero : Type _
+
+@[hott]
+def eq_Zero : forall f₁ f₂ : Zero, f₁ = f₂ :=
+begin
+  intros,
+  induction f₁,
+end  
+
+@[hott, instance]
+def is_prop_Zero : is_prop Zero :=
+  is_prop.mk eq_Zero 
+
+@[hott]
+inductive One : Type _  
+| star : One
+
+@[hott]
+def eq_One : forall t₁ t₂ : One, t₁ = t₂ :=
+begin 
+  intros, 
+  induction t₁, 
+  induction t₂,
+  exact (refl One.star),
+end 
+
+@[hott, instance]
+def One_is_prop : is_prop One :=
+  is_prop.mk eq_One
+
+@[hott]
 inductive Two : Type _ 
 | zero : Two 
 | one : Two 
 
 @[hott]
+def code_Two : Two.{u} -> Two.{u} -> Type.{u} :=
+begin
+  intros t₁ t₂, 
+  induction t₁,
+    induction t₂, exact One, exact Zero,
+    induction t₂, exact Zero, exact One,
+end  
+
+@[hott, simp]
+def encode_Two : Π t₁ t₂ : Two, (t₁ = t₂) -> code_Two t₁ t₂ :=
+  have r : Π t : Two, code_Two t t, by 
+    intro t; induction t; exact One.star; exact One.star,
+  assume t₁ t₂ eq, transport (λ t : Two, code_Two t₁ t) eq (r t₁)
+
+@[hott]
+def Two_eq_equiv_code : ∀ t₁ t₂ : Two, (t₁ = t₂) ≃ code_Two t₁ t₂ := 
+  sorry 
+
+@[hott, instance]
 def Two_is_set : is_set Two :=
   sorry
 
