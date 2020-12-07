@@ -9,7 +9,9 @@ set_option pp.implicit true
 namespace hott
 open hott.is_trunc hott.trunc hott.equiv hott.is_equiv hott.sigma hott.susp
 
-/- Should be in a separate section/file in the folder [types]. -/
+/- Should be in a separate section/file in the folder [types]. 
+   [Zero] and [One] are equivalent to [true] and [false] in [prop_logic], but
+   we want to use them without logical connotations. -/
 @[hott]
 inductive Zero : Type _
 
@@ -46,6 +48,8 @@ inductive Two : Type _
 | zero : Two 
 | one : Two 
 
+/- We prove that [Two] is a set using the encode-decode method presented in the
+   HoTT-book, Sec.2.13. -/
 @[hott]
 def code_Two : Two.{u} -> Two.{u} -> Type.{u} :=
 begin
@@ -61,13 +65,27 @@ def encode_Two : Π t₁ t₂ : Two, (t₁ = t₂) -> code_Two t₁ t₂ :=
     intro t; induction t; exact One.star; exact One.star,
   assume t₁ t₂ eq, transport (λ t : Two, code_Two t₁ t) eq (r t₁)
 
+@[hott, simp]
+def decode_Two : Π t₁ t₂ : Two, code_Two t₁ t₂ -> (t₁ = t₂) :=
+begin
+  intros t₁ t₂,
+  induction t₁, 
+    induction t₂, intro; refl, intro f; induction f,
+    induction t₂, intro f; induction f, intro; refl,     
+end    
+
 @[hott]
 def Two_eq_equiv_code : ∀ t₁ t₂ : Two, (t₁ = t₂) ≃ code_Two t₁ t₂ := 
   sorry 
 
 @[hott, instance]
-def Two_is_set : is_set Two :=
-  sorry
+def Two_is_set : is_set Two.{u} :=
+  have Two_eq_is_prop : ∀ t₁ t₂ : Two.{u}, is_prop (t₁ = t₂), from 
+    assume t₁ t₂,
+    have code_Two_is_prop : is_prop (code_Two t₁ t₂), from
+      sorry,
+    is_trunc_equiv_closed_rev -1 (Two_eq_equiv_code t₁ t₂) code_Two_is_prop,
+  is_trunc_succ_intro Two_eq_is_prop
 
 @[hott]
 def Two_Set : Set :=
