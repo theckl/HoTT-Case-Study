@@ -23,7 +23,7 @@ begin
 end  
 
 @[hott, instance]
-def is_prop_Zero : is_prop Zero :=
+def Zero_is_prop : is_prop Zero :=
   is_prop.mk eq_Zero 
 
 @[hott]
@@ -50,7 +50,7 @@ inductive Two : Type _
 
 /- We prove that [Two] is a set using the encode-decode method presented in the
    HoTT-book, Sec.2.13. -/
-@[hott]
+@[hott, hsimp]
 def code_Two : Two.{u} -> Two.{u} -> Type.{u} :=
 begin
   intros t₁ t₂, 
@@ -59,13 +59,13 @@ begin
     induction t₂, exact Zero, exact One,
 end  
 
-@[hott, simp]
+@[hott, hsimp]
 def encode_Two : Π t₁ t₂ : Two, (t₁ = t₂) -> code_Two t₁ t₂ :=
   have r : Π t : Two, code_Two t t, by 
     intro t; induction t; exact One.star; exact One.star,
   assume t₁ t₂ eq, transport (λ t : Two, code_Two t₁ t) eq (r t₁)
 
-@[hott, simp]
+@[hott, hsimp]
 def decode_Two : Π t₁ t₂ : Two, code_Two t₁ t₂ -> (t₁ = t₂) :=
 begin
   intros t₁ t₂,
@@ -76,14 +76,36 @@ end
 
 @[hott]
 def Two_eq_equiv_code : ∀ t₁ t₂ : Two, (t₁ = t₂) ≃ code_Two t₁ t₂ := 
-  sorry 
+  assume t₁ t₂, 
+  have z1 : code_Two Two.zero Two.one -> Zero, from λ c, c,
+  have z2 : code_Two Two.one Two.zero -> Zero, from λ c, c,
+  have rinv : ∀ c : code_Two t₁ t₂, (encode_Two t₁ t₂) (decode_Two t₁ t₂ c) = c, from
+    assume c, 
+    begin
+      induction t₁, 
+        induction t₂, induction c; refl, exact Zero.rec _ (z1 c),  
+        induction t₂, exact Zero.rec _ (z1 c), induction c; refl, 
+    end,  
+  have linv : ∀ eq : t₁ = t₂, (decode_Two t₁ t₂) (encode_Two t₁ t₂ eq) = eq, from
+    begin
+      intro eq,
+      induction eq,
+      induction t₁, 
+      refl, refl,
+    end,    
+  equiv.mk (encode_Two t₁ t₂) 
+           (is_equiv.adjointify (encode_Two t₁ t₂) (decode_Two t₁ t₂) rinv linv)
 
 @[hott, instance]
 def Two_is_set : is_set Two.{u} :=
   have Two_eq_is_prop : ∀ t₁ t₂ : Two.{u}, is_prop (t₁ = t₂), from 
     assume t₁ t₂,
     have code_Two_is_prop : is_prop (code_Two t₁ t₂), from
-      sorry,
+      begin
+        induction t₁, 
+          induction t₂, exact One_is_prop, exact Zero_is_prop,
+          induction t₂, exact Zero_is_prop, exact One_is_prop,
+      end,
     is_trunc_equiv_closed_rev -1 (Two_eq_equiv_code t₁ t₂) code_Two_is_prop,
   is_trunc_succ_intro Two_eq_is_prop
 
