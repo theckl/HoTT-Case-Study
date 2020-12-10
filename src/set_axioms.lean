@@ -111,7 +111,39 @@ def Two_is_set : is_set Two.{u} :=
 
 @[hott]
 def Two_Set : Set :=
-  Set.mk Two Two_is_set   
+  Set.mk Two Two_is_set  
+
+@[hott]
+def Two_is_decidable : ∀ t₁ t₂ : Two.{u}, (t₁ = t₂) ⊎ ¬ (t₁ = t₂) :=
+begin 
+  intros t₁ t₂, 
+  induction t₁, 
+    induction t₂, exact sum.inl rfl, 
+                  apply sum.inr; intro eq; exact Zero.rec _ (encode_Two _ _ eq),
+    induction t₂, apply sum.inr; intro eq; exact Zero.rec _ (encode_Two _ _ eq),
+                  exact sum.inl rfl,              
+end    
+
+/- We need a criterion to show that a type is a set. This is Thm.7.2.2 in the 
+   HoTT-book. -/
+@[hott]   
+def refl_rel_set : Π {X : Type.{u}} (R : X -> X -> Type.{u}) 
+     (mere_rel : ∀ x y, is_prop (R x y)) (refl_rel : Π x, R x x) 
+     (rel_id : Π x y, R x y -> x = y), (is_set X) × (∀ x y, R x y ≃ x = y) :=
+assume X R mere_rel refl_rel rel_id, 
+have X_is_set : is_set X, from 
+  have X_has_K : Π (x : X) (p : x = x), p = rfl, from 
+    assume x p,
+    have eq_tr : p ▸ (refl_rel x) = refl_rel x, from sorry,
+    have eq_rel : rel_id x x (refl_rel x) ⬝ p = rel_id x x (refl_rel x), from sorry, 
+    sorry,
+  have X_has_UIP : Π (x y : X) (p q : x = y), p = q, by  
+    intros x y p q; induction q; exact X_has_K x p, /- This is Thm.7.2.1. -/
+  have X_eq_is_prop : Π (x y : X), is_prop (x = y), from 
+    assume x y, is_prop.mk (X_has_UIP x y),
+  is_trunc_succ_intro X_eq_is_prop,
+have rel_equiv_id : ∀ x y, R x y ≃ x = y, from sorry,
+(X_is_set, rel_equiv_id)
 
 /- Looks like a HoTT-ism but is a way to construct sets - which can be interpreted
    as subsets. Therefore it is also contained as [is_set_pred] in [subset.lean]. 
@@ -203,7 +235,13 @@ def AC_implies_LEM : Choice_nonempty.{u} -> ExcludedMiddle.{u} :=
     assume x, susp.rec PN PS Pm x,
   let X := Set.mk (⅀ A) (susp_of_prop_is_set A),
       Y := λ x : X, Set.mk (@fiber Two (⅀ A) f x) (@fib_set_map_is_set Two_Set X f x) in 
-  have mere_g : ∥ Π x : X, @fiber Two (⅀ A) f x ∥, from AC X Y f_is_surj,  
+  have mere_g : ∥ Π x : X, @fiber Two (⅀ A) f x ∥, from AC X Y f_is_surj, 
+  have g_inv_f : (Π x : X, @fiber Two (⅀ A) f x) -> 
+                              (Σ (g : ⅀ A -> Two), Π (x : ⅀ A), f (g x) = x), from
+    assume g, ⟨λ x : ⅀ A, (g x).1, λ x : ⅀ A, (g x).2 ⟩, 
+  have g_f_dec : Π (g : ⅀ A -> Two), (g (f Two.zero) = g (f Two.one)) ⊎ 
+                                          ¬ (g (f Two.zero) = g (f Two.one)), from
+    assume g, Two_is_decidable (g (f Two.zero)) (g (f Two.one)),                                   
   sorry
 
 end hott
