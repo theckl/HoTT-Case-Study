@@ -9,6 +9,9 @@ set_option pp.implicit true
 namespace hott
 open hott.is_trunc hott.trunc hott.equiv hott.is_equiv hott.sigma hott.susp
 
+/- Should be in [init.path]. -/
+notation eq `▸[`:50 P:0 `]`:0 b:50 := transport P eq b 
+
 /- Should be in a separate section/file in the folder [types]. 
    [Zero] and [One] are equivalent to [true] and [false] in [prop_logic], but
    we want to use them without logical connotations. -/
@@ -124,8 +127,14 @@ begin
                   exact sum.inl rfl,              
 end    
 
-/- We need a criterion to show that a type is a set. This is Thm.7.2.2 in the 
-   HoTT-book. -/
+/- We need the criterion [refl_rel_set] to show that a type is a set. This is 
+   Thm.7.2.2 in the HoTT-book. Its proof requires some lemmas. -/
+/- Should be in [path.lean]. -/
+@[hott, hsimp]
+def concat_eq_tr_eq : Π {A : Type.{u}} {a b c: A} (p : a = c) (u : b = a),
+  u ⬝ p = p ▸ u :=
+by intros A a b c p u; induction p; hsimp
+
 @[hott]   
 def refl_rel_set : Π {X : Type.{u}} (R : X -> X -> Type.{u}) 
      (mere_rel : ∀ x y, is_prop (R x y)) (refl_rel : Π x, R x x) 
@@ -134,15 +143,30 @@ assume X R mere_rel refl_rel rel_id,
 have X_is_set : is_set X, from 
   have X_has_K : Π (x : X) (p : x = x), p = rfl, from 
     assume x p,
-    have eq_tr : p ▸ (refl_rel x) = refl_rel x, from sorry,
-    have eq_rel : rel_id x x (refl_rel x) ⬝ p = rel_id x x (refl_rel x), from sorry, 
-    sorry,
+    have eq_tr : p ▸[λ y : X, R x y] (refl_rel x) = refl_rel x, from 
+      is_prop.elim' _ _ (mere_rel x x),
+    have tr_rel_id : Π {y z : X} (p : y = z) (r : R x y), 
+            p ▸[λ w : X, x = w] (rel_id x y r) = rel_id x z (p ▸ r), from
+      by intros x y p; induction p; intro r; hsimp,                      
+    have eq_rel : rel_id x x (refl_rel x) ⬝ p = rel_id x x (refl_rel x), from 
+      calc rel_id x x (refl_rel x) ⬝ p = 
+                                  (p ▸[λ a : X, x = a] rel_id x x (refl_rel x)) : 
+           concat_eq_tr_eq p (rel_id x x (refl_rel x))
+           ... = rel_id x x (p ▸[λ y : X, R x y] refl_rel x) : 
+           tr_rel_id p (refl_rel x) 
+           ... = rel_id x x (refl_rel x) : by rwr eq_tr, 
+    eq_idp_of_con_left eq_rel,
   have X_has_UIP : Π (x y : X) (p q : x = y), p = q, by  
     intros x y p q; induction q; exact X_has_K x p, /- This is Thm.7.2.1. -/
   have X_eq_is_prop : Π (x y : X), is_prop (x = y), from 
     assume x y, is_prop.mk (X_has_UIP x y),
   is_trunc_succ_intro X_eq_is_prop,
-have rel_equiv_id : ∀ x y, R x y ≃ x = y, from sorry,
+have rel_equiv_id : ∀ x y, R x y ≃ x = y, from 
+  assume x y,
+  have eq_prop : is_prop (x = y), from is_prop.mk (@is_set.elim X X_is_set x y),
+  have rel_eq : R x y -> x = y, from rel_id x y,
+  have eq_rel : x = y -> R x y, from assume p, p ▸[λ w : X, R x w] (refl_rel x),
+  @is_prop_iff_equiv _ _ (mere_rel x y) eq_prop (rel_eq, eq_rel),
 (X_is_set, rel_equiv_id)
 
 /- Looks like a HoTT-ism but is a way to construct sets - which can be interpreted
