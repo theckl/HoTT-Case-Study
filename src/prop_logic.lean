@@ -65,4 +65,20 @@ have rinv : Π b : B, AB (BA b) = b, from assume b, @is_prop.elim B pB _ _,
 have linv : Π a : A, BA (AB a) = a, from assume a, @is_prop.elim A pA _ _,
 equiv.mk AB (adjointify AB BA rinv linv)
 
+/- Inhabited mere propositions are equal. The proof needs univalence. -/
+@[hott]
+def inhabited_prop_eq (A B : Type u) [is_prop A] [is_prop B] (a : A) (b : B) : 
+  A = B :=
+have AeqvB : A ≃ B, from is_prop_iff_equiv ((λ a : A, b), (λ b : B, a)),
+ua AeqvB   
+
+/- Inhabited mere propostions in a type family over equal base points are
+   pathover-equal. -/
+@[hott]
+def inhabited_prop_po {A : Type u} (P Q : Type u) {a b : A} (eq : a = b) 
+  [is_prop P] [is_prop Q] (p : P) (q : Q): 
+  P =[eq; λ a : A, Type u] Q :=
+have prop_eq : P = Q, from inhabited_prop_eq P Q p q, 
+pathover_of_eq eq prop_eq  
+
 end hott
