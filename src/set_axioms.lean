@@ -128,7 +128,7 @@ begin
 end    
 
 /- We need the criterion [refl_rel_set] to show that a type is a set. This is 
-   Thm.7.2.2 in the HoTT-book. Its proof requires some lemmas. -/
+   Thm.7.2.2 in the HoTT-book. Its proof requires a lemma. -/
 /- Should be in [path.lean]. -/
 @[hott, hsimp]
 def concat_eq_tr_eq : Π {A : Type.{u}} {a b c: A} (p : a = c) (u : b = a),
@@ -243,7 +243,21 @@ axiom LEM : ExcludedMiddle
    mere proposition is a set. -/
 @[hott]
 def susp_of_prop_is_set (A : Type u) [is_prop A] : is_set (⅀ A) :=
-  sorry
+  have P : ⅀ A -> ⅀ A -> Type.{u}, from 
+  begin
+    intros x y,
+    hinduction x using susp.rec,
+      hinduction y using susp.rec,
+        exact One, exact A, 
+        exact inhabited_prop_po One A (merid a) One.star a,
+      hinduction y using susp.rec,
+        exact A, exact One,
+        exact inhabited_prop_po A One (merid a) a One.star,  
+  end,  
+  have mere_rel_P : ∀ u v : ⅀ A, is_prop (P u v), from sorry,
+  have refl_rel_P : Π u : ⅀ A, P u u, from sorry,
+  have rel_id_P : Π u v : ⅀ A, P u v -> u = v, from sorry,
+  (refl_rel_set P mere_rel_P refl_rel_P rel_id_P).1
 
 @[hott] 
 def AC_implies_LEM : Choice_nonempty.{u} -> ExcludedMiddle.{u} :=
