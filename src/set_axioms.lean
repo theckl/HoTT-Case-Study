@@ -3,8 +3,8 @@ import hott.init hott.types.trunc hott.homotopy.susp prop_logic
 universes u v w
 hott_theory
 
-set_option pp.universes true
-set_option pp.implicit true
+set_option pp.universes false
+set_option pp.implicit false
 
 namespace hott
 open hott.is_trunc hott.trunc hott.equiv hott.is_equiv hott.sigma hott.susp
@@ -240,24 +240,57 @@ axiom LEM : ExcludedMiddle
    Middle. 
    
    The first step is a lemma stating that the suspension (see HoTT-book, Sec.6.5) of a 
-   mere proposition is a set. -/
+   mere proposition is a set. For its proof we use the criterion [refl_rel_set] 
+   (HoTT-book, Thm.7.2.2) and construct a reflexive relation using double induction
+   on [⅀ A]. -/
 @[hott]
-def susp_of_prop_is_set (A : Type u) [is_prop A] : is_set (⅀ A) :=
-  have P : ⅀ A -> ⅀ A -> Type.{u}, from 
-  begin
+def susp_double_rec {A : Type u} {P : ⅀ A -> ⅀ A -> Type v}
+  (PNN : P north north) (PNS : P north south) (PSN : P south north) 
+  (PSS : P south south) (PN_m : Π a : A, PNN =[merid a] PNS)
+  (PS_m : Π a : A, PSN =[merid a] PSS) 
+  (P_Nm : Π a : A, PNN =[merid a; λ x : ⅀ A, P x north] PSN)
+  (P_Sm : Π a : A, PNS =[merid a; λ x : ⅀ A, P x south] PSS)
+  (P__m : Π a b : A, P_Nm a 
+            =[merid b; λ y : ⅀ A, @susp.rec _ (P north) PNN PNS PN_m y 
+                 =[merid a; λ (x : ⅀ A), P x y] susp.rec PSN PSS PS_m y] P_Sm a)
+  (x y : ⅀ A) : P x y :=
+begin 
+  hinduction x using susp.rec,
+    hinduction y using susp.rec,
+      exact PNN, exact PNS, apply PN_m,
+    hinduction y using susp.rec,
+      exact PSN, exact PSS, apply PS_m, 
+    hinduction y using susp.rec, 
+      hsimp; apply P_Nm, hsimp; apply P_Sm,
+      hsimp, repeat {rwr idp_inv}, repeat {rwr cast_def}, repeat {rwr idp_tr}, 
+      apply P__m
+end     
+
+@[hott]
+def susp_of_prop_rel (A : Type u) [is_prop A] : ⅀ A -> ⅀ A -> Type.{u} :=
+  begin 
     intros x y,
-    hinduction x using susp.rec,
-      hinduction y using susp.rec,
-        exact One, exact A, 
-        exact inhabited_prop_po One A (merid a) One.star a,
-      hinduction y using susp.rec,
-        exact A, exact One,
-        exact inhabited_prop_po A One (merid a) a One.star,  
-  end,  
-  have mere_rel_P : ∀ u v : ⅀ A, is_prop (P u v), from sorry,
-  have refl_rel_P : Π u : ⅀ A, P u u, from sorry,
-  have rel_id_P : Π u v : ⅀ A, P u v -> u = v, from sorry,
-  (refl_rel_set P mere_rel_P refl_rel_P rel_id_P).1
+  end  
+
+@[hott]
+def susp_of_prop_rel_is_mere_rel (A : Type u) [is_prop A] : 
+  ∀ x y : ⅀ A, is_prop (susp_of_prop_rel A x y) :=
+sorry
+
+@[hott]
+def susp_of_prop_rel_is_refl (A : Type u) [is_prop A] :
+  Π x : ⅀ A, susp_of_prop_rel A x x :=
+sorry
+
+@[hott]
+def susp_of_prop_rel_id (A : Type u) [is_prop A] :
+  ∀ x y : ⅀ A, susp_of_prop_rel A x y -> x = y :=
+sorry  
+
+@[hott]
+def susp_of_prop_is_set (A : Type u) [is_prop A] : is_set (⅀ A) := 
+  (refl_rel_set (susp_of_prop_rel A) (susp_of_prop_rel_is_mere_rel A)
+   (susp_of_prop_rel_is_refl A) (susp_of_prop_rel_id A)).1
 
 @[hott] 
 def AC_implies_LEM : Choice_nonempty.{u} -> ExcludedMiddle.{u} :=
