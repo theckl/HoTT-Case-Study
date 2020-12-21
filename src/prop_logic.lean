@@ -72,13 +72,23 @@ def inhabited_prop_eq (A B : Type u) [is_prop A] [is_prop B] (a : A) (b : B) :
 have AeqvB : A ≃ B, from is_prop_iff_equiv ((λ a : A, b), (λ b : B, a)),
 ua AeqvB   
 
-/- Inhabited mere propostions in a type family over equal base points are
+/- Inhabited mere propositions in a type family over equal base points are
    pathover-equal. -/
 @[hott]
 def inhabited_prop_po {A : Type u} (P Q : Type u) {a b : A} (eq : a = b) 
-  [is_prop P] [is_prop Q] (p : P) (q : Q): 
+  [is_prop P] [is_prop Q] (p : P) (q : Q) : 
   P =[eq; λ a : A, Type u] Q :=
 have prop_eq : P = Q, from inhabited_prop_eq P Q p q, 
 pathover_of_eq eq prop_eq  
+
+/- Transported propositions are propositions. -/
+def tr_prop_prop {A : Type u} {a₁ a₂ : A} {B : A -> Type u} (e : a₁ = a₂) 
+  {P : Type u} [is_prop P] : is_prop (e ▸ P) :=
+sorry   
+
+/- Pathover equalities of propositions are propositions. -/
+def po_is_prop {A : Type u} {P Q : Type u} {a b : A} (eq : a = b) 
+  [is_prop P] [is_prop Q] : P =[eq; λ a : A, Type u] Q :=
+sorry  
 
 end hott
