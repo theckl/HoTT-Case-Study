@@ -242,7 +242,8 @@ axiom LEM : ExcludedMiddle
    The first step is a lemma stating that the suspension (see HoTT-book, Sec.6.5) of a 
    mere proposition is a set. For its proof we use the criterion [refl_rel_set] 
    (HoTT-book, Thm.7.2.2) and construct a reflexive relation using double induction
-   on [⅀ A]. -/
+   on [⅀ A]. This is a lot of work since [⅀ A] is a HIT, and we have to check equalities
+   and equalities of equalities. -/
 @[hott]
 def susp_double_rec {A : Type u} {P : ⅀ A -> ⅀ A -> Type v}
   (PNN : P north north) (PNS : P north south) (PSN : P south north) 
@@ -274,20 +275,28 @@ def susp_susp_Type (A : Type u) : ⅀ A -> ⅀ A -> Type.{u+1} :=
 def susp_of_prop_rel (A : Type u) [is_prop A] : ⅀ A -> ⅀ A -> Type.{u} :=
   assume x y,
   let P := susp_susp_Type A in
-  have PN_m : Π a : A, One =[merid a; λ x : ⅀ A, P north x] A, from sorry,
-  have PS_m : Π a : A, A =[merid a; λ x : ⅀ A, P south x] One, from sorry,
-  have P_Nm : Π a : A, One =[merid a; λ x : ⅀ A, P x north] A, from sorry,
-  have P_Sm : Π a : A, A =[merid a; λ x : ⅀ A, P x south] One, from sorry,
+  have PN_m : Π a : A, One =[merid a; λ x : ⅀ A, P north x] A, from 
+    assume a, inhabited_prop_po One A (merid a) One.star a,
+  have PS_m : Π a : A, A =[merid a; λ x : ⅀ A, P south x] One, from 
+    assume a, inhabited_prop_po A One (merid a) a One.star,
+  have P_Nm : Π a : A, One =[merid a; λ x : ⅀ A, P x north] A, from 
+    assume a, inhabited_prop_po One A (merid a) One.star a,
+  have P_Sm : Π a : A, A =[merid a; λ x : ⅀ A, P x south] One, from 
+    assume a, inhabited_prop_po A One (merid a) a One.star,
   have P__m : Π a b : A, P_Nm a 
             =[merid b; λ y : ⅀ A, @susp.rec _ (P north) One A PN_m y 
                  =[merid a; λ (x : ⅀ A), P x y] susp.rec A One PS_m y] P_Sm a, from
-    sorry,             
+    assume a b, sorry,             
   @susp_double_rec A P One A A One PN_m PS_m P_Nm P_Sm P__m x y     
 
 @[hott]
 def susp_of_prop_rel_is_mere_rel (A : Type u) [is_prop A] : 
   ∀ x y : ⅀ A, is_prop (susp_of_prop_rel A x y) :=
-sorry
+begin
+  intros x y,  
+  hinduction x using susp.rec,
+    hinduction y using susp.rec,  
+end  
 
 @[hott]
 def susp_of_prop_rel_is_refl (A : Type u) [is_prop A] :
