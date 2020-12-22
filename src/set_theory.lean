@@ -38,29 +38,7 @@ by hsimp
 @[hott, class]
 def is_set_injective {A B : Set.{u}} (f : B -> A) := 
   forall b1 b2 : B, f b1 = f b2 -> b1 = b2
-
-/- The next 2 lemmas should be (and are?) in one of the trunc-files. -/
-@[hott]
-lemma is_prop_map {A B : Type u} (pB : is_prop B) : is_prop (A -> B) :=
-have eq_map : forall f1 f2 : A -> B, f1 = f2, from 
-  assume f1 f2, 
-  have map_hom : f1 ~ f2, from 
-    assume a, is_prop.elim _ _, 
-  eq_of_homotopy map_hom,
-is_prop.mk eq_map 
-
-@[hott]
-lemma is_prop_dprod {A : Type u} {P : A -> Type u} 
-    (pP : forall a : A, is_prop (P a)) : 
-  is_prop (forall a : A, P a) :=
-have eq_prod : forall dP1 dP2 : (forall a : A, P a), dP1 = dP2, from 
-  assume dP1 dP2, 
-  have dP_hom : dP1 ~ dP2, from 
-    assume a, 
-    is_prop.elim _ _, 
-  eq_of_homotopy dP_hom,
-is_prop.mk eq_prod  
-
+  
 /- Maps between two given sets are sets. 
    Looks like a HoTT-ism, but is actually a rule to construct sets from known sets. -/
 @[hott]
