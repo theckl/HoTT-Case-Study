@@ -483,23 +483,6 @@ have fib_a : fiber mapB a, from @untrunc_of_is_trunc _ _ H im,
 have eq_a : fib_a.point.1 = a, from fiber.point_eq fib_a,
 eq_a ▸[λ a : A, pred a] (fiber.point fib_a).2
 
-/- Should be in one of the trunc files. -/
-@[hott]
-lemma prop_iff_eq : Π {A B : Prop} (imp1 : A -> B) (imp2 : B -> A), A = B 
-| (trunctype.mk carA structA) (trunctype.mk carB structB) :=
-  assume imp1 imp2, 
-  have car_eqv : carA ≃ carB, from 
-    have rinv : forall (b : carB), imp1 (imp2 b) = b, from 
-      assume b, @is_prop.elim _ structB _ _,
-    have linv : forall (a : carA), imp2 (imp1 a) = a, from 
-      assume a, @is_prop.elim _ structA _ _,
-    equiv.mk imp1 (adjointify imp1 imp2 rinv linv),
-  have car_eq : carA = carB, from ua car_eqv, /- Do you really need univalence here? -/
-  have struct_tr : car_eq ▸ structA = structB, from 
-    is_prop.elim _ _,
-  have struct_eq : structA =[car_eq] structB, from pathover_of_tr_eq struct_tr,
-  apd011 Prop.mk car_eq struct_eq
-
 @[hott, reducible]
 def map_pred_sset {A : Set} (B : Subset A) :
   Subset.carrier (pred_to_sset (sset_to_pred B)) -> Subset.carrier B :=
