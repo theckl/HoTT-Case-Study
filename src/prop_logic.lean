@@ -82,8 +82,12 @@ have eq_prod : forall dP1 dP2 : (forall a : A, P a), dP1 = dP2, from
 is_prop.mk eq_prod  
 
 @[hott, instance]
-def iff_is_prop {A B : Type u} [pA : is_prop A] [pB : is_prop B] : is_prop (A ↔ B) :=
+def iff_is_prop (A B : Type u) [pA : is_prop A] [pB : is_prop B] : is_prop (A ↔ B) :=
   @and_is_prop (A -> B) (B -> A) (is_prop_map pB) (is_prop_map pA)  
+
+@[hott, instance]
+def prop_equiv_is_prop (A B : Type u) [pA : is_prop A] [pB : is_prop B] : is_prop (A ≃ B) :=
+sorry
 
 /- Inhabited [Prop]s over equalities have pathover. -/
 @[hott]
@@ -101,17 +105,11 @@ have rinv : Π b : B, AB (BA b) = b, from assume b, @is_prop.elim B pB _ _,
 have linv : Π a : A, BA (AB a) = a, from assume a, @is_prop.elim A pA _ _,
 equiv.mk AB (adjointify AB BA rinv linv)
 
-/- Should be in one of the trunc files. -/
 @[hott]
 lemma prop_iff_eq : Π {A B : Prop} (imp1 : A -> B) (imp2 : B -> A), A = B 
 | (trunctype.mk carA structA) (trunctype.mk carB structB) :=
   assume imp1 imp2, 
-  have car_eqv : carA ≃ carB, from 
-    have rinv : forall (b : carB), imp1 (imp2 b) = b, from 
-      assume b, @is_prop.elim _ structB _ _,
-    have linv : forall (a : carA), imp2 (imp1 a) = a, from 
-      assume a, @is_prop.elim _ structA _ _,
-    equiv.mk imp1 (adjointify imp1 imp2 rinv linv),
+  have car_eqv : carA ≃ carB, from @prop_iff_equiv _ _ structA structB (imp1, imp2),
   have car_eq : carA = carB, from ua car_eqv, /- Do you really need univalence here? -/
   have struct_tr : car_eq ▸ structA = structB, from 
     is_prop.elim _ _,
@@ -119,14 +117,22 @@ lemma prop_iff_eq : Π {A B : Prop} (imp1 : A -> B) (imp2 : B -> A), A = B
   apd011 Prop.mk car_eq struct_eq
 
 @[hott]
-def prop_iff_eqv_equiv :
-  Π {A B : Type.{u}} [is_prop A] [is_prop B], (A ↔ B) ≃ (A = B) :=
-sorry  
+def prop_iff_eqv_eq :
+  Π (A B : Type.{u}) [is_prop A] [is_prop B], (A ↔ B) ≃ (A = B) :=
+assume A B pA pB,
+have prop_eqv_equiv_eqv : (A ↔ B) ≃ (A ≃ B), from  
+  let f := @prop_iff_equiv A B pA pB in
+  let g := λ eqv : A ≃ B, (eqv.to_fun, eqv⁻¹ᶠ) in
+  have rinv : ∀ eqv : A ≃ B, f (g eqv) = eqv, from sorry,
+  have linv : ∀ peqv : A ↔ B, g (f peqv) = peqv, from 
+    assume peqv, @is_prop.elim _ (@iff_is_prop A B pA pB) _ _,
+  equiv.mk f (adjointify f g rinv linv),
+equiv.trans prop_eqv_equiv_eqv (equiv.symm (eq_equiv_equiv A B))   
 
 /- Equality of proposition is a mere proposition. -/
 @[hott, instance]
 def eq_prop_is_prop (P Q : Type u) [is_prop P] [is_prop Q] : is_prop (P = Q) :=
-  is_trunc_is_equiv_closed -1 (@prop_iff_eqv_equiv P Q _ _) (@iff_is_prop P Q _ _) 
+  is_trunc_is_equiv_closed -1 (@prop_iff_eqv_eq P Q _ _) (@iff_is_prop P Q _ _) 
 
 /- Inhabited mere propositions are equal. The proof needs univalence. -/
 @[hott]
