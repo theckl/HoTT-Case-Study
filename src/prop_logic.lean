@@ -85,9 +85,28 @@ is_prop.mk eq_prod
 def iff_is_prop (A B : Type u) [pA : is_prop A] [pB : is_prop B] : is_prop (A ↔ B) :=
   @and_is_prop (A -> B) (B -> A) (is_prop_map pB) (is_prop_map pA)  
 
+@[hott]
+def prop_is_equiv_is_prop {A B : Type u} [pA : is_prop A] [pB : is_prop B] (f₁ f₂ : A -> B) (ef : f₁ = f₂) : 
+  Π (is_eqv₁ : is_equiv f₁) (is_eqv₂ : is_equiv f₂), is_eqv₁ =[ef] is_eqv₂ 
+| (is_equiv.mk' g₁ rinv₁ linv₁ adj₁) (is_equiv.mk' g₂ rinv₂ linv₂ adj₂) :=
+have eg : g₁ = g₂, from 
+  have pAB : is_prop (B -> A), from is_prop_map pA,
+  @is_prop.elim _ pAB _ _,
+sorry 
+
 @[hott, instance]
 def prop_equiv_is_prop (A B : Type u) [pA : is_prop A] [pB : is_prop B] : is_prop (A ≃ B) :=
-sorry
+have eq_equiv : ∀ eqv₁ eqv₂ : A ≃ B, eqv₁ = eqv₂, from assume eqv₁ eqv₂,    
+  have eqv_eq : eqv₁.to_fun = eqv₂.to_fun, from 
+    have pAB : is_prop (A -> B), from is_prop_map pB,
+    @is_prop.elim _ pAB _ _,
+  have is_equiv_eq : eqv₁.to_is_equiv =[eqv_eq] eqv₂.to_is_equiv, from 
+    prop_is_equiv_is_prop _ _ eqv_eq _ _, 
+  begin 
+    hinduction eqv₁, hinduction eqv₂,    
+    exact apd011 equiv.mk eqv_eq is_equiv_eq,
+  end,
+is_prop.mk eq_equiv
 
 /- Inhabited [Prop]s over equalities have pathover. -/
 @[hott]
@@ -117,17 +136,22 @@ lemma prop_iff_eq : Π {A B : Prop} (imp1 : A -> B) (imp2 : B -> A), A = B
   apd011 Prop.mk car_eq struct_eq
 
 @[hott]
+def prop_iff_eqv_equiv :
+  Π (A B : Type.{u}) [is_prop A] [is_prop B], (A ↔ B) ≃ (A ≃ B) :=
+assume A B pA pB,
+let f := @prop_iff_equiv A B pA pB in
+let g := λ eqv : A ≃ B, (eqv.to_fun, eqv⁻¹ᶠ) in
+have rinv : ∀ eqv : A ≃ B, f (g eqv) = eqv, from assume eqv,
+  @is_prop.elim (A ≃ B) (@prop_equiv_is_prop _ _ pA pB) _ _,
+have linv : ∀ peqv : A ↔ B, g (f peqv) = peqv, from 
+  assume peqv, @is_prop.elim _ (@iff_is_prop A B pA pB) _ _,
+equiv.mk f (adjointify f g rinv linv)
+
+@[hott]
 def prop_iff_eqv_eq :
   Π (A B : Type.{u}) [is_prop A] [is_prop B], (A ↔ B) ≃ (A = B) :=
 assume A B pA pB,
-have prop_eqv_equiv_eqv : (A ↔ B) ≃ (A ≃ B), from  
-  let f := @prop_iff_equiv A B pA pB in
-  let g := λ eqv : A ≃ B, (eqv.to_fun, eqv⁻¹ᶠ) in
-  have rinv : ∀ eqv : A ≃ B, f (g eqv) = eqv, from sorry,
-  have linv : ∀ peqv : A ↔ B, g (f peqv) = peqv, from 
-    assume peqv, @is_prop.elim _ (@iff_is_prop A B pA pB) _ _,
-  equiv.mk f (adjointify f g rinv linv),
-equiv.trans prop_eqv_equiv_eqv (equiv.symm (eq_equiv_equiv A B))   
+equiv.trans (@prop_iff_eqv_equiv A B pA pB) (equiv.symm (eq_equiv_equiv A B))   
 
 /- Equality of proposition is a mere proposition. -/
 @[hott, instance]
