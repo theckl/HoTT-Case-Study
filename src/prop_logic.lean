@@ -86,6 +86,12 @@ def iff_is_prop (A B : Type u) [pA : is_prop A] [pB : is_prop B] : is_prop (A �
   @and_is_prop (A -> B) (B -> A) (is_prop_map pB) (is_prop_map pA)  
 
 @[hott]
+def is_equiv_mk_adj {A B : Type u} (f : A -> B) (g : B -> A) (rinv : ∀ b : B, f (g b) = b)
+  (linv : ∀ a : A, g (f a) = a) (adj : Π a, rinv (f a) = ap f (linv a)) :
+  is_equiv.mk' g rinv linv adj = adjointify f g rinv linv :=
+sorry    
+
+@[hott]
 def prop_is_equiv_is_prop {A B : Type u} [pA : is_prop A] [pB : is_prop B] (f₁ f₂ : A -> B) (ef : f₁ = f₂) : 
   Π (is_eqv₁ : is_equiv f₁) (is_eqv₂ : is_equiv f₂), is_eqv₁ =[ef] is_eqv₂ 
 | (is_equiv.mk' g₁ rinv₁ linv₁ adj₁) (is_equiv.mk' g₂ rinv₂ linv₂ adj₂) :=
