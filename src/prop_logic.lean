@@ -85,20 +85,50 @@ is_prop.mk eq_prod
 def iff_is_prop (A B : Type u) [pA : is_prop A] [pB : is_prop B] : is_prop (A ↔ B) :=
   @and_is_prop (A -> B) (B -> A) (is_prop_map pB) (is_prop_map pA)  
 
+/- The next lemmas and constructions are all needed to show that an equivalence of 
+   propositions is a proposition. The proof requires lots of equalities of structures,
+   hence applications of their constructors to dependent equalities. These applications
+   should be automatically generated and shown for every structure. -/
 @[hott]
-def is_equiv_mk_adj {A B : Type u} (f : A -> B) (g : B -> A) (rinv : ∀ b : B, f (g b) = b)
-  (linv : ∀ a : A, g (f a) = a) (adj : Π a, rinv (f a) = ap f (linv a)) :
-  is_equiv.mk' g rinv linv adj = adjointify f g rinv linv :=
-sorry    
+def apd001 {A B : Type u} {C : A -> B -> Type u} {a₁ a₂ : A} {b₁ b₂ : B} 
+  (f : Π a b,  C a b) (Ha : a₁ = a₂)  (Hb : b₁ = b₂) : 
+f a₁ b₁ =[apd011 C Ha (pathover_of_eq Ha Hb); id] f a₂ b₂ :=
+begin hinduction Ha, hinduction Hb, refl end  
 
 @[hott]
-def prop_is_equiv_is_prop {A B : Type u} [pA : is_prop A] [pB : is_prop B] (f₁ f₂ : A -> B) (ef : f₁ = f₂) : 
-  Π (is_eqv₁ : is_equiv f₁) (is_eqv₂ : is_equiv f₂), is_eqv₁ =[ef] is_eqv₂ 
+def adj_eq {A B : Type u} (f₁ f₂ : A -> B) (g₁ g₂ : B -> A) 
+  (rinv₁ : ∀ b : B, f₁ (g₁ b) = b) (rinv₂ : ∀ b : B, f₂ (g₂ b) = b)  
+  (linv₁ : ∀ a : A, g₁ (f₁ a) = a) (linv₂ : ∀ a : A, g₂ (f₂ a) = a)
+  (Hf : f₁ = f₂) (Hg : g₁ = g₂) 
+  (Hr : rinv₁ =[apd011 _ Hf (pathover_of_eq Hf Hg); id] rinv₂)
+  (Hl : linv₁ =[apd011 _ Hf (pathover_of_eq Hf Hg); id] linv₂) : 
+adjointify f₁ g₁ rinv₁ linv₁ =[Hf] adjointify f₂ g₂ rinv₂ linv₂ :=
+begin hinduction Hf, hinduction Hg, hinduction Hr, hinduction Hl, refl end  
+
+@[hott]
+def is_equiv_mk_adj {A B : Type u} [is_prop A] [is_prop B] (f : A -> B) (g : B -> A) 
+  (rinv : ∀ b : B, f (g b) = b) (linv : ∀ a : A, g (f a) = a) 
+  (adj : Π a, rinv (f a) = ap f (linv a)) :
+is_equiv.mk' g rinv linv adj = adjointify f g rinv linv :=
+  calc is_equiv.mk' g rinv linv adj = 
+             is_equiv.mk' g rinv (adjointify_left_inv' f g rinv linv) 
+                                 (adjointify_adj' f g rinv linv) :
+       sorry
+       ... = adjointify f g rinv linv : rfl
+
+@[hott]
+def prop_is_equiv_is_prop {A B : Type u} [pA : is_prop A] [pB : is_prop B] 
+  (f₁ f₂ : A -> B) (ef : f₁ = f₂) : 
+Π (is_eqv₁ : is_equiv f₁) (is_eqv₂ : is_equiv f₂), is_eqv₁ =[ef] is_eqv₂ 
 | (is_equiv.mk' g₁ rinv₁ linv₁ adj₁) (is_equiv.mk' g₂ rinv₂ linv₂ adj₂) :=
 have eg : g₁ = g₂, from 
   have pAB : is_prop (B -> A), from is_prop_map pA,
   @is_prop.elim _ pAB _ _,
-sorry 
+have er : rinv₁ =[apd011 _ ef (pathover_of_eq ef eg); id] rinv₂, from sorry,
+have el : linv₁ =[apd011 _ ef (pathover_of_eq ef eg); id] linv₂, from sorry,
+eq_concato (is_equiv_mk_adj f₁ g₁ rinv₁ linv₁ adj₁) 
+           (concato_eq (adj_eq f₁ f₂ g₁ g₂ rinv₁ rinv₂ linv₁ linv₂ ef eg er el)
+           (is_equiv_mk_adj f₂ g₂ rinv₂ linv₂ adj₂)⁻¹)
 
 @[hott, instance]
 def prop_equiv_is_prop (A B : Type u) [pA : is_prop A] [pB : is_prop B] : is_prop (A ≃ B) :=
