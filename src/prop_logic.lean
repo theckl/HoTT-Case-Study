@@ -90,12 +90,6 @@ def iff_is_prop (A B : Type u) [pA : is_prop A] [pB : is_prop B] : is_prop (A �
    hence applications of their constructors to dependent equalities. These applications
    should be automatically generated and shown for every structure. -/
 @[hott]
-def apd001 {A B : Type u} {C : A -> B -> Type u} {a₁ a₂ : A} {b₁ b₂ : B} 
-  (f : Π a b,  C a b) (Ha : a₁ = a₂)  (Hb : b₁ = b₂) : 
-f a₁ b₁ =[apd011 C Ha (pathover_of_eq Ha Hb); id] f a₂ b₂ :=
-begin hinduction Ha, hinduction Hb, refl end  
-
-@[hott]
 def adj_eq {A B : Type u} (f₁ f₂ : A -> B) (g₁ g₂ : B -> A) 
   (rinv₁ : ∀ b : B, f₁ (g₁ b) = b) (rinv₂ : ∀ b : B, f₂ (g₂ b) = b)  
   (linv₁ : ∀ a : A, g₁ (f₁ a) = a) (linv₂ : ∀ a : A, g₂ (f₂ a) = a)
@@ -106,14 +100,27 @@ adjointify f₁ g₁ rinv₁ linv₁ =[Hf] adjointify f₂ g₂ rinv₂ linv₂ 
 begin hinduction Hf, hinduction Hg, hinduction Hr, hinduction Hl, refl end  
 
 @[hott]
+def inv_is_prop {A B : Type u} [is_prop A] (f : A -> B) (g : B -> A) : 
+  is_prop (∀ a : A, g (f a) = a) :=
+is_prop_dprod (λ a : A, @is_trunc_succ _ -2 (is_trunc_eq -2 _ _))
+
+@[hott]
 def is_equiv_mk_adj {A B : Type u} [is_prop A] [is_prop B] (f : A -> B) (g : B -> A) 
   (rinv : ∀ b : B, f (g b) = b) (linv : ∀ a : A, g (f a) = a) 
   (adj : Π a, rinv (f a) = ap f (linv a)) :
 is_equiv.mk' g rinv linv adj = adjointify f g rinv linv :=
-  calc is_equiv.mk' g rinv linv adj = 
-             is_equiv.mk' g rinv (adjointify_left_inv' f g rinv linv) 
-                                 (adjointify_adj' f g rinv linv) :
-       sorry
+  let adj_linv := adjointify_left_inv' f g rinv linv,
+      adj' := adjointify_adj' f g rinv linv in
+  have adj'_is_prop : is_prop (Π a, rinv (f a) = ap f (adj_linv a)), from 
+    have rfa_is_prop : ∀ a : A, is_prop (f (g (f a)) = f a), from 
+      assume a, @is_trunc_succ _ -2 (is_trunc_eq -2 _ _),
+    is_prop_dprod (λ a : A, @is_trunc_succ _ -2 (is_trunc_eq -2 _ _)),
+  have Hlinv : linv = adj_linv, from @is_prop.elim _ (inv_is_prop f g) _ _,
+  have Hadj : adj =[Hlinv; λ l : (∀ a, g (f a) = a), Π a, rinv (f a) = ap f (l a)] adj', from 
+    have tr_adj : Hlinv ▸ adj = adj', from @is_prop.elim _ adj'_is_prop _ _,
+    pathover_of_tr_eq tr_adj,
+  calc is_equiv.mk' g rinv linv adj = is_equiv.mk' g rinv adj_linv adj' :
+       apd011 _ Hlinv Hadj
        ... = adjointify f g rinv linv : rfl
 
 @[hott]
@@ -123,9 +130,11 @@ def prop_is_equiv_is_prop {A B : Type u} [pA : is_prop A] [pB : is_prop B]
 | (is_equiv.mk' g₁ rinv₁ linv₁ adj₁) (is_equiv.mk' g₂ rinv₂ linv₂ adj₂) :=
 have eg : g₁ = g₂, from 
   have pAB : is_prop (B -> A), from is_prop_map pA,
-  @is_prop.elim _ pAB _ _,
-have er : rinv₁ =[apd011 _ ef (pathover_of_eq ef eg); id] rinv₂, from sorry,
-have el : linv₁ =[apd011 _ ef (pathover_of_eq ef eg); id] linv₂, from sorry,
+  @is_prop.elim _ pAB _ _, 
+have er : rinv₁ =[apd011 _ ef (pathover_of_eq ef eg); id] rinv₂, from 
+  begin apply pathover_of_tr_eq, exact @is_prop.elim _ (inv_is_prop g₂ f₂) _ _ end,
+have el : linv₁ =[apd011 _ ef (pathover_of_eq ef eg); id] linv₂, from 
+  begin apply pathover_of_tr_eq, exact @is_prop.elim _ (inv_is_prop f₂ g₂) _ _ end,  
 eq_concato (is_equiv_mk_adj f₁ g₁ rinv₁ linv₁ adj₁) 
            (concato_eq (adj_eq f₁ f₂ g₁ g₂ rinv₁ rinv₂ linv₁ linv₂ ef eg er el)
            (is_equiv_mk_adj f₂ g₂ rinv₂ linv₂ adj₂)⁻¹)
