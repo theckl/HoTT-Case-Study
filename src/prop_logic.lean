@@ -90,6 +90,13 @@ def iff_is_prop (A B : Type u) [pA : is_prop A] [pB : is_prop B] : is_prop (A �
    hence applications of their constructors to dependent equalities. These applications
    should be automatically generated and shown for every structure. -/
 @[hott]
+def po_proofs {A : Type u} {a₁ a₂ : A} (e : a₁ = a₂) {B : A -> Type v}  
+  [pBa₂ : is_prop (B a₂)] (b₁ : B a₁) (b₂ : B a₂) :
+  b₁ =[e] b₂ :=
+have tr_B : e ▸ b₁ = b₂, from @is_prop.elim _ pBa₂ _ _,
+pathover_of_tr_eq tr_B  
+
+@[hott]
 def adj_eq {A B : Type u} (f₁ f₂ : A -> B) (g₁ g₂ : B -> A) 
   (rinv₁ : ∀ b : B, f₁ (g₁ b) = b) (rinv₂ : ∀ b : B, f₂ (g₂ b) = b)  
   (linv₁ : ∀ a : A, g₁ (f₁ a) = a) (linv₂ : ∀ a : A, g₂ (f₂ a) = a)
@@ -117,8 +124,7 @@ is_equiv.mk' g rinv linv adj = adjointify f g rinv linv :=
     is_prop_dprod (λ a : A, @is_trunc_succ _ -2 (is_trunc_eq -2 _ _)),
   have Hlinv : linv = adj_linv, from @is_prop.elim _ (inv_is_prop f g) _ _,
   have Hadj : adj =[Hlinv; λ l : (∀ a, g (f a) = a), Π a, rinv (f a) = ap f (l a)] adj', from 
-    have tr_adj : Hlinv ▸ adj = adj', from @is_prop.elim _ adj'_is_prop _ _,
-    pathover_of_tr_eq tr_adj,
+    @po_proofs _ _ _ Hlinv (λ l, Π a, rinv (f a) = ap f (l a)) adj'_is_prop _ _,
   calc is_equiv.mk' g rinv linv adj = is_equiv.mk' g rinv adj_linv adj' :
        apd011 _ Hlinv Hadj
        ... = adjointify f g rinv linv : rfl
