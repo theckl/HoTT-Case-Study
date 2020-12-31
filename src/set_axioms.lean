@@ -166,7 +166,7 @@ have rel_equiv_id : ∀ x y, R x y ≃ x = y, from
   have eq_prop : is_prop (x = y), from is_prop.mk (@is_set.elim X X_is_set x y),
   have rel_eq : R x y -> x = y, from rel_id x y,
   have eq_rel : x = y -> R x y, from assume p, p ▸[λ w : X, R x w] (refl_rel x),
-  @is_prop_iff_equiv _ _ (mere_rel x y) eq_prop (rel_eq, eq_rel),
+  @prop_iff_equiv _ _ (mere_rel x y) eq_prop (rel_eq, eq_rel),
 (X_is_set, rel_equiv_id)
 
 /- Looks like a HoTT-ism but is a way to construct sets - which can be interpreted
@@ -278,15 +278,21 @@ def susp_of_prop_rel (A : Type u) [is_prop A] : ⅀ A -> ⅀ A -> Type.{u} :=
   have PN_m : Π a : A, One =[merid a; λ x : ⅀ A, P north x] A, from 
     assume a, inhabited_prop_po One A (merid a) One.star a,
   have PS_m : Π a : A, A =[merid a; λ x : ⅀ A, P south x] One, from 
-    assume a, inhabited_prop_po A One (merid a) a One.star,
+    assume a, inhabited_prop_po A One (merid a) a One.star, 
   have P_Nm : Π a : A, One =[merid a; λ x : ⅀ A, P x north] A, from 
     assume a, inhabited_prop_po One A (merid a) One.star a,
   have P_Sm : Π a : A, A =[merid a; λ x : ⅀ A, P x south] One, from 
     assume a, inhabited_prop_po A One (merid a) a One.star,
+  have is_prop_P_Sm : ∀ a : A, is_prop (A =[merid a; λ x : ⅀ A, P x south] One), from 
+    assume a, po_is_prop (merid a),  
   have P__m : Π a b : A, P_Nm a 
-            =[merid b; λ y : ⅀ A, @susp.rec _ (P north) One A PN_m y 
-                 =[merid a; λ (x : ⅀ A), P x y] susp.rec A One PS_m y] P_Sm a, from
-    assume a b, sorry,             
+     =[merid b; λ y : ⅀ A, @susp.rec _ (P north) One A PN_m y 
+       =[merid a; λ (x : ⅀ A), P x y] @susp.rec _ (P south) A One PS_m y] P_Sm a, from
+    assume a b, 
+    @po_proofs _ _ _ (merid b) 
+        (λ y : ⅀ A, @susp.rec _ (P north) One A PN_m y 
+          =[merid a; λ (x : ⅀ A), P x y] @susp.rec _ (P south) A One PS_m y)
+        (is_prop_P_Sm a) (P_Nm a) (P_Sm a),             
   @susp_double_rec A P One A A One PN_m PS_m P_Nm P_Sm P__m x y     
 
 @[hott]
