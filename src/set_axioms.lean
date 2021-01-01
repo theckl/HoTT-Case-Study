@@ -298,10 +298,14 @@ def susp_of_prop_rel (A : Type u) [is_prop A] : ⅀ A -> ⅀ A -> Type.{u} :=
 @[hott]
 def susp_of_prop_rel_is_mere_rel (A : Type u) [is_prop A] : 
   ∀ x y : ⅀ A, is_prop (susp_of_prop_rel A x y) :=
+have NN_eq : susp_of_prop_rel A north north = One, from rfl,
+have NS_eq : susp_of_prop_rel A north south = A, from rfl,
 begin
   intros x y,  
   hinduction x using susp.rec,
-    hinduction y using susp.rec,  
+    hinduction y using susp.rec, 
+      rwr NN_eq, exact One_is_prop,  
+      rwr NS_eq, assumption, 
 end  
 
 @[hott]
