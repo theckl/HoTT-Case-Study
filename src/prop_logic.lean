@@ -241,17 +241,4 @@ have tr_prop : is_prop (eq ▸ P = Q), from
   @eq_prop_is_prop (eq ▸ P) Q (tr_prop_prop eq P) _,
 is_trunc_is_equiv_closed_rev -1 (pathover_equiv_tr_eq eq P Q) tr_prop
 
-#check trunctype.struct
-
-@[hott]
-def is_prop_is_prop (A : Type u) : is_prop (is_prop A) := 
-  have is_prop_eq : ∀ pA pA' : is_prop A, pA = pA', from 
-    assume pA pA',
-    let PA := Prop.mk A pA, PA' := Prop.mk A pA' in 
-    have Prop_eq : PA = PA', from (trunctype_eq_equiv -1 PA PA')⁻¹ᶠ rfl,
-    have is_prop_po : pA =[rfl] pA', from sorry,
-    sorry,
-  is_prop.mk is_prop_eq
-
-
 end hott
