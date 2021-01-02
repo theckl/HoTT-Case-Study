@@ -1,4 +1,4 @@
-import hott.init hott.types.trunc hott.homotopy.susp prop_logic
+import hott.prop_trunc hott.init hott.types.trunc hott.homotopy.susp prop_logic
 
 universes u v w
 hott_theory
@@ -300,23 +300,47 @@ def susp_of_prop_rel_is_mere_rel (A : Type u) [is_prop A] :
   ∀ x y : ⅀ A, is_prop (susp_of_prop_rel A x y) :=
 have NN_eq : susp_of_prop_rel A north north = One, from rfl,
 have NS_eq : susp_of_prop_rel A north south = A, from rfl,
+have SN_eq : susp_of_prop_rel A south north = A, from rfl,
+have SS_eq : susp_of_prop_rel A south south = One, from rfl,
 begin
   intros x y,  
   hinduction x using susp.rec,
     hinduction y using susp.rec, 
       rwr NN_eq, exact One_is_prop,  
       rwr NS_eq, assumption, 
+      apply pathover_of_tr_eq, apply is_prop.elim,
+    hinduction y using susp.rec, 
+      rwr SN_eq, assumption,  
+      rwr SS_eq, exact One_is_prop, 
+      apply pathover_of_tr_eq, apply is_prop.elim, 
+    apply pathover_of_tr_eq, apply is_prop.elim,    
 end  
 
 @[hott]
 def susp_of_prop_rel_is_refl (A : Type u) [is_prop A] :
   Π x : ⅀ A, susp_of_prop_rel A x x :=
-sorry
+begin
+  have NN_eq : susp_of_prop_rel A north north = One, from rfl,
+  have SS_eq : susp_of_prop_rel A south south = One, from rfl,
+  intro x, 
+  hinduction x using susp.rec, 
+    exact One.star,
+    exact One.star,
+    apply pathover_of_tr_eq, 
+    exact @is_prop.elim _ (susp_of_prop_rel_is_mere_rel A south south) _ _,
+end  
 
 @[hott]
 def susp_of_prop_rel_id (A : Type u) [is_prop A] :
   ∀ x y : ⅀ A, susp_of_prop_rel A x y -> x = y :=
-sorry  
+begin
+  intros x y,
+  hinduction x using susp.rec,
+    hinduction y using susp.rec,
+      intro, refl,
+      intro a, exact merid a,
+      
+end   
 
 @[hott]
 def susp_of_prop_is_set (A : Type u) [is_prop A] : is_set (⅀ A) := 
