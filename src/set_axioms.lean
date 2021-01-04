@@ -330,6 +330,12 @@ begin
     exact @is_prop.elim _ (susp_of_prop_rel_is_mere_rel A south south) _ _,
 end  
 
+/- The next two lemmas should be in [init.pathover.lean]. -/
+@[hott]
+def fn_pathover_eval {A : Type u} {a b : A} (e : a = b) {P Q : A -> Type v}
+  {ta : P a -> Q a} : ∀ x : P b, (e ▸ ta) x = e ▸ ta (e⁻¹ ▸ x) :=
+begin hinduction e, hsimp, intro x, exact idp end  
+
 @[hott]
 def susp_of_prop_rel_id (A : Type u) [is_prop A] :
   ∀ x y : ⅀ A, susp_of_prop_rel A x y -> x = y :=
@@ -339,8 +345,14 @@ begin
     hinduction y using susp.rec,
       intro, refl,
       intro a, exact merid a,
-      
-end   
+      apply pathover_of_tr_eq, apply eq_of_homotopy,
+        intro a', rwr fn_pathover_eval, change (refl north) ⬝ merid a = merid a', 
+        rwr idp_con, apply ap, apply is_prop.elim,
+  hinduction y using susp.rec,
+    intro a, exact (merid a)⁻¹,
+    intro, refl,
+    
+end  
 
 @[hott]
 def susp_of_prop_is_set (A : Type u) [is_prop A] : is_set (⅀ A) := 
