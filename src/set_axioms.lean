@@ -330,14 +330,19 @@ begin
     exact @is_prop.elim _ (susp_of_prop_rel_is_mere_rel A south south) _ _,
 end  
 
-/- The next two lemmas should be in [init.pathover.lean]. -/
+/- The next two lemmas should be in [init.pathover.lean] and [init.path.lean]. -/
 @[hott]
 def fn_pathover_eval {A : Type u} {a b : A} (e : a = b) {P Q : A -> Type v}
   {ta : P a -> Q a} : ∀ x : P b, (e ▸ ta) x = e ▸ ta (e⁻¹ ▸ x) :=
 begin hinduction e, hsimp, intro x, exact idp end  
 
 @[hott]
-def susp_of_prop_rel_id (A : Type u) [is_prop A] :
+def tr_eq_inv_con {A : Type u} {a b : A} (e : a = b) (f : a = a) : e ▸[λ c, c = a] f = e⁻¹ ⬝ f :=
+  begin hinduction e, apply tr_eq_of_pathover, 
+                apply pathover_idp_of_eq, rwr idp_inv, rwr idp_con end
+
+@[hott]
+def susp_of_prop_rel_id (A : Type u) [pA : is_prop A] :
   ∀ x y : ⅀ A, susp_of_prop_rel A x y -> x = y :=
 begin
   intros x y,
@@ -348,10 +353,25 @@ begin
       apply pathover_of_tr_eq, apply eq_of_homotopy,
         intro a', rwr fn_pathover_eval, change (refl north) ⬝ merid a = merid a', 
         rwr idp_con, apply ap, apply is_prop.elim,
-  hinduction y using susp.rec,
-    intro a, exact (merid a)⁻¹,
-    intro, refl,
-    
+    hinduction y using susp.rec,
+      intro a', exact (merid a')⁻¹,
+      intro, refl,
+      apply pathover_of_tr_eq, apply eq_of_homotopy, intro s, rwr fn_pathover_eval, 
+        change (merid ((merid a)⁻¹ ▸ s))⁻¹ ⬝ (merid a) = refl south, 
+        apply inverse, apply idp_eq_inv_con, apply ap, apply @is_prop.elim _ pA _ _,
+    hinduction y using susp.rec,
+      change (λ (a : susp_of_prop_rel A north north), idp) 
+                          =[merid a; λ (x' : ↥(⅀ A)), susp_of_prop_rel A x' north → x' = north] 
+                                          (λ (a' : susp_of_prop_rel A south north), (merid a')⁻¹),  
+        apply pathover_of_tr_eq, apply eq_of_homotopy, intro a', rwr fn_pathover_eval,
+        change merid a ▸[λ x, x = north] refl north = (merid a')⁻¹, rwr tr_eq_inv_con,
+        rwr con_idp, apply ap (λ a : A, (merid a)⁻¹), apply is_prop.elim,
+      change (λ (a : susp_of_prop_rel A north south), merid a) 
+                          =[merid a; λ (x' : ↥(⅀ A)), susp_of_prop_rel A x' south → x' = south] 
+                                          (λ (a : susp_of_prop_rel A south south), idp), 
+        apply pathover_of_tr_eq, apply eq_of_homotopy, intro s, rwr fn_pathover_eval,
+        change merid a ▸[λ x, x = south] merid ((merid a)⁻¹ ▸ s) = refl south,  
+                                        
 end  
 
 @[hott]
