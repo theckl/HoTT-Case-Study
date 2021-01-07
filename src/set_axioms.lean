@@ -337,41 +337,61 @@ def fn_pathover_eval {A : Type u} {a b : A} (e : a = b) {P Q : A -> Type v}
 begin hinduction e, hsimp, intro x, exact idp end  
 
 @[hott]
-def tr_eq_inv_con {A : Type u} {a b : A} (e : a = b) (f : a = a) : e ▸[λ c, c = a] f = e⁻¹ ⬝ f :=
+def tr_eq_inv_con {A : Type u} {a b c: A} (e : a = b) (f : a = c) : e ▸[λ d, d = c] f = e⁻¹ ⬝ f :=
   begin hinduction e, apply tr_eq_of_pathover, 
                 apply pathover_idp_of_eq, rwr idp_inv, rwr idp_con end
+
+@[hott, hsimp]
+def RN_N_ {A : Type u} [pA : is_prop A] : 
+  ∀ y : ⅀ A, susp_of_prop_rel A north y -> north = y :=
+begin 
+  intro y,
+  hinduction y using susp.rec,
+    intro, refl,
+    intro a, exact merid a,
+    apply pathover_of_tr_eq, apply eq_of_homotopy,
+      intro a', rwr fn_pathover_eval, change (refl north) ⬝ merid a = merid a', 
+      rwr idp_con, apply ap, apply is_prop.elim,
+end
+
+@[hott, hsimp]
+def RS_S_ {A : Type u} [pA : is_prop A] : 
+  ∀ y : ⅀ A, susp_of_prop_rel A south y -> south = y :=
+begin
+  intro y,
+  hinduction y using susp.rec,      
+    intro a', exact (merid a')⁻¹,
+    intro, refl,
+    apply pathover_of_tr_eq, apply eq_of_homotopy, intro s, rwr fn_pathover_eval, 
+      change (merid ((merid a)⁻¹ ▸ s))⁻¹ ⬝ (merid a) = refl south,           
+      apply inverse, apply idp_eq_inv_con, apply ap, apply @is_prop.elim _ pA _ _, 
+end
 
 @[hott]
 def susp_of_prop_rel_id (A : Type u) [pA : is_prop A] :
   ∀ x y : ⅀ A, susp_of_prop_rel A x y -> x = y :=
+let R := λ x y : ⅀ A, susp_of_prop_rel A x y in 
 begin
   intros x y,
   hinduction x using susp.rec,
-    hinduction y using susp.rec,
-      intro, refl,
-      intro a, exact merid a,
-      apply pathover_of_tr_eq, apply eq_of_homotopy,
-        intro a', rwr fn_pathover_eval, change (refl north) ⬝ merid a = merid a', 
-        rwr idp_con, apply ap, apply is_prop.elim,
-    hinduction y using susp.rec,
-      intro a', exact (merid a')⁻¹,
-      intro, refl,
-      apply pathover_of_tr_eq, apply eq_of_homotopy, intro s, rwr fn_pathover_eval, 
-        change (merid ((merid a)⁻¹ ▸ s))⁻¹ ⬝ (merid a) = refl south, 
-        apply inverse, apply idp_eq_inv_con, apply ap, apply @is_prop.elim _ pA _ _,
-    hinduction y using susp.rec,
-      change (λ (a : susp_of_prop_rel A north north), idp) 
-                          =[merid a; λ (x' : ↥(⅀ A)), susp_of_prop_rel A x' north → x' = north] 
-                                          (λ (a' : susp_of_prop_rel A south north), (merid a')⁻¹),  
+    exact RN_N_ y,
+    exact RS_S_ y,
+    hinduction y using susp.rec with a₁,
+      change (λ (a : R north north), idp) =[merid a; λ (x' : ↥(⅀ A)), R x' north → x' = north] 
+                                          (λ (a' : R south north), (merid a')⁻¹),  
         apply pathover_of_tr_eq, apply eq_of_homotopy, intro a', rwr fn_pathover_eval,
         change merid a ▸[λ x, x = north] refl north = (merid a')⁻¹, rwr tr_eq_inv_con,
         rwr con_idp, apply ap (λ a : A, (merid a)⁻¹), apply is_prop.elim,
-      change (λ (a : susp_of_prop_rel A north south), merid a) 
-                          =[merid a; λ (x' : ↥(⅀ A)), susp_of_prop_rel A x' south → x' = south] 
-                                          (λ (a : susp_of_prop_rel A south south), idp), 
+      change (λ (a : R north south), merid a) =[merid a; λ (x' : ↥(⅀ A)), R x' south → x' = south] 
+                                                         (λ (a : R south south), idp), 
         apply pathover_of_tr_eq, apply eq_of_homotopy, intro s, rwr fn_pathover_eval,
         change merid a ▸[λ x, x = south] merid ((merid a)⁻¹ ▸ s) = refl south,  
-                                        
+        rwr tr_eq_inv_con, apply inverse, apply idp_eq_inv_con, apply ap, apply is_prop.elim,  
+      change ((RN_N_ north) =[merid a; λ (x' : ↥(⅀ A)), R x' north → x' = north] (RS_S_ north))
+                =[merid a₁; λ y : ↥(⅀ A), (RN_N_ y) =[merid a; λ x' : ↥(⅀ A), R x' y → x' = y] 
+                    (RS_S_ y)]   
+             ((λ (a : R north south), merid a) =[merid a; λ (x' : ↥(⅀ A)), R x' south → x' = south] 
+                                                         (λ (a : R south south), idp)),   
 end  
 
 @[hott]
