@@ -341,8 +341,9 @@ def tr_eq_inv_con {A : Type u} {a b c: A} (e : a = b) (f : a = c) : e ▸[λ d, 
   begin hinduction e, apply tr_eq_of_pathover, 
                 apply pathover_idp_of_eq, rwr idp_inv, rwr idp_con end
 
+/- Construction of identies from relations of north and of south. -/
 @[hott, hsimp]
-def RN_N_ {A : Type u} [pA : is_prop A] : 
+def PN_ {A : Type u} [pA : is_prop A] : 
   ∀ y : ⅀ A, susp_of_prop_rel A north y -> north = y :=
 begin 
   intro y,
@@ -355,7 +356,7 @@ begin
 end
 
 @[hott, hsimp]
-def RS_S_ {A : Type u} [pA : is_prop A] : 
+def PS_ {A : Type u} [pA : is_prop A] : 
   ∀ y : ⅀ A, susp_of_prop_rel A south y -> south = y :=
 begin
   intro y,
@@ -367,6 +368,25 @@ begin
       apply inverse, apply idp_eq_inv_con, apply ap, apply @is_prop.elim _ pA _ _, 
 end
 
+/- Construction of paths over meridians. -/
+@[hott]
+def Q_N {A : Type u} [pA : is_prop A] (a : A) : 
+  PN_ north =[merid a; λ (x' : ↥(⅀ A)), susp_of_prop_rel A x' north → x' = north] PS_ north :=
+begin
+  apply pathover_of_tr_eq, apply eq_of_homotopy, intro a', rwr fn_pathover_eval,
+  change merid a ▸[λ x, x = north] refl north = (merid a')⁻¹, rwr tr_eq_inv_con,
+  rwr con_idp, apply ap (λ a : A, (merid a)⁻¹), apply is_prop.elim
+end   
+
+@[hott]
+def Q_S {A : Type u} [pA : is_prop A] (a : A) : 
+  PN_ south =[merid a; λ (x' : ↥(⅀ A)), susp_of_prop_rel A x' south → x' = south] PS_ south :=
+begin
+  apply pathover_of_tr_eq, apply eq_of_homotopy, intro s, rwr fn_pathover_eval,
+  change merid a ▸[λ x, x = south] merid ((merid a)⁻¹ ▸ s) = refl south,  
+  rwr tr_eq_inv_con, apply inverse, apply idp_eq_inv_con, apply ap, apply is_prop.elim
+end 
+
 @[hott]
 def susp_of_prop_rel_id (A : Type u) [pA : is_prop A] :
   ∀ x y : ⅀ A, susp_of_prop_rel A x y -> x = y :=
@@ -374,24 +394,12 @@ let R := λ x y : ⅀ A, susp_of_prop_rel A x y in
 begin
   intros x y,
   hinduction x using susp.rec,
-    exact RN_N_ y,
-    exact RS_S_ y,
+    exact PN_ y,
+    exact PS_ y,
     hinduction y using susp.rec with a₁,
-      change (λ (a : R north north), idp) =[merid a; λ (x' : ↥(⅀ A)), R x' north → x' = north] 
-                                          (λ (a' : R south north), (merid a')⁻¹),  
-        apply pathover_of_tr_eq, apply eq_of_homotopy, intro a', rwr fn_pathover_eval,
-        change merid a ▸[λ x, x = north] refl north = (merid a')⁻¹, rwr tr_eq_inv_con,
-        rwr con_idp, apply ap (λ a : A, (merid a)⁻¹), apply is_prop.elim,
-      change (λ (a : R north south), merid a) =[merid a; λ (x' : ↥(⅀ A)), R x' south → x' = south] 
-                                                         (λ (a : R south south), idp), 
-        apply pathover_of_tr_eq, apply eq_of_homotopy, intro s, rwr fn_pathover_eval,
-        change merid a ▸[λ x, x = south] merid ((merid a)⁻¹ ▸ s) = refl south,  
-        rwr tr_eq_inv_con, apply inverse, apply idp_eq_inv_con, apply ap, apply is_prop.elim,  
-      change ((RN_N_ north) =[merid a; λ (x' : ↥(⅀ A)), R x' north → x' = north] (RS_S_ north))
-                =[merid a₁; λ y : ↥(⅀ A), (RN_N_ y) =[merid a; λ x' : ↥(⅀ A), R x' y → x' = y] 
-                    (RS_S_ y)]   
-             ((λ (a : R north south), merid a) =[merid a; λ (x' : ↥(⅀ A)), R x' south → x' = south] 
-                                                         (λ (a : R south south), idp)),   
+      exact Q_N a,
+      exact Q_S a,  
+        
 end  
 
 @[hott]
