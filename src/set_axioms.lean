@@ -243,57 +243,40 @@ axiom LEM : ExcludedMiddle
    mere proposition is a set. For its proof we use the criterion [refl_rel_set] 
    (HoTT-book, Thm.7.2.2) and construct a reflexive relation using double induction
    on [⅀ A]. This is a lot of work since [⅀ A] is a HIT, and we have to check equalities
-   and equalities of equalities. -/
-@[hott]
-def susp_double_rec {A : Type u} {P : ⅀ A -> ⅀ A -> Type v}
-  (PNN : P north north) (PNS : P north south) (PSN : P south north) 
-  (PSS : P south south) (PN_m : Π a : A, PNN =[merid a] PNS)
-  (PS_m : Π a : A, PSN =[merid a] PSS) 
-  (P_Nm : Π a : A, PNN =[merid a; λ x : ⅀ A, P x north] PSN)
-  (P_Sm : Π a : A, PNS =[merid a; λ x : ⅀ A, P x south] PSS)
-  (P__m : Π a b : A, P_Nm a 
-            =[merid b; λ y : ⅀ A, @susp.rec _ (P north) PNN PNS PN_m y 
-                 =[merid a; λ (x : ⅀ A), P x y] susp.rec PSN PSS PS_m y] P_Sm a)
-  (x y : ⅀ A) : P x y :=
-begin 
-  hinduction x using susp.rec,
-    hinduction y using susp.rec,
-      exact PNN, exact PNS, apply PN_m,
-    hinduction y using susp.rec,
-      exact PSN, exact PSS, apply PS_m, 
-    hinduction y using susp.rec, 
-      hsimp; apply P_Nm, hsimp; apply P_Sm,
-      hsimp, repeat {rwr idp_inv}, repeat {rwr cast_def}, repeat {rwr idp_tr}, 
-      apply P__m
-end     
+   and equalities of equalities. -/     
 
 @[hott, hsimp]
 def susp_susp_Type (A : Type u) : ⅀ A -> ⅀ A -> Type.{u+1} :=
   λ x y : ⅀ A, Type.{u}
 
+/- We define the relation on [⅀ A × ⅀ A] using double induction. -/
 @[hott]
 def susp_of_prop_rel (A : Type u) [is_prop A] : ⅀ A -> ⅀ A -> Type.{u} :=
-  assume x y,
-  let P := susp_susp_Type A in
-  have PN_m : Π a : A, One =[merid a; λ x : ⅀ A, P north x] A, from 
-    assume a, inhabited_prop_po One A (merid a) One.star a,
-  have PS_m : Π a : A, A =[merid a; λ x : ⅀ A, P south x] One, from 
-    assume a, inhabited_prop_po A One (merid a) a One.star, 
-  have P_Nm : Π a : A, One =[merid a; λ x : ⅀ A, P x north] A, from 
-    assume a, inhabited_prop_po One A (merid a) One.star a,
-  have P_Sm : Π a : A, A =[merid a; λ x : ⅀ A, P x south] One, from 
-    assume a, inhabited_prop_po A One (merid a) a One.star,
-  have is_prop_P_Sm : ∀ a : A, is_prop (A =[merid a; λ x : ⅀ A, P x south] One), from 
-    assume a, po_is_prop (merid a),  
-  have P__m : Π a b : A, P_Nm a 
-     =[merid b; λ y : ⅀ A, @susp.rec _ (P north) One A PN_m y 
-       =[merid a; λ (x : ⅀ A), P x y] @susp.rec _ (P south) A One PS_m y] P_Sm a, from
-    assume a b, 
-    @po_proofs _ _ _ (merid b) 
-        (λ y : ⅀ A, @susp.rec _ (P north) One A PN_m y 
-          =[merid a; λ (x : ⅀ A), P x y] @susp.rec _ (P south) A One PS_m y)
-        (is_prop_P_Sm a) (P_Nm a) (P_Sm a),             
-  @susp_double_rec A P One A A One PN_m PS_m P_Nm P_Sm P__m x y     
+let P := susp_susp_Type A in
+begin
+  intros x y,
+  hinduction x using susp.rec with a,
+    hinduction y using susp.rec,
+      exact One, 
+      exact A, 
+      exact inhabited_prop_po One A (merid a) One.star a,
+    hinduction y using susp.rec,
+      exact A,
+      exact One,
+      exact inhabited_prop_po A One (merid a) a One.star, 
+    hinduction y using susp.rec with b,
+      change One =[merid a; λ (x' : ↥(⅀ A)), Type u] A,
+        exact inhabited_prop_po One A (merid a) One.star a,
+      change A =[merid a; λ (x' : ↥(⅀ A)), Type u] One, 
+        exact inhabited_prop_po A One (merid a) a One.star, 
+      have is_prop_P_Sm : ∀ a : A, is_prop (A =[merid a; λ x : ⅀ A, P x south] One), from 
+        assume a, po_is_prop (merid a),  
+      exact @po_proofs _ _ _ (merid b) (λ y : ⅀ A, 
+              @susp.rec _ (P north) One A (λ a : A, inhabited_prop_po One A (merid a) One.star a) y 
+                  =[merid a; λ (x : ⅀ A), P x y] 
+              @susp.rec _ (P south) A One (λ a : A, inhabited_prop_po A One (merid a) a One.star) y) 
+                   (is_prop_P_Sm a) _ _
+end  
 
 @[hott]
 def susp_of_prop_rel_is_mere_rel (A : Type u) [is_prop A] : 
@@ -399,6 +382,7 @@ begin
     hinduction y using susp.rec with a₁,
       exact Q_N a,
       exact Q_S a,  
+      apply pathover_of_tr_eq,
         
 end  
 
