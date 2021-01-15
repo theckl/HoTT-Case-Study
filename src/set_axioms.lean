@@ -245,14 +245,10 @@ axiom LEM : ExcludedMiddle
    on [⅀ A]. This is a lot of work since [⅀ A] is a HIT, and we have to check equalities
    and equalities of equalities. -/     
 
-@[hott, hsimp]
-def susp_susp_Type (A : Type u) : ⅀ A -> ⅀ A -> Type.{u+1} :=
-  λ x y : ⅀ A, Type.{u}
-
 /- We define the relation on [⅀ A × ⅀ A] using double induction. -/
 @[hott]
 def susp_of_prop_rel (A : Type u) [is_prop A] : ⅀ A -> ⅀ A -> Type.{u} :=
-let P := susp_susp_Type A in
+let P := λ x y : ⅀ A, Type.{u} in
 begin
   intros x y,
   hinduction x using susp.rec with a,
@@ -278,6 +274,7 @@ begin
                    (is_prop_P_Sm a) _ _
 end  
 
+/- The relation on [⅀ A × ⅀ A] is a mere relation. -/
 @[hott]
 def susp_of_prop_rel_is_mere_rel (A : Type u) [is_prop A] : 
   ∀ x y : ⅀ A, is_prop (susp_of_prop_rel A x y) :=
@@ -299,6 +296,7 @@ begin
     apply pathover_of_tr_eq, apply is_prop.elim,    
 end  
 
+/- The relation on [⅀ A × ⅀ A] is a reflexive. -/
 @[hott]
 def susp_of_prop_rel_is_refl (A : Type u) [is_prop A] :
   Π x : ⅀ A, susp_of_prop_rel A x x :=
@@ -313,7 +311,7 @@ begin
     exact @is_prop.elim _ (susp_of_prop_rel_is_mere_rel A south south) _ _,
 end  
 
-/- The next two lemmas should be in [init.pathover.lean] and [init.path.lean]. -/
+/- The next lemmas should be in [init.pathover.lean] and [init.path.lean]. -/
 @[hott]
 def fn_pathover_eval {A : Type u} {a b : A} (e : a = b) {P Q : A -> Type v}
   {ta : P a -> Q a} : ∀ x : P b, (e ▸ ta) x = e ▸ ta (e⁻¹ ▸ x) :=
@@ -323,6 +321,14 @@ begin hinduction e, hsimp, intro x, exact idp end
 def tr_eq_inv_con {A : Type u} {a b c: A} (e : a = b) (f : a = c) : e ▸[λ d, d = c] f = e⁻¹ ⬝ f :=
   begin hinduction e, apply tr_eq_of_pathover, 
                 apply pathover_idp_of_eq, rwr idp_inv, rwr idp_con end
+
+@[hott] 
+def tr_fn_eq {A : Type u} {B : Type v} {a b : A} (p : a = b) {P Q : A -> B} (q : P a = Q a) :
+  p ▸[λ c, P c = Q c] q = (ap P p)⁻¹ ⬝ q ⬝ (ap Q p) :=
+begin 
+  hinduction p, apply tr_eq_of_pathover, apply pathover_idp_of_eq, rwr ap_idp, rwr ap_idp,
+  rwr idp_inv, rwr idp_con,
+end  
 
 /- Construction of identies from relations of north and of south. -/
 @[hott, hsimp]
@@ -351,7 +357,9 @@ begin
       apply inverse, apply idp_eq_inv_con, apply ap, apply @is_prop.elim _ pA _ _, 
 end
 
-/- Construction of paths over meridians. -/
+/- We need to construct paths between the functions [PN_] and [PS_] over meridians and then show 
+  equality of these paths. This works easily if we construct the second path as a transport of the 
+  first path via a meridian, and meridians are equal. -/
 @[hott]
 def Q_N {A : Type u} [pA : is_prop A] (a : A) : 
   PN_ north =[merid a; λ (x' : ↥(⅀ A)), susp_of_prop_rel A x' north → x' = north] PS_ north :=
@@ -364,11 +372,8 @@ end
 @[hott]
 def Q_S {A : Type u} [pA : is_prop A] (a : A) : 
   PN_ south =[merid a; λ (x' : ↥(⅀ A)), susp_of_prop_rel A x' south → x' = south] PS_ south :=
-begin
-  apply pathover_of_tr_eq, apply eq_of_homotopy, intro s, rwr fn_pathover_eval,
-  change merid a ▸[λ x, x = south] merid ((merid a)⁻¹ ▸ s) = refl south,  
-  rwr tr_eq_inv_con, apply inverse, apply idp_eq_inv_con, apply ap, apply is_prop.elim
-end 
+merid a▸[λ {a_1 : ↥(⅀ A)},
+        PN_ a_1 =[merid a; λ (x' : ↥(⅀ A)), susp_of_prop_rel A x' a_1 → x' = a_1] PS_ a_1]Q_N a  
 
 @[hott]
 def susp_of_prop_rel_id (A : Type u) [pA : is_prop A] :
@@ -381,9 +386,10 @@ begin
     exact PS_ y,
     hinduction y using susp.rec with a₁,
       exact Q_N a,
-      exact Q_S a,  
-      apply pathover_of_tr_eq,
-        
+      exact Q_S a, 
+      have merid_eq : merid a₁ = merid a, from 
+        begin apply ap, apply is_prop.elim end, 
+      apply pathover_of_tr_eq, rwr merid_eq
 end  
 
 @[hott]
