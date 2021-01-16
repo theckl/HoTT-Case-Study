@@ -1,4 +1,4 @@
-import hott.prop_trunc hott.init hott.types.trunc hott.homotopy.susp prop_logic
+import hott.prop_trunc hott.init hott.types.trunc hott.homotopy.susp prop_logic 
 
 universes u v w
 hott_theory
@@ -7,7 +7,7 @@ set_option pp.universes false
 set_option pp.implicit false
 
 namespace hott
-open hott.is_trunc hott.trunc hott.equiv hott.is_equiv hott.sigma hott.susp
+open hott.is_trunc hott.trunc hott.equiv hott.is_equiv hott.sigma hott.susp hott.sum
 
 /- Should be in [init.path]. -/
 notation eq `▸[`:50 P:0 `]`:0 b:50 := transport P eq b 
@@ -397,10 +397,13 @@ def susp_of_prop_is_set (A : Type u) [is_prop A] : is_set (⅀ A) :=
   (refl_rel_set (susp_of_prop_rel A) (susp_of_prop_rel_is_mere_rel A)
    (susp_of_prop_rel_is_refl A) (susp_of_prop_rel_id A)).1
 
+set_option pp.universes true 
+
+/- Diaconescu's Theorem, HoTT-book, [Thm.10.1.14] -/
 @[hott] 
 def AC_implies_LEM : Choice_nonempty.{u} -> ExcludedMiddle.{u} :=
   assume AC, assume A, 
-  let f := λ pt : Two.{u}, @Two.rec (λ t : Two, ⅀ A) (@north A) (@south A) pt in 
+  let f := @Two.rec (λ t : Two.{u}, ⅀ A) (@north A) (@south A) in 
   have zn : f Two.zero = north, by refl,
   have zs : f Two.one = south, by refl,
   have f_is_surj : @is_surjective Two (⅀ A) f, from 
@@ -416,8 +419,19 @@ def AC_implies_LEM : Choice_nonempty.{u} -> ExcludedMiddle.{u} :=
                               (Σ (g : ⅀ A -> Two), Π (x : ⅀ A), f (g x) = x), from
     assume g, ⟨λ x : ⅀ A, (g x).1, λ x : ⅀ A, (g x).2 ⟩, 
   have g_f_dec : Π (g : ⅀ A -> Two), (g (f Two.zero) = g (f Two.one)) ⊎ 
-                                          ¬ (g (f Two.zero) = g (f Two.one)), from
-    assume g, Two_is_decidable (g (f Two.zero)) (g (f Two.one)),                                   
-  sorry
+                                          ¬ (g (f Two.zero) = g (f Two.one)), from                                          
+    assume g, Two_is_decidable (g (f Two.zero)) (g (f Two.one)),  
+  have f_dec : (Π x : X, @fiber Two (⅀ A) f x) -> (f Two.zero = f Two.one) ⊎ 
+                                                  ¬ (f Two.zero = f Two.one), from 
+    assume sect_f, let g := (g_inv_f sect_f).1, gf_dec := g_f_dec g in 
+    have g_inj : ∀ x y : ⅀ A, g x = g y -> x = y, from 
+      assume x y g_eq, 
+      have fg_eq : f (g x) = f (g y), by rwr g_eq,
+      ((g_inv_f sect_f).2 x)⁻¹ ⬝ fg_eq ⬝ ((g_inv_f sect_f).2 y), 
+    have gf01_f01_eq : g (f Two.zero) = g (f Two.one) -> f Two.zero = f Two.one, from sorry,  
+    sorry,  
+  have A_dec :  (Π x : X, @fiber Two (⅀ A) f x) -> A ⊎ ¬ A, from sorry,                                                                                
+  have trunc_LEM : ∥ A ⊎ ¬ A ∥, from trunc_functor -1 A_dec mere_g,
+  @untrunc_of_is_trunc _ _ is_prop_LEM trunc_LEM
 
 end hott
