@@ -241,4 +241,23 @@ have tr_prop : is_prop (eq ▸ P = Q), from
   @eq_prop_is_prop (eq ▸ P) Q (tr_prop_prop eq P) _,
 is_trunc_is_equiv_closed_rev -1 (pathover_equiv_tr_eq eq P Q) tr_prop
 
+/- The Law of Excluded Middle of a proposition is a proposition. 
+   Should be in [types.sum] but even if so this file cannot be imported: 
+   [invalid import: hott.types.sum
+    invalid object declaration, environment already has an object named 'sum.rec._ind_info'] -/
+@[hott]
+def is_prop_LEM {A : Type u} [is_prop A] : is_prop (A ⊎ ¬ A) :=
+  have eq_sum : ∀ x y : A ⊎ ¬ A, x = y, from 
+  begin
+    intros x y,
+    hinduction x with a na,
+      hinduction y with a' na', 
+        apply ap, apply is_prop.elim,
+        apply empty.elim, exact na' a,
+      hinduction y with a' na',
+        apply empty.elim, exact na a',
+        apply ap, apply is_prop.elim,  
+  end,
+  is_prop.mk eq_sum    
+
 end hott
