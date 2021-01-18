@@ -397,7 +397,23 @@ def susp_of_prop_is_set (A : Type u) [is_prop A] : is_set (⅀ A) :=
   (refl_rel_set (susp_of_prop_rel A) (susp_of_prop_rel_is_mere_rel A)
    (susp_of_prop_rel_is_refl A) (susp_of_prop_rel_id A)).1
 
-set_option pp.universes true 
+/- Using the second part of Thm.7.2.2 = [refl_rel_set] we can show a corollary: -/
+@[hott]
+def merid_equiv_A (A : Type u) [is_prop A] : (@north A = south) ≃ A :=
+  have A_equiv_merid : A ≃ (@north A = south), from 
+    (refl_rel_set (susp_of_prop_rel A) (susp_of_prop_rel_is_mere_rel A)
+                   (susp_of_prop_rel_is_refl A) (susp_of_prop_rel_id A)).2 north south,
+  A_equiv_merid⁻¹ᵉ   
+
+/- This is a simplified version of closedness under equivalences for decidability. -/
+@[hott]
+def iff_LEM_LEM {A B : Type u} : (A ↔ B) -> (A ⊎ ¬ A) -> (B ⊎ ¬ B) :=
+  assume AB_iff, assume A_dec, 
+  begin
+    hinduction A_dec with a na, 
+      exact sum.inl (AB_iff.1 a),
+      apply sum.inr, assume b, exact empty.elim (na (AB_iff.2 b)) 
+  end  
 
 /- Diaconescu's Theorem, HoTT-book, [Thm.10.1.14] -/
 @[hott] 
@@ -428,9 +444,20 @@ def AC_implies_LEM : Choice_nonempty.{u} -> ExcludedMiddle.{u} :=
       assume x y g_eq, 
       have fg_eq : f (g x) = f (g y), by rwr g_eq,
       ((g_inv_f sect_f).2 x)⁻¹ ⬝ fg_eq ⬝ ((g_inv_f sect_f).2 y), 
-    have gf01_f01_eq : g (f Two.zero) = g (f Two.one) -> f Two.zero = f Two.one, from sorry,  
-    sorry,  
-  have A_dec :  (Π x : X, @fiber Two (⅀ A) f x) -> A ⊎ ¬ A, from sorry,                                                                                
+    have gf01_f01_eq : g (f Two.zero) = g (f Two.one) -> f Two.zero = f Two.one, from 
+      assume gf_eq, 
+      have fgf_eq : f (g (f Two.zero)) = f (g (f Two.one)), by rwr gf_eq,
+      ((g_inv_f sect_f).2 (f Two.zero))⁻¹ ⬝ fgf_eq ⬝ ((g_inv_f sect_f).2 (f Two.one)),
+    have f01_gf01_eq : f Two.zero = f Two.one -> g (f Two.zero) = g (f Two.one), from
+      begin intro f_eq, rwr f_eq end,     
+    iff_LEM_LEM ⟨gf01_f01_eq, f01_gf01_eq⟩ (g_f_dec g),  
+  have A_dec :  (Π x : X, @fiber Two (⅀ A) f x) -> A ⊎ ¬ A, from 
+    assume sect_f, 
+    have NS_eq_dec : (@north A = south) ⊎ ¬ (@north A = south), from
+      begin rwr zn⁻¹, rwr zs⁻¹, exact f_dec sect_f end,
+    have NS_eq_iff_A : (@north A = south) ↔ A, from 
+      ⟨merid_equiv_A A, (merid_equiv_A A)⁻¹ᶠ⟩,
+    iff_LEM_LEM NS_eq_iff_A NS_eq_dec,                                                                                
   have trunc_LEM : ∥ A ⊎ ¬ A ∥, from trunc_functor -1 A_dec mere_g,
   @untrunc_of_is_trunc _ _ is_prop_LEM trunc_LEM
 
