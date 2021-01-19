@@ -7,7 +7,7 @@ set_option pp.universes false
 set_option pp.implicit false
 
 namespace hott
-open hott.is_trunc hott.trunc hott.equiv hott.is_equiv hott.sigma hott.susp hott.sum
+open hott.is_trunc hott.trunc hott.equiv hott.is_equiv hott.sigma hott.susp hott.sum ulift
 
 /- Should be in [init.path]. -/
 notation eq `▸[`:50 P:0 `]`:0 b:50 := transport P eq b 
@@ -460,5 +460,19 @@ def AC_implies_LEM : Choice_nonempty.{u} -> ExcludedMiddle.{u} :=
     iff_LEM_LEM NS_eq_iff_A NS_eq_dec,                                                                                
   have trunc_LEM : ∥ A ⊎ ¬ A ∥, from trunc_functor -1 A_dec mere_g,
   @untrunc_of_is_trunc _ _ is_prop_LEM trunc_LEM
+
+/- Propositional Resizing is a consequence of LEM in all universes [HoTT-Book, Ex.3.10]. -/
+
+/- We use [ulift] from [init.logic] as the underlying function of the equivalence. -/
+@[hott]
+def LEM_Prop_Resize : ExcludedMiddle.{u+1} -> (trunctype.{u} -1 ≃ trunctype.{u+1} -1) :=
+  assume lem,
+  have prop_ulift : trunctype.{u} -1 -> trunctype.{u+1} -1, from 
+    assume prop_u, 
+    trunctype.mk (ulift.{u+1 u} ↥prop_u) (@is_trunc_lift ↥prop_u -1 _),
+  have is_eqv_prop_ulift : is_equiv prop_ulift, from sorry,
+  equiv.mk prop_ulift is_eqv_prop_ulift
+
+def prop_resize : trunctype.{u+1} -1 -> trunctype.{u} -1 := (LEM_Prop_Resize LEM)⁻¹ᶠ
 
 end hott
