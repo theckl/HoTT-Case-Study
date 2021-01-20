@@ -235,6 +235,22 @@ def ExcludedMiddle := Π (A : trunctype.{u} -1), A ⊎ ¬ A
 @[hott]
 axiom LEM : ExcludedMiddle
 
+set_option pp.universes true
+
+/- The next lemmas are needed for deducing propositional resizing from LEM. -/
+@[hott]
+def prop_ulift : trunctype.{u} -1 -> trunctype.{u+1} -1 := 
+  assume prop_u, 
+  trunctype.mk (ulift.{u+1 u} ↥prop_u) (@is_trunc_lift ↥prop_u -1 _)
+
+@[hott]
+def LEM_resize : ExcludedMiddle.{u+1} -> ExcludedMiddle.{u} :=
+  assume LEM_u1 A,
+  have LEM_u1_type : Π (B : Type (u+1)), is_prop B -> B ⊎ ¬ B, from sorry,
+  have LEM_u1_A : (ulift.{u+1} A) ⊎ ¬ (ulift.{u+1} A), from 
+    LEM_u1_type (ulift.{u+1} A) (prop_ulift A).struct, 
+  sorry  
+
 /- We follow the proof of Diaconescu (HoTT-book, Thm.10.1.14) to show that the Axiom 
    of Choice (in its second version [AxChoice_nonempty]) implies the Law of the Excluded 
    Middle. 
@@ -463,13 +479,11 @@ def AC_implies_LEM : Choice_nonempty.{u} -> ExcludedMiddle.{u} :=
 
 /- Propositional Resizing is a consequence of LEM in all universes [HoTT-Book, Ex.3.10]. -/
 
-/- We use [ulift] from [init.logic] as the underlying function of the equivalence. -/
+/- We use [ulift] from [init.logic] as the underlying function of the equivalence. 
+   We already have shown above that the [ulift] of a [Prop] is a [Prop].-/
 @[hott]
 def LEM_Prop_Resize : ExcludedMiddle.{u+1} -> (trunctype.{u} -1 ≃ trunctype.{u+1} -1) :=
   assume lem,
-  have prop_ulift : trunctype.{u} -1 -> trunctype.{u+1} -1, from 
-    assume prop_u, 
-    trunctype.mk (ulift.{u+1 u} ↥prop_u) (@is_trunc_lift ↥prop_u -1 _),
   have is_eqv_prop_ulift : is_equiv prop_ulift, from sorry,
   equiv.mk prop_ulift is_eqv_prop_ulift
 
