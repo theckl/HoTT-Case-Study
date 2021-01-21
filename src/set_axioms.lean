@@ -127,6 +127,30 @@ begin
                   exact sum.inl rfl,              
 end    
 
+/- We need resizing of the universe in which [Two] lives, to show that LEM implies propositional
+   resizing. -/
+@[hott, hsimp]
+def Two_lift : Two.{u} -> Two.{u+1} := 
+begin  
+  intro t,
+  hinduction t, exact Two.zero, exact Two.one
+end
+
+@[hott, hsimp]
+def Two_resize : Two.{u+1} -> Two.{u} := 
+begin  
+  intro t,
+  hinduction t, exact Two.zero, exact Two.one
+end
+
+@[hott]
+def Two_equiv_lift : Two.{u} ≃ Two.{u+1} :=
+  have rinv : ∀ t : Two.{u+1}, Two_lift (Two_resize t) = t, by
+      intro t; hinduction t; hsimp; hsimp, 
+  have linv : ∀ t : Two.{u}, Two_resize (Two_lift t) = t, by
+      intro t; hinduction t; hsimp; hsimp,      
+  equiv.mk Two_lift (adjointify Two_lift Two_resize rinv linv)
+
 /- We need the criterion [refl_rel_set] to show that a type is a set. This is 
    Thm.7.2.2 in the HoTT-book. Its proof requires a lemma. -/
 /- Should be in [path.lean]. -/
@@ -246,10 +270,20 @@ def prop_ulift : trunctype.{u} -1 -> trunctype.{u+1} -1 :=
 @[hott]
 def LEM_resize : ExcludedMiddle.{u+1} -> ExcludedMiddle.{u} :=
   assume LEM_u1 A,
-  have LEM_u1_type : Π (B : Type (u+1)), is_prop B -> B ⊎ ¬ B, from sorry,
+  have LEM_u1_type : Π (B : Type (u+1)), is_prop B -> B ⊎ ¬ B, from 
+    assume B B_is_prop, let Prop_B := trunctype.mk B B_is_prop in
+    LEM_u1 Prop_B,
   have LEM_u1_A : (ulift.{u+1} A) ⊎ ¬ (ulift.{u+1} A), from 
     LEM_u1_type (ulift.{u+1} A) (prop_ulift A).struct, 
-  sorry  
+  begin
+    hinduction LEM_u1_A with a_u1 not_a_u1,
+      exact sum.inl a_u1.down,
+      exact sum.inr (λ a : A, not_a_u1 (up a))
+  end 
+
+@[hott]
+def LEM_Prop_equiv_Two : ExcludedMiddle.{u} -> (trunctype.{u} -1 ≃ Two.{u}) :=
+  sorry     
 
 /- We follow the proof of Diaconescu (HoTT-book, Thm.10.1.14) to show that the Axiom 
    of Choice (in its second version [AxChoice_nonempty]) implies the Law of the Excluded 
@@ -479,14 +513,15 @@ def AC_implies_LEM : Choice_nonempty.{u} -> ExcludedMiddle.{u} :=
 
 /- Propositional Resizing is a consequence of LEM in all universes [HoTT-Book, Ex.3.10]. -/
 
-/- We use [ulift] from [init.logic] as the underlying function of the equivalence. 
-   We already have shown above that the [ulift] of a [Prop] is a [Prop].-/
+/- We compose the equivalences of [Prop] with [Two] in two successive universes and the 
+   equivalence of [Two] with its lift to the next universe. -/
 @[hott]
 def LEM_Prop_Resize : ExcludedMiddle.{u+1} -> (trunctype.{u} -1 ≃ trunctype.{u+1} -1) :=
-  assume lem,
-  have is_eqv_prop_ulift : is_equiv prop_ulift, from sorry,
-  equiv.mk prop_ulift is_eqv_prop_ulift
-
+  assume lem_u1,
+  have lem_u : ExcludedMiddle.{u}, from LEM_resize lem_u1,
+  equiv.trans (LEM_Prop_equiv_Two lem_u) 
+              (equiv.trans (Two_equiv_lift.{u}) (equiv.symm (LEM_Prop_equiv_Two lem_u1)))
+  
 def prop_resize : trunctype.{u+1} -1 -> trunctype.{u} -1 := (LEM_Prop_Resize LEM)⁻¹ᶠ
 
 end hott
