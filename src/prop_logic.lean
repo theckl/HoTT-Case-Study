@@ -49,6 +49,10 @@ def is_prop_false : is_prop false :=
 def False : Prop :=
   Prop.mk false is_prop_false
 
+@[hott]
+def False_uninhabited : ¬ False := 
+  begin intro false, hinduction false end 
+
 /- [and] and [iff] produce propositions from propositions. -/
 @[hott, instance]
 def and_is_prop (A B : Type u) [is_prop A] [is_prop B] : is_prop (A × B) :=
@@ -209,12 +213,32 @@ equiv.trans (@prop_iff_eqv_equiv A B pA pB) (equiv.symm (eq_equiv_equiv A B))
 def eq_prop_is_prop (P Q : Type u) [is_prop P] [is_prop Q] : is_prop (P = Q) :=
   is_trunc_is_equiv_closed -1 (@prop_iff_eqv_eq P Q _ _) (@iff_is_prop P Q _ _) 
 
-/- Inhabited mere propositions are equal. The proof needs univalence. -/
+/- Inhabited and unhabited mere propositions are equal. -/
 @[hott]
-def inhabited_prop_eq (A B : Type u) [is_prop A] [is_prop B] (a : A) (b : B) : 
+def inhabited_Prop_eq (A B : trunctype.{u} -1) (a : A) (b : B) : 
   A = B :=
-have AeqvB : A ≃ B, from prop_iff_equiv ((λ a : A, b), (λ b : B, a)),
-ua AeqvB   
+have A_imp_B : A -> B, from 
+  assume a', b,
+have B_imp_A : B -> A, from 
+  assume b', a,
+prop_iff_eq A_imp_B B_imp_A
+
+@[hott]
+def inhabited_prop_eq (A B : Type u) [pA : is_prop A] [pB : is_prop B] (a : A) (b : B) : 
+  A = B :=
+let Prop_A := trunctype.mk A pA,
+    Prop_B := trunctype.mk B pB in
+have Prop_eq : Prop_A = Prop_B, from inhabited_Prop_eq Prop_A Prop_B a b, 
+ap trunctype.carrier Prop_eq 
+
+@[hott]
+def uninhabited_Prop_eq (A B : trunctype.{u} -1) (na : ¬ A) (nb : ¬ B) : 
+  A = B :=
+have A_imp_B : A -> B, from 
+  assume a, by hinduction (na a),
+have B_imp_A : B -> A, from 
+  assume b, by hinduction (nb b),
+prop_iff_eq A_imp_B B_imp_A
 
 /- Inhabited mere propositions in a type family over equal base points are
    pathover-equal. -/
