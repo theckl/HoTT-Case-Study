@@ -281,9 +281,40 @@ def LEM_resize : ExcludedMiddle.{u+1} -> ExcludedMiddle.{u} :=
       exact sum.inr (λ a : A, not_a_u1 (up a))
   end 
 
+/- This is Ex.3.9 in the HoTT-book. -/
+@[hott, hsimp]
+def LEM_Prop_Two : ExcludedMiddle.{u} -> trunctype.{u} -1 -> Two.{u} := 
+  assume lem P, let lem_P := lem P in
+  begin hinduction (lem_P) with p np, exact Two.one, exact Two.zero end
+
+@[hott, hsimp]
+def Two_Prop : Two.{u} -> trunctype.{u} -1 := 
+  begin intro t, hinduction t, exact False, exact True end
+
 @[hott]
 def LEM_Prop_equiv_Two : ExcludedMiddle.{u} -> (trunctype.{u} -1 ≃ Two.{u}) :=
-  sorry     
+  assume lem,
+  have rinv : ∀ t : Two.{u}, LEM_Prop_Two lem (Two_Prop t) = t, 
+    begin 
+      intro t, hinduction t, 
+        change LEM_Prop_Two lem False = Two.zero,  
+        hinduction (lem False) with F f nf,
+          hinduction f,
+          hsimp, rwr F,
+        hinduction (lem True) with T t nt,
+          hsimp, rwr T,
+          hinduction (nt true.intro),  
+    end,
+  have linv : ∀ P : trunctype.{u} -1, Two_Prop (LEM_Prop_Two lem P) = P, from
+    begin  
+      intro P, 
+      hinduction (lem P) with lem_P_eq p np,
+        hsimp, rwr lem_P_eq, change True = P, apply inhabited_Prop_eq,
+          exact true.intro, exact p,
+        hsimp, rwr lem_P_eq, change False = P, apply uninhabited_Prop_eq,
+          exact False_uninhabited, exact np 
+    end, 
+  equiv.mk (LEM_Prop_Two lem) (adjointify (LEM_Prop_Two lem) Two_Prop rinv linv)     
 
 /- We follow the proof of Diaconescu (HoTT-book, Thm.10.1.14) to show that the Axiom 
    of Choice (in its second version [AxChoice_nonempty]) implies the Law of the Excluded 
