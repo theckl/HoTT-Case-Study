@@ -1,4 +1,4 @@
-import subset hott.types.prod
+import subset set_axioms hott.types.prod
 
 universes u v w
 hott_theory
@@ -28,15 +28,9 @@ protected def inter (S₁ S₂ : Subset A) : Subset A :=
 def subset_inter : has_inter (Subset A) :=
 ⟨subset.inter⟩
 
-@[hott]
-axiom prop_resize : trunctype.{u+1} -1 -> trunctype.{u} -1
-
 @[hott, reducible]
 def sUnion (S : Subset (𝒫 A)) : Subset A := 
   {t ∈ A | prop_resize (@exists_elem _ (λ (B : 𝒫 A), B ∈ S and t ∈ B))}
-
-#check Powerset_is_set
-#check sUnion
 
 hott_theory_cmd "local prefix `⋃₀`:110 := hott.subset.sUnion"
 
