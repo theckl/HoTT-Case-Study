@@ -72,27 +72,22 @@ class category (obj : Type u) extends precategory.{v} obj :=
 (ideqviso : ∀ a b : obj, is_equiv (idtoiso a b)) 
 
 /- To construct the opposite category, we use the mathlib-trick in [data.opposite]
-   that allows the elaborator to do most of the work. -/
-@[hott]
-def opposite (C : Type u): Type u := C 
+   that allows the elaborator to do most of the work. -/   
+variables {C : Type u} 
 
-notation C `ᵒᵖ`:std.prec.max_plus := opposite C
+@[hott]
+def opposite : Type u := C 
+
+notation C `ᵒᵖ`:std.prec.max_plus := @opposite C
 
 namespace opposite
 
-variables {C : Type u}
-/-- The canonical map `α → αᵒᵖ`. -/
+/-- The canonical map `C → Cᵒᵖ`. -/
 @[hott]
 def op : C → Cᵒᵖ := hott.set.id
-/-- The canonical map `αᵒᵖ → α`. -/
+/-- The canonical map `Cᵒᵖ → C`. -/
 @[hott]
 def unop : Cᵒᵖ → C := hott.set.id
-
-@[hott]
-lemma op_injective : function.injective (op : C → Cᵒᵖ) := λ _ _, id
-
-@[hott]
-lemma unop_injective : function.injective (unop : Cᵒᵖ → C) := λ _ _, id
 
 @[hott, hsimp]
 lemma op_inj_iff (x y : C) : op x = op y ↔ x = y := iff.rfl
@@ -109,6 +104,27 @@ lemma unop_op (x : C) : unop (op x) = x := rfl
 attribute [irreducible] opposite
 
 end opposite
+
+open opposite
+
+@[hott]
+instance has_hom.opposite [has_hom.{v} C] : has_hom Cᵒᵖ :=
+  has_hom.mk (λ x y, unop y ⟶ unop x)
+
+/- The opposite of a morphism in `C`. -/
+@[hott]
+def hom_op [has_hom.{v} C] {x y : C} (f : x ⟶ y) : op y ⟶ op x := f
+/- Given a morphism in `Cᵒᵖ`, we can take the "unopposite" back in `C`. -/
+@[hott]
+def hom_unop [has_hom.{v} C] {x y : Cᵒᵖ} (f : x ⟶ y) : unop y ⟶ unop x := f
+
+attribute [irreducible] has_hom.opposite /- Why can't you change this name to `has_hom_opp`? -/
+
+@[hott, hsimp] 
+def hom_unop_op [has_hom.{v} C] {x y : C} {f : x ⟶ y} : hom_unop (hom_op f) = f := rfl
+
+@[hott, hsimp] 
+def hom_op_unop [has_hom.{v} C] {x y : Cᵒᵖ} {f : x ⟶ y} : hom_op (hom_unop f) = f := rfl
 
 end category_theory
 
