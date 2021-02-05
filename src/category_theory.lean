@@ -1,4 +1,4 @@
-import setalgebra
+import setalgebra 
 
 universes v u w
 hott_theory
@@ -35,8 +35,8 @@ notation `𝟙` := category_struct.id -- type as \b1
 infixr ` ≫ `:80 := category_struct.comp -- type as \gg
 
 /-- The structure of a precategory. -/
-@[hott]
-class precategory (obj : Type u) 
+@[hott, class]
+structure precategory (obj : Type u) 
 extends category_struct.{v} obj : Type (max u (v+1)) :=
 (id_comp : ∀ {a b : obj} (f : hom a b), 𝟙 a ≫ f = f)
 (comp_id : ∀ {a b : obj} (f : hom a b), f ≫ 𝟙 b = f)
@@ -109,7 +109,7 @@ open opposite
 
 @[hott]
 instance has_hom.opposite [has_hom.{v} C] : has_hom Cᵒᵖ :=
-  has_hom.mk (λ x y, unop y ⟶ unop x)
+  has_hom.mk (λ x y, unop y ⟶ unop x) /- Why can't we define a `has_hom` structure with `{}`? -/
 
 /- The opposite of a morphism in `C`. -/
 @[hott]
@@ -125,6 +125,30 @@ def hom_unop_op [has_hom.{v} C] {x y : C} {f : x ⟶ y} : hom_unop (hom_op f) = 
 
 @[hott, hsimp] 
 def hom_op_unop [has_hom.{v} C] {x y : Cᵒᵖ} {f : x ⟶ y} : hom_op (hom_unop f) = f := rfl
+
+/- The opposite precategory. -/
+@[hott, instance]
+def category_struct.opposite [precategory.{v} C] : category_struct.{v} Cᵒᵖ :=
+  category_struct.mk (λ x, hom_op (𝟙 (unop x))) 
+                     (λ _ _ _ f g, hom_op (hom_unop g ≫ hom_unop f))
+
+@[hott]
+def id_comp_op [precategory.{v} C] : ∀ (x y : Cᵒᵖ) (f : x ⟶ y), 𝟙 x ≫ f = f := 
+begin intros x y f, hsimp end
+   
+
+@[hott]
+def comp_id_op [precategory.{v} C] : ∀ (x y : Cᵒᵖ) (f : x ⟶ y), f ≫ 𝟙 y = f := 
+begin intros x y f, hsimp end
+
+@[hott]
+def assoc_op [precategory.{v} C] : ∀ (x y z w : Cᵒᵖ) (f : x ⟶ y) (g : y ⟶ z) (h : z ⟶ w), 
+  (f ≫ g) ≫ h = f ≫ g ≫ h := 
+begin intros x y z w f g h, end  
+
+@[hott, instance]
+def precategory.opposite [precategory.{v} C] : precategory.{v} Cᵒᵖ :=
+  precategory.mk id_comp_op comp_id_op assoc_op                   
 
 end category_theory
 
