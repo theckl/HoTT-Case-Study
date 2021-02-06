@@ -90,16 +90,16 @@ def op : C → Cᵒᵖ := hott.set.id
 def unop : Cᵒᵖ → C := hott.set.id
 
 @[hott, hsimp]
-lemma op_inj_iff (x y : C) : op x = op y ↔ x = y := iff.rfl
+def op_inj_iff (x y : C) : op x = op y ↔ x = y := iff.rfl
 
 @[hott, hsimp] 
-lemma unop_inj_iff (x y : Cᵒᵖ) : unop x = unop y ↔ x = y := iff.rfl
+def unop_inj_iff (x y : Cᵒᵖ) : unop x = unop y ↔ x = y := iff.rfl
 
 @[hott, hsimp] 
-lemma op_unop (x : Cᵒᵖ) : op (unop x) = x := rfl
+def op_unop (x : Cᵒᵖ) : op (unop x) = x := rfl
 
 @[hott, hsimp] 
-lemma unop_op (x : C) : unop (op x) = x := rfl
+def unop_op (x : C) : unop (op x) = x := rfl
 
 attribute [irreducible] opposite
 
@@ -144,11 +144,54 @@ begin intros x y f, hsimp end
 @[hott]
 def assoc_op [precategory.{v} C] : ∀ (x y z w : Cᵒᵖ) (f : x ⟶ y) (g : y ⟶ z) (h : z ⟶ w), 
   (f ≫ g) ≫ h = f ≫ g ≫ h := 
-begin intros x y z w f g h, end  
+begin 
+  intros x y z w f g h, 
+  change hom_op (hom_unop h ≫ hom_unop (hom_op (hom_unop g ≫ hom_unop f))) = 
+         hom_op (hom_unop (hom_op (hom_unop h ≫ hom_unop g)) ≫ hom_unop f),
+  hsimp       
+end  
 
 @[hott, instance]
 def precategory.opposite [precategory.{v} C] : precategory.{v} Cᵒᵖ :=
   precategory.mk id_comp_op comp_id_op assoc_op                   
+
+/- The opposite category. -/
+@[hott]
+def id_op_to_id [precategory.{v} C] : Π a b : Cᵒᵖ, (a = b) -> (unop a = unop b) :=
+  assume a b p, ap unop p  
+
+@[hott]
+def id_to_id_op [precategory.{v} C] : Π a b : Cᵒᵖ, (unop a = unop b) -> (a = b) :=
+  assume a b p_op, 
+  calc a   = op (unop a) : by hsimp
+       ... = op (unop b) : ap op p_op 
+       ... = b : op_unop b 
+
+@[hott]
+def id_op_eqv_id [precategory.{v} C] : ∀ a b : Cᵒᵖ, is_equiv (id_op_to_id a b) :=
+  sorry   
+
+@[hott]
+def iso_to_iso_op [precategory.{v} C] : ∀ a b : Cᵒᵖ, (unop a ≅ unop b) -> (a ≅ b) :=
+  sorry 
+
+@[hott]
+def iso_eqv_iso_op [precategory.{v} C] : ∀ a b : Cᵒᵖ, is_equiv (iso_to_iso_op a b) :=
+  sorry   
+
+/- This lemma should belongs to [init.path]. -/
+@[hott]
+def fn_id_rfl {A : Type u} {B : Type v} (f g : ∀ {a b : A}, (a = b) -> B) : 
+  (∀ a : A, f (@rfl _ a) = g (@rfl _ a)) -> ∀ a b : A, @f a b = @g a b :=
+sorry  
+
+@[hott]
+def ideqviso_op [category.{v} C] : ∀ a b : Cᵒᵖ, is_equiv (idtoiso a b) :=
+  sorry
+
+@[hott, instance]
+def category.opposite [category.{v} C] : category.{v} Cᵒᵖ :=
+  category.mk ideqviso_op
 
 end category_theory
 
