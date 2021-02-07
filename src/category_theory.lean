@@ -155,29 +155,50 @@ end
 def precategory.opposite [precategory.{v} C] : precategory.{v} Cᵒᵖ :=
   precategory.mk id_comp_op comp_id_op assoc_op                   
 
-/- The opposite category. -/
-@[hott]
-def id_op_to_id [precategory.{v} C] : Π a b : Cᵒᵖ, (a = b) -> (unop a = unop b) :=
+/- The opposite category. 
+   We show the equivalence by splitting it up in three steps and using that maps from 
+   `a = b` are determined by `rfl` if `a` and `b` are allowed to vary freely. -/
+@[hott, hsimp]
+def id_op_to_id [precategory.{v} C] : Π {a b : Cᵒᵖ}, (a = b) -> (unop a = unop b) :=
   assume a b p, ap unop p  
 
-@[hott]
-def id_to_id_op [precategory.{v} C] : Π a b : Cᵒᵖ, (unop a = unop b) -> (a = b) :=
+@[hott, hsimp]
+def id_to_id_op [precategory.{v} C] : Π {a b : Cᵒᵖ}, (unop a = unop b) -> (a = b) :=
   assume a b p_op, 
   calc a   = op (unop a) : by hsimp
        ... = op (unop b) : ap op p_op 
        ... = b : op_unop b 
 
 @[hott]
-def id_op_eqv_id [precategory.{v} C] : ∀ a b : Cᵒᵖ, is_equiv (id_op_to_id a b) :=
-  sorry   
+def id_op_eqv_id [precategory.{v} C] : ∀ a b : Cᵒᵖ, is_equiv (@id_op_to_id _ _ a b) :=
+  assume a b,
+  have rinv : ∀ p_op : unop a = unop b, id_op_to_id (id_to_id_op p_op) = p_op, from  
+    begin intro p_op, hsimp, rwr ap_compose', hsimp end, 
+  have linv : ∀ p : a = b, id_to_id_op (id_op_to_id p) = p, from 
+    begin intro p, hsimp, rwr ap_compose', hsimp end,
+  is_equiv.adjointify id_op_to_id id_to_id_op rinv linv   
 
 @[hott]
-def iso_to_iso_op [precategory.{v} C] : ∀ a b : Cᵒᵖ, (unop a ≅ unop b) -> (a ≅ b) :=
+def iso_to_iso_op [precategory.{v} C] : ∀ {a b : Cᵒᵖ}, (unop a ≅ unop b) -> (a ≅ b) :=
+begin 
+  intros a b i,
+  fapply iso.mk, 
+    rwr <- op_unop a, rwr <- op_unop b, exact hom_op i.inv,
+    rwr <- op_unop a, rwr <- op_unop b, exact hom_op i.hom,
+    change hom_op (i.inv ≫ i.hom) = 𝟙 b,   
+end,
+
+
+@[hott]
+def iso_op_to_iso [precategory.{v} C] : ∀ {a b : Cᵒᵖ}, (a ≅ b) -> (unop a ≅ unop b) :=
   sorry 
 
 @[hott]
-def iso_eqv_iso_op [precategory.{v} C] : ∀ a b : Cᵒᵖ, is_equiv (iso_to_iso_op a b) :=
-  sorry   
+def iso_eqv_iso_op [precategory.{v} C] : ∀ a b : Cᵒᵖ, is_equiv (@iso_to_iso_op _ _ a b) :=
+  assume a b,
+  have rinv : ∀ h : a ≅ b, iso_to_iso_op (iso_op_to_iso h) = h, from sorry,
+  have linv : ∀ h_op : unop a ≅ unop b, iso_op_to_iso (iso_to_iso_op h_op) = h_op, from sorry,    
+  is_equiv.adjointify iso_to_iso_op iso_op_to_iso rinv linv
 
 /- This lemma should belongs to [init.path]. -/
 @[hott]
