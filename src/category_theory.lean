@@ -58,6 +58,12 @@ postfix `⁻¹ʰ`:std.prec.max_plus := iso.inv
 infix ` ≅ `:25 := iso
 
 @[hott]
+def hom_eq_to_iso_eq {C : Type u} [precategory.{v} C] {a b : C} {i j : a ≅ b} :
+  i.hom = j.hom -> i = j :=
+assume hom_eq,  
+sorry
+
+@[hott]
 def id_is_iso {C : Type u} [precategory.{v} C] (a : C) : a ≅ a := 
   have inv_eq : 𝟙 a ≫ 𝟙 a = 𝟙 a, from precategory.id_comp (𝟙 a),
   iso.mk (𝟙 a) (𝟙 a) inv_eq inv_eq
@@ -178,26 +184,41 @@ def id_op_eqv_id [precategory.{v} C] : ∀ a b : Cᵒᵖ, is_equiv (@id_op_to_id
     begin intro p, hsimp, rwr ap_compose', hsimp end,
   is_equiv.adjointify id_op_to_id id_to_id_op rinv linv   
 
-@[hott]
+@[hott, hsimp]
 def iso_to_iso_op [precategory.{v} C] : ∀ {a b : Cᵒᵖ}, (unop a ≅ unop b) -> (a ≅ b) :=
 begin 
   intros a b i,
   fapply iso.mk, 
     rwr <- op_unop a, rwr <- op_unop b, exact hom_op i.inv,
     rwr <- op_unop a, rwr <- op_unop b, exact hom_op i.hom,
-    change hom_op (i.inv ≫ i.hom) = 𝟙 b,   
-end,
+    change hom_op (i.inv ≫ i.hom) = hom_op (𝟙 (unop b)), apply ap hom_op, exact i.r_inv,
+    change hom_op (i.hom ≫ i.inv) = hom_op (𝟙 (unop a)), apply ap hom_op, exact i.l_inv   
+end
 
-
-@[hott]
+@[hott, hsimp]
 def iso_op_to_iso [precategory.{v} C] : ∀ {a b : Cᵒᵖ}, (a ≅ b) -> (unop a ≅ unop b) :=
-  sorry 
+begin
+  intros a b i,
+  fapply iso.mk,
+    exact hom_unop i.inv,
+    exact hom_unop i.hom,
+  { rwr <- @hom_unop_op _ _ _ _ (hom_unop i.hom ≫ hom_unop i⁻¹ʰ),  
+    rwr <- @hom_unop_op _ _ _ _ (𝟙 (unop b)), exact ap hom_unop (i.r_inv) },
+  { rwr <- @hom_unop_op _ _ _ _ (hom_unop i⁻¹ʰ ≫ hom_unop i.hom),  
+    rwr <- @hom_unop_op _ _ _ _ (𝟙 (unop a)), exact ap hom_unop (i.l_inv) }
+end  
 
 @[hott]
 def iso_eqv_iso_op [precategory.{v} C] : ∀ a b : Cᵒᵖ, is_equiv (@iso_to_iso_op _ _ a b) :=
   assume a b,
-  have rinv : ∀ h : a ≅ b, iso_to_iso_op (iso_op_to_iso h) = h, from sorry,
-  have linv : ∀ h_op : unop a ≅ unop b, iso_op_to_iso (iso_to_iso_op h_op) = h_op, from sorry,    
+  have rinv : ∀ h : a ≅ b, iso_to_iso_op (iso_op_to_iso h) = h, from 
+    assume h, 
+    have hom_eq : (iso_to_iso_op (iso_op_to_iso h)).hom = h.hom, from sorry,
+    hom_eq_to_iso_eq hom_eq,
+  have linv : ∀ h_op : unop a ≅ unop b, iso_op_to_iso (iso_to_iso_op h_op) = h_op, from 
+    assume h_op,
+    have hom_eq : (iso_op_to_iso (iso_to_iso_op h_op)).hom = h_op.hom, from sorry,
+    hom_eq_to_iso_eq hom_eq,    
   is_equiv.adjointify iso_to_iso_op iso_op_to_iso rinv linv
 
 /- This lemma should belongs to [init.path]. -/
