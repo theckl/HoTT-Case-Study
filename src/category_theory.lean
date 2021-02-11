@@ -4,7 +4,7 @@ universes v u w
 hott_theory
 
 namespace hott
-open hott.set hott.subset 
+open hott.set hott.subset hott.is_trunc
 
 /-
 We introduce precategories and categories following the HoTT book, 
@@ -56,12 +56,35 @@ structure iso {C : Type u} [precategory.{v} C] (a b : C) :=
 postfix `⁻¹ʰ`:std.prec.max_plus := iso.inv
 
 infix ` ≅ `:25 := iso
+ 
+@[hott]
+def iso.eta {C : Type u} [precategory.{v} C] {a b : C} (i : a ≅ b) : 
+  i = iso.mk i.hom i.inv i.r_inv i.l_inv :=
+begin hinduction i, hsimp end  
 
+/- Isomorphisms are uniquely determined by their underlying homomorphism:
+   The inverse map by functorial equalities, and the functorial equailities 
+   because the types of homomorphisms are sets. -/
 @[hott]
 def hom_eq_to_iso_eq {C : Type u} [precategory.{v} C] {a b : C} {i j : a ≅ b} :
   i.hom = j.hom -> i = j :=
-assume hom_eq,  
-sorry
+assume hom_eq, 
+have inv_eq : i.inv = j.inv, from 
+  calc i.inv = i.inv ≫ 𝟙 a : by hsimp
+       ...   = i.inv ≫ (j.hom ≫ j.inv) : by rwr j.l_inv⁻¹ 
+       ...   = (i.inv ≫ j.hom) ≫ j.inv : by hsimp
+       ...   = (i.inv ≫ i.hom) ≫ j.inv : by rwr hom_eq⁻¹
+       ...   = 𝟙 b ≫ j.inv : by rwr i.r_inv
+       ...   = j.inv : by hsimp,
+let R := λ (f : a ⟶ b) (g : b ⟶ a), g ≫ f = 𝟙 b,
+    L := λ (f : a ⟶ b) (g : b ⟶ a), f ≫ g = 𝟙 a in
+have r_inv_eq : i.r_inv =[ap011 R hom_eq inv_eq; hott.set.id] j.r_inv, from 
+  begin apply pathover_of_tr_eq, apply is_set.elim end,
+have l_inv_eq : i.l_inv =[ap011 L hom_eq inv_eq; hott.set.id] j.l_inv, from 
+  begin apply pathover_of_tr_eq, apply is_set.elim end, 
+calc   i = iso.mk i.hom i.inv i.r_inv i.l_inv : iso.eta i 
+     ... = iso.mk j.hom j.inv j.r_inv j.l_inv : sorry
+     ... = j : (iso.eta j)⁻¹
 
 @[hott]
 def id_is_iso {C : Type u} [precategory.{v} C] (a : C) : a ≅ a := 
