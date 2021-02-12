@@ -1,4 +1,4 @@
-import setalgebra 
+import setalgebra pathover2
 
 universes v u w
 hott_theory
@@ -78,12 +78,13 @@ have inv_eq : i.inv = j.inv, from
        ...   = j.inv : by hsimp,
 let R := λ (f : a ⟶ b) (g : b ⟶ a), g ≫ f = 𝟙 b,
     L := λ (f : a ⟶ b) (g : b ⟶ a), f ≫ g = 𝟙 a in
-have r_inv_eq : i.r_inv =[ap011 R hom_eq inv_eq; hott.set.id] j.r_inv, from 
+have r_inv_eq : i.r_inv =[ap011 R hom_eq inv_eq; set.id] j.r_inv, from 
   begin apply pathover_of_tr_eq, apply is_set.elim end,
-have l_inv_eq : i.l_inv =[ap011 L hom_eq inv_eq; hott.set.id] j.l_inv, from 
+have l_inv_eq : i.l_inv =[ap011 L hom_eq inv_eq; set.id] j.l_inv, from 
   begin apply pathover_of_tr_eq, apply is_set.elim end, 
 calc   i = iso.mk i.hom i.inv i.r_inv i.l_inv : iso.eta i 
-     ... = iso.mk j.hom j.inv j.r_inv j.l_inv : sorry
+     ... = iso.mk j.hom j.inv j.r_inv j.l_inv : 
+                                        ap0111 iso.mk hom_eq inv_eq r_inv_eq l_inv_eq
      ... = j : (iso.eta j)⁻¹
 
 @[hott]
@@ -236,19 +237,23 @@ def iso_eqv_iso_op [precategory.{v} C] : ∀ a b : Cᵒᵖ, is_equiv (@iso_to_is
   assume a b,
   have rinv : ∀ h : a ≅ b, iso_to_iso_op (iso_op_to_iso h) = h, from 
     assume h, 
-    have hom_eq : (iso_to_iso_op (iso_op_to_iso h)).hom = h.hom, from sorry,
+    have hom_eq : (iso_to_iso_op (iso_op_to_iso h)).hom = h.hom, by hsimp, 
     hom_eq_to_iso_eq hom_eq,
   have linv : ∀ h_op : unop a ≅ unop b, iso_op_to_iso (iso_to_iso_op h_op) = h_op, from 
     assume h_op,
-    have hom_eq : (iso_op_to_iso (iso_to_iso_op h_op)).hom = h_op.hom, from sorry,
+    have hom_eq : (iso_op_to_iso (iso_to_iso_op h_op)).hom = h_op.hom, by hsimp,
     hom_eq_to_iso_eq hom_eq,    
   is_equiv.adjointify iso_to_iso_op iso_op_to_iso rinv linv
 
-/- This lemma should belongs to [init.path]. -/
+/- This lemma should belong to [init.path]. Needs function extensionality. -/
 @[hott]
 def fn_id_rfl {A : Type u} {B : Type v} (f g : ∀ {a b : A}, (a = b) -> B) : 
   (∀ a : A, f (@rfl _ a) = g (@rfl _ a)) -> ∀ a b : A, @f a b = @g a b :=
-sorry  
+assume fn_rfl_eq,
+have fn_hom_eq : ∀ (a b : A) (p : a = b), @f a b p = @g a b p, from 
+  begin intros a b p, hinduction p, exact fn_rfl_eq a end,  
+assume a b, 
+eq_of_homotopy (fn_hom_eq a b) 
 
 @[hott]
 def ideqviso_op [category.{v} C] : ∀ a b : Cᵒᵖ, is_equiv (idtoiso a b) :=
