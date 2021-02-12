@@ -12,6 +12,6 @@ def ap0111 {A : Type u} {B : Type v} {C D : A -> B -> Type _} {E : Type _}
   (p₁ : a₁ = a₂) (p₂ : b₁ = b₂) (p₃ : c₁ =[ap011 C p₁ p₂; hott.set.id] c₂) 
   (p₄ : d₁ =[ap011 D p₁ p₂; hott.set.id] d₂) :
   f a₁ b₁ c₁ d₁ = f a₂ b₂ c₂ d₂ := 
-sorry  
+begin hinduction p₁, hinduction p₂, hinduction p₃, hinduction p₄, refl end  
 
 end hott
