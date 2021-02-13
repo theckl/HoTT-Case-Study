@@ -4,7 +4,7 @@ universes v u w
 hott_theory
 
 namespace hott
-open hott.set hott.subset hott.is_trunc
+open hott.set hott.subset hott.is_trunc hott.is_equiv
 
 /-
 We introduce precategories and categories following the HoTT book, 
@@ -87,23 +87,45 @@ calc   i = iso.mk i.hom i.inv i.r_inv i.l_inv : iso.eta i
                                         ap0111 iso.mk hom_eq inv_eq r_inv_eq l_inv_eq
      ... = j : (iso.eta j)⁻¹
 
-@[hott]
+@[hott, hsimp]
 def id_is_iso {C : Type u} [precategory.{v} C] (a : C) : a ≅ a := 
   have inv_eq : 𝟙 a ≫ 𝟙 a = 𝟙 a, from precategory.id_comp (𝟙 a),
   iso.mk (𝟙 a) (𝟙 a) inv_eq inv_eq
 
-@[hott]
+@[hott, hsimp]
 def idtoiso {C : Type u} [precategory.{v} C] (a b : C) : (a = b) -> (a ≅ b) :=
-  begin intro eq, induction eq, exact id_is_iso a end
+  begin intro eq, hinduction eq, exact id_is_iso a end
 
 /-- The structure of a category. -/
 @[hott]
 class category (obj : Type u) extends precategory.{v} obj :=
 (ideqviso : ∀ a b : obj, is_equiv (idtoiso a b)) 
 
+attribute [instance] category.ideqviso
+
+section
+universes v' u'
+variables (C : Type u) (D : Type u')
+
+/- Functors are defined between precategories. -/
+@[hott]
+structure functor [precategory.{v} C] [precategory.{v'} D] :
+  Type (max v v' u u') :=
+(obj      : C → D)
+(map      : Π {x y : C}, (x ⟶ y) → ((obj x) ⟶ (obj y)))
+(map_id   : ∀ (x : C), map (𝟙 x) = 𝟙 (obj x))
+(map_comp : ∀ {x y z : C} (f : x ⟶ y) (g : y ⟶ z), map (f ≫ g) = (map f) ≫ (map g))
+
+infixr ` ⥤ `:26 := functor       
+
+attribute [simp] functor.map_id
+attribute [simp] functor.map_comp
+
+end
+
 /- To construct the opposite category, we use the mathlib-trick in [data.opposite]
-   that allows the elaborator to do most of the work. -/   
-variables {C : Type u} 
+   that allows the elaborator to do most of the work. -/  
+variables {C : Type u}   
 
 @[hott]
 def opposite : Type u := C 
@@ -190,7 +212,7 @@ def precategory.opposite [precategory.{v} C] : precategory.{v} Cᵒᵖ :=
    `a = b` are determined by `rfl` if `a` and `b` are allowed to vary freely. -/
 @[hott, hsimp]
 def id_op_to_id [precategory.{v} C] : Π {a b : Cᵒᵖ}, (a = b) -> (unop a = unop b) :=
-  assume a b p, ap unop p  
+  begin intros a b p, hinduction p, exact rfl end  
 
 @[hott, hsimp]
 def id_to_id_op [precategory.{v} C] : Π {a b : Cᵒᵖ}, (unop a = unop b) -> (a = b) :=
@@ -199,7 +221,7 @@ def id_to_id_op [precategory.{v} C] : Π {a b : Cᵒᵖ}, (unop a = unop b) -> (
        ... = op (unop b) : ap op p_op 
        ... = b : op_unop b 
 
-@[hott]
+@[hott, instance]
 def id_op_eqv_id [precategory.{v} C] : ∀ a b : Cᵒᵖ, is_equiv (@id_op_to_id _ _ a b) :=
   assume a b,
   have rinv : ∀ p_op : unop a = unop b, id_op_to_id (id_to_id_op p_op) = p_op, from  
@@ -232,7 +254,7 @@ begin
     rwr <- @hom_unop_op _ _ _ _ (𝟙 (unop a)), exact ap hom_unop (i.l_inv) }
 end  
 
-@[hott]
+@[hott, instance]
 def iso_eqv_iso_op [precategory.{v} C] : ∀ a b : Cᵒᵖ, is_equiv (@iso_to_iso_op _ _ a b) :=
   assume a b,
   have rinv : ∀ h : a ≅ b, iso_to_iso_op (iso_op_to_iso h) = h, from 
@@ -247,7 +269,8 @@ def iso_eqv_iso_op [precategory.{v} C] : ∀ a b : Cᵒᵖ, is_equiv (@iso_to_is
 
 /- This lemma should belong to [init.path]. Needs function extensionality. -/
 @[hott]
-def fn_id_rfl {A : Type u} {B : Type v} (f g : ∀ {a b : A}, (a = b) -> B) : 
+def fn_id_rfl {A : Type u} {B : A -> A -> Type v} 
+  (f g : ∀ {a b : A}, (a = b) -> B a b) : 
   (∀ a : A, f (@rfl _ a) = g (@rfl _ a)) -> ∀ a b : A, @f a b = @g a b :=
 assume fn_rfl_eq,
 have fn_hom_eq : ∀ (a b : A) (p : a = b), @f a b p = @g a b p, from 
@@ -256,12 +279,25 @@ assume a b,
 eq_of_homotopy (fn_hom_eq a b) 
 
 @[hott]
+def idtoiso_rfl_eq [category.{v} C] : ∀ a : Cᵒᵖ, 
+  iso_to_iso_op (idtoiso (unop a) (unop a) (id_op_to_id (@rfl _ a))) = 
+  idtoiso a a (@rfl _ a) :=
+begin intro a, apply hom_eq_to_iso_eq, change 𝟙 a = 𝟙 a, refl end 
+
+@[hott, instance]
 def ideqviso_op [category.{v} C] : ∀ a b : Cᵒᵖ, is_equiv (idtoiso a b) :=
-  sorry
+  assume a b,
+  let f := @id_op_to_id _ _ a b, g := @idtoiso _ _ (unop a) (unop b), 
+      h := @iso_to_iso_op _ _ a b in
+  have id_optoiso_op : is_equiv (h ∘ g ∘ f), from is_equiv_compose h (g ∘ f), 
+  let hgf := λ (a b : Cᵒᵖ) (p : a = b), 
+             iso_to_iso_op (idtoiso (unop a) (unop b) (id_op_to_id p)) in
+  have idtoiso_eq : hgf a b = @idtoiso _ _ a b, from fn_id_rfl _ _ idtoiso_rfl_eq a b,
+  begin rwr <- idtoiso_eq; exact id_optoiso_op end
 
 @[hott, instance]
 def category.opposite [category.{v} C] : category.{v} Cᵒᵖ :=
-  category.mk ideqviso_op
+  category.mk ideqviso_op 
 
 end category_theory
 
