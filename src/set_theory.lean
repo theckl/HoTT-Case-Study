@@ -14,6 +14,11 @@ hott_theory_cmd "local infixr  ` ∘ `:80      := hott.function.comp"
 
 namespace set
 
+/- `Prop`s are `Set`s. -/
+@[hott]
+def Prop_to_Set : trunctype.{u} -1 -> Set.{u} :=
+  λ P, Set.mk P (is_trunc_succ P -1)
+
 /- We need the empty set, the identity map between sets and some properties of maps between sets. They can be 
    derived from properties of general (n-)types, in [function], but we give them separate definitions adapted 
    to sets, to make them more accessible. -/
