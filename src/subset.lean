@@ -28,6 +28,10 @@ instance sset_to_set (A : Set) : has_coe_to_sort (Subset A) :=
 attribute [instance] Subset.inj 
 
 @[hott]
+instance coe_sset {A : Set} (B : Subset A) : has_coe ↥B A :=
+  ⟨λ b, B.map b⟩
+
+@[hott]
 def total_Subset (A : Set) : Subset A := 
   have id_is_inj : is_set_injective (id_map A), 
     from assume a1 a2 f_eq, 
@@ -588,6 +592,10 @@ sset_to_pred S a
 
 hott_theory_cmd "local infix  `∈`:70 := hott.subset.elem"
 
+@[hott, instance]
+def is_prop_elem (a : A) (S : Subset A) : is_prop (a ∈ S) :=
+  (a ∈ S).struct  
+
 notation `{ ` binder ` ∈ ` B ` | ` P:scoped  ` }` := @pred_to_sset B P 
 
 @[hott]
@@ -595,6 +603,12 @@ def is_subset_of (B C : Subset A) :=
   forall a : A, a ∈ B -> a ∈ C
 
 notation [parsing_only] B `⊆` C := is_subset_of B C
+
+@[hott, instance]
+def is_prop_subset (B C : Subset A) : is_prop (B ⊆ C) :=
+  have Pss : ∀ a : A, is_prop (a ∈ B -> a ∈ C), from 
+    assume a, is_prop_map ((a ∈ C).struct),
+  is_prop_dprod Pss
 
 @[hott]   
 inductive construct_elem (P : A → trunctype.{u} -1) /- Should be [Prop]. -/
