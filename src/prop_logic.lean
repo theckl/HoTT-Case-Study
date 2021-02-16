@@ -6,6 +6,11 @@ hott_theory
 namespace hott
 open is_trunc trunc equiv hott.is_equiv hott.prod
 
+/- Nicer name for construction of `Prop` from `is_prop`. -/
+@[hott]
+def to_Prop (A : Type u) [pA : is_prop A] : trunctype -1 :=
+  trunctype.mk A pA  
+
 /- We define [True] and [False] as (bundled) propositions. -/
 @[hott]
 inductive true : Type u
