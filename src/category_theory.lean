@@ -299,6 +299,18 @@ def ideqviso_op [category.{v} C] : ∀ a b : Cᵒᵖ, is_equiv (idtoiso a b) :=
 def category.opposite [category.{v} C] : category.{v} Cᵒᵖ :=
   category.mk ideqviso_op 
 
+/- The power set `𝒫 A` of a set `A` is a precategory, with inclusions of 
+   subsets as morphisms. -/
+@[hott, instance]   
+def power_set_has_hom  {A : Set.{u}} : has_hom (𝒫 A) :=
+  has_hom.mk (λ U V : Subset A, Prop_to_Set (to_Prop (U ⊆ V))) 
+  /- I am not sure whether coercions from `Type` to `Prop` and `Prop` to 
+    `Set`are a good idea. They may introduce circuitious coercions. -/     
+
+@[hott, instance]
+def power_set_cat_struct {A : Set.{u}} : category_struct (𝒫 A) := 
+  category_struct.mk subset_refl subset_trans
+
 end category_theory
 
 end hott
