@@ -302,15 +302,44 @@ def category.opposite [category.{v} C] : category.{v} Cᵒᵖ :=
 /- The power set `𝒫 A` of a set `A` is a precategory, with inclusions of 
    subsets as morphisms. -/
 @[hott, instance]   
-def power_set_has_hom  {A : Set.{u}} : has_hom (𝒫 A) :=
+def power_set_has_hom {A : Set.{u}} : has_hom (𝒫 A) :=
   has_hom.mk (λ U V : Subset A, Prop_to_Set (to_Prop (U ⊆ V))) 
   /- I am not sure whether coercions from `Type` to `Prop` and `Prop` to 
     `Set`are a good idea. They may introduce circuitious coercions. -/     
+
+@[hott]
+def power_set_unique_hom {A : Set.{u}} {B C : 𝒫 A} (f g : B ⟶ C) : f = g :=
+  @is_prop.elim _ (is_prop_subset B C) f g
 
 @[hott, instance]
 def power_set_cat_struct {A : Set.{u}} : category_struct (𝒫 A) := 
   category_struct.mk subset_refl subset_trans
 
+@[hott, instance]
+def power_set_precat {A : Set.{u}} : precategory (𝒫 A) :=
+  have id_comp : ∀ (B C : 𝒫 A) (f : B ⟶ C), 𝟙 B ≫ f = f, from 
+    assume B C f, power_set_unique_hom _ _,
+  have comp_id : ∀ (B C : 𝒫 A) (f : B ⟶ C), f ≫ 𝟙 C = f, from 
+    assume B C f, power_set_unique_hom _ _,
+  have assoc   : ∀ (B C D E : 𝒫 A) (f : B ⟶ C) (g : C ⟶ D) (h : D ⟶ E),
+                    (f ≫ g) ≫ h = f ≫ (g ≫ h), from
+    assume B C D E f g h, power_set_unique_hom _ _,                   
+  precategory.mk id_comp comp_id assoc
+
+/- Every subset of a set that is a (small?) precategory is a 
+   (full sub-) precategory. -/
+@[hott, instance]
+def subset_precat_has_hom {A : Set.{u}} [hA : has_hom A] (B : Subset A) :
+  has_hom ↥B :=
+has_hom.mk (λ x y : ↥↥B, @has_hom.hom _ hA x y)  
+
+@[hott, instance]
+def subset_precat_cat_struct {A : Set.{u}} [hA : category_struct A] 
+  (B : Subset A) : category_struct ↥B :=
+category_struct.mk (λ b : ↥↥B, @category_struct.id _ hA ↑b)
+  (λ (b c d : ↥↥B) (f : b ⟶ c) (g : c ⟶ d), 
+        @category_struct.comp _ hA ↑b ↑c ↑d f g)
+                    
 end category_theory
 
 end hott
