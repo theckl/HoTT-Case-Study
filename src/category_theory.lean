@@ -327,7 +327,7 @@ def power_set_precat {A : Set.{u}} : precategory (𝒫 A) :=
   precategory.mk id_comp comp_id assoc
 
 /- Every subset of a set that is a (small?) precategory is a 
-   (full sub-) precategory. -/
+   (full sub-)precategory. -/
 @[hott, instance]
 def subset_precat_has_hom {A : Set.{u}} [hA : has_hom A] (B : Subset A) :
   has_hom ↥B :=
@@ -340,6 +340,15 @@ category_struct.mk (λ b : ↥↥B, @category_struct.id _ hA ↑b)
   (λ (b c d : ↥↥B) (f : b ⟶ c) (g : c ⟶ d), 
         @category_struct.comp _ hA ↑b ↑c ↑d f g)
                     
+@[hott, instance]
+def subset_precat_precat {A : Set.{u}} [hA : precategory A] 
+  (B : Subset A) : precategory ↥B :=
+/- have id_comp : ∀ (b c : ↥↥B) (f : b ⟶ c), 𝟙 b ≫ f = f, from sorry, -/
+precategory.mk (λ (b c : ↥↥B) (f : b ⟶ c), precategory.id_comp f) 
+               (λ (b c : ↥↥B) (f : b ⟶ c), precategory.comp_id f) 
+               (λ (b c d e: ↥↥B) (f : b ⟶ c) (g : c ⟶ d) (h : d ⟶ e), 
+                  precategory.assoc f g h)    
+
 end category_theory
 
 end hott
