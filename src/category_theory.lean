@@ -1,6 +1,6 @@
 import setalgebra pathover2
 
-universes v u w
+universes v u v' u' w
 hott_theory
 
 namespace hott
@@ -104,7 +104,6 @@ class category (obj : Type u) extends precategory.{v} obj :=
 attribute [instance] category.ideqviso
 
 section
-universes v' u'
 variables (C : Type u) (D : Type u')
 
 /- Functors are defined between precategories. -/
@@ -120,6 +119,13 @@ infixr ` ⥤ `:26 := functor
 
 attribute [simp] functor.map_id
 attribute [simp] functor.map_comp
+
+@[hott]
+def constant_functor [precategory.{v} C] [precategory.{v'} D] (d : D) : 
+  C ⥤ D := 
+have id_hom_eq : ∀ d : D, 𝟙 d = 𝟙 d ≫ 𝟙 d, by intro d; hsimp,  
+functor.mk (λ c : C, d) (λ c₁ c₂ f, 𝟙 d) (λ c, rfl) 
+  (λ c₁ c₂ c₃ f g, (id_hom_eq d))
 
 end
 
