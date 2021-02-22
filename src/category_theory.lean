@@ -11,7 +11,7 @@ We introduce precategories and categories following the HoTT book,
 Sec. 9.1. HoTT precategories have sets of homomorphisms, and HoTT categories 
 prescribe univalence : Isomorphisms are equivalent to identities of objects.
 
-As far as possble we copy the mathlib-code in [category_theory.category.default].
+As far as possible we copy the mathlib-code in [category_theory.category.default].
 -/
 
 namespace category_theory
@@ -126,6 +126,14 @@ def constant_functor [precategory.{v} C] [precategory.{v'} D] (d : D) :
 have id_hom_eq : ∀ d : D, 𝟙 d = 𝟙 d ≫ 𝟙 d, by intro d; hsimp,  
 functor.mk (λ c : C, d) (λ c₁ c₂ f, 𝟙 d) (λ c, rfl) 
   (λ c₁ c₂ c₃ f g, (id_hom_eq d))
+
+@[hott]
+structure nat_trans [precategory.{v} C] [precategory.{v'} D] (F G : C ⥤ D) :=
+(app : Π c : C, (F.obj c) ⟶ (G.obj c))
+(naturality' : ∀ {c c' : C} (f : c ⟶ c'), 
+                                 (F.map f) ≫ (app c') = (app c) ≫ (G.map f))  
+
+infixr ` ⟹ `:10 := nat_trans _ _
 
 end
 
