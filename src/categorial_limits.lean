@@ -15,8 +15,16 @@ namespace category_theory.limits
 
 structure cone {J : Set.{v}} [precategory J] {C : Type u} 
   [precategory C] (F : J ⥤ C) :=
-(c : C)
-(π : (constant_functor J C c) ⟹ F)
+(X : C)
+(π : (constant_functor J C X) ⟹ F)
+
+@[hott]
+structure is_limit {J : Set.{v}} [precategory J] {C : Type u} [precategory C] 
+  {F : J ⥤ C} (t : cone F) :=
+(lift : Π (s : cone F), s.X ⟶ t.X)
+(fac  : ∀ (s : cone F) (j : J), lift s ≫ t.π.app j = s.π.app j)
+(uniq : ∀ (s : cone F) (m : s.X ⟶ t.X) (w : ∀ j : J, m ≫ t.π.app j = s.π.app j),
+           m = lift s)
 
 end category_theory.limits
 
