@@ -26,10 +26,23 @@ structure is_limit {J : Set.{v}} [precategory J] {C : Type u} [precategory C]
 (uniq : ∀ (s : cone F) (m : s.X ⟶ t.X) 
           (w : ∀ j : J, m ≫ t.π.app j = s.π.app j), m = lift s)
 
+@[hott] 
+def lift_itself_id {J : Set.{v}} [precategory J] {C : Type u} [precategory C] 
+  {F : J ⥤ C} {t : cone F} (l : is_limit t) : l.lift t = 𝟙 t.X :=
+have t_fac : ∀ j : J, 𝟙 t.X ≫ t.π.app j = t.π.app j, by intro j; hsimp,  
+(l.uniq _ _ t_fac)⁻¹             
+
 @[hott]
 def limit_cone_point_iso {J : Set.{v}} [precategory J] {C : Type u} [precategory C] 
-  {F : J ⥤ C} (s t : cone F) [is_limit s] [is_limit t] : s.X ≅ t.X :=
-sorry  
+  {F : J ⥤ C} {s t : cone F} (lₛ : is_limit s) (lₜ : is_limit t) : s.X ≅ t.X :=
+let st := lₜ.lift s, ts := lₛ.lift t in 
+have s_fac : ∀ j : J, (st ≫ ts) ≫ s.π.app j = s.π.app j, from assume j,
+  sorry,
+have t_fac : ∀ j : J, (ts ≫ st) ≫ t.π.app j = t.π.app j, from assume j, 
+  sorry,
+have comp_s : st ≫ ts = 𝟙 s.X, from lₛ.uniq _ _ s_fac ⬝ lift_itself_id lₛ, 
+have comp_t : ts ≫ st = 𝟙 t.X, from lₜ.uniq _ _ t_fac ⬝ lift_itself_id lₜ,
+iso.mk st ts comp_t comp_s
 
 /- `limit_cone F` contains a cone over `F` together with the information that 
    it is a limit. -/
@@ -56,14 +69,21 @@ has_limit.mk' (tr d)
 @[hott]
 def limit_cone_is_unique {J : Set.{v}} [precategory J] {C : Type u} [category C] 
   (F : J ⥤ C) : ∀ lc₁ lc₂ : limit_cone F, lc₁ = lc₂ :=
-assume lc₁ lc₂,
-have lc_eta : ∀ lc : limit_cone F, lc = ⟨lc.cone, lc.is_limit⟩, by
-  intro lc; hinduction lc; refl,
-have cone_id : lc₁.cone = lc₂.cone, from sorry,
-have is_limit_id : lc₁.is_limit =[cone_id] lc₂.is_limit, from sorry,  
-calc lc₁ = ⟨lc₁.cone, lc₁.is_limit⟩ : lc_eta lc₁
-     ... = ⟨lc₂.cone, lc₂.is_limit⟩ : apd011 _ cone_id is_limit_id
-     ... = lc₂ : (lc_eta lc₂)⁻¹  
+begin
+  intros lc₁ lc₂, 
+  hinduction lc₁ with cone₁ is_limit₁, 
+  hinduction lc₂ with cone₂ is_limit₂,
+  have cone_id : cone₁ = cone₂, from 
+    begin 
+      hinduction cone₁ with X₁ π₁,
+      hinduction cone₂ with X₂ π₂,
+      have cone_pt_id : X₁ = X₂, from sorry,
+      apply apd011 cone.mk cone_pt_id,
+      sorry
+    end,
+  apply apd011 limit_cone.mk cone_id,
+  sorry
+end    
 
 @[hott, instance]
 def limit_cone_is_prop {J : Set.{v}} [precategory J] {C : Type u} [category C] 
