@@ -103,6 +103,12 @@ class category (obj : Type u) extends precategory.{v} obj :=
 
 attribute [instance] category.ideqviso
 
+@[hott]
+def category.isotoid {obj : Type u} [category.{v} obj] : 
+  Π a b : obj, a ≅ b -> a = b :=
+assume a b iso,  
+@is_equiv.inv _ _ _ (category.ideqviso a b) iso  
+
 section
 variables (C : Type u) (D : Type u')
 
@@ -130,7 +136,7 @@ functor.mk (λ c : C, d) (λ c₁ c₂ f, 𝟙 d) (λ c, rfl)
 @[hott]
 structure nat_trans [precategory.{v} C] [precategory.{v'} D] (F G : C ⥤ D) :=
 (app : Π c : C, (F.obj c) ⟶ (G.obj c))
-(naturality' : ∀ {c c' : C} (f : c ⟶ c'), 
+(naturality : ∀ {c c' : C} (f : c ⟶ c'), 
                                  (F.map f) ≫ (app c') = (app c) ≫ (G.map f))  
 
 infixr ` ⟹ `:10 := nat_trans _ _
