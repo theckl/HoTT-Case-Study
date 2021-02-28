@@ -37,9 +37,13 @@ def limit_cone_point_iso {J : Set.{v}} [precategory J] {C : Type u} [precategory
   {F : J ⥤ C} {s t : cone F} (lₛ : is_limit s) (lₜ : is_limit t) : s.X ≅ t.X :=
 let st := lₜ.lift s, ts := lₛ.lift t in 
 have s_fac : ∀ j : J, (st ≫ ts) ≫ s.π.app j = s.π.app j, from assume j,
-  sorry,
+  calc (st ≫ ts) ≫ s.π.app j = st ≫ (ts ≫ s.π.app j) : precategory.assoc _ _ _
+       ... = st ≫ t.π.app j : by rwr lₛ.fac t j
+       ... = s.π.app j : by rwr lₜ.fac s j,
 have t_fac : ∀ j : J, (ts ≫ st) ≫ t.π.app j = t.π.app j, from assume j, 
-  sorry,
+  calc (ts ≫ st) ≫ t.π.app j = ts ≫ (st ≫ t.π.app j) : precategory.assoc _ _ _
+       ... = ts ≫ s.π.app j : by rwr lₜ.fac s j 
+       ... = t.π.app j : by rwr lₛ.fac t j,
 have comp_s : st ≫ ts = 𝟙 s.X, from lₛ.uniq _ _ s_fac ⬝ lift_itself_id lₛ, 
 have comp_t : ts ≫ st = 𝟙 t.X, from lₜ.uniq _ _ t_fac ⬝ lift_itself_id lₜ,
 iso.mk st ts comp_t comp_s
@@ -77,7 +81,8 @@ begin
     begin 
       hinduction cone₁ with X₁ π₁,
       hinduction cone₂ with X₂ π₂,
-      have cone_pt_id : X₁ = X₂, from sorry,
+      have cone_pt_iso : X₁ ≅ X₂, from limit_cone_point_iso is_limit₁ is_limit₂,
+      have cone_pt_id : X₁ = X₂, from category.isotoid _ _ cone_pt_iso,
       apply apd011 cone.mk cone_pt_id,
       sorry
     end,
