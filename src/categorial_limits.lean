@@ -83,7 +83,8 @@ begin
       hinduction cone₂ with X₂ π₂,
       have cone_pt_iso : X₁ ≅ X₂, from limit_cone_point_iso is_limit₁ is_limit₂,
       have cone_pt_id : X₁ = X₂, from category.isotoid _ _ cone_pt_iso,
-      apply apd011 cone.mk cone_pt_id,
+      apply apd011 cone.mk cone_pt_id, apply pathover_of_tr_eq,
+      hinduction π₁ with app₁ nat₁, hinduction π₂ with app₂ nat₂, 
       sorry
     end,
   apply apd011 limit_cone.mk cone_id,
