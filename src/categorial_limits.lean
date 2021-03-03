@@ -75,17 +75,23 @@ def limit_cone_is_unique {J : Set.{v}} [precategory J] {C : Type u} [category C]
   (F : J ⥤ C) : ∀ lc₁ lc₂ : limit_cone F, lc₁ = lc₂ :=
 begin
   intros lc₁ lc₂, 
-  hinduction lc₁ with cone₁ is_limit₁, 
+  hinduction lc₁ with cone₁ is_limit₁,  
   hinduction lc₂ with cone₂ is_limit₂,
   have cone_id : cone₁ = cone₂, from 
     begin 
-      hinduction cone₁ with X₁ π₁,
-      hinduction cone₂ with X₂ π₂,
+      hinduction cone₁ with X₁ π₁, hinduction cone₂ with X₂ π₂,
       have cone_pt_iso : X₁ ≅ X₂, from limit_cone_point_iso is_limit₁ is_limit₂,
       have cone_pt_id : X₁ = X₂, from category.isotoid _ _ cone_pt_iso,
-      apply apd011 cone.mk cone_pt_id, apply pathover_of_tr_eq,
+      hinduction cone_pt_id,
+      apply apd011 cone.mk rfl,
       hinduction π₁ with app₁ nat₁, hinduction π₂ with app₂ nat₂, 
-      sorry
+      apply apdo0111 (λ c : C, @nat_trans.mk _ _ _ _ (constant_functor ↥J C c) F) rfl,
+      { apply pathover_of_tr_eq, apply eq_of_homotopy3, intros c c' f, 
+        apply is_set.elim }, 
+      { apply pathover_of_tr_eq, apply eq_of_homotopy, intro j, 
+        rwr tr_fn_tr_eval, hsimp,
+
+        sorry }  
     end,
   apply apd011 limit_cone.mk cone_id,
   sorry
