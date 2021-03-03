@@ -62,6 +62,10 @@ def iso.eta {C : Type u} [precategory.{v} C] {a b : C} (i : a ≅ b) :
   i = iso.mk i.hom i.inv i.r_inv i.l_inv :=
 begin hinduction i, hsimp end  
 
+@[hott]
+def inv_iso {C : Type u} [precategory.{v} C] {a b : C} (i : a ≅ b) : b ≅ a :=
+  iso.mk i.inv i.hom i.l_inv i.r_inv
+
 /- Isomorphisms are uniquely determined by their underlying homomorphism:
    The inverse map by functorial equalities, and the functorial equailities 
    because the types of homomorphisms are sets. -/
@@ -93,13 +97,24 @@ def id_is_iso {C : Type u} [precategory.{v} C] (a : C) : a ≅ a :=
   iso.mk (𝟙 a) (𝟙 a) inv_eq inv_eq
 
 @[hott, hsimp]
-def idtoiso {C : Type u} [precategory.{v} C] (a b : C) : (a = b) -> (a ≅ b) :=
+def idtoiso {C : Type u} [precategory.{v} C] {a b : C} : (a = b) -> (a ≅ b) :=
   begin intro eq, hinduction eq, exact id_is_iso a end
+
+/- `idtoiso` is natural. -/
+@[hott]
+def id_inv_iso_inv {C : Type u} [precategory.{v} C] {c₁ c₂ : C} (p : c₁ = c₂) :
+  idtoiso p⁻¹ = inv_iso (idtoiso p) := 
+begin hinduction p, refl end 
+
+@[hott]
+def tr_hom_iso_comp {C : Type u} [precategory.{v} C] {c₁ c₂ d : C} (p : c₁ = c₂)
+  (h : c₁ ⟶ d) : p ▸ h = (idtoiso p)⁻¹ʰ ≫ h :=
+begin hinduction p, hsimp end   
 
 /-- The structure of a category. -/
 @[hott]
 class category (obj : Type u) extends precategory.{v} obj :=
-(ideqviso : ∀ a b : obj, is_equiv (idtoiso a b)) 
+(ideqviso : ∀ a b : obj, is_equiv (@idtoiso _ _ a b)) 
 
 attribute [instance] category.ideqviso
 
@@ -300,18 +315,18 @@ eq_of_homotopy (fn_hom_eq a b)
 
 @[hott]
 def idtoiso_rfl_eq [category.{v} C] : ∀ a : Cᵒᵖ, 
-  iso_to_iso_op (idtoiso (unop a) (unop a) (id_op_to_id (@rfl _ a))) = 
-  idtoiso a a (@rfl _ a) :=
+  iso_to_iso_op (idtoiso (id_op_to_id (@rfl _ a))) = 
+  idtoiso (@rfl _ a) :=
 begin intro a, apply hom_eq_to_iso_eq, change 𝟙 a = 𝟙 a, refl end 
 
 @[hott, instance]
-def ideqviso_op [category.{v} C] : ∀ a b : Cᵒᵖ, is_equiv (idtoiso a b) :=
+def ideqviso_op [category.{v} C] : ∀ a b : Cᵒᵖ, is_equiv (@idtoiso _ _ a b) :=
   assume a b,
   let f := @id_op_to_id _ _ a b, g := @idtoiso _ _ (unop a) (unop b), 
       h := @iso_to_iso_op _ _ a b in
   have id_optoiso_op : is_equiv (h ∘ g ∘ f), from is_equiv_compose h (g ∘ f), 
   let hgf := λ (a b : Cᵒᵖ) (p : a = b), 
-             iso_to_iso_op (idtoiso (unop a) (unop b) (id_op_to_id p)) in
+             iso_to_iso_op (idtoiso (id_op_to_id p)) in
   have idtoiso_eq : hgf a b = @idtoiso _ _ a b, from fn_id_rfl _ _ idtoiso_rfl_eq a b,
   begin rwr <- idtoiso_eq; exact id_optoiso_op end
 
