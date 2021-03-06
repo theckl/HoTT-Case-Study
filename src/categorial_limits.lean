@@ -34,7 +34,8 @@ have t_fac : ∀ j : J, 𝟙 t.X ≫ t.π.app j = t.π.app j, by intro j; hsimp,
 
 @[hott]
 def limit_cone_point_iso {J : Set.{v}} [precategory J] {C : Type u} [precategory C] 
-  {F : J ⥤ C} {s t : cone F} (lₛ : is_limit s) (lₜ : is_limit t) : s.X ≅ t.X :=
+  {F : J ⥤ C} {s t : cone F} (lₛ : is_limit s) (lₜ : is_limit t) : 
+Σ i : s.X ≅ t.X, i.hom = lₜ.lift s :=
 let st := lₜ.lift s, ts := lₛ.lift t in 
 have s_fac : ∀ j : J, (st ≫ ts) ≫ s.π.app j = s.π.app j, from assume j,
   calc (st ≫ ts) ≫ s.π.app j = st ≫ (ts ≫ s.π.app j) : precategory.assoc _ _ _
@@ -46,7 +47,7 @@ have t_fac : ∀ j : J, (ts ≫ st) ≫ t.π.app j = t.π.app j, from assume j,
        ... = t.π.app j : by rwr lₛ.fac t j,
 have comp_s : st ≫ ts = 𝟙 s.X, from lₛ.uniq _ _ s_fac ⬝ lift_itself_id lₛ, 
 have comp_t : ts ≫ st = 𝟙 t.X, from lₜ.uniq _ _ t_fac ⬝ lift_itself_id lₜ,
-iso.mk st ts comp_t comp_s
+⟨iso.mk st ts comp_t comp_s, rfl⟩
 
 /- `limit_cone F` contains a cone over `F` together with the information that 
    it is a limit. -/
@@ -57,9 +58,7 @@ structure limit_cone {J : Set.{v}} [precategory J] {C : Type u} [precategory C]
 (is_limit : is_limit cone)
 
 /- `has_limit F` represents the mere existence of a limit for `F`. This allows
-   to define as a class with instances. However, if `C` is a category, 
-   `limit_cone F` is a (-1)-Type since limits are determined up to isomorphism,
-   so we can extract a limit cone from `has_limit`. -/
+   to define it as a class with instances. -/ 
 @[hott]   
 class has_limit {J : Set.{v}} [precategory J] {C : Type u} [precategory C] 
   (F : J ⥤ C) :=
@@ -70,31 +69,41 @@ def has_limit.mk {J : Set.{v}} [precategory J] {C : Type u} [precategory C]
   {F : J ⥤ C} (d : limit_cone F) :=
 has_limit.mk' (tr d)  
 
+/- Note that even if `C` is a category, only the limit cone points of two 
+   instances of `limit_cone F` are equal since limits are 
+   determined up to isomorphism, whereas the "legs" of the cone are only 
+   determined up to composition with an automorphism of this unique limit cone 
+   point. 
+   
+   However, as a subset of the homorphism of the limit cone point to itself 
+   these automorphisms are a set, so we can use the Axiom of Choice to
+   produce a `limit_cone F` from `has_limit F`. -/
 @[hott]
 def limit_cone_is_unique {J : Set.{v}} [precategory J] {C : Type u} [category C] 
   (F : J ⥤ C) : ∀ lc₁ lc₂ : limit_cone F, lc₁ = lc₂ :=
 begin
   intros lc₁ lc₂, 
-  hinduction lc₁ with cone₁ is_limit₁,  
-  hinduction lc₂ with cone₂ is_limit₂,
-  have cone_id : cone₁ = cone₂, from 
-    begin 
-      hinduction cone₁ with X₁ π₁, hinduction cone₂ with X₂ π₂,
-      have cone_pt_iso : X₁ ≅ X₂, from limit_cone_point_iso is_limit₁ is_limit₂,
-      have cone_pt_id : X₁ = X₂, from category.isotoid _ _ cone_pt_iso,
-      hinduction cone_pt_id,
-      apply apd011 cone.mk rfl,
-      hinduction π₁ with app₁ nat₁, hinduction π₂ with app₂ nat₂, 
-      apply apdo0111 (λ c : C, @nat_trans.mk _ _ _ _ (constant_functor ↥J C c) F) rfl,
-      { apply pathover_of_tr_eq, apply eq_of_homotopy3, intros c c' f, 
+  hinduction lc₁ with cone₁ is_limit₁, hinduction lc₂ with cone₂ is_limit₂,
+  fapply apd011 limit_cone.mk,
+  { hinduction cone₁ with X₁ π₁, hinduction cone₂ with X₂ π₂, 
+    let lcp_iso := limit_cone_point_iso is_limit₁ is_limit₂,
+    fapply apd011 cone.mk,
+    { exact idtoiso⁻¹ᶠ lcp_iso.1 },
+    { hinduction π₁ with app₁ nat₁, hinduction π₂ with app₂ nat₂, 
+      fapply apdo0111 (λ c : C, @nat_trans.mk _ _ _ _ (constant_functor ↥J C c) F),
+      { apply pathover_of_tr_eq, apply eq_of_homotopy, 
+        intro j, rwr tr_fn_tr_eval,
+        change idtoiso⁻¹ᶠ lcp_iso.1 ▸[λ X : C, X ⟶ F.obj j] app₁ j = app₂ j, 
+        rwr iso_hom_tr_comp lcp_iso.1 (app₁ j), 
+        sorry },
+      sorry } },
+  sorry
+/-   { apply pathover_of_tr_eq, apply eq_of_homotopy3, intros c c' f, 
         apply is_set.elim }, 
       { apply pathover_of_tr_eq, apply eq_of_homotopy, intro j, 
         rwr tr_fn_tr_eval, hsimp,
 
-        sorry }  
-    end,
-  apply apd011 limit_cone.mk cone_id,
-  sorry
+        sorry }  -/   
 end    
 
 @[hott, instance]
