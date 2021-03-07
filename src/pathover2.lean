@@ -24,6 +24,16 @@ def apdo0111 {A : Type _} {B C : A -> Type _} {D : Π a : A, B a -> Type _}
 begin hinduction p, hinduction q, hinduction r, refl end 
 
 @[hott]
+def apdo01111 {A : Type _} {B E : A -> Type _} {C D : Π a : A, B a -> Type _}
+  (f : Π (a : A) (b : B a), C a b -> D a b -> E a)
+  {a₁ a₂ : A} {b₁ : B a₁} {b₂ : B a₂} {c₁ : C a₁ b₁} {c₂ : C a₂ b₂} 
+  {d₁ : D a₁ b₁} {d₂ : D a₂ b₂}
+  (p : a₁ = a₂) (q : b₁ =[p] b₂) (r₁ : c₁ =[apd011 C p q; hott.set.id] c₂) 
+  (r₂ : d₁ =[apd011 D p q; hott.set.id] d₂) :
+  f a₁ b₁ c₁ d₁ =[p] f a₂ b₂ c₂ d₂ :=
+begin hinduction p, hinduction q, hinduction r₁, hinduction r₂, refl end 
+
+@[hott]
 def tr_fn_tr_eval {A B : Type _} {C : A -> B -> Type _} {a₁ a₂ : A}
   (f : Π (b : B), C a₁ b) (p : a₁ = a₂) (b : B) :
   (p ▸ f) b = p ▸ (f b) :=
