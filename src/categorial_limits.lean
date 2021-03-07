@@ -70,15 +70,13 @@ def has_limit.mk {J : Set.{v}} [precategory J] {C : Type u} [precategory C]
   {F : J ⥤ C} (d : limit_cone F) :=
 has_limit.mk' (tr d)  
 
-/- Note that even if `C` is a category, only the limit cone points of two 
-   instances of `limit_cone F` are equal since limits are 
-   determined up to isomorphism, whereas the "legs" of the cone are only 
-   determined up to composition with an automorphism of this unique limit cone 
-   point. 
+/- If `C` is a category, the limit cone points of two instances of 
+  `limit_cone F` are equal since they are determined up to isomorphism. Then 
+   the "legs" of the cones and the lifts of the universal property are 
+   determined up to composition with the automorphism associated to this 
+   equality of limit cone points, and limit cones are equal. 
    
-   However, as a subset of the homorphism of the limit cone point to itself 
-   these automorphisms are a set, so we can use the Axiom of Choice to
-   produce a `limit_cone F` from `has_limit F`. -/
+   Thus, we can produce a `limit_cone F` from `has_limit F`. -/
 @[hott]
 def limit_cone_is_unique {J : Set.{v}} [precategory J] {C : Type u} [category C] 
   (F : J ⥤ C) : ∀ lc₁ lc₂ : limit_cone F, lc₁ = lc₂ :=
