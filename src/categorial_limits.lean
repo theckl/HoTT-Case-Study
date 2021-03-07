@@ -4,7 +4,8 @@ universes v u v' u' w
 hott_theory
 
 namespace hott
-open hott.is_trunc hott.trunc hott.set hott.subset hott.category_theory
+open hott.eq hott.is_trunc hott.trunc hott.set hott.subset 
+     hott.category_theory 
 
 /- We introduce limits of diagrams mapped to categories, by using cones to 
    pick the universal object and encode the universal property.
@@ -84,8 +85,9 @@ def limit_cone_is_unique {J : Set.{v}} [precategory J] {C : Type u} [category C]
 begin
   intros lc₁ lc₂, 
   hinduction lc₁ with cone₁ is_limit₁, hinduction lc₂ with cone₂ is_limit₂,
-  fapply apd011 limit_cone.mk,
-  { hinduction cone₁ with X₁ π₁, hinduction cone₂ with X₂ π₂, 
+  have cone_id : cone₁ = cone₂, from 
+  begin
+    hinduction cone₁ with X₁ π₁, hinduction cone₂ with X₂ π₂,
     let lcp_iso := limit_cone_point_iso is_limit₁ is_limit₂,
     fapply apd011 cone.mk,
     { exact idtoiso⁻¹ᶠ lcp_iso.1 },
@@ -94,12 +96,36 @@ begin
       { apply pathover_of_tr_eq, apply eq_of_homotopy, 
         intro j, rwr tr_fn_tr_eval,
         change idtoiso⁻¹ᶠ lcp_iso.1 ▸[λ X : C, X ⟶ F.obj j] app₁ j = app₂ j, 
-        rwr iso_hom_tr_comp lcp_iso.1 (app₁ j), 
-        sorry },
-      sorry } },
-  sorry
-/-   { apply pathover_of_tr_eq, apply eq_of_homotopy3, intros c c' f, 
-        apply is_set.elim }, 
+        rwr iso_hom_tr_comp lcp_iso.1 (app₁ j), apply inverse, 
+        apply iso_move_lr,
+        exact (ap (λ h : X₁ ⟶ X₂, h ≫ app₂ j) lcp_iso.2) ⬝ 
+              (is_limit₂.fac _ j)},
+      { apply pathover_of_tr_eq, apply eq_of_homotopy3, intros c c' f, 
+        apply is_set.elim } }
+  end,
+  have is_limit_id : is_limit₁ =[cone_id] is_limit₂, from 
+  begin 
+    hinduction cone_id,
+    hinduction is_limit₁ with lift₁ fac₁ uniq₁,
+    hinduction is_limit₂ with lift₂ fac₂ uniq₂, 
+    fapply apdo01111 (@is_limit.mk _ _ _ _ _),
+    { sorry },
+    sorry,
+    sorry
+  end,
+  fapply apd011 limit_cone.mk,
+  { exact cone_id },
+  { exact is_limit_id }
+/-
+  { hinduction is_limit₁ with lift₁ fac₁ uniq₁,
+    hinduction is_limit₂ with lift₂ fac₂ uniq₂, 
+    fapply apdo01111 (@is_limit.mk _ _ _ _ _),
+    let lcp_iso := limit_cone_point_iso (is_limit.mk lift₁ fac₁ uniq₁)
+                                        (is_limit.mk lift₂ fac₂ uniq₂),
+    { change lift₁ =[idtoiso⁻¹ᶠ lcp_iso.1] lift₂, sorry },
+    sorry,
+    sorry }
+   , 
       { apply pathover_of_tr_eq, apply eq_of_homotopy, intro j, 
         rwr tr_fn_tr_eval, hsimp,
 
