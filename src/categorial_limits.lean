@@ -109,27 +109,16 @@ begin
     hinduction is_limit₁ with lift₁ fac₁ uniq₁,
     hinduction is_limit₂ with lift₂ fac₂ uniq₂, 
     fapply apdo01111 (@is_limit.mk _ _ _ _ _),
-    { sorry },
-    sorry,
-    sorry
+    { apply pathover_of_tr_eq, hsimp, apply eq_of_homotopy, intro s,
+      apply uniq₂, exact fac₁ s },
+    { apply pathover_of_tr_eq, apply eq_of_homotopy2, intros s j, 
+        apply is_set.elim },
+    { apply pathover_of_tr_eq, apply eq_of_homotopy3, intros s m id, 
+        apply is_set.elim }
   end,
   fapply apd011 limit_cone.mk,
   { exact cone_id },
   { exact is_limit_id }
-/-
-  { hinduction is_limit₁ with lift₁ fac₁ uniq₁,
-    hinduction is_limit₂ with lift₂ fac₂ uniq₂, 
-    fapply apdo01111 (@is_limit.mk _ _ _ _ _),
-    let lcp_iso := limit_cone_point_iso (is_limit.mk lift₁ fac₁ uniq₁)
-                                        (is_limit.mk lift₂ fac₂ uniq₂),
-    { change lift₁ =[idtoiso⁻¹ᶠ lcp_iso.1] lift₂, sorry },
-    sorry,
-    sorry }
-   , 
-      { apply pathover_of_tr_eq, apply eq_of_homotopy, intro j, 
-        rwr tr_fn_tr_eval, hsimp,
-
-        sorry }  -/   
 end    
 
 @[hott, instance]
