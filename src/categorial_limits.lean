@@ -85,7 +85,7 @@ begin
   hinduction lc₁ with cone₁ is_limit₁, hinduction lc₂ with cone₂ is_limit₂,
   have cone_id : cone₁ = cone₂, from 
   begin
-    hinduction cone₁ with X₁ π₁, hinduction cone₂ with X₂ π₂,
+    hinduction cone₁ with X₁ π₁, hinduction cone₂ with X₂ π₂,  
     let lcp_iso := limit_cone_point_iso is_limit₁ is_limit₂,
     fapply apd011 cone.mk,
     { exact idtoiso⁻¹ᶠ lcp_iso.1 },
@@ -128,6 +128,11 @@ is_prop.mk (limit_cone_is_unique F)
 def get_limit_cone {J : Set.{v}} [precategory J] {C : Type u} [category C] 
   (F : J ⥤ C) [has_limit F] : limit_cone F :=
 untrunc_of_is_trunc (has_limit.exists_limit F)  
+
+@[hott]
+class has_limits_of_shape {J : Set.{v}} [precategory J] {C : Type u} 
+  [category C] :=
+  (has_limit : Π F : J ⥤ C, has_limit F)
 
 end category_theory.limits
 
