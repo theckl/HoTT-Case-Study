@@ -453,11 +453,38 @@ category_struct.mk (λ b : ↥↥B, @category_struct.id _ hA ↑b)
 @[hott, instance]
 def subset_precat_precat {A : Set.{u}} [hA : precategory A] 
   (B : Subset A) : precategory ↥B :=
-/- have id_comp : ∀ (b c : ↥↥B) (f : b ⟶ c), 𝟙 b ≫ f = f, from sorry, -/
 precategory.mk (λ (b c : ↥↥B) (f : b ⟶ c), precategory.id_comp f) 
                (λ (b c : ↥↥B) (f : b ⟶ c), precategory.comp_id f) 
                (λ (b c d e: ↥↥B) (f : b ⟶ c) (g : c ⟶ d) (h : d ⟶ e), 
                   precategory.assoc f g h)    
+
+/- We define the discrete precategory structure on a set, whose morphisms are
+   only equalities. 
+   
+   It is obviously also a category structure, but this is not needed anywhere. 
+   
+   We start with a synonym for any set indicating that it has a precategory 
+   structure. -/
+@[hott]
+def discrete (A : Set.{u}) := A
+
+@[hott, instance]
+def discrete_cat_has_hom (A : Set.{u}) : has_hom (discrete A) :=
+  has_hom.mk (λ a b : A, Set.mk (a = b) 
+                                (@is_trunc_succ (a = b) -1 (is_trunc_eq -1 a b)))
+
+@[hott, instance]
+def discrete_cat_struct (A : Set.{u}) : category_struct (discrete A) :=
+  category_struct.mk (λ a : discrete A, @rfl A a)
+                     (λ (a b c: discrete A) (f : a ⟶ b) (g : b ⟶ c), f ⬝ g)
+
+@[hott, instance]
+def discrete_precategory (A : Set.{u}) : precategory (discrete A) :=
+  have ic : Π (a b : discrete A) (f : a ⟶ b), 𝟙 a ≫ f = f, from sorry,
+  have ci : Π (a b : discrete A) (f : a ⟶ b), f ≫ 𝟙 b = f, from sorry,
+  have as : Π (a b c d : discrete A) (f : a ⟶ b) (g : b ⟶ c) (h : c ⟶ d),
+             (f ≫ g) ≫ h = f ≫ (g ≫ h), from sorry,
+  precategory.mk ic ci as
 
 end category_theory
 
