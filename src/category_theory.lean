@@ -1,10 +1,10 @@
-import setalgebra pathover2
+import setalgebra pathover2 set_axioms
 
 universes v u v' u' w
 hott_theory
 
 namespace hott
-open hott.set hott.subset hott.is_trunc hott.is_equiv
+open hott.eq hott.set hott.subset hott.is_trunc hott.is_equiv
 
 /-
 We introduce precategories and categories following the HoTT book, 
@@ -480,11 +480,35 @@ def discrete_cat_struct (A : Set.{u}) : category_struct (discrete A) :=
 
 @[hott, instance]
 def discrete_precategory (A : Set.{u}) : precategory (discrete A) :=
-  have ic : Π (a b : discrete A) (f : a ⟶ b), 𝟙 a ≫ f = f, from sorry,
-  have ci : Π (a b : discrete A) (f : a ⟶ b), f ≫ 𝟙 b = f, from sorry,
+  have ic : Π (a b : discrete A) (f : a ⟶ b), 𝟙 a ≫ f = f, from 
+    assume a b f, idp_con f,
+  have ci : Π (a b : discrete A) (f : a ⟶ b), f ≫ 𝟙 b = f, from 
+    assume a b f, con_idp f,
   have as : Π (a b c d : discrete A) (f : a ⟶ b) (g : b ⟶ c) (h : c ⟶ d),
-             (f ≫ g) ≫ h = f ≫ (g ≫ h), from sorry,
+             (f ≫ g) ≫ h = f ≫ (g ≫ h), from 
+    assume a b c d f g h, con.assoc f g h,
   precategory.mk ic ci as
+
+/- [walking_parallel_pair] is the indexing category for (co-)equalizers. -/
+@[hott]
+abbreviation walking_parallel_pair := Two_Set
+
+@[hott]
+def walking_parallel_pair_hom : ∀ s t : walking_parallel_pair, Set.{v} :=
+begin
+  intros s t, 
+  hinduction s with z o, 
+  { hinduction t with z o, 
+    { exact One_Set },
+    { exact Two_Set } },
+  { hinduction t with z o, 
+    { exact Zero_Set },
+    { exact One_Set } }
+end
+
+@[hott, instance]
+def walking_parallel_pair.hom : has_hom walking_parallel_pair := 
+  has_hom.mk walking_parallel_pair_hom
 
 end category_theory
 
