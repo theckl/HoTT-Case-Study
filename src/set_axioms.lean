@@ -30,6 +30,10 @@ def Zero_is_prop : is_prop Zero :=
   is_prop.mk eq_Zero 
 
 @[hott]
+def Zero_Set : Set :=
+  Set.mk Zero (is_trunc_succ Zero -1)
+
+@[hott]
 inductive One : Type _  
 | star : One
 
@@ -45,6 +49,10 @@ end
 @[hott, instance]
 def One_is_prop : is_prop One :=
   is_prop.mk eq_One
+
+@[hott]
+def One_Set : Set :=
+  Set.mk One (is_trunc_succ One -1)
 
 @[hott]
 inductive Two : Type _ 
