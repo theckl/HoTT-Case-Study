@@ -130,9 +130,12 @@ def get_limit_cone {J : Set.{v}} [precategory J] {C : Type u} [category C]
 untrunc_of_is_trunc (has_limit.exists_limit F)  
 
 @[hott]
-class has_limits_of_shape {J : Set.{v}} [precategory J] {C : Type u} 
+class has_limits_of_shape (J : Set.{v}) [precategory J] (C : Type u) 
   [category C] :=
   (has_limit : Π F : J ⥤ C, has_limit F)
+
+abbreviation has_products {C : Type u} [category C] := 
+  Π (J : Set.{v}), has_limits_of_shape (discrete J) C
 
 end category_theory.limits
 
