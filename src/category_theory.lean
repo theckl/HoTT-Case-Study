@@ -1,6 +1,6 @@
 import setalgebra pathover2 set_axioms
 
-universes v u v' u' w
+universes v u v' u' w 
 hott_theory
 
 namespace hott
@@ -493,22 +493,80 @@ def discrete_precategory (A : Set.{u}) : precategory (discrete A) :=
 @[hott]
 abbreviation walking_parallel_pair := Two_Set
 
-@[hott]
-def walking_parallel_pair_hom : ∀ s t : walking_parallel_pair, Set.{v} :=
+@[hott, hsimp]
+def walking_parallel_pair_hom : Π s t : walking_parallel_pair.{u}, Set.{u} :=
 begin
   intros s t, 
-  hinduction s with z o, 
-  { hinduction t with z o, 
+  hinduction s, 
+  { hinduction t, 
     { exact One_Set },
     { exact Two_Set } },
-  { hinduction t with z o, 
+  { hinduction t, 
     { exact Zero_Set },
     { exact One_Set } }
+end 
+
+@[hott, instance]
+def walking_parallel_pair_has_hom : has_hom walking_parallel_pair := 
+  ⟨walking_parallel_pair_hom⟩
+
+@[hott]
+def walking_parallel_pair.id : Π (s : walking_parallel_pair.{u}), s ⟶ s :=
+begin
+  intro s,
+  hinduction s, 
+  { exact One.star },
+  { exact One.star } 
+end  
+
+@[hott, hsimp]
+def walking_parallel_pair.comp : Π {s t u : walking_parallel_pair} 
+  (f : s ⟶ t) (g : t ⟶ u), s ⟶ u :=
+assume s t u f g,
+begin   
+  hinduction s,
+  { hinduction t,
+    { hinduction u,
+      { exact f },
+      { exact g } },
+    { hinduction u,
+      { hinduction g },
+      { exact f } } },
+  { hinduction t,
+    { hinduction f },
+    { hinduction u,
+      { hinduction g },
+      { exact f } } }
 end
 
 @[hott, instance]
-def walking_parallel_pair.hom : has_hom walking_parallel_pair := 
-  has_hom.mk walking_parallel_pair_hom
+def walking_parallel_pair.cat_struct : category_struct walking_parallel_pair :=
+  category_struct.mk walking_parallel_pair.id @walking_parallel_pair.comp
+
+@[hott, hsimp]
+def walking_parallel_pair.id_comp : Π {s t : walking_parallel_pair} 
+  (f : s ⟶ t), 𝟙 s ≫ f = f :=
+begin 
+  intros s t f,
+  hinduction s, 
+  { induction t, sorry, sorry },
+  sorry
+end    
+
+@[hott, hsimp]
+def walking_parallel_pair.comp_id : Π {s t : walking_parallel_pair} 
+  (f : s ⟶ t), f ≫ 𝟙 t = f :=
+sorry 
+
+@[hott, hsimp]
+def walking_parallel_pair.assoc : Π {s t u v : walking_parallel_pair} 
+  (f : s ⟶ t) (g : t ⟶ u) (h : u ⟶ v), (f ≫ g) ≫ h = f ≫ (g ≫ h) :=
+sorry 
+
+@[hott, hsimp]
+def walking_parallel_pair_precategory : precategory walking_parallel_pair :=
+ precategory.mk @walking_parallel_pair.id_comp @walking_parallel_pair.comp_id
+                @walking_parallel_pair.assoc
 
 end category_theory
 
