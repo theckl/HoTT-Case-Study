@@ -489,22 +489,23 @@ def discrete_precategory (A : Set.{u}) : precategory (discrete A) :=
     assume a b c d f g h, con.assoc f g h,
   precategory.mk ic ci as
 
-/- [walking_parallel_pair] is the indexing category for (co-)equalizers. -/
+/- [walking_parallel_pair] is the indexing category for (co-)equalizers. 
+
+   Better automatisation of the definitions and calculations is desirable.
+   The trick in mathlib to define the homomorphisms as an inductive type
+   does not work because in HoTT precategories we need to define sets of
+   homomorphisms. -/
 @[hott]
 abbreviation walking_parallel_pair := Two_Set
 
 @[hott, hsimp]
 def walking_parallel_pair_hom : Π s t : walking_parallel_pair.{u}, Set.{u} :=
-begin
-  intros s t, 
-  hinduction s, 
-  { hinduction t, 
-    { exact One_Set },
-    { exact Two_Set } },
-  { hinduction t, 
-    { exact Zero_Set },
-    { exact One_Set } }
-end 
+λ s t, match s, t with
+       | Two.zero, Two.zero := One_Set
+       | Two.zero, Two.one := Two_Set
+       | Two.one, Two.zero := Zero_Set
+       | Two.one, Two.one := One_Set
+       end 
 
 @[hott, instance]
 def walking_parallel_pair_has_hom : has_hom walking_parallel_pair := 
@@ -512,12 +513,10 @@ def walking_parallel_pair_has_hom : has_hom walking_parallel_pair :=
 
 @[hott]
 def walking_parallel_pair.id : Π (s : walking_parallel_pair.{u}), s ⟶ s :=
-begin
-  intro s,
-  hinduction s, 
-  { exact One.star },
-  { exact One.star } 
-end  
+λ s, match s with 
+     | Two.zero := One.star
+     | Two.one := One.star
+     end 
 
 @[hott, hsimp]
 def walking_parallel_pair.comp : Π {s t u : walking_parallel_pair} 
@@ -527,7 +526,7 @@ begin
   hinduction s,
   { hinduction t,
     { hinduction u,
-      { exact f },
+      { exact walking_parallel_pair.id Two.zero },
       { exact g } },
     { hinduction u,
       { hinduction g },
@@ -536,32 +535,82 @@ begin
     { hinduction f },
     { hinduction u,
       { hinduction g },
-      { exact f } } }
-end
+      { exact walking_parallel_pair.id Two.one } } }
+end 
 
 @[hott, instance]
 def walking_parallel_pair.cat_struct : category_struct walking_parallel_pair :=
   category_struct.mk walking_parallel_pair.id @walking_parallel_pair.comp
 
 @[hott, hsimp]
+def wpp_ic : Π {s t : walking_parallel_pair} 
+  (f : s ⟶ s) (g : s ⟶ t), f ≫ g = g :=
+assume s t f g,
+begin
+  hinduction s,
+  { induction t, 
+    { change walking_parallel_pair.id Two.zero = g, 
+      exact @is_prop.elim _ One_is_prop _ _ },
+    { exact rfl } },
+  { induction t,
+    { hinduction g },
+    { change walking_parallel_pair.id Two.one = g, 
+      exact @is_prop.elim _ One_is_prop _ _ } }  
+end
+  
+@[hott, hsimp]
 def walking_parallel_pair.id_comp : Π {s t : walking_parallel_pair} 
   (f : s ⟶ t), 𝟙 s ≫ f = f :=
-begin 
-  intros s t f,
-  hinduction s, 
-  { induction t, sorry, sorry },
-  sorry
-end    
+assume s t f, wpp_ic (𝟙 s) f    
+
+@[hott, hsimp]
+def wpp_ci : Π {s t : walking_parallel_pair} 
+  (f : s ⟶ t) (g : t ⟶ t), f ≫ g = f :=
+assume s t f g,
+begin
+  hinduction s,
+  { induction t, 
+    { change walking_parallel_pair.id Two.zero = f, 
+      exact @is_prop.elim _ One_is_prop _ _ },
+    { exact rfl } },
+  { induction t,
+    { hinduction f },
+    { change walking_parallel_pair.id Two.one = f, 
+      exact @is_prop.elim _ One_is_prop _ _ } }  
+end
 
 @[hott, hsimp]
 def walking_parallel_pair.comp_id : Π {s t : walking_parallel_pair} 
   (f : s ⟶ t), f ≫ 𝟙 t = f :=
-sorry 
+assume s t f, wpp_ci f (𝟙 t) 
 
 @[hott, hsimp]
 def walking_parallel_pair.assoc : Π {s t u v : walking_parallel_pair} 
   (f : s ⟶ t) (g : t ⟶ u) (h : u ⟶ v), (f ≫ g) ≫ h = f ≫ (g ≫ h) :=
-sorry 
+assume s t u v f g h, 
+begin 
+  hinduction s,
+  { hinduction t,
+    { hinduction u, 
+      { hinduction v, 
+        { rwr <-wpp_ic f g },
+        { rwr <-wpp_ic f g } },
+      { hinduction v, 
+        { hinduction h },
+        { rwr <-wpp_ic f g } } },
+    { hinduction u, 
+      { hinduction g },
+      { hinduction v, 
+        { hinduction h },
+        { rwr <-wpp_ci f g } } } },
+  { hinduction t,
+    { hinduction f },
+    { hinduction u, 
+      { hinduction g },
+      { hinduction v, 
+        { hinduction h },
+        { rwr <-wpp_ci f g } } } } 
+end
 
 @[hott, hsimp]
 def walking_parallel_pair_precategory : precategory walking_parallel_pair :=
