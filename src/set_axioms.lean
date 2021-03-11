@@ -3,7 +3,7 @@ import hott.prop_trunc hott.init hott.types.trunc hott.homotopy.susp prop_logic
 universes u v w
 hott_theory
 
-set_option pp.universes false
+set_option pp.universes true
 set_option pp.implicit false
 
 namespace hott
@@ -16,7 +16,7 @@ notation eq `▸[`:50 P:0 `]`:0 b:50 := transport P eq b
    [Zero] and [One] are equivalent to [true] and [false] in [prop_logic], but
    we want to use them without logical connotations. -/
 @[hott]
-inductive Zero : Type _
+inductive Zero : Type u
 
 @[hott]
 def eq_Zero : forall f₁ f₂ : Zero, f₁ = f₂ :=
@@ -34,7 +34,7 @@ def Zero_Set : Set :=
   Set.mk Zero (is_trunc_succ Zero -1)
 
 @[hott]
-inductive One : Type _  
+inductive One : Type u  
 | star : One
 
 @[hott]
@@ -55,7 +55,7 @@ def One_Set : Set :=
   Set.mk One (is_trunc_succ One -1)
 
 @[hott]
-inductive Two : Type _ 
+inductive Two : Type u 
 | zero : Two 
 | one : Two 
 
@@ -86,10 +86,10 @@ begin
 end    
 
 @[hott]
-def Two_eq_equiv_code : ∀ t₁ t₂ : Two, (t₁ = t₂) ≃ code_Two t₁ t₂ := 
+def Two_eq_equiv_code : ∀ t₁ t₂ : Two.{u}, (t₁ = t₂) ≃ code_Two t₁ t₂ := 
   assume t₁ t₂, 
   have z1 : code_Two Two.zero Two.one -> Zero, from λ c, c,
-  have z2 : code_Two Two.one Two.zero -> Zero, from λ c, c,
+  have z2 : code_Two.{u} Two.one Two.zero -> Zero, from λ c, c,
   have rinv : ∀ c : code_Two t₁ t₂, (encode_Two t₁ t₂) (decode_Two t₁ t₂ c) = c, from
     assume c, 
     begin
