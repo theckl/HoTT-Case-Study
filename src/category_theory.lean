@@ -166,7 +166,6 @@ def id_hom_tr_comp {C : Type u} [precategory.{v} C] {c₁ c₂ d : C} (p : c₁ 
 begin hinduction p, hsimp end   
 
 
-
 /-- The structure of a category. -/
 @[hott]
 class category (obj : Type u) extends precategory.{v} obj :=
@@ -213,8 +212,8 @@ structure functor [precategory.{v} C] [precategory.{v'} D] :
 
 infixr ` ⥤ `:26 := functor       
 
-attribute [simp] functor.map_id
-attribute [simp] functor.map_comp
+attribute [hsimp] functor.map_id
+attribute [hsimp] functor.map_comp
 
 @[hott]
 def constant_functor [precategory.{v} C] [precategory.{v'} D] (d : D) : 
@@ -496,15 +495,17 @@ def discrete_precategory (A : Set.{u}) : precategory (discrete A) :=
    does not work because in HoTT precategories we need to define sets of
    homomorphisms. -/
 @[hott]
-abbreviation walking_parallel_pair := Two_Set
+inductive walking_parallel_pair : Type u
+| up
+| down
 
 @[hott, hsimp]
 def walking_parallel_pair_hom : Π s t : walking_parallel_pair.{u}, Set.{u} :=
 λ s t, match s, t with
-       | Two.zero, Two.zero := One_Set
-       | Two.zero, Two.one := Two_Set
-       | Two.one, Two.zero := Zero_Set
-       | Two.one, Two.one := One_Set
+       | walking_parallel_pair.up, walking_parallel_pair.up := One_Set
+       | walking_parallel_pair.up, walking_parallel_pair.down := Two_Set
+       | walking_parallel_pair.down, walking_parallel_pair.up := Zero_Set
+       | walking_parallel_pair.down, walking_parallel_pair.down := One_Set
        end 
 
 @[hott, instance]
@@ -514,19 +515,19 @@ def walking_parallel_pair_has_hom : has_hom walking_parallel_pair :=
 @[hott]
 def walking_parallel_pair.id : Π (s : walking_parallel_pair.{u}), s ⟶ s :=
 λ s, match s with 
-     | Two.zero := One.star
-     | Two.one := One.star
-     end 
+     | walking_parallel_pair.up := One.star
+     | walking_parallel_pair.down := One.star
+     end
 
 @[hott, hsimp]
 def walking_parallel_pair.comp : Π {s t u : walking_parallel_pair} 
   (f : s ⟶ t) (g : t ⟶ u), s ⟶ u :=
-assume s t u f g,
+assume s t u f g,     
 begin   
   hinduction s,
   { hinduction t,
     { hinduction u,
-      { exact walking_parallel_pair.id Two.zero },
+      { exact walking_parallel_pair.id walking_parallel_pair.up },
       { exact g } },
     { hinduction u,
       { hinduction g },
@@ -535,12 +536,17 @@ begin
     { hinduction f },
     { hinduction u,
       { hinduction g },
-      { exact walking_parallel_pair.id Two.one } } }
+      { exact walking_parallel_pair.id walking_parallel_pair.down } } }
 end 
 
 @[hott, instance]
 def walking_parallel_pair.cat_struct : category_struct walking_parallel_pair :=
   category_struct.mk walking_parallel_pair.id @walking_parallel_pair.comp
+
+@[hott, hsimp]
+def wpp_no_hom : 
+  (walking_parallel_pair.down ⟶ walking_parallel_pair.up) -> false := 
+assume f, by induction f  
 
 @[hott, hsimp]
 def wpp_ic : Π {s t : walking_parallel_pair} 
@@ -549,12 +555,12 @@ assume s t f g,
 begin
   hinduction s,
   { induction t, 
-    { change walking_parallel_pair.id Two.zero = g, 
+    { change walking_parallel_pair.id walking_parallel_pair.up = g, 
       exact @is_prop.elim _ One_is_prop _ _ },
     { exact rfl } },
   { induction t,
     { hinduction g },
-    { change walking_parallel_pair.id Two.one = g, 
+    { change walking_parallel_pair.id walking_parallel_pair.down = g, 
       exact @is_prop.elim _ One_is_prop _ _ } }  
 end
   
@@ -570,12 +576,12 @@ assume s t f g,
 begin
   hinduction s,
   { induction t, 
-    { change walking_parallel_pair.id Two.zero = f, 
+    { change walking_parallel_pair.id walking_parallel_pair.up = f, 
       exact @is_prop.elim _ One_is_prop _ _ },
     { exact rfl } },
   { induction t,
     { hinduction f },
-    { change walking_parallel_pair.id Two.one = f, 
+    { change walking_parallel_pair.id walking_parallel_pair.down = f, 
       exact @is_prop.elim _ One_is_prop _ _ } }  
 end
 
@@ -612,7 +618,7 @@ begin
         { rwr <-wpp_ci f g } } } } 
 end
 
-@[hott, hsimp]
+@[hott, instance]
 def walking_parallel_pair_precategory : precategory walking_parallel_pair :=
  precategory.mk @walking_parallel_pair.id_comp @walking_parallel_pair.comp_id
                 @walking_parallel_pair.assoc
