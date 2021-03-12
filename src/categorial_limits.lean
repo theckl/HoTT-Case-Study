@@ -137,6 +137,71 @@ class has_limits_of_shape (J : Set.{v}) [precategory J] (C : Type u)
 abbreviation has_products {C : Type u} [category C] := 
   Π (J : Set.{v}), has_limits_of_shape (discrete J) C
 
+/- `parallel_pair f g` is the diagram in `C` consisting of the two morphisms `f` and `g` with
+    common domain and codomain. -/
+@[hott, hsimp]
+def parallel_pair_obj {C : Type u} [category_theory.category C] {a b : C} 
+  (f g : a ⟶ b) : walking_parallel_pair.{u} -> C :=
+λ s, match s with
+     | walking_parallel_pair.up := a
+     | walking_parallel_pair.down := b
+     end    
+
+@[hott, hsimp]
+def parallel_pair_map {C : Type u} [category_theory.category C] {a b : C} 
+  (f g : a ⟶ b) : Π {s t : walking_parallel_pair.{u}}, 
+  (s ⟶ t) -> (parallel_pair_obj f g s ⟶ parallel_pair_obj f g t) :=
+assume s t h, 
+begin
+  hinduction s, 
+  { hinduction t,
+    { exact 𝟙 a },
+    { hinduction h,
+      { exact f },
+      { exact g } } },
+  { hinduction t,
+    { hinduction h },
+    { exact 𝟙 b } }
+end 
+
+@[hott, hsimp]
+def parallel_pair_map_id {C : Type u} [category_theory.category C] {a b : C} 
+  (f g : a ⟶ b) : ∀ s : walking_parallel_pair.{u}, 
+  parallel_pair_map f g (𝟙 s) = 𝟙 (parallel_pair_obj f g s) :=
+by intro s; hinduction s; hsimp; hsimp  
+
+@[hott, hsimp]
+def parallel_pair_map_id' {C : Type u} [category_theory.category C] {a b : C} 
+  (f g : a ⟶ b) : ∀ (s : walking_parallel_pair.{u}) (h : s ⟶ s), 
+  parallel_pair_map f g h = 𝟙 (parallel_pair_obj f g s) :=
+by intros s h; hinduction s; hsimp; hsimp  
+
+@[hott, hsimp]
+def parallel_pair_map_comp {C : Type u} [category_theory.category C] 
+  {a b : C} (f g : a ⟶ b) : ∀ {s t u : walking_parallel_pair.{u}} 
+  (h : s ⟶ t) (i : t ⟶ u), parallel_pair_map f g (h ≫ i) = 
+                  (parallel_pair_map f g h) ≫ (parallel_pair_map f g i) :=
+assume s t u h i,
+begin
+  hinduction s,
+  { hinduction t,
+    { hsimp },
+    { hinduction u,
+      { hinduction i },
+      { rwr wpp_ci, hsimp } } },
+  { hinduction t,
+    { induction h },
+    { hsimp } }
+end  
+
+@[hott]
+def parallel_pair {C : Type u} [category_theory.category C] {a b : C} 
+  (f g : a ⟶ b) : walking_parallel_pair.{u} ⥤ C :=
+category_theory.functor.mk (parallel_pair_obj f g) 
+                           (@parallel_pair_map _ _ _ _ f g) 
+                           (parallel_pair_map_id f g) 
+                           (@parallel_pair_map_comp _ _ _ _ f g)   
+
 end category_theory.limits
 
 end hott
