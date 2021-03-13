@@ -134,6 +134,11 @@ class has_limits_of_shape (J : Set.{v}) [precategory J] (C : Type u)
   [category C] :=
   (has_limit : Π F : J ⥤ C, has_limit F)
 
+@[hott]
+abbreviation has_product {C : Type u} [category C] {J : Set.{v}} 
+  (f : J -> C) := sorry /- has_limit (discrete.functor f) -/
+
+@[hott]
 abbreviation has_products {C : Type u} [category C] := 
   Π (J : Set.{v}), has_limits_of_shape (discrete J) C
 
@@ -143,8 +148,8 @@ abbreviation has_products {C : Type u} [category C] :=
 def parallel_pair_obj {C : Type u} [category_theory.category C] {a b : C} 
   (f g : a ⟶ b) : walking_parallel_pair.{u} -> C :=
 λ s, match s with
-     | walking_parallel_pair.up := a
-     | walking_parallel_pair.down := b
+     | wp_pair.up := a
+     | wp_pair.down := b
      end    
 
 @[hott, hsimp]
@@ -201,6 +206,9 @@ category_theory.functor.mk (parallel_pair_obj f g)
                            (@parallel_pair_map _ _ _ _ f g) 
                            (parallel_pair_map_id f g) 
                            (@parallel_pair_map_comp _ _ _ _ f g)   
+
+abbreviation fork {C : Type u} [category_theory.category C] {a b : C} 
+  (f g : a ⟶ b) := cone (parallel_pair f g)
 
 end category_theory.limits
 
