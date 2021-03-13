@@ -488,6 +488,17 @@ def discrete_precategory (A : Set.{u}) : precategory (discrete A) :=
     assume a b c d f g h, con.assoc f g h,
   precategory.mk ic ci as
 
+@[hott]
+def discrete.functor {C : Type u} [category C] {J : Set.{v}} 
+  (f : J -> C) : (discrete J) ⥤ C :=
+let map := λ {i j : discrete J} (h : i ⟶ j), 
+             h ▸[λ k : discrete J, f i ⟶ f k] 𝟙 (f i) in 
+have map_id : ∀ (j : discrete J), map (𝟙 j) = 𝟙 (f j), from 
+  assume j, sorry,
+have map_comp : ∀ {i j k : discrete J} (g : i ⟶ j) (h : j ⟶ k), 
+  map (g ≫ h) = (map g) ≫ (map h), from sorry,               
+functor.mk f @map map_id @map_comp
+
 /- [walking_parallel_pair] is the indexing category for (co-)equalizers. 
 
    Better automatisation of the definitions and calculations is desirable.
@@ -495,17 +506,47 @@ def discrete_precategory (A : Set.{u}) : precategory (discrete A) :=
    does not work because in HoTT precategories we need to define sets of
    homomorphisms. -/
 @[hott]
-inductive walking_parallel_pair : Type u
+inductive wp_pair : Type u
 | up
 | down
 
+/- `wp_pair` is a set because it is equivalent to `Two`. -/
+@[hott, hsimp]
+def wpp_Two : wp_pair.{u} -> Two.{u} :=
+  λ s, match s with
+       | wp_pair.up := Two.zero
+       | wp_pair.down := Two.one
+       end
+
+@[hott, hsimp]
+def Two_wpp : Two.{u} -> wp_pair.{u} :=
+  λ t, match t with
+       | Two.zero := wp_pair.up
+       | Two.one := wp_pair.down
+       end
+
+@[hott, instance]
+def wpp_is_set : is_set wp_pair.{u} :=
+  have r_inv : ∀ t : Two, wpp_Two (Two_wpp t) = t, by  
+    intro t; hinduction t; hsimp; hsimp,  
+  have l_inv : ∀ s : wp_pair, Two_wpp (wpp_Two s) = s, by
+    intro s; hinduction s; hsimp; hsimp,
+  have wpp_eqv_Two: is_equiv wpp_Two, from
+    adjointify wpp_Two Two_wpp r_inv l_inv,
+  @is_trunc_is_equiv_closed_rev _ _ 0 wpp_Two wpp_eqv_Two Two_is_set
+
+@[hott]
+def walking_parallel_pair : Set.{u} :=
+Set.mk wp_pair wpp_is_set
+
+/- Now we construct the precategory structure on `walking__parallel_pair`. -/
 @[hott, hsimp]
 def walking_parallel_pair_hom : Π s t : walking_parallel_pair.{u}, Set.{u} :=
 λ s t, match s, t with
-       | walking_parallel_pair.up, walking_parallel_pair.up := One_Set
-       | walking_parallel_pair.up, walking_parallel_pair.down := Two_Set
-       | walking_parallel_pair.down, walking_parallel_pair.up := Zero_Set
-       | walking_parallel_pair.down, walking_parallel_pair.down := One_Set
+       | wp_pair.up, wp_pair.up := One_Set
+       | wp_pair.up, wp_pair.down := Two_Set
+       | wp_pair.down, wp_pair.up := Zero_Set
+       | wp_pair.down, wp_pair.down := One_Set
        end 
 
 @[hott, instance]
@@ -515,8 +556,8 @@ def walking_parallel_pair_has_hom : has_hom walking_parallel_pair :=
 @[hott]
 def walking_parallel_pair.id : Π (s : walking_parallel_pair.{u}), s ⟶ s :=
 λ s, match s with 
-     | walking_parallel_pair.up := One.star
-     | walking_parallel_pair.down := One.star
+     | wp_pair.up := One.star
+     | wp_pair.down := One.star
      end
 
 @[hott, hsimp]
@@ -527,7 +568,7 @@ begin
   hinduction s,
   { hinduction t,
     { hinduction u,
-      { exact walking_parallel_pair.id walking_parallel_pair.up },
+      { exact walking_parallel_pair.id wp_pair.up },
       { exact g } },
     { hinduction u,
       { hinduction g },
@@ -536,17 +577,12 @@ begin
     { hinduction f },
     { hinduction u,
       { hinduction g },
-      { exact walking_parallel_pair.id walking_parallel_pair.down } } }
+      { exact walking_parallel_pair.id wp_pair.down } } }
 end 
 
 @[hott, instance]
 def walking_parallel_pair.cat_struct : category_struct walking_parallel_pair :=
   category_struct.mk walking_parallel_pair.id @walking_parallel_pair.comp
-
-@[hott, hsimp]
-def wpp_no_hom : 
-  (walking_parallel_pair.down ⟶ walking_parallel_pair.up) -> false := 
-assume f, by induction f  
 
 @[hott, hsimp]
 def wpp_ic : Π {s t : walking_parallel_pair} 
@@ -555,12 +591,12 @@ assume s t f g,
 begin
   hinduction s,
   { induction t, 
-    { change walking_parallel_pair.id walking_parallel_pair.up = g, 
+    { change walking_parallel_pair.id wp_pair.up = g, 
       exact @is_prop.elim _ One_is_prop _ _ },
     { exact rfl } },
   { induction t,
     { hinduction g },
-    { change walking_parallel_pair.id walking_parallel_pair.down = g, 
+    { change walking_parallel_pair.id wp_pair.down = g, 
       exact @is_prop.elim _ One_is_prop _ _ } }  
 end
   
@@ -576,12 +612,12 @@ assume s t f g,
 begin
   hinduction s,
   { induction t, 
-    { change walking_parallel_pair.id walking_parallel_pair.up = f, 
+    { change walking_parallel_pair.id wp_pair.up = f, 
       exact @is_prop.elim _ One_is_prop _ _ },
     { exact rfl } },
   { induction t,
     { hinduction f },
-    { change walking_parallel_pair.id walking_parallel_pair.down = f, 
+    { change walking_parallel_pair.id wp_pair.down = f, 
       exact @is_prop.elim _ One_is_prop _ _ } }  
 end
 
