@@ -465,20 +465,20 @@ precategory.mk (λ (b c : ↥↥B) (f : b ⟶ c), precategory.id_comp f)
    We start with a synonym for any set indicating that it has a precategory 
    structure. -/
 @[hott]
-def discrete (A : Set.{u}) := A
+def discrete (A : Set) := A
 
 @[hott, instance]
-def discrete_cat_has_hom (A : Set.{u}) : has_hom (discrete A) :=
+def discrete_cat_has_hom (A : Set) : has_hom (discrete A) :=
   has_hom.mk (λ a b : A, Set.mk (a = b) 
                                 (@is_trunc_succ (a = b) -1 (is_trunc_eq -1 a b)))
 
 @[hott, instance]
-def discrete_cat_struct (A : Set.{u}) : category_struct (discrete A) :=
+def discrete_cat_struct (A : Set) : category_struct (discrete A) :=
   category_struct.mk (λ a : discrete A, @rfl A a)
                      (λ (a b c: discrete A) (f : a ⟶ b) (g : b ⟶ c), f ⬝ g)
 
 @[hott, instance]
-def discrete_precategory (A : Set.{u}) : precategory (discrete A) :=
+def discrete_precategory (A : Set) : precategory (discrete A) :=
   have ic : Π (a b : discrete A) (f : a ⟶ b), 𝟙 a ≫ f = f, from 
     assume a b f, idp_con f,
   have ci : Π (a b : discrete A) (f : a ⟶ b), f ≫ 𝟙 b = f, from 
@@ -489,14 +489,22 @@ def discrete_precategory (A : Set.{u}) : precategory (discrete A) :=
   precategory.mk ic ci as
 
 @[hott]
-def discrete.functor {C : Type u} [category C] {J : Set.{v}} 
+def discrete.functor {C : Type u} [category C] {J : Set} 
   (f : J -> C) : (discrete J) ⥤ C :=
-let map := λ {i j : discrete J} (h : i ⟶ j), 
-             h ▸[λ k : discrete J, f i ⟶ f k] 𝟙 (f i) in 
+let map := λ {j₁ j₂ : discrete J} (h : j₁ ⟶ j₂), 
+             h ▸[λ k : discrete J, f j₁ ⟶ f k] 𝟙 (f j₁) in 
 have map_id : ∀ (j : discrete J), map (𝟙 j) = 𝟙 (f j), from 
-  assume j, sorry,
-have map_comp : ∀ {i j k : discrete J} (g : i ⟶ j) (h : j ⟶ k), 
-  map (g ≫ h) = (map g) ≫ (map h), from sorry,               
+  assume j, rfl,
+have tr_map_comp : ∀ {j₁ j₂ j₃ : discrete J} (g : j₁ ⟶ j₂) (h : j₂ ⟶ j₃),
+  h ▸[λ k : discrete J, f j₁ ⟶ f k] (map g) = (map g) ≫ (map h), from 
+  assume j₁ j₂ j₃ g h, by hinduction h; hsimp,    
+have map_comp : ∀ {j₁ j₂ j₃ : discrete J} (g : j₁ ⟶ j₂) (h : j₂ ⟶ j₃), 
+  map (g ≫ h) = (map g) ≫ (map h), from assume j₁ j₂ j₃ g h,
+  calc map (g ≫ h) = ((g ⬝ h) ▸[λ k : discrete J, f j₁ ⟶ f k] 𝟙 (f j₁)) : 
+                      rfl
+                ... = h ▸ (g ▸[λ k : discrete J, f j₁ ⟶ f k] 𝟙 (f j₁)) : 
+                      con_tr g h (𝟙 (f j₁))     
+                ... = (map g) ≫ (map h) : tr_map_comp g h,                 
 functor.mk f @map map_id @map_comp
 
 /- [walking_parallel_pair] is the indexing category for (co-)equalizers. 
