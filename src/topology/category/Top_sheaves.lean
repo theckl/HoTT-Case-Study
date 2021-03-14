@@ -1,10 +1,10 @@
-import topology.basic category_theory
+import topology.basic category_theory categorial_limits
 
-universes u v
+universes u v w
 hott_theory
 
 namespace hott
-open hott.set hott.subset category_theory
+open hott.set hott.subset hott.category_theory category_theory.limits
 
 /- The category of topological spaces and continuous maps. -/
 @[hott]
@@ -33,6 +33,14 @@ def open_sets := {U ∈ (𝒫 ↥X) | prop_lift (X.top_str.is_open U)}
    topological space with values in a category `C` as follows: -/
 @[hott]
 def presheaf (C : Type u) [category.{v} C] := (↥(open_sets X))ᵒᵖ ⥤ C
+
+set_option trace.class_instances true
+
+/- The product of the sections of a presheaf over a family of open sets. -/
+@[hott]
+def pi_opens {C : Type u} [category.{v} C] [has_products C]
+  {I : Set} (U : I -> (open_sets X).carrier) (F : presheaf X C) : C :=
+∏ (λ i : I, F.obj (opposite.op (U i)))
 
 end topology
 
