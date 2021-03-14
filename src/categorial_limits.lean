@@ -130,17 +130,43 @@ def get_limit_cone {J : Set.{v}} [precategory J] {C : Type u} [category C]
 untrunc_of_is_trunc (has_limit.exists_limit F)  
 
 @[hott]
-class has_limits_of_shape (J : Set.{v}) [precategory J] (C : Type u) 
+def limit.cone {J : Set.{v}} [precategory J] {C : Type u} [category C]
+  (F : J ⥤ C) [has_limit F] : cone F := (get_limit_cone F).cone
+
+@[hott]
+def limit {J : Set.{v}} [precategory J] {C : Type u} [category C]
+  (F : J ⥤ C) [has_limit F] := (limit.cone F).X
+
+@[hott]
+class has_limits_of_shape (J : Set) [precategory J] (C : Type u) 
   [category C] :=
   (has_limit : Π F : J ⥤ C, has_limit F)
 
-@[hott]
-abbreviation has_product {C : Type u} [category C] {J : Set.{v}} 
-  (f : J -> C) := sorry /- has_limit (discrete.functor f) -/
+@[hott, priority 100]
+instance has_limit_of_has_limits_of_shape
+  {J : Set} [precategory J] (C : Type u) [category C] 
+  [H : has_limits_of_shape J C] (F : J ⥤ C) : has_limit F :=
+has_limits_of_shape.has_limit F
 
 @[hott]
-abbreviation has_products {C : Type u} [category C] := 
-  Π (J : Set.{v}), has_limits_of_shape (discrete J) C
+abbreviation has_product {C : Type u} [category C] {J : Set.{v}} 
+  (f : J -> C) := has_limit (discrete.functor f) 
+
+@[hott]
+abbreviation pi_obj {C : Type u} [category C] {J : Set.{v}} (f : J → C) 
+  [has_product f] := limit (discrete.functor f)
+
+notation `∏ ` f:20 := pi_obj f
+
+@[hott]
+def has_products (C : Type u) [category.{v} C] := 
+  Π (J : Set), has_limits_of_shape (discrete J) C
+
+@[hott, priority 100]
+instance has_limits_of_shape_of_has_products 
+  {J : Set} (C : Type u) [category C] [hp : has_products C] :
+  has_limits_of_shape (discrete J) C :=
+hp J
 
 /- `parallel_pair f g` is the diagram in `C` consisting of the two morphisms `f` and `g` with
     common domain and codomain. -/
