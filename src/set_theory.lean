@@ -1,10 +1,10 @@
-import hott.init hott.types.trunc prop_logic
+import hott.init hott.types.trunc prop_logic hott.types.prod
 
 universes u v w
 hott_theory
 
 namespace hott
-open is_trunc trunc equiv is_equiv
+open is_trunc trunc equiv is_equiv hott.prod
 
 /- Should be in [init.function]. -/
 @[inline, reducible] def function.comp {α β φ : Type _} (f : β → φ) (g : α → β) : α → φ :=
@@ -489,6 +489,28 @@ let rinv := right_inv_set_eq_bij f,
 assume a,  
 calc f a = set_eq_to_bij eq_f a : apd10 (ap bijection.map (eq.inverse rinv)) a
      ... = eq_f ▸ a : hom_eq_tr_eq eq_f a 
+
+end set
+
+namespace set
+
+/- The Cartesian product of two sets is a set. -/
+@[hott]
+def prod_of_Sets_is_set (A B : Set) : is_set (A × B) :=
+  have pr_eq : ∀ (p₁ p₂ : A × B) (q r : p₁ = p₂), q = r, from
+    assume p₁ p₂ q r, 
+    begin
+      rwr <-prod_eq_eta q, rwr <-prod_eq_eta r, 
+      apply prod_eq_eq,
+      apply is_set.elim, apply is_set.elim
+    end,  
+  is_set.mk _ pr_eq 
+
+@[hott]
+def Prod_Set (A B : Set) : Set :=
+  Set.mk (A × B) (prod_of_Sets_is_set A B)  
+
+notation A ` × `:100 B := Prod_Set A B   
 
 end set
 
