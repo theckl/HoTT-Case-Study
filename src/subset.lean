@@ -22,13 +22,13 @@ structure Subset (A : Set.{u}) :=
    (carrier : Set.{u}) (map : carrier -> A)  (inj : is_set_injective map) 
 
 @[hott]
-instance sset_to_set (A : Set) : has_coe_to_sort (Subset A) := 
+instance (A : Set) : has_coe_to_sort (Subset A) := 
   has_coe_to_sort.mk Set (λ B, Subset.carrier B)
 
 attribute [instance] Subset.inj 
 
 @[hott]
-instance coe_sset {A : Set} (B : Subset A) : has_coe ↥B A :=
+instance {A : Set} (B : Subset A) : has_coe ↥B A :=
   ⟨λ b, B.map b⟩
 
 @[hott]
