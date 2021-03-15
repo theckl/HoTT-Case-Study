@@ -162,7 +162,7 @@ notation `∏ ` f:20 := pi_obj f
 def has_products (C : Type u) [category.{v} C] := 
   Π (J : Set), has_limits_of_shape (discrete J) C
 
-@[hott, priority 100]
+@[hott, priority 0]
 instance has_limits_of_shape_of_has_products 
   {J : Set} (C : Type u) [category C] [hp : has_products C] :
   has_limits_of_shape (discrete J) C :=
