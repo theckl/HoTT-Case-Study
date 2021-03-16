@@ -599,6 +599,13 @@ def is_prop_elem (a : A) (S : Subset A) : is_prop (a ∈ S) :=
 notation `{ ` binder ` ∈ ` B ` | ` P:scoped  ` }` := @pred_to_sset B P 
 
 @[hott]
+def elem_pred {A : Set} {P : Setpred A} (a : A) (pred_a : P a) :
+  Σ x : ({ a ∈ A | P a }).carrier, ({ a ∈ A | P a }).map x = a :=    
+let x := (⟨a, pred_a⟩ : ({ a ∈ A | P a }).carrier) in
+have p : ({ a ∈ A | P a }).map x = a, by hsimp,
+⟨x , p⟩
+      
+@[hott]
 def is_subset_of (B C : Subset A) :=
   forall a : A, a ∈ B -> a ∈ C
 
