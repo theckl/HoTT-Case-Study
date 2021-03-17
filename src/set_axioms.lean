@@ -151,7 +151,7 @@ begin
   hinduction t, exact Two.zero, exact Two.one
 end
 
-@[hott]
+@[hott, reducible]
 def Two_equiv_lift : Two.{u} ≃ Two.{u+1} :=
   have rinv : ∀ t : Two.{u+1}, Two_lift (Two_resize t) = t, by
       intro t; hinduction t; hsimp; hsimp, 
@@ -554,17 +554,14 @@ def AC_implies_LEM : Choice_nonempty.{u} -> ExcludedMiddle.{u} :=
 
 /- We compose the equivalences of [Prop] with [Two] in two successive universes and the 
    equivalence of [Two] with its lift to the next universe. -/
-@[hott]
+@[hott, reducible, hsimp]
 def LEM_Prop_Resize : ExcludedMiddle.{u+1} -> (trunctype.{u} -1 ≃ trunctype.{u+1} -1) :=
   assume lem_u1,
   have lem_u : ExcludedMiddle.{u}, from LEM_resize lem_u1,
   equiv.trans (LEM_Prop_equiv_Two lem_u) 
               (equiv.trans (Two_equiv_lift.{u}) (equiv.symm (LEM_Prop_equiv_Two lem_u1)))
 
-@[hott]  
-def prop_resize : trunctype.{u+1} -1 -> trunctype.{u} -1 := (LEM_Prop_Resize LEM)⁻¹ᶠ
-
-@[hott]  
-def prop_lift : trunctype.{u} -1 -> trunctype.{u+1} -1 := LEM_Prop_Resize LEM
+@[hott, reducible]  
+def prop_resize : trunctype.{u+1} -1 -> trunctype.{u} -1 := (LEM_Prop_Resize LEM)⁻¹ᶠ  
 
 end hott
