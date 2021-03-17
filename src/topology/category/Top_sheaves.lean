@@ -24,23 +24,20 @@ namespace topology
 
 variables (X : Top.{u})
 
-/- The set of open sets in a topological space and its lattice structure. -/
+/- The set of open sets in a topological space and its lattice structure. 
+   (TODO: constructing supremum and order) -/
 @[hott]
 def open_sets : Subset (𝒫 ↥X) := 
-  {U ∈ (𝒫 ↥X) | prop_lift (X.top_str.is_open U)}
-
-@[hott]
-def open_set_is_open (U : (open_sets X).carrier) : X.top_str.is_open U :=
-  sorry
+  {U ∈ (𝒫 ↥X) | prop_ulift (X.top_str.is_open U)}
 
 @[hott]
 protected def open_sets.inter (U V : (open_sets X).carrier) : 
   (open_sets X).carrier :=
-have U_is_open : X.top_str.is_open U, from open_set_is_open X U, 
-have V_is_open : X.top_str.is_open V, from open_set_is_open X V,
-have inter_is_open : X.top_str.is_open (↑U ∩ ↑V), from 
-  X.top_str.is_open_inter U V U_is_open V_is_open, 
-sorry
+have U_is_open : X.top_str.is_open U, from ulift.down U.2, 
+have V_is_open : X.top_str.is_open V, from ulift.down V.2,
+have inter_is_open : prop_ulift (X.top_str.is_open (↑U ∩ ↑V)), from 
+  ulift.up (X.top_str.is_open_inter U V U_is_open V_is_open),
+elem_pred.{u+1} (↑U ∩ ↑V) inter_is_open  
 
 @[hott, instance]
 def open_sets_inter : has_inter (open_sets X).carrier :=
