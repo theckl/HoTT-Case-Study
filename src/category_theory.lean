@@ -507,6 +507,15 @@ have map_comp : ∀ {j₁ j₂ j₃ : discrete J} (g : j₁ ⟶ j₂) (h : j₂ 
                 ... = (map g) ≫ (map h) : tr_map_comp g h,                 
 functor.mk f @map map_id @map_comp
 
+@[hott]
+def discrete.nat_trans {C : Type u} [category C] {J : Set} 
+  (F G : (discrete J) ⥤ C) (app : Π j : J, F.obj j ⟶ G.obj j) :
+  F ⟹ G :=  
+have natural : ∀ (j j' : J) (f : j ⟶ j'), 
+                 (F.map f) ≫ (app j') = (app j) ≫ (G.map f), from                
+  begin intros j j' f, hinduction f, hsimp end,
+nat_trans.mk app natural  
+
 /- [walking_parallel_pair] is the indexing category for (co-)equalizers. 
 
    Better automatisation of the definitions and calculations is desirable.
