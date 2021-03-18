@@ -168,6 +168,28 @@ instance has_limits_of_shape_of_has_products
   has_limits_of_shape (discrete J) C :=
 hp J
 
+/-- A fan over `f : J → C` consists of a collection of maps from an object `P`
+    to every `f j`. This is enough to determine a cone which factorizes through    
+    the product. -/
+@[hott]    
+abbreviation fan {J : Set} {C : Type u} [category C] (f : J → C) := 
+  cone (discrete.functor f)
+
+@[hott]
+def fan.mk {J : Set} (C : Type u) [category C] {f : J → C} {P : C} 
+  (p : Π j, P ⟶ f j) : fan f :=
+cone.mk P (discrete.nat_trans _ _ p)
+
+@[hott] 
+def pi.lift {J : Set} (C : Type u) [category C] {f : J → C} [has_product f]
+  {P : C} (p : Π j, P ⟶ f j) : P ⟶ ∏ f :=
+(get_limit_cone (discrete.functor f)).is_limit.lift (fan.mk _ p)  
+
+@[hott] 
+def pi.π {J : Set} {C : Type u} [category C] (f : J → C) [has_product f] 
+  (j : J) : ∏ f ⟶ f j :=
+(get_limit_cone (discrete.functor f)).cone.π.app j  
+
 /- `parallel_pair f g` is the diagram in `C` consisting of the two morphisms `f` and `g` with
     common domain and codomain. -/
 @[hott, hsimp]
