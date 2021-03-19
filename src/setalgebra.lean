@@ -44,6 +44,13 @@ protected def inter (S₁ S₂ : Subset A) : Subset A :=
 def subset_inter : has_inter (Subset A) :=
 ⟨subset.inter⟩
 
+@[hott]
+def inter.symm (S₁ S₂ : Subset A) : S₁ ∩ S₂ = S₂ ∩ S₁ :=
+  have ss1 : S₁ ∩ S₂ ⊆ S₂ ∩ S₁, from 
+    assume a el, sorry,
+  have ss2 : S₂ ∩ S₁ ⊆ S₁ ∩ S₂, from sorry,
+  (sset_eq_iff_inclusion _ _).2 ⟨ss1, ss2⟩
+
 @[hott, reducible]
 def sUnion (S : Subset (𝒫 A)) : Subset A := 
   {t ∈ A | prop_resize (∃ B ∈ S, t ∈ B)}
