@@ -598,6 +598,12 @@ def is_prop_elem (a : A) (S : Subset A) : is_prop (a ∈ S) :=
 
 notation `{ ` binder ` ∈ ` B ` | ` P:scoped  ` }` := @pred_to_sset B P 
 
+#check hott.is_equiv.right_inv
+
+@[hott, reducible, hsimp]
+def pred_elem {A : Set} {P : Setpred A} (a : A) : a ∈ { a ∈ A | P a } -> P a :=
+  assume elem_a_P, by rwr <- (is_equiv.right_inv (Subset_equiv_Setpred A).to_is_equiv) a
+
 @[hott, reducible]
 def elem_pred {A : Set} {P : Setpred A} (a : A) (pred_a : P a) :
   { a ∈ A | P a }.carrier :=    
