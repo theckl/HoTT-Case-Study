@@ -64,12 +64,19 @@ def pi_inters {C : Type u} [category.{v} C] [hp : has_products C]
 have hls : has_limits_of_shape (discrete (I × I)) C, from hp (I × I),  
 ∏ (λ p : ↥(I × I), F.obj (opposite.op (U p.1 ∩ U p.2)))
 
-/- @[hott]
+@[hott]
+def left_res {C : Type u} [category.{v} C] [hp : has_products C]
+  {I : Set} (U : I -> (open_sets X).carrier) (F : presheaf X C) : 
+  (@pi_opens X _ _ hp _ U F) ⟶ (@pi_inters X _ _ hp _ U F) :=
+pi.lift C (λ p : ↥I × I, pi.π _ p.1 ≫ 
+                            F.map (hom_op (inter_sset_l (U p.1) (U p.2))))
+
+@[hott]
 def right_res {C : Type u} [category.{v} C] [hp : has_products C]
   {I : Set} (U : I -> (open_sets X).carrier) (F : presheaf X C) : 
   (@pi_opens X C _ hp _ U F) ⟶ (@pi_inters X C _ hp _ U F) :=
-sorry  
-pi.lift C (λ p : ↥I × I, pi.π _ p.2 ≫ F.map (opposite.op (U p.1 ∩ U p.2)) -/
+pi.lift C (λ p : ↥I × I, pi.π _ p.2 ≫ 
+                            F.map (hom_op (inter_sset_r (U p.1) (U p.2))))
 
 end topology
 
