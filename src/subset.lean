@@ -559,15 +559,19 @@ def sset_pred_linv {A : Set} (B : Subset A) : pred_to_sset (sset_to_pred B) = B 
   bij_to_sset_eq (sset_bij_pred_sset B) 
 
 @[hott]
+def sset_pred_rinv {A : Set} (pred : Setpred A) : 
+  sset_to_pred (pred_to_sset pred) = pred :=
+have hom : sset_to_pred (pred_to_sset pred) ~ pred, from 
+  assume a, 
+  calc sset_to_pred (pred_to_sset pred) a = 
+                 image (Subset.map (pred_to_sset pred)) a : by refl
+       ... = pred a : prop_iff_eq (im_to_pred pred a) (pred_to_im pred a),
+    eq_of_homotopy hom  
+
+@[hott]
 def Subset_equiv_Setpred (A : Set) : Subset A ≃ Setpred A :=
   have rinv : forall (pred : Setpred A), sset_to_pred (pred_to_sset pred) = pred, from 
-    assume pred, 
-    have hom : sset_to_pred (pred_to_sset pred) ~ pred, from 
-      assume a, 
-      calc sset_to_pred (pred_to_sset pred) a = 
-                 image (Subset.map (pred_to_sset pred)) a : by refl
-           ... = pred a : prop_iff_eq (im_to_pred pred a) (pred_to_im pred a),
-    eq_of_homotopy hom,
+    assume pred, sset_pred_rinv pred,
   have linv : forall (B : Subset A), pred_to_sset (sset_to_pred B) = B, from
     sset_pred_linv,
   equiv.mk sset_to_pred (adjointify sset_to_pred pred_to_sset rinv linv)  
@@ -598,11 +602,17 @@ def is_prop_elem (a : A) (S : Subset A) : is_prop (a ∈ S) :=
 
 notation `{ ` binder ` ∈ ` B ` | ` P:scoped  ` }` := @pred_to_sset B P 
 
-#check hott.is_equiv.right_inv
-
-@[hott, reducible, hsimp]
-def pred_elem {A : Set} {P : Setpred A} (a : A) : a ∈ { a ∈ A | P a } -> P a :=
-  assume elem_a_P, by rwr <- (is_equiv.right_inv (Subset_equiv_Setpred A).to_is_equiv) a
+@[hott, reducible]
+def pred_elem {A : Set} {P : Setpred A} (a : A) : a ∈ { a ∈ A | P a } <-> P a :=
+  have imp₁ : a ∈ { a ∈ A | P a } -> P a, from
+    assume elem_a_P, by rwr <- sset_pred_rinv P; assumption,
+  have imp₂ : P a -> a ∈ { a ∈ A | P a }, from
+    assume pred_a, 
+    begin
+      change ↥(sset_to_pred (pred_to_sset P) a),
+      rwr sset_pred_rinv; assumption,
+    end,  
+  ⟨imp₁, imp₂⟩    
 
 @[hott, reducible]
 def elem_pred {A : Set} {P : Setpred A} (a : A) (pred_a : P a) :
