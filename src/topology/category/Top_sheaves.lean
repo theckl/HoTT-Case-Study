@@ -43,6 +43,11 @@ elem_pred.{u+1} (↑U ∩ ↑V) inter_is_open
 def open_sets_inter : has_inter (open_sets X).carrier :=
 ⟨open_sets.inter X⟩    
 
+@[hott]
+def open_sets.iUnion {I : Set} (f : I -> (open_sets X).carrier) :
+  (open_sets X).carrier :=
+sorry  
+
 /- As a subset of the power set the set of open sets automatically receives 
    a precategory instance. Therefore, we can define a presheaf over a 
    topological space with values in a category `C` as follows: -/
