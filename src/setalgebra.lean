@@ -78,6 +78,10 @@ def iUnion {I : Set.{u}} (f : I -> 𝒫 A) : Subset A :=
 
 hott_theory_cmd "local prefix `⋃ᵢ`:110 := hott.subset.iUnion"  
 
+@[hott]
+def sset_iUnion {I : Set.{u}} (f : I -> 𝒫 A) (i : I) : f i ⊆ ⋃ᵢ f :=
+  assume a el, (pred_elem a).2 (@trunc.tr -1 (Σ i : I, a ∈ f i) ⟨i, el⟩) 
+  
 end subset
 
 end hott
