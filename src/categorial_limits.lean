@@ -255,8 +255,32 @@ category_theory.functor.mk (parallel_pair_obj f g)
                            (parallel_pair_map_id f g) 
                            (@parallel_pair_map_comp _ _ _ _ f g)   
 
+@[hott]
 abbreviation fork {C : Type u} [category_theory.category C] {a b : C} 
-  (f g : a ⟶ b) := cone (parallel_pair f g)
+  (f g : a ⟶ b) := cone (parallel_pair f g) 
+
+@[hott]
+def fork.of_i {C : Type u} [category_theory.category C] {a b c : C} 
+  (f g : a ⟶ b) (i : c ⟶ a) (w : i ≫ f = i ≫ g) : fork f g :=
+have π : constant_functor ↥walking_parallel_pair C c ⟹ parallel_pair f g, from
+  let app :=  @wp_pair.rec (λ x, c ⟶ (parallel_pair f g).obj x) i (i ≫ f) in
+  have naturality : ∀ (x x' : walking_parallel_pair) (h : x ⟶ x'), 
+          ((constant_functor ↥walking_parallel_pair C c).map h) ≫ (app x') = 
+           (app x) ≫ ((parallel_pair f g).map h), from 
+  begin
+    intros x x' h, 
+    hinduction x,
+    { hinduction x',
+      { hinduction h, hsimp },
+      { hinduction h, 
+        { hsimp, refl },
+        { hsimp, exact w } } },  
+    { hinduction x', 
+      { hinduction h },
+      { hinduction h, hsimp } }
+  end,           
+  nat_trans.mk app naturality,   
+cone.mk c π 
 
 end category_theory.limits
 
