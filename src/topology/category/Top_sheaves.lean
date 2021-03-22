@@ -46,7 +46,12 @@ def open_sets_inter : has_inter (open_sets X).carrier :=
 @[hott]
 def open_sets.iUnion {I : Set} (f : I -> (open_sets X).carrier) :
   (open_sets X).carrier :=
-sorry  
+let f' := λ i : I, (↑(f i) : Subset X.carrier) in 
+have U_i_is_open : ∀ i : I, X.top_str.is_open (f' i), from 
+  assume i, ulift.down (f i).2, 
+have open_union : X.top_str.is_open (⋃ᵢ f'), from
+  X.top_str.is_open_iUnion I f' U_i_is_open,  
+elem_pred.{u+1} (⋃ᵢ f') (ulift.up open_union)    
 
 /- As a subset of the power set the set of open sets automatically receives 
    a precategory instance. Therefore, we can define a presheaf over a 
@@ -82,6 +87,12 @@ def right_res {C : Type u} [category.{v} C] [hp : has_products C]
   (@pi_opens X C _ hp _ U F) ⟶ (@pi_inters X C _ hp _ U F) :=
 pi.lift C (λ p : ↥I × I, pi.π _ p.2 ≫ 
                             F.map (hom_op (inter_sset_r (U p.1) (U p.2))))
+
+@[hott]
+def res {C : Type u} [category.{v} C] [hp : has_products C]
+  {I : Set} (U : I -> (open_sets X).carrier) (F : presheaf X C) :
+  (F.obj (opposite.op (open_sets.iUnion X U))) ⟶ (@pi_opens X _ _ hp _ U F) :=  
+pi.lift C (λ i : I, F.map (hom_op (sset_iUnion ↑U i))) 
 
 end topology
 
