@@ -88,11 +88,28 @@ def right_res {C : Type u} [category.{v} C] [hp : has_products C]
 pi.lift C (λ p : ↥I × I, pi.π _ p.2 ≫ 
                             F.map (hom_op (inter_sset_r (U p.1) (U p.2))))
 
+set_option trace.class_instances true
+
 @[hott]
 def res {C : Type u} [category.{v} C] [hp : has_products C]
   {I : Set} (U : I -> (open_sets X).carrier) (F : presheaf X C) :
   (F.obj (opposite.op (open_sets.iUnion X U))) ⟶ (@pi_opens X _ _ hp _ U F) :=  
 pi.lift C (λ i : I, F.map (hom_op (sset_iUnion ↑U i))) 
+
+@[hott]
+def w_res {C : Type u} [category.{v} C] [hp : has_products C]
+  {I : Set} (U : I -> (open_sets X).carrier) (F : presheaf X C) :
+  (@res X _ _ hp _ U F) ≫ (@left_res X _ _ hp _ U F) = 
+                  (@res X _ _ hp _ U F) ≫ (@right_res X _ _ hp _ U F) :=
+sorry                  
+
+/-
+@[hott]
+def sheaf_condition_equalizer_products.fork {C : Type u} [category.{v} C] 
+  [hp : has_products C] {I : Set} (U : I -> (open_sets X).carrier) 
+  (F : presheaf X C) : fork (@left_res X _ _ hp _ U F) 
+                            (@right_res X _ _ hp _ U F) :=
+sorry -/                           
 
 end topology
 
