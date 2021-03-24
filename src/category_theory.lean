@@ -414,7 +414,7 @@ def category.opposite [category.{v} C] : category.{v} Cᵒᵖ :=
 def power_set_has_hom {A : Set.{u}} : has_hom (𝒫 A) :=
   has_hom.mk (λ U V : Subset A, Prop_to_Set (to_Prop (U ⊆ V))) 
   /- I am not sure whether coercions from `Type` to `Prop` and `Prop` to 
-    `Set`are a good idea. They may introduce circuitious coercions. -/     
+    `Set` are a good idea. They may introduce circuitious coercions. -/     
 
 @[hott]
 def power_set_unique_hom {A : Set.{u}} {B C : 𝒫 A} (f g : B ⟶ C) : f = g :=
