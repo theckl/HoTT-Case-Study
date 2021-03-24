@@ -159,15 +159,21 @@ abbreviation pi_obj {C : Type u} [category C] {J : Set.{v}} (f : J → C)
 notation `∏ ` f:20 := pi_obj f
 
 @[hott]
-def has_products (C : Type u) [category.{v} C] := 
-  Π (J : Set), has_limits_of_shape (discrete J) C
+class has_products (C : Type u) [category.{v} C] := 
+  (has_limit_of_shape : Π J : Set.{u}, has_limits_of_shape (discrete J) C)
 
-@[hott, priority 0]
+@[hott, priority 100]
 instance has_limits_of_shape_of_has_products 
-  {J : Set} (C : Type u) [category C] [hp : has_products C] :
+  {J : Set} (C : Type u) [category C] [has_products C] :
   has_limits_of_shape (discrete J) C :=
-hp J
+has_products.has_limit_of_shape C J
 
+@[hott]
+instance has_product_of_has_products {C : Type u} [category C] 
+  [has_products C] {J : Set.{u}} (f : J -> C) : has_product f :=
+@has_limits_of_shape.has_limit _ _ _ _ 
+       (has_products.has_limit_of_shape C J) (discrete.functor f)
+  
 /-- A fan over `f : J → C` consists of a collection of maps from an object `P`
     to every `f j`. This is enough to determine a cone which factorizes through    
     the product. -/
