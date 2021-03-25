@@ -97,14 +97,16 @@ def res {C : Type u} [category.{v} C] [has_products C]
   (F.obj (op (open_sets.iUnion X U))) ⟶ (pi_opens X U F) :=  
 pi.lift C (λ i : I, F.map (hom_op (sset_iUnion ↑U i))) 
 
+#print instances has_coe
+set_option pp.universes true
+
 @[hott]
 def w_res {C : Type u} [category.{v} C] [has_products C]
-  {I : Set} (U : I -> (open_sets X).carrier) (F : presheaf X C) :
-  (res X U F) ≫ (left_res X U F) = (res X U F) ≫ (right_res X U F) :=
-let (left_comp : Π p : ↥I × I, 
-  (F.obj (op (open_sets.iUnion X U))) ⟶ (F.obj (op (U p.1 ∩ U p.2)))) := 
-  λ p : ↥I × I, F.map (hom_op (sset_iUnion ↑U p.1) ≫ 
-                       hom_op (inter_sset_l (↑(U p.1)) (↑(U p.2)))) in 
+  {I : Set.{u}} (U : I -> (open_sets X).carrier) (F : presheaf X C) :
+  (res X U F) ≫ (left_res X U F) = (res X U F) ≫ (right_res X U F) :=  
+let left_comp := 
+  λ p : ↥I × I, F.map (hom_op (inclusion_to_hom (sset_iUnion ↑U p.1 : is_subset_of ↑(U p.1) ↑(open_sets.iUnion X U))) ≫ 
+                       hom_op (inclusion_to_hom (inter_sset_l (↑(U p.1)) (↑(U p.2))))) in 
 calc (res X U F) ≫ (left_res X U F) = (res X U F) ≫ (right_res X U F) : sorry                  
 
 @[hott]
