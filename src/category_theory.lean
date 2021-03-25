@@ -417,6 +417,10 @@ def power_set_has_hom {A : Set.{u}} : has_hom (𝒫 A) :=
     `Set` are a good idea. They may introduce circuitious coercions. -/     
 
 @[hott]
+def inclusion_to_hom {X : Set} {A B : Subset X} (i : A ⊆ B) : A ⟶ B :=
+  i
+
+@[hott]
 def power_set_unique_hom {A : Set.{u}} {B C : 𝒫 A} (f g : B ⟶ C) : f = g :=
   @is_prop.elim _ (is_prop_subset B C) f g
 
