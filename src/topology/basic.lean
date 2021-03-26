@@ -23,7 +23,24 @@ structure topological_space :=
     It is also more convenient when dealing with covers which are also defined
     as maps. -/ 
 
-
 attribute [class] topological_space
+
+@[hott]
+def is_open [t : topological_space T] (U : Subset T): Prop :=
+  topological_space.is_open t U
+
+@[hott, hsimp]
+def is_open_univ [t : topological_space T] : is_open T (total_Subset T) :=
+  topological_space.is_open_univ t
+
+@[hott]
+def is_open_inter [t : topological_space T] {U V : Subset T} 
+  (h₁ : is_open T U) (h₂ : is_open T V) : is_open T (U ∩ V) :=
+topological_space.is_open_inter t U V h₁ h₂  
+
+@[hott]
+def is_open_iUnion [t : topological_space T] {I : Set} {f : I -> 𝒫 T}
+  (h : ∀ i : I, is_open T (f i)) : is_open T (⋃ᵢ f) :=
+topological_space.is_open_iUnion t I f h  
 
 end hott
