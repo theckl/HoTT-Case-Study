@@ -29,16 +29,19 @@ variables (X : Top.{u})
    (TODO: constructing supremum and order) -/
 @[hott]
 def open_sets : Subset (𝒫 ↥X) := 
-  {U ∈ (𝒫 ↥X) | prop_ulift (X.top_str.is_open U)}
+  {U ∈ (𝒫 ↥X) | prop_ulift (is_open ↥X U)}
 
 @[hott]
 protected def open_sets.inter (U V : (open_sets X).carrier) : 
   (open_sets X).carrier :=
-have U_is_open : X.top_str.is_open U, from ulift.down U.2, 
-have V_is_open : X.top_str.is_open V, from ulift.down V.2,
-have inter_is_open : prop_ulift (X.top_str.is_open (↑U ∩ ↑V)), from 
-  ulift.up (X.top_str.is_open_inter U V U_is_open V_is_open),
+have U_is_open : is_open ↥X U, from ulift.down U.2, 
+have V_is_open : is_open ↥X V, from ulift.down V.2,
+have inter_is_open : prop_ulift (is_open ↥X (↑U ∩ ↑V)), from 
+  ulift.up (is_open_inter ↥X U_is_open V_is_open),
 elem_pred.{u+1} (↑U ∩ ↑V) inter_is_open  
+
+#check open_sets.inter
+#print instances has_coe_to_sort
 
 @[hott, instance]
 def open_sets_inter : has_inter (open_sets X).carrier :=
