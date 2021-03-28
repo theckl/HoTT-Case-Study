@@ -63,19 +63,15 @@ def presheaf (C : Type u) [category.{v} C] := (open_sets X)ᵒᵖ ⥤ C
 
 /- The product of the sections of a presheaf over a family of open sets. -/
 @[hott]
-def pi_opens {C : Type u} [category.{v} C] [has_products C]
+def pi_opens {C : Type u} [category.{v} C] [has_products C] 
   {I : Set} (U : I -> open_sets X) (F : presheaf X C) : C :=   
-have hls : has_limits_of_shape (discrete I) C, from 
-  has_products.has_limit_of_shape C I, 
 ∏ (λ i : I, F.obj (op (U i)))
 
 /- The product of the sections of a presheaf over the pairwise intersections 
    of a family of open sets.-/
 @[hott]
 def pi_inters {C : Type u} [category.{v} C] [has_products C]
-  {I : Set} (U : I -> open_sets X) (F : presheaf X C) : C :=
-have hls : has_limits_of_shape (discrete (I × I)) C, from 
-  has_products.has_limit_of_shape C (I × I),  
+  {I : Set} (U : I -> open_sets X) (F : presheaf X C) : C :=  
 ∏ (λ p : ↥(I × I), F.obj (op (U p.1 ∩ U p.2)))
 
 @[hott]
@@ -100,12 +96,13 @@ pi.lift C (λ i : I, F.map (hom_op (sset_iUnion ↑U i)))
 
 @[hott]
 def w_res {C : Type u} [category.{v} C] [has_products C]
-  {I : Set.{u}} (U : I -> (open_sets X).carrier) (F : presheaf X C) :
+  {I : Set.{u}} (U : I -> open_sets X) (F : presheaf X C) :
   (res X U F) ≫ (left_res X U F) = (res X U F) ≫ (right_res X U F) :=  
-let left_comp := 
-  λ p : ↥I × I, F.map (hom_op (inclusion_to_hom (sset_iUnion ↑U p.1 : is_subset_of ↑(U p.1) ↑(open_sets.iUnion X U))) ≫ 
-                       hom_op (inclusion_to_hom (inter_sset_l (↑(U p.1)) (↑(U p.2))))) in 
-calc (res X U F) ≫ (left_res X U F) = (res X U F) ≫ (right_res X U F) : sorry                  
+calc (res X U F) ≫ (left_res X U F) = 
+           pi.lift C (λ p : ↥I × I, F.map (hom_op (sset_iUnion ↑U p.1)) ≫
+                          F.map (hom_op (inter_sset_l (U p.1) (U p.2)))) :
+           sorry               
+     ... = (res X U F) ≫ (right_res X U F) : sorry                  
 
 @[hott]
 def sheaf_condition_equalizer_products.fork {C : Type u} [category.{v} C] 
