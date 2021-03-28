@@ -149,11 +149,11 @@ instance has_limit_of_has_limits_of_shape
 has_limits_of_shape.has_limit F
 
 @[hott]
-abbreviation has_product {C : Type u} [category C] {J : Set.{v}} 
+abbreviation has_product {C : Type u} [category C] {J : Set.{u}} 
   (f : J -> C) := has_limit (discrete.functor f) 
 
 @[hott]
-abbreviation pi_obj {C : Type u} [category C] {J : Set.{v}} (f : J → C) 
+abbreviation pi_obj {C : Type u} [category C] {J : Set.{u}} (f : J → C) 
   [has_product f] := limit (discrete.functor f)
 
 notation `∏ ` f:20 := pi_obj f
@@ -168,12 +168,18 @@ instance has_limits_of_shape_of_has_products
   has_limits_of_shape (discrete J) C :=
 has_products.has_limit_of_shape C J
 
-@[hott]
-instance has_product_of_has_products {C : Type u} [category C] 
+@[hott, instance, priority 100]
+def has_product_of_has_products {C : Type u} [category C] 
   [has_products C] {J : Set.{u}} (f : J -> C) : has_product f :=
 @has_limits_of_shape.has_limit _ _ _ _ 
        (has_products.has_limit_of_shape C J) (discrete.functor f)
-  
+
+@[hott, instance]
+def has_product_of_has_limits_of_shape {C : Type u} [category C] 
+  {J : Set.{u}} [has_limits_of_shape (discrete J) C] (f : J -> C) : 
+  has_product f :=
+has_limits_of_shape.has_limit (discrete.functor f)  
+
 /-- A fan over `f : J → C` consists of a collection of maps from an object `P`
     to every `f j`. This is enough to determine a cone which factorizes through    
     the product. -/
@@ -186,7 +192,7 @@ def fan.mk {J : Set} (C : Type u) [category C] {f : J → C} {P : C}
   (p : Π j, P ⟶ f j) : fan f :=
 cone.mk P (discrete.nat_trans _ _ p)
 
-@[hott] 
+@[hott, reducible, hsimp] 
 def pi.lift {J : Set} (C : Type u) [category C] {f : J → C} [has_product f]
   {P : C} (p : Π j, P ⟶ f j) : P ⟶ ∏ f :=
 (get_limit_cone (discrete.functor f)).is_limit.lift (fan.mk _ p)  
@@ -195,6 +201,16 @@ def pi.lift {J : Set} (C : Type u) [category C] {f : J → C} [has_product f]
 def pi.π {J : Set} {C : Type u} [category C] (f : J → C) [has_product f] 
   (j : J) : ∏ f ⟶ f j :=
 (get_limit_cone (discrete.functor f)).cone.π.app j  
+
+@[hott]
+def pi.hom_is_lift {J : Set} (C : Type u) [category C] {f : J → C} 
+  [has_product f] {P : C} (h : P ⟶ ∏ f) : 
+  h = pi.lift C (λ j : J, h ≫ (pi.π _ j)) :=
+begin 
+  hsimp, 
+  apply is_limit.uniq, 
+  sorry 
+end  
 
 /- `parallel_pair f g` is the diagram in `C` consisting of the two morphisms `f` and `g` with
     common domain and codomain. -/
