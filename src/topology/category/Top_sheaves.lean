@@ -97,9 +97,11 @@ pi.lift C (λ i : I, F.map (hom_op (sset_iUnion ↑U i)))
 @[hott]
 def w_res {C : Type u} [category.{v} C] [has_products C]
   {I : Set.{u}} (U : I -> open_sets X) (F : presheaf X C) :
-  (res X U F) ≫ (left_res X U F) = (res X U F) ≫ (right_res X U F) :=  
-calc (res X U F) ≫ (left_res X U F) = 
-           pi.lift C (λ p : ↥I × I, F.map (hom_op (sset_iUnion ↑U p.1)) ≫
+  (res X U F) ≫ (left_res X U F) = (res X U F) ≫ (right_res X U F) :=    
+calc (res X U F) ≫ (left_res X U F) = pi.lift C (λ p : ↥I × I, 
+                          ((res X U F) ≫ (left_res X U F)) ≫ pi.π _ p) :
+           pi.hom_is_lift C ((res X U F) ≫ (left_res X U F))
+     ... = pi.lift C (λ p : ↥I × I, F.map (hom_op (sset_iUnion ↑U p.1)) ≫
                           F.map (hom_op (inter_sset_l (U p.1) (U p.2)))) :
            sorry               
      ... = (res X U F) ≫ (right_res X U F) : sorry                  
