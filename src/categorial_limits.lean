@@ -187,29 +187,32 @@ has_limits_of_shape.has_limit (discrete.functor f)
 abbreviation fan {J : Set} {C : Type u} [category C] (f : J → C) := 
   cone (discrete.functor f)
 
-@[hott]
+@[hott, hsimp]
 def fan.mk {J : Set} (C : Type u) [category C] {f : J → C} {P : C} 
   (p : Π j, P ⟶ f j) : fan f :=
 cone.mk P (discrete.nat_trans _ _ p)
 
-@[hott, reducible, hsimp] 
+@[hott, hsimp] 
 def pi.lift {J : Set} (C : Type u) [category C] {f : J → C} [has_product f]
   {P : C} (p : Π j, P ⟶ f j) : P ⟶ ∏ f :=
 (get_limit_cone (discrete.functor f)).is_limit.lift (fan.mk _ p)  
 
-@[hott] 
+@[hott, hsimp] 
 def pi.π {J : Set} {C : Type u} [category C] (f : J → C) [has_product f] 
   (j : J) : ∏ f ⟶ f j :=
-(get_limit_cone (discrete.functor f)).cone.π.app j  
+(limit.cone (discrete.functor f)).π.app j 
 
 @[hott]
 def pi.hom_is_lift {J : Set} (C : Type u) [category C] {f : J → C} 
   [has_product f] {P : C} (h : P ⟶ ∏ f) : 
   h = pi.lift C (λ j : J, h ≫ (pi.π _ j)) :=
+let p := λ j : J, h ≫ (pi.π f j),
+    c := fan.mk _ p,
+    lc := get_limit_cone (discrete.functor f) in     
 begin 
-  hsimp, 
-  apply is_limit.uniq, 
-  sorry 
+  change h = lc.is_limit.lift c, 
+  apply is_limit.uniq lc.is_limit c h, 
+  intro j, exact rfl, 
 end  
 
 /- `parallel_pair f g` is the diagram in `C` consisting of the two morphisms `f` and `g` with
