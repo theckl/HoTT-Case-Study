@@ -55,6 +55,10 @@ have open_union : is_open ↥X (⋃ᵢ ↑f), from
   is_open_iUnion ↥X U_i_is_open,  
 elem_pred.{u+1} (⋃ᵢ ↑f) (ulift.up open_union)    
 
+@[hott]
+def open_sets_incl_to_hom {U V : open_sets X} (i : @is_subset_of ↥X ↑U ↑V) : 
+  U ⟶ V := i 
+
 /- As a subset of the power set the set of open sets automatically receives 
    a precategory instance. Therefore, we can define a presheaf over a 
    topological space with values in a category `C` as follows: -/
@@ -97,14 +101,32 @@ pi.lift C (λ i : I, F.map (hom_op (sset_iUnion ↑U i)))
 @[hott]
 def w_res {C : Type u} [category.{v} C] [has_products C]
   {I : Set.{u}} (U : I -> open_sets X) (F : presheaf X C) :
-  (res X U F) ≫ (left_res X U F) = (res X U F) ≫ (right_res X U F) :=    
+  (res X U F) ≫ (left_res X U F) = (res X U F) ≫ (right_res X U F) :=  
+have left_eq : Π p : ↥I × I, ((res X U F) ≫ (left_res X U F)) ≫ pi.π _ p =
+  F.map (hom_op (inter_sset_l (U p.1) (U p.2) ≫ sset_iUnion ↑U p.1)), from
+  sorry,
+have right_eq : Π p : ↥I × I, ((res X U F) ≫ (right_res X U F)) ≫ pi.π _ p =
+  F.map (hom_op (inter_sset_r (U p.1) (U p.2) ≫ sset_iUnion ↑U p.2)), from
+  sorry,      
+have left_right_eq : Π p : ↥I × I, ((res X U F) ≫ (left_res X U F)) ≫ pi.π _ p =
+  ((res X U F) ≫ (right_res X U F)) ≫ pi.π _ p, from assume p,
+  calc ((res X U F) ≫ (left_res X U F)) ≫ pi.π _ p = 
+          F.map (hom_op (inter_sset_l (U p.1) (U p.2) ≫ sset_iUnion ↑U p.1)) : 
+          left_eq p
+    ... = F.map (hom_op (inter_sset_r (U p.1) (U p.2) ≫ sset_iUnion ↑U p.2)) : 
+          sorry 
+    ... = ((res X U F) ≫ (right_res X U F)) ≫ pi.π _ p : (right_eq p)⁻¹,
+have fun_lr_eq : (λ p : ↥I × I, ((res X U F) ≫ (left_res X U F)) ≫ pi.π _ p) =
+  λ p : ↥I × I, ((res X U F) ≫ (right_res X U F)) ≫ pi.π _ p, from 
+  eq_of_homotopy (λ p, left_right_eq p),                           
 calc (res X U F) ≫ (left_res X U F) = pi.lift C (λ p : ↥I × I, 
                           ((res X U F) ≫ (left_res X U F)) ≫ pi.π _ p) :
            pi.hom_is_lift C ((res X U F) ≫ (left_res X U F))
-     ... = pi.lift C (λ p : ↥I × I, F.map (hom_op (sset_iUnion ↑U p.1)) ≫
-                          F.map (hom_op (inter_sset_l (U p.1) (U p.2)))) :
-           sorry               
-     ... = (res X U F) ≫ (right_res X U F) : sorry                  
+     ... = pi.lift C (λ p : ↥I × I, 
+                          ((res X U F) ≫ (right_res X U F)) ≫ pi.π _ p) :
+           by rwr fun_lr_eq                                  
+     ... = (res X U F) ≫ (right_res X U F) : 
+           (pi.hom_is_lift C ((res X U F) ≫ (right_res X U F)))⁻¹                  
 
 @[hott]
 def sheaf_condition_equalizer_products.fork {C : Type u} [category.{v} C] 
