@@ -273,7 +273,7 @@ instance has_hom.opposite [has_hom.{v} C] : has_hom Cᵒᵖ :=
   has_hom.mk (λ x y, unop y ⟶ unop x) /- Why can't we define a `has_hom` structure with `{}`? -/
 
 /- The opposite of a morphism in `C`. -/
-@[hott]
+@[hott, reducible]
 def hom_op [has_hom.{v} C] {x y : C} (f : x ⟶ y) : op y ⟶ op x := f
 /- Given a morphism in `Cᵒᵖ`, we can take the "unopposite" back in `C`. -/
 @[hott]
@@ -297,7 +297,6 @@ def category_struct.opposite [precategory.{v} C] : category_struct.{v} Cᵒᵖ :
 def id_comp_op [precategory.{v} C] : ∀ (x y : Cᵒᵖ) (f : x ⟶ y), 𝟙 x ≫ f = f := 
 begin intros x y f, hsimp end
    
-
 @[hott]
 def comp_id_op [precategory.{v} C] : ∀ (x y : Cᵒᵖ) (f : x ⟶ y), f ≫ 𝟙 y = f := 
 begin intros x y f, hsimp end
@@ -315,6 +314,10 @@ end
 @[hott, instance]
 def precategory.opposite [precategory.{v} C] : precategory.{v} Cᵒᵖ :=
   precategory.mk id_comp_op comp_id_op assoc_op                   
+
+@[hott]
+def hom_op_funct [precategory.{v} C] {a b c : C} (f : a ⟶ b) (g : b ⟶ c) :
+  hom_op (f ≫ g) = hom_op g ≫ hom_op f := rfl
 
 /- The opposite category. 
    We show the equivalence by splitting it up in three steps and using that maps from 
@@ -415,10 +418,6 @@ def power_set_has_hom {A : Set.{u}} : has_hom (𝒫 A) :=
   has_hom.mk (λ U V : Subset A, Prop_to_Set (to_Prop (U ⊆ V))) 
   /- I am not sure whether coercions from `Type` to `Prop` and `Prop` to 
     `Set` are a good idea. They may introduce circuitious coercions. -/     
-
-@[hott]
-def inclusion_to_hom {X : Set} {A B : Subset X} (i : A ⊆ B) : A ⟶ B :=
-  i
 
 @[hott]
 def power_set_unique_hom {A : Set.{u}} {B C : 𝒫 A} (f g : B ⟶ C) : f = g :=
