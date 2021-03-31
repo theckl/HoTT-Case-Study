@@ -215,6 +215,12 @@ begin
   intro j, exact rfl, 
 end  
 
+@[hott]
+def pi.lift_π_eq {J : Set} (C : Type u) [category C] {f : J → C} 
+  [has_product f] {P : C} (p : Π j : J, P ⟶ f j) : 
+  ∀ j : J, pi.lift C p ≫ pi.π _ j = p j :=
+assume j, by apply is_limit.fac  
+
 /- `parallel_pair f g` is the diagram in `C` consisting of the two morphisms `f` and `g` with
     common domain and codomain. -/
 @[hott, hsimp]
