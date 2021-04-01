@@ -181,19 +181,29 @@ calc (res X U F) ≫ (left_res X U F) = pi.lift C (λ p : ↥I × I,
 
 @[hott]
 def sheaf_condition_equalizer_products.fork {C : Type u} [category.{v} C] 
-  [hp : has_products C] {I : Set} (U : I -> open_sets X) 
+  [has_products C] {I : Set} (U : I -> open_sets X) 
   (F : presheaf X C) : fork (left_res X U F) (right_res X U F) :=
 fork.of_i _ _ (res X U F) (w_res X U F)
 
 @[hott]
-def sheaf_condition {C : Type u} [category.{v} C] [hp : has_products C] (F : presheaf X C) := Π {I : Set} (U : I -> open_sets X), 
+def sheaf_condition {C : Type u} [category.{v} C] [has_products C] (F : presheaf X C) := Π {I : Set} (U : I -> open_sets X), 
   is_limit (sheaf_condition_equalizer_products.fork X U F)
 
 @[hott]
-structure sheaf {C : Type u} [category.{v} C] [hp : has_products C] :=
+structure sheaf (C : Type u) [category.{v} C] [has_products C] :=
 (presheaf : presheaf X C)
 (sheaf_condition : sheaf_condition X presheaf)
 
 end topology
+
+@[hott]
+structure PresheafedSpace (C : Type u) [category.{v} C] :=
+  (carrier : Top)
+  (presheaf : topology.presheaf carrier C)
+
+@[hott]
+structure SheafedSpace (C : Type u) [category.{v} C] [has_products C] extends 
+  PresheafedSpace C := 
+  (sheaf_condition : topology.sheaf_condition carrier presheaf)   
 
 end hott
