@@ -24,6 +24,16 @@ def apdo0111 {A : Type _} {B C : A -> Type _} {D : Π a : A, B a -> Type _}
 begin hinduction p, hinduction q, hinduction r, refl end 
 
 @[hott]
+def apd01111 {A F : Type _} {B C D E : A -> Type _} 
+  (f : Π a : A, B a -> C a -> D a -> E a -> F) {a a' : A} {b : B a} {b' : B a'}
+  {c : C a} {c' : C a'} {d : D a} {d' : D a'} {e : E a} {e' : E a'}
+  (pA : a = a') (pB : b =[pA] b') (pC : c =[pA] c') (pD : d =[pA] d') 
+  (pE : e =[pA] e') :
+  f a b c d e = f a' b' c' d' e' :=
+begin hinduction pA, hinduction pB, hinduction pC, hinduction pD,
+      hinduction pE, refl end  
+
+@[hott]
 def apdo01111 {A : Type _} {B E : A -> Type _} {C D : Π a : A, B a -> Type _}
   (f : Π (a : A) (b : B a), C a b -> D a b -> E a)
   {a₁ a₂ : A} {b₁ : B a₁} {b₂ : B a₂} {c₁ : C a₁ b₁} {c₂ : C a₂ b₂} 
