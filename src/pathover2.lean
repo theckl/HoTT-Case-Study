@@ -25,11 +25,12 @@ begin hinduction p, hinduction q, hinduction r, refl end
 
 @[hott]
 def apd01111 {A F : Type _} {B C D E : A -> Type _} 
-  (f : Π a : A, B a -> C a -> D a -> E a -> F) {a a' : A} {b : B a} {b' : B a'}
-  {c : C a} {c' : C a'} {d : D a} {d' : D a'} {e : E a} {e' : E a'}
+  (h : Π a : A, B a -> C a -> D a -> E a -> F) {a a' : A} 
+  {b : B a} {b' : B a'} {c : C a} {c' : C a'} {d : D a} {d' : D a'} 
+  {e : E a} {e' : E a'}  
   (pA : a = a') (pB : b =[pA] b') (pC : c =[pA] c') (pD : d =[pA] d') 
   (pE : e =[pA] e') :
-  f a b c d e = f a' b' c' d' e' :=
+  h a b c d e = h a' b' c' d' e' :=
 begin hinduction pA, hinduction pB, hinduction pC, hinduction pD,
       hinduction pE, refl end  
 
