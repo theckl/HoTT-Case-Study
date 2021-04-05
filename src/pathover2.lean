@@ -35,6 +35,22 @@ begin hinduction pA, hinduction pB, hinduction pC, hinduction pD,
       hinduction pE, refl end  
 
 @[hott]
+def apd01111_eq {A F : Type _} {B C D E : A -> Type _} 
+  (h : Π a : A, B a -> C a -> D a -> E a -> F) {a a' : A} 
+  {b : B a} {b' : B a'} {c : C a} {c' : C a'} {d : D a} {d' : D a'} 
+  {e : E a} {e' : E a'}  
+  {pA pA' : a = a'} {pB : b =[pA] b'} {pB' : b =[pA'] b'} {pC : c =[pA] c'} 
+  {pC' : c =[pA'] c'} {pD : d =[pA] d'} {pD' : d =[pA'] d'} 
+  {pE : e =[pA] e'} {pE' : e =[pA'] e'} (pA_eq : pA = pA') 
+  (pB_eq : pB =[pA_eq; λ q : a = a', b =[q] b'] pB') 
+  (pC_eq : pC =[pA_eq; λ q : a = a', c =[q] c'] pC') 
+  (pD_eq : pD =[pA_eq; λ q : a = a', d =[q] d'] pD')
+  (pE_eq : pE =[pA_eq; λ q : a = a', e =[q] e'] pE') :
+  apd01111 h pA pB pC pD pE = apd01111 h pA' pB' pC' pD' pE' :=
+begin hinduction pA_eq, hinduction pB_eq, hinduction pC_eq, hinduction pD_eq, 
+      hinduction pE_eq, refl end 
+
+@[hott]
 def apdo01111 {A : Type _} {B E : A -> Type _} {C D : Π a : A, B a -> Type _}
   (f : Π (a : A) (b : B a), C a b -> D a b -> E a)
   {a₁ a₂ : A} {b₁ : B a₁} {b₂ : B a₂} {c₁ : C a₁ b₁} {c₂ : C a₂ b₂} 
