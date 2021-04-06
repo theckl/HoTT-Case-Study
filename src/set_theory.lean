@@ -46,8 +46,8 @@ def is_set_injective {A B : Set.{u}} (f : B -> A) :=
   
 /- Maps between two given sets are sets. 
    Looks like a HoTT-ism, but is actually a rule to construct sets from known sets. -/
-@[hott]
-lemma is_set_map {A B : Set.{u}} : is_set (A -> B) :=
+@[hott, instance]
+def is_set_map {A B : Set.{u}} : is_set (A -> B) :=
 have H : forall (f g : A -> B) (p q : f = g), p = q, from   
   assume f g p q, 
   have eq_eqv_hom : (f = g) ≃ (f ~ g), from 
