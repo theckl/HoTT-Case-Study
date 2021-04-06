@@ -95,21 +95,45 @@ def ring_hom_is_set (M N : CommRing) : is_set (M →+* N) :=
   have set_eq_eq : ∀ (g h : M →+* N) (p q : g = h), p = q, from
     assume g h p q,
     have fun_eq_eq : rh_fun_eq p = rh_fun_eq q, from 
-      @is_set.elim (M -> N) (@set.is_set_map _ _) _ _ (rh_fun_eq p) (rh_fun_eq q),
+      @is_set.elim (M -> N) _ _ _ (rh_fun_eq p) (rh_fun_eq q),
     have one_eq_eq : rh_map_one_eq p =[fun_eq_eq; 
       λ r : g.to_fun = h.to_fun, g.map_one =[r; λ f : M -> N, f 1 = 1] h.map_one] 
-                     rh_map_one_eq q, from sorry,
+                     rh_map_one_eq q, from 
+      have one_eq_prop : is_prop 
+        (g.map_one =[rh_fun_eq q; λ h : M -> N, h 1 = 1] h.map_one), from
+        is_trunc_equiv_closed_rev -1 (@pathover_equiv_tr_eq _ (λ h : M -> N, h 1 = 1) 
+          _ _ (rh_fun_eq q) g.map_one h.map_one) (is_trunc_eq -1 _ _),               
+      begin apply pathover_of_tr_eq, exact is_prop.elim _ _ end,
     have mul_eq_eq : rh_map_mul_eq p =[fun_eq_eq;
       λ r : g.to_fun = h.to_fun, g.map_mul =[r; 
                        λ f : M -> N, ∀ a b : M, f (a * b) = f a * f b] h.map_mul] 
-                     rh_map_mul_eq q, from sorry,  
+                     rh_map_mul_eq q, from 
+      have mul_eq_prop : is_prop
+        (g.map_mul =[rh_fun_eq q; λ h : M -> N, ∀ a b : M, h (a * b) = h a * h b] 
+                                  h.map_mul), from 
+        is_trunc_equiv_closed_rev -1 (@pathover_equiv_tr_eq _ (λ h : M -> N, 
+          ∀ a b : M, h (a * b) = h a * h b) _ _ (rh_fun_eq q) g.map_mul h.map_mul) 
+          (is_trunc_eq -1 _ _),               
+      begin apply pathover_of_tr_eq, exact is_prop.elim _ _ end,  
     have zero_eq_eq : rh_map_zero_eq p =[fun_eq_eq; 
       λ r : g.to_fun = h.to_fun, g.map_zero =[r; λ f : M -> N, f 0 = 0] h.map_zero] 
-                     rh_map_zero_eq q, from sorry,
+                     rh_map_zero_eq q, from 
+      have zero_eq_prop : is_prop 
+        (g.map_zero =[rh_fun_eq q; λ h : M -> N, h 0 = 0] h.map_zero), from
+        is_trunc_equiv_closed_rev -1 (@pathover_equiv_tr_eq _ (λ h : M -> N, h 0 = 0) 
+          _ _ (rh_fun_eq q) g.map_zero h.map_zero) (is_trunc_eq -1 _ _),               
+      begin apply pathover_of_tr_eq, exact is_prop.elim _ _ end,
     have add_eq_eq : rh_map_add_eq p =[fun_eq_eq;
       λ r : g.to_fun = h.to_fun, g.map_add =[r; 
                        λ f : M -> N, ∀ a b : M, f (a + b) = f a + f b] h.map_add] 
-                     rh_map_add_eq q, from sorry,                  
+                     rh_map_add_eq q, from 
+      have add_eq_prop : is_prop
+        (g.map_add =[rh_fun_eq q; λ h : M -> N, ∀ a b : M, h (a + b) = h a + h b] 
+                                  h.map_add), from 
+        is_trunc_equiv_closed_rev -1 (@pathover_equiv_tr_eq _ (λ h : M -> N, 
+          ∀ a b : M, h (a + b) = h a + h b) _ _ (rh_fun_eq q) g.map_add h.map_add) 
+          (is_trunc_eq -1 _ _), 
+      begin apply pathover_of_tr_eq, exact is_prop.elim _ _ end,                     
     begin 
       rwr ring_hom_eq_eta p, rwr ring_hom_eq_eta q,
       apply whisker_right (ring_hom_eta h)⁻¹, apply whisker_left (ring_hom_eta g),
@@ -117,6 +141,31 @@ def ring_hom_is_set (M N : CommRing) : is_set (M →+* N) :=
                                     zero_eq_eq add_eq_eq 
     end, 
   is_set.mk _ set_eq_eq 
+
+/- Next, we define the category structure on `CommRing`. -/
+@[hott, instance]
+def ring_has_hom : has_hom CommRing :=
+  has_hom.mk (λ R S : CommRing, Set.mk (ring_hom R S) (ring_hom_is_set R S))
+
+@[hott, hsimp, reducible]
+def id_CommRing (R : CommRing) : R →+* R :=
+  let id_R := @set.id R in
+  have one_R : id_R 1 = 1, by refl,
+  have mul_R : ∀ r s : R, id_R (r * s) = (id_R r) * (id_R s), 
+    by intros r s; refl,
+  have zero_R : id_R 0 = 0, by refl,
+  have add_R : ∀ r s : R, id_R (r + s) = (id_R r) + (id_R s), 
+    by intros r s; refl,
+  ring_hom.mk id_R one_R mul_R zero_R add_R
+
+@[hott, hsimp, reducible]
+def comp_CommRing {R S T : CommRing} (f : R →+* S) (g : S →+* T) : R →+* T :=
+  let h := λ r : R, g (f r) in
+  have h_one : h 1 = 1, from sorry,
+  have h_mul : ∀ r₁ r₂ : R, h (r₁ * r₂) = h r₁ * h r₂, from sorry,
+  have h_zero : h 0 = 0, from sorry,
+  have h_add : ∀ r₁ r₂ : R, h (r₁ + r₂) = h r₁ + h r₂, from sorry,
+  ring_hom.mk h h_one h_mul h_zero h_add
 
 end algebra
 
