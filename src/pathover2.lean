@@ -23,7 +23,7 @@ def apdo0111 {A : Type _} {B C : A -> Type _} {D : Π a : A, B a -> Type _}
   f a₁ b₁ d₁ =[p] f a₂ b₂ d₂ :=
 begin hinduction p, hinduction q, hinduction r, refl end 
 
-@[hott]
+@[hott, hsimp, reducible]
 def apd01111 {A F : Type _} {B C D E : A -> Type _} 
   (h : Π a : A, B a -> C a -> D a -> E a -> F) {a a' : A} 
   {b : B a} {b' : B a'} {c : C a} {c' : C a'} {d : D a} {d' : D a'} 
