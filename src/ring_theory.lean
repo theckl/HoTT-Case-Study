@@ -42,8 +42,29 @@ instance ring_hom_to_fun (M N : CommRing) :
   has_coe_to_fun (ring_hom M N) :=
 ⟨λ _, M -> N, λ h, h.to_fun⟩  
 
+/- Needed for calculations. -/
+@[hott]
+def rh_map_one {R S : CommRing} (f : R →+* S) :
+  f 1 = 1 :=
+f.map_one   
+
+@[hott]
+def rh_map_mul {R S : CommRing} (f : R →+* S) :
+  ∀ r₁ r₂ : R, f (r₁ * r₂) = f r₁ * f r₂ :=
+f.map_mul  
+
+@[hott]
+def rh_map_zero {R S : CommRing} (f : R →+* S) :
+  f 0 = 0 :=
+f.map_zero   
+
+@[hott]
+def rh_map_add {R S : CommRing} (f : R →+* S) :
+  ∀ r₁ r₂ : R, f (r₁ + r₂) = f r₁ + f r₂ :=
+f.map_add
+
 /- Showing the HoTTism that all the ring homomrphisms between two
-   commuative rings form a set requires many lines of code. The proofs
+   commutative rings form a set requires many lines of code. The proofs
    are straightforward and seem automatizable, but the construction of 
    the types is elaborate. -/
 @[hott]
@@ -51,16 +72,27 @@ def ring_hom_eta {M N : CommRing} (f : M →+* N) :
   f = ring_hom.mk f.to_fun f.map_one f.map_mul f.map_zero f.map_add :=
 begin hinduction f, refl end
 
-@[hott]
+@[hott, hsimp]
 def rh_fun_eq {M N : CommRing} {f g : M →+* N} (p : f = g) : 
   f.to_fun = g.to_fun :=
 ap ring_hom.to_fun p 
+
+@[hott, hsimp, reducible]
+def rh_fun_one_eq {M N : CommRing} {f g : M →+* N} (p : ⇑f = g) :
+  f.map_one =[p; λ h : M -> N, h 1 = 1] g.map_one :=
+begin apply pathover_of_tr_eq, exact is_prop.elim _ _ end  
 
 @[hott]
 def rh_map_one_eq {M N : CommRing} {f g : M →+* N} (p : f = g) :
   f.map_one =[rh_fun_eq p; λ h : M -> N, h 1 = 1] g.map_one :=
 pathover_ap (λ h : M -> N, h 1 = 1) ring_hom.to_fun 
                                (@apd (M →+* N) _ _ _ ring_hom.map_one p)  
+
+@[hott, hsimp]
+def rh_fun_mul_eq {M N : CommRing} {f g : M →+* N} (p : ⇑f = g) :
+  f.map_mul 
+    =[p; λ h : M -> N, ∀ a b : M, h (a * b) = h a * h b] g.map_mul :=
+begin apply pathover_of_tr_eq, exact is_prop.elim _ _ end    
 
 @[hott]
 def rh_map_mul_eq {M N : CommRing} {f g : M →+* N} (p : f = g) :
@@ -69,11 +101,22 @@ def rh_map_mul_eq {M N : CommRing} {f g : M →+* N} (p : f = g) :
 pathover_ap (λ h : M -> N, ∀ a b : M, h (a * b) = h a * h b) 
                    ring_hom.to_fun (@apd (M →+* N) _ _ _ ring_hom.map_mul p)              
 
+@[hott, hsimp]
+def rh_fun_zero_eq {M N : CommRing} {f g : M →+* N} (p : ⇑f = g) :
+  f.map_zero =[p; λ h : M -> N, h 0 = 0] g.map_zero :=
+begin apply pathover_of_tr_eq, exact is_prop.elim _ _ end  
+
 @[hott]
 def rh_map_zero_eq {M N : CommRing} {f g : M →+* N} (p : f = g) :
   f.map_zero =[rh_fun_eq p; λ h : M -> N, h 0 = 0] g.map_zero :=
 pathover_ap (λ h : M -> N, h 0 = 0) ring_hom.to_fun 
                                (@apd (M →+* N) _ _ _ ring_hom.map_zero p)  
+
+@[hott, hsimp]
+def rh_fun_add_eq {M N : CommRing} {f g : M →+* N} (p : ⇑f = g) :
+  f.map_add 
+    =[p; λ h : M -> N, ∀ a b : M, h (a + b) = h a + h b] g.map_add :=
+begin apply pathover_of_tr_eq, exact is_prop.elim _ _ end
 
 @[hott]
 def rh_map_add_eq {M N : CommRing} {f g : M →+* N} (p : f = g) :
@@ -81,6 +124,30 @@ def rh_map_add_eq {M N : CommRing} {f g : M →+* N} (p : f = g) :
               λ h : M -> N, ∀ a b : M, h (a + b) = h a + h b] g.map_add :=
 pathover_ap (λ h : M -> N, ∀ a b : M, h (a + b) = h a + h b) 
                    ring_hom.to_fun (@apd (M →+* N) _ _ _ ring_hom.map_add p)              
+
+@[hott, hsimp]
+def rh_fun_to_hom {M N : CommRing} {f g : M →+* N} (p : ⇑f = g) : f = g :=
+  (ring_hom_eta f) ⬝ 
+  (apd01111 ring_hom.mk p (rh_fun_one_eq p) (rh_fun_mul_eq p) 
+                          (rh_fun_zero_eq p) (rh_fun_add_eq p)) ⬝ 
+  (ring_hom_eta g)⁻¹
+
+@[hott]
+def rh_fun_hom_rinv {M N : CommRing} {f g : M →+* N} (p : f = g) :
+  rh_fun_to_hom (rh_fun_eq p) = p :=
+have r : rh_fun_one_eq (refl ⇑f) = idpo, by hsimp; refl,  
+have q : apd01111 ring_hom.mk (refl ⇑f) (rh_fun_one_eq (refl ⇑f)) 
+         (rh_fun_mul_eq (refl ⇑f)) (rh_fun_zero_eq (refl ⇑f))
+         (rh_fun_add_eq (refl ⇑f)) = rfl, from sorry,   
+begin hinduction p, change rh_fun_to_hom (refl f) = refl f,
+      change (ring_hom_eta f) ⬝ _ ⬝ (ring_hom_eta f)⁻¹ = refl f,
+      rwr q,
+      sorry end
+
+@[hott]
+def rh_fun_hom_linv {M N : CommRing} {f g : M →+* N} (p : ⇑f = g) :
+  rh_fun_eq (rh_fun_to_hom p) = p :=
+sorry  
 
 @[hott]
 def ring_hom_eq_eta {M N : CommRing} {f g : M →+* N} (p : f = g) :
@@ -161,11 +228,49 @@ def id_CommRing (R : CommRing) : R →+* R :=
 @[hott, hsimp, reducible]
 def comp_CommRing {R S T : CommRing} (f : R →+* S) (g : S →+* T) : R →+* T :=
   let h := λ r : R, g (f r) in
-  have h_one : h 1 = 1, from sorry,
-  have h_mul : ∀ r₁ r₂ : R, h (r₁ * r₂) = h r₁ * h r₂, from sorry,
-  have h_zero : h 0 = 0, from sorry,
-  have h_add : ∀ r₁ r₂ : R, h (r₁ + r₂) = h r₁ + h r₂, from sorry,
+  have h_one : h 1 = 1, from
+    calc h 1 = g (f 1) : rfl
+         ... = g 1 : by rwr rh_map_one
+         ... = 1 : by rwr rh_map_one,
+  have h_mul : ∀ r₁ r₂ : R, h (r₁ * r₂) = h r₁ * h r₂, from assume r₁ r₂, 
+    calc h (r₁ * r₂) = g (f (r₁ * r₂)) : rfl
+         ... = g (f r₁ * f r₂) : by rwr rh_map_mul
+         ... = g (f r₁) * g (f r₂) : by rwr rh_map_mul
+         ... = h r₁ * h r₂ : rfl,
+  have h_zero : h 0 = 0, from 
+    calc h 0 = g (f 0) : rfl
+         ... = g 0 : by rwr rh_map_zero
+         ... = 0 : by rwr rh_map_zero,
+  have h_add : ∀ r₁ r₂ : R, h (r₁ + r₂) = h r₁ + h r₂, from assume r₁ r₂, 
+    calc h (r₁ + r₂) = g (f (r₁ + r₂)) : rfl
+         ... = g (f r₁ + f r₂) : by rwr rh_map_add
+         ... = g (f r₁) + g (f r₂) : by rwr rh_map_add
+         ... = h r₁ + h r₂ : rfl,
   ring_hom.mk h h_one h_mul h_zero h_add
+
+@[hott, instance]
+def CommRing_cat_struct : category_struct CommRing :=
+  category_struct.mk id_CommRing @comp_CommRing
+
+
+@[hott, hsimp]
+def id_comp_CommRing {R S : CommRing} : Π (f : R ⟶ S), 
+  𝟙 R ≫ f = f :=
+sorry  
+
+@[hott, hsimp]
+def comp_id_CommRing {R S : CommRing} : Π (f : R ⟶ S), 
+  f ≫ 𝟙 S = f :=
+sorry 
+
+@[hott, hsimp]
+def assoc_CommRing {R S T U : CommRing} : 
+  Π (f : R ⟶ S) (g : S ⟶ T) (h : T ⟶ U), (f ≫ g) ≫ h = f ≫ (g ≫ h) :=
+sorry 
+
+@[hott, instance]
+def CommRing_precategory : precategory CommRing :=
+  precategory.mk @id_comp_CommRing @comp_id_CommRing @assoc_CommRing
 
 end algebra
 
