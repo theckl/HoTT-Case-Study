@@ -4,7 +4,7 @@ universes u v w
 hott_theory
 
 namespace hott
-open is_trunc hott.algebra set category_theory 
+open is_trunc hott.is_equiv hott.algebra set category_theory 
 
 namespace algebra
 
@@ -63,10 +63,13 @@ def rh_map_add {R S : CommRing} (f : R →+* S) :
   ∀ r₁ r₂ : R, f (r₁ + r₂) = f r₁ + f r₂ :=
 f.map_add
 
-/- Showing the HoTTism that all the ring homomrphisms between two
-   commutative rings form a set requires many lines of code. The proofs
-   are straightforward and seem automatizable, but the construction of 
-   the types is elaborate. -/
+/- We show the HoTTism that all the ring homomrphisms between two
+   commutative rings by showing that ring homomorphisms are completely
+   determined by the map between the underlying sets. This means that the
+   forgetful functor from rings to sets is faithful. 
+   
+   Most of the proofs use that the structure equations are propositions
+   because the source and target of the homomorphisms are sets. -/
 @[hott]
 def ring_hom_eta {M N : CommRing} (f : M →+* N) : 
   f = ring_hom.mk f.to_fun f.map_one f.map_mul f.map_zero f.map_add :=
@@ -82,48 +85,22 @@ def rh_fun_one_eq {M N : CommRing} {f g : M →+* N} (p : ⇑f = g) :
   f.map_one =[p; λ h : M -> N, h 1 = 1] g.map_one :=
 begin apply pathover_of_tr_eq, exact is_prop.elim _ _ end  
 
-@[hott]
-def rh_map_one_eq {M N : CommRing} {f g : M →+* N} (p : f = g) :
-  f.map_one =[rh_fun_eq p; λ h : M -> N, h 1 = 1] g.map_one :=
-pathover_ap (λ h : M -> N, h 1 = 1) ring_hom.to_fun 
-                               (@apd (M →+* N) _ _ _ ring_hom.map_one p)  
-
 @[hott, hsimp]
 def rh_fun_mul_eq {M N : CommRing} {f g : M →+* N} (p : ⇑f = g) :
   f.map_mul 
     =[p; λ h : M -> N, ∀ a b : M, h (a * b) = h a * h b] g.map_mul :=
 begin apply pathover_of_tr_eq, exact is_prop.elim _ _ end    
 
-@[hott]
-def rh_map_mul_eq {M N : CommRing} {f g : M →+* N} (p : f = g) :
-  f.map_mul =[rh_fun_eq p; 
-              λ h : M -> N, ∀ a b : M, h (a * b) = h a * h b] g.map_mul :=
-pathover_ap (λ h : M -> N, ∀ a b : M, h (a * b) = h a * h b) 
-                   ring_hom.to_fun (@apd (M →+* N) _ _ _ ring_hom.map_mul p)              
-
 @[hott, hsimp]
 def rh_fun_zero_eq {M N : CommRing} {f g : M →+* N} (p : ⇑f = g) :
   f.map_zero =[p; λ h : M -> N, h 0 = 0] g.map_zero :=
 begin apply pathover_of_tr_eq, exact is_prop.elim _ _ end  
-
-@[hott]
-def rh_map_zero_eq {M N : CommRing} {f g : M →+* N} (p : f = g) :
-  f.map_zero =[rh_fun_eq p; λ h : M -> N, h 0 = 0] g.map_zero :=
-pathover_ap (λ h : M -> N, h 0 = 0) ring_hom.to_fun 
-                               (@apd (M →+* N) _ _ _ ring_hom.map_zero p)  
 
 @[hott, hsimp]
 def rh_fun_add_eq {M N : CommRing} {f g : M →+* N} (p : ⇑f = g) :
   f.map_add 
     =[p; λ h : M -> N, ∀ a b : M, h (a + b) = h a + h b] g.map_add :=
 begin apply pathover_of_tr_eq, exact is_prop.elim _ _ end
-
-@[hott]
-def rh_map_add_eq {M N : CommRing} {f g : M →+* N} (p : f = g) :
-  f.map_add =[rh_fun_eq p; 
-              λ h : M -> N, ∀ a b : M, h (a + b) = h a + h b] g.map_add :=
-pathover_ap (λ h : M -> N, ∀ a b : M, h (a + b) = h a + h b) 
-                   ring_hom.to_fun (@apd (M →+* N) _ _ _ ring_hom.map_add p)              
 
 @[hott, hsimp]
 def rh_fun_to_hom {M N : CommRing} {f g : M →+* N} (p : ⇑f = g) : f = g :=
@@ -132,82 +109,46 @@ def rh_fun_to_hom {M N : CommRing} {f g : M →+* N} (p : ⇑f = g) : f = g :=
                           (rh_fun_zero_eq p) (rh_fun_add_eq p)) ⬝ 
   (ring_hom_eta g)⁻¹
 
+/- I don't understand why this proof must be so long. I was not able to tell
+   Lean how to process the `idp` and `refl` arguments automatically. -/
 @[hott]
 def rh_fun_hom_rinv {M N : CommRing} {f g : M →+* N} (p : f = g) :
   rh_fun_to_hom (rh_fun_eq p) = p :=
-have r : rh_fun_one_eq (refl ⇑f) = idpo, by hsimp; refl,  
+have r₁ : rh_fun_one_eq (refl ⇑f) = idpo, by hsimp; refl, 
+have r₂ : rh_fun_mul_eq (refl ⇑f) = idpo, by hsimp; refl,
+have r₃ : rh_fun_zero_eq (refl ⇑f) = idpo, by hsimp; refl, 
+have r₄ : rh_fun_add_eq (refl ⇑f) = idpo, by hsimp; refl,
 have q : apd01111 ring_hom.mk (refl ⇑f) (rh_fun_one_eq (refl ⇑f)) 
          (rh_fun_mul_eq (refl ⇑f)) (rh_fun_zero_eq (refl ⇑f))
-         (rh_fun_add_eq (refl ⇑f)) = rfl, from sorry,   
-begin hinduction p, change rh_fun_to_hom (refl f) = refl f,
-      change (ring_hom_eta f) ⬝ _ ⬝ (ring_hom_eta f)⁻¹ = refl f,
-      rwr q,
-      sorry end
+         (rh_fun_add_eq (refl ⇑f)) = idp, 
+  by rwr r₁; rwr r₂; rwr r₃; rwr r₄; hsimp,   
+begin 
+  hinduction p, change rh_fun_to_hom (refl f) = refl f,
+  change (ring_hom_eta f) ⬝ _ ⬝ (ring_hom_eta f)⁻¹ = idp,
+  rwr q, rwr con_idp, rwr con.right_inv 
+end
 
 @[hott]
 def rh_fun_hom_linv {M N : CommRing} {f g : M →+* N} (p : ⇑f = g) :
   rh_fun_eq (rh_fun_to_hom p) = p :=
-sorry  
+@is_set.elim (M -> N) _ _ _ _ _  
 
 @[hott]
-def ring_hom_eq_eta {M N : CommRing} {f g : M →+* N} (p : f = g) :
-  p = (ring_hom_eta f) ⬝ 
-      (apd01111 ring_hom.mk (rh_fun_eq p) (rh_map_one_eq p) (rh_map_mul_eq p) 
-                            (rh_map_zero_eq p) (rh_map_add_eq p)) ⬝ 
-      (ring_hom_eta g)⁻¹ :=
-begin hinduction p, hinduction f, hsimp end 
+def rh_fun_eq_equiv_hom_eq {M N : CommRing} (f g : M →+* N) : 
+  (⇑f = g) ≃ (f = g) :=
+equiv.mk rh_fun_to_hom (adjointify rh_fun_to_hom rh_fun_eq 
+                                   rh_fun_hom_rinv rh_fun_hom_linv)   
 
 @[hott, instance]
 def ring_hom_is_set (M N : CommRing) : is_set (M →+* N) :=
   have set_eq_eq : ∀ (g h : M →+* N) (p q : g = h), p = q, from
-    assume g h p q,
-    have fun_eq_eq : rh_fun_eq p = rh_fun_eq q, from 
-      @is_set.elim (M -> N) _ _ _ (rh_fun_eq p) (rh_fun_eq q),
-    have one_eq_eq : rh_map_one_eq p =[fun_eq_eq; 
-      λ r : g.to_fun = h.to_fun, g.map_one =[r; λ f : M -> N, f 1 = 1] h.map_one] 
-                     rh_map_one_eq q, from 
-      have one_eq_prop : is_prop 
-        (g.map_one =[rh_fun_eq q; λ h : M -> N, h 1 = 1] h.map_one), from
-        is_trunc_equiv_closed_rev -1 (@pathover_equiv_tr_eq _ (λ h : M -> N, h 1 = 1) 
-          _ _ (rh_fun_eq q) g.map_one h.map_one) (is_trunc_eq -1 _ _),               
-      begin apply pathover_of_tr_eq, exact is_prop.elim _ _ end,
-    have mul_eq_eq : rh_map_mul_eq p =[fun_eq_eq;
-      λ r : g.to_fun = h.to_fun, g.map_mul =[r; 
-                       λ f : M -> N, ∀ a b : M, f (a * b) = f a * f b] h.map_mul] 
-                     rh_map_mul_eq q, from 
-      have mul_eq_prop : is_prop
-        (g.map_mul =[rh_fun_eq q; λ h : M -> N, ∀ a b : M, h (a * b) = h a * h b] 
-                                  h.map_mul), from 
-        is_trunc_equiv_closed_rev -1 (@pathover_equiv_tr_eq _ (λ h : M -> N, 
-          ∀ a b : M, h (a * b) = h a * h b) _ _ (rh_fun_eq q) g.map_mul h.map_mul) 
-          (is_trunc_eq -1 _ _),               
-      begin apply pathover_of_tr_eq, exact is_prop.elim _ _ end,  
-    have zero_eq_eq : rh_map_zero_eq p =[fun_eq_eq; 
-      λ r : g.to_fun = h.to_fun, g.map_zero =[r; λ f : M -> N, f 0 = 0] h.map_zero] 
-                     rh_map_zero_eq q, from 
-      have zero_eq_prop : is_prop 
-        (g.map_zero =[rh_fun_eq q; λ h : M -> N, h 0 = 0] h.map_zero), from
-        is_trunc_equiv_closed_rev -1 (@pathover_equiv_tr_eq _ (λ h : M -> N, h 0 = 0) 
-          _ _ (rh_fun_eq q) g.map_zero h.map_zero) (is_trunc_eq -1 _ _),               
-      begin apply pathover_of_tr_eq, exact is_prop.elim _ _ end,
-    have add_eq_eq : rh_map_add_eq p =[fun_eq_eq;
-      λ r : g.to_fun = h.to_fun, g.map_add =[r; 
-                       λ f : M -> N, ∀ a b : M, f (a + b) = f a + f b] h.map_add] 
-                     rh_map_add_eq q, from 
-      have add_eq_prop : is_prop
-        (g.map_add =[rh_fun_eq q; λ h : M -> N, ∀ a b : M, h (a + b) = h a + h b] 
-                                  h.map_add), from 
-        is_trunc_equiv_closed_rev -1 (@pathover_equiv_tr_eq _ (λ h : M -> N, 
-          ∀ a b : M, h (a + b) = h a + h b) _ _ (rh_fun_eq q) g.map_add h.map_add) 
-          (is_trunc_eq -1 _ _), 
-      begin apply pathover_of_tr_eq, exact is_prop.elim _ _ end,                     
-    begin 
-      rwr ring_hom_eq_eta p, rwr ring_hom_eq_eta q,
-      apply whisker_right (ring_hom_eta h)⁻¹, apply whisker_left (ring_hom_eta g),
-      exact apd01111_eq ring_hom.mk fun_eq_eq one_eq_eq mul_eq_eq 
-                                    zero_eq_eq add_eq_eq 
-    end, 
-  is_set.mk _ set_eq_eq 
+    assume g h,
+    have is_prop_fun_eq : is_prop (⇑g = h), from 
+      is_prop.mk (@is_set.elim (M -> N) _ _ _),
+    have is_prop_hom_eq : is_prop (g = h), from 
+      is_trunc_equiv_closed -1 (rh_fun_eq_equiv_hom_eq g h) is_prop_fun_eq,
+    @is_prop.elim _ is_prop_hom_eq, 
+  is_set.mk _ set_eq_eq   
 
 /- Next, we define the category structure on `CommRing`. -/
 @[hott, instance]
@@ -252,21 +193,31 @@ def comp_CommRing {R S T : CommRing} (f : R →+* S) (g : S →+* T) : R →+* T
 def CommRing_cat_struct : category_struct CommRing :=
   category_struct.mk id_CommRing @comp_CommRing
 
-
+/- The equalities of homomorphisms making up a precategory follow from 
+   the equalities of the maps on the underlying sets. -/
 @[hott, hsimp]
 def id_comp_CommRing {R S : CommRing} : Π (f : R ⟶ S), 
   𝟙 R ≫ f = f :=
-sorry  
+assume f,  
+have hom_eq : ∀ r : R, (𝟙 R ≫ f) r = f r, from assume r, rfl,
+have fun_eq : ⇑(𝟙 R ≫ f) = f, from eq_of_homotopy hom_eq,   
+rh_fun_to_hom fun_eq  
 
 @[hott, hsimp]
 def comp_id_CommRing {R S : CommRing} : Π (f : R ⟶ S), 
   f ≫ 𝟙 S = f :=
-sorry 
+assume f,  
+have hom_eq : ∀ r : R, (f ≫ 𝟙 S) r = f r, from assume r, rfl,
+have fun_eq : ⇑(f ≫ 𝟙 S) = f, from eq_of_homotopy hom_eq,   
+rh_fun_to_hom fun_eq
 
 @[hott, hsimp]
 def assoc_CommRing {R S T U : CommRing} : 
   Π (f : R ⟶ S) (g : S ⟶ T) (h : T ⟶ U), (f ≫ g) ≫ h = f ≫ (g ≫ h) :=
-sorry 
+assume f g h,
+have hom_eq : ∀ r : R, ((f ≫ g) ≫ h) r = (f ≫ (g ≫ h)) r, from assume r, rfl,
+have fun_eq : ⇑((f ≫ g) ≫ h) = f ≫ (g ≫ h), from eq_of_homotopy hom_eq, 
+rh_fun_to_hom fun_eq 
 
 @[hott, instance]
 def CommRing_precategory : precategory CommRing :=
