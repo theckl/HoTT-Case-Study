@@ -4,7 +4,7 @@ universes u v w
 hott_theory
 
 namespace hott
-open is_trunc hott.is_equiv hott.algebra set category_theory 
+open is_trunc hott.is_equiv hott.algebra hott.set category_theory 
 
 namespace algebra
 
@@ -156,7 +156,7 @@ def ring_has_hom : has_hom CommRing :=
   has_hom.mk (λ R S : CommRing, Set.mk (ring_hom R S) (ring_hom_is_set R S))
 
 @[hott, hsimp, reducible]
-def id_CommRing (R : CommRing) : R →+* R :=
+def id_CommRing (R : CommRing) : R ⟶ R :=
   let id_R := @set.id R in
   have one_R : id_R 1 = 1, by refl,
   have mul_R : ∀ r s : R, id_R (r * s) = (id_R r) * (id_R s), 
@@ -196,7 +196,7 @@ def CommRing_cat_struct : category_struct CommRing :=
 /- The equalities of homomorphisms making up a precategory follow from 
    the equalities of the maps on the underlying sets. -/
 @[hott, hsimp]
-def id_comp_CommRing {R S : CommRing} : Π (f : R ⟶ S), 
+def id_comp_CommRing {R S : CommRing.{u}} : Π (f : R ⟶ S), 
   𝟙 R ≫ f = f :=
 assume f,  
 have hom_eq : ∀ r : R, (𝟙 R ≫ f) r = f r, from assume r, rfl,
@@ -204,7 +204,7 @@ have fun_eq : ⇑(𝟙 R ≫ f) = f, from eq_of_homotopy hom_eq,
 rh_fun_to_hom fun_eq  
 
 @[hott, hsimp]
-def comp_id_CommRing {R S : CommRing} : Π (f : R ⟶ S), 
+def comp_id_CommRing {R S : CommRing.{u}} : Π (f : R ⟶ S), 
   f ≫ 𝟙 S = f :=
 assume f,  
 have hom_eq : ∀ r : R, (f ≫ 𝟙 S) r = f r, from assume r, rfl,
@@ -212,7 +212,7 @@ have fun_eq : ⇑(f ≫ 𝟙 S) = f, from eq_of_homotopy hom_eq,
 rh_fun_to_hom fun_eq
 
 @[hott, hsimp]
-def assoc_CommRing {R S T U : CommRing} : 
+def assoc_CommRing {R S T U : CommRing.{u}} : 
   Π (f : R ⟶ S) (g : S ⟶ T) (h : T ⟶ U), (f ≫ g) ≫ h = f ≫ (g ≫ h) :=
 assume f g h,
 have hom_eq : ∀ r : R, ((f ≫ g) ≫ h) r = (f ≫ (g ≫ h)) r, from assume r, rfl,
@@ -220,8 +220,30 @@ have fun_eq : ⇑((f ≫ g) ≫ h) = f ≫ (g ≫ h), from eq_of_homotopy hom_eq
 rh_fun_to_hom fun_eq 
 
 @[hott, instance]
-def CommRing_precategory : precategory CommRing :=
+def CommRing_precategory : precategory CommRing.{u} :=
   precategory.mk @id_comp_CommRing @comp_id_CommRing @assoc_CommRing
+
+/- We now show that `CommRing` is a category. 
+
+   To this purpose we use univalence to construct an equality of rings
+  from an isomorphy. This is noncomputable. -/
+@[hott]
+def CommRing_isotoSetid (R S : CommRing) : R ≅ S -> R.carrier = S.carrier :=
+  assume isoRS,
+  let h := ⇑isoRS.hom, i := ⇑isoRS.inv in
+  have r_inv : ∀ s : S, h (i s) = s, from assume s, 
+    calc h (i s) = (isoRS.inv ≫ isoRS.hom) s : by refl 
+         ... = (id_CommRing S) s : by rwr isoRS.r_inv
+         ... = s : by refl,
+  have l_inv : ∀ r : R, i (h r) = r, from assume r, 
+    calc i (h r) = (isoRS.hom ≫ isoRS.inv) r : by refl 
+         ... = (id_CommRing R) r : by rwr isoRS.l_inv
+         ... = r : by refl, 
+  have equivRS : R ≃ S, from equiv.mk h (adjointify h i r_inv l_inv),             
+  have eqTypeRS : ↥R = ↥S, from ua equivRS, 
+  set_eq_equiv_car_eq.symm.to_fun eqTypeRS
+
+#check comm_ring.mk
 
 end algebra
 
