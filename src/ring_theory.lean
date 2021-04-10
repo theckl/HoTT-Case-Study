@@ -64,7 +64,7 @@ def rh_map_add {R S : CommRing} (f : R →+* S) :
 f.map_add
 
 /- We show the HoTTism that all the ring homomrphisms between two
-   commutative rings by showing that ring homomorphisms are completely
+   commutative rings are a set by showing that ring homomorphisms are completely
    determined by the map between the underlying sets. This means that the
    forgetful functor from rings to sets is faithful. 
    
@@ -225,10 +225,10 @@ def CommRing_precategory : precategory CommRing.{u} :=
 
 /- We now show that `CommRing` is a category. 
 
-   To this purpose we use univalence to construct an equality of rings
-  from an isomorphy. This is noncomputable. -/
-@[hott]
-def CommRing_isotoSetid (R S : CommRing) : R ≅ S -> R.carrier = S.carrier :=
+   First we use univalence to construct an equality of the underlying sets
+   from an isomorphy of rings. This is noncomputable. -/
+@[hott, reducible]
+def CommRing_isotoTypeid (R S : CommRing) : R ≅ S -> ↥R = ↥S :=
   assume isoRS,
   let h := ⇑isoRS.hom, i := ⇑isoRS.inv in
   have r_inv : ∀ s : S, h (i s) = s, from assume s, 
@@ -240,8 +240,24 @@ def CommRing_isotoSetid (R S : CommRing) : R ≅ S -> R.carrier = S.carrier :=
          ... = (id_CommRing R) r : by rwr isoRS.l_inv
          ... = r : by refl, 
   have equivRS : R ≃ S, from equiv.mk h (adjointify h i r_inv l_inv),             
-  have eqTypeRS : ↥R = ↥S, from ua equivRS, 
-  set_eq_equiv_car_eq.symm.to_fun eqTypeRS
+  ua equivRS
+
+@[hott]
+def CommRing_isotoSetid (R S : CommRing) : R ≅ S -> R.carrier = S.carrier :=
+  assume isoRS,
+  set_eq_equiv_car_eq.symm.to_fun (CommRing_isotoTypeid R S isoRS)
+
+@[hott]
+def cast_iso_eq {R S : CommRing} (iso : R ≅ S) :
+  ∀ r : R, cast (CommRing_isotoTypeid R S iso) r = iso.hom r :=
+by intro r; rwr cast_ua   
+
+/- Next we show that the operations of isomorphic rings are transported by the 
+   equality of the underlying sets. -/
+@[hott]
+def CommRing_isoid_add {R S : CommRing} (iso : R ≅ S) :
+  R.struct.add =[CommRing_isotoTypeid R S iso; λ T, T -> T -> T] S.struct.add :=
+sorry   
 
 #check comm_ring.mk
 
