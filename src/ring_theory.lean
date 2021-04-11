@@ -257,8 +257,50 @@ by intro r; rwr cast_ua
 @[hott]
 def CommRing_isoid_add {R S : CommRing} (iso : R ≅ S) :
   R.struct.add =[CommRing_isotoTypeid R S iso; λ T, T -> T -> T] S.struct.add :=
-sorry   
+sorry 
 
+/- We check how tedious the proof obligations to use the structure identity 
+   principle on the commutative ring structures over sets are. 
+   
+   We first refactor the definition of a `comm_ring` structure, to simplify proofs
+   of equality, by splitting it up into two structures of operations and laws they
+   need to satisfy. 
+   
+   I don't see how the instance mechanism can be used here to write `add` as `+`
+   etc. The problem is that different additions will appear for the same set `X`;
+   a symbol like `+ₐ` would be better, but cannot be obtained from `has_add X`. -/
+@[hott]
+structure comm_ring_ops (X : Set.{u}) :=
+  (add : X -> X -> X)
+  (zero : X)
+  (neg : X -> X)
+  (mul : X -> X -> X)
+  (one : X)
+
+@[hott]
+structure comm_ring_laws {X : Set.{u}} (α : comm_ring_ops X) :=
+  (add_assoc : Π (a b c : X), α.add (α.add a b) c = α.add a (α.add b c)) 
+  (zero_add : Π a : X, α.add α.zero a = a)
+  (add_zero : Π a : X, α.add a α.zero = a)
+  (neg_add : Π a : X, α.add (α.neg a) a = α.zero)
+  (add_comm : Π a b : X, α.add a b = α.add b a) 
+  (mul_assoc : Π (a b c : X), α.mul (α.mul a b) c = α.mul a (α.mul b c)) 
+  (one_mul : Π a : X, α.mul α.one a = a)
+  (mul_one : Π a : X, α.mul a α.one = a)
+  (mul_comm : Π a b : X, α.mul a b = α.mul b a)
+  (distrib_right : Π a b c : X, α.mul a (α.add b c) = 
+                                  α.add (α.mul a b) (α.mul a c)) 
+  (distrib_left : Π a b c : X, α.mul (α.add a b) c = 
+                                  α.add (α.mul a c) (α.mul b c))
+
+@[hott]
+def comm_ring_mk {X : Set.{u}} {α : comm_ring_ops X} (β : comm_ring_laws α) :
+  comm_ring X :=
+comm_ring.mk X.struct α.add β.add_assoc α.zero β.zero_add β.add_zero α.neg β.neg_add
+               β.add_comm α.mul β.mul_assoc α.one β.one_mul β.mul_one 
+               β.distrib_right β.distrib_left β.mul_comm    
+
+#print fields comm_ring
 #check comm_ring.mk
 
 end algebra
