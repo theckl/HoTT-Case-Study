@@ -252,13 +252,6 @@ def cast_iso_eq {R S : CommRing} (iso : R ≅ S) :
   ∀ r : R, cast (CommRing_isotoTypeid R S iso) r = iso.hom r :=
 by intro r; rwr cast_ua   
 
-/- Next we show that the operations of isomorphic rings are transported by the 
-   equality of the underlying sets. -/
-@[hott]
-def CommRing_isoid_add {R S : CommRing} (iso : R ≅ S) :
-  R.struct.add =[CommRing_isotoTypeid R S iso; λ T, T -> T -> T] S.struct.add :=
-sorry 
-
 /- We check how tedious the proof obligations to use the structure identity 
    principle on the commutative ring structures over sets are. 
    
@@ -277,6 +270,10 @@ structure comm_ring_ops (X : Set.{u}) :=
   (mul : X -> X -> X)
   (one : X)
 
+@[hott, hsimp, reducible]
+def comm_ring_to_ops {X : Set.{u}} (γ : comm_ring X) : comm_ring_ops X :=
+  comm_ring_ops.mk γ.add γ.zero γ.neg γ.mul γ.one
+
 @[hott]
 structure comm_ring_laws {X : Set.{u}} (α : comm_ring_ops X) :=
   (add_assoc : Π (a b c : X), α.add (α.add a b) c = α.add a (α.add b c)) 
@@ -288,17 +285,80 @@ structure comm_ring_laws {X : Set.{u}} (α : comm_ring_ops X) :=
   (one_mul : Π a : X, α.mul α.one a = a)
   (mul_one : Π a : X, α.mul a α.one = a)
   (mul_comm : Π a b : X, α.mul a b = α.mul b a)
-  (distrib_right : Π a b c : X, α.mul a (α.add b c) = 
+  (right_distrib : Π a b c : X, α.mul a (α.add b c) = 
                                   α.add (α.mul a b) (α.mul a c)) 
-  (distrib_left : Π a b c : X, α.mul (α.add a b) c = 
+  (left_distrib : Π a b c : X, α.mul (α.add a b) c = 
                                   α.add (α.mul a c) (α.mul b c))
 
+@[hott, instance]
+def prop_comm_ring_laws {X : Set.{u}} (α : comm_ring_ops X) : 
+  is_prop (comm_ring_laws α) :=
+sorry  
+
 @[hott]
-def comm_ring_mk {X : Set.{u}} {α : comm_ring_ops X} (β : comm_ring_laws α) :
+def comm_ring_to_laws {X : Set.{u}} (γ : comm_ring X) : 
+  comm_ring_laws (comm_ring_to_ops γ) :=
+let α := comm_ring_to_ops γ in
+have add_eq : α.add = γ.add, from rfl, 
+have zero_eq : α.zero = γ.zero, from rfl,
+have neg_eq : α.neg = γ.neg, from rfl,
+have mul_eq : α.mul = γ.mul, from rfl,
+have one_eq : α.one = γ.one, from rfl, 
+begin 
+  constructor, 
+  { rwr add_eq, exact γ.add_assoc },
+  { rwr zero_eq, rwr add_eq, exact γ.zero_add },
+  { rwr zero_eq, rwr add_eq, exact γ.add_zero },
+  { rwr zero_eq, rwr add_eq, rwr neg_eq, exact γ.add_left_inv },
+  { rwr add_eq, exact γ.add_comm },
+  { rwr mul_eq, exact γ.mul_assoc },
+  { rwr mul_eq, rwr one_eq, exact γ.one_mul },
+  { rwr mul_eq, rwr one_eq, exact γ.mul_one },
+  { rwr mul_eq, exact γ.mul_comm },
+  { rwr mul_eq, rwr add_eq, exact γ.left_distrib },
+  { rwr mul_eq, rwr add_eq, exact γ.right_distrib }
+end
+
+@[hott]
+def comm_ring_mk {X : Set.{u}} (α : comm_ring_ops X) (β : comm_ring_laws α) :
   comm_ring X :=
 comm_ring.mk X.struct α.add β.add_assoc α.zero β.zero_add β.add_zero α.neg β.neg_add
                β.add_comm α.mul β.mul_assoc α.one β.one_mul β.mul_one 
-               β.distrib_right β.distrib_left β.mul_comm    
+               β.right_distrib β.left_distrib β.mul_comm
+
+@[hott]
+def comm_ring_mk_eta {X : Set.{u}} (γ : comm_ring X) : 
+  γ = comm_ring_mk (comm_ring_to_ops γ) (comm_ring_to_laws γ) :=
+sorry                   
+
+@[hott]
+def comm_ring_ops_eq_to_eq {X : Set.{u}} (γ₁ γ₂ : comm_ring X) :
+  comm_ring_to_ops γ₁ = comm_ring_to_ops γ₂ -> γ₁ = γ₂ :=
+let α₁ := comm_ring_to_ops γ₁, α₂ := comm_ring_to_ops γ₂,
+    β₁ := comm_ring_to_laws γ₁, β₂ := comm_ring_to_laws γ₂ in 
+assume p,
+have q : β₁ =[p] β₂, from 
+  begin apply pathover_of_tr_eq, exact is_prop.elim _ _ end,     
+calc γ₁ = comm_ring_mk (comm_ring_to_ops γ₁) (comm_ring_to_laws γ₁) : 
+          comm_ring_mk_eta γ₁
+    ... = comm_ring_mk (comm_ring_to_ops γ₂) (comm_ring_to_laws γ₂) : 
+          apd011 comm_ring_mk p q
+    ... = γ₂ : by rwr <- comm_ring_mk_eta γ₂
+
+@[hott]
+structure comm_ring_hom {X Y : Set.{u}} (γ₁ : comm_ring X) (γ₂ : comm_ring Y) 
+  (f : X -> Y) :=
+(map_one : f 1 = 1)
+(map_mul : ∀ a b : X, f (a * b) = f a * f b)
+(map_zero : f 0 = 0)
+(map_add : ∀ a b : X, f (a + b) = f a + f b)  
+
+@[hott]
+def comm_ring_std_str {X : Set.{u}} (γ₁ γ₂ : comm_ring X) :
+  comm_ring_hom γ₁ γ₂ (id_map X) -> comm_ring_hom γ₂ γ₁ (id_map X) -> γ₁ = γ₂ :=
+assume hom_12 hom_21,
+have ops_eq : comm_ring_to_ops γ₁ = comm_ring_to_ops γ₂, from sorry,  
+comm_ring_ops_eq_to_eq γ₁ γ₂ ops_eq  
 
 #print fields comm_ring
 #check comm_ring.mk
