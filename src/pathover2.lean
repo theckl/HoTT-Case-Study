@@ -16,6 +16,21 @@ def ap0111 {A : Type u} {B : Type v} {C D : A -> B -> Type _} {E : Type _}
 begin hinduction p₁, hinduction p₂, hinduction p₃, hinduction p₄, refl end  
 
 @[hott]
+def ap_11 {A₁ A₂ A₃ A₄ A₅ A₆ A₇ A₈ A₉ B₀ B₁ C : Type u} 
+          (f : A₁ -> A₂ -> A₃ -> A₄ -> A₅ -> A₆ -> A₇ -> A₈ -> A₉ -> B₀ -> B₁ -> C)
+          {a₁ a₁' : A₁} {a₂ a₂' : A₂} {a₃ a₃' : A₃} {a₄ a₄' : A₄} {a₅ a₅' : A₅}
+          {a₆ a₆' : A₆} {a₇ a₇' : A₇} {a₈ a₈' : A₈} {a₉ a₉' : A₉} {b₀ b₀' : B₀}
+          {b₁ b₁' : B₁} (p₁ : a₁ = a₁') (p₂ : a₂ = a₂') (p₃ : a₃ = a₃') 
+          (p₄ : a₄ = a₄') (p₅ : a₅ = a₅') (p₆ : a₆ = a₆') (p₇ : a₇ = a₇')
+          (p₈ : a₈ = a₈') (p₉ : a₉ = a₉') (q₀ : b₀ = b₀') (q₁ : b₁ = b₁') :
+  f a₁ a₂ a₃ a₄ a₅ a₆ a₇ a₈ a₉ b₀ b₁ = f a₁' a₂' a₃' a₄' a₅' a₆' a₇' a₈' a₉' b₀' b₁' :=
+begin 
+  hinduction p₁, hinduction p₂, hinduction p₃, hinduction p₄, hinduction p₅,
+  hinduction p₆, hinduction p₇, hinduction p₈, hinduction p₉, hinduction q₀,
+  hinduction q₁, refl   
+end  
+
+@[hott]
 def apdo0111 {A : Type _} {B C : A -> Type _} {D : Π a : A, B a -> Type _}
   (f : Π (a : A) (b : B a) (d : D a b), C a)
   {a₁ a₂ : A} {b₁ : B a₁} {b₂ : B a₂} {d₁ : D a₁ b₁} {d₂ : D a₂ b₂}
