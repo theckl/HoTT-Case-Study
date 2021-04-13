@@ -4,7 +4,7 @@ universes u v w
 hott_theory
 
 namespace hott
-open is_trunc hott.is_equiv hott.algebra hott.set category_theory 
+open hott.is_trunc hott.is_equiv hott.algebra hott.set category_theory 
 
 namespace algebra
 
@@ -293,9 +293,17 @@ structure comm_ring_laws {X : Set.{u}} (α : comm_ring_ops X) :=
 @[hott, instance]
 def prop_comm_ring_laws {X : Set.{u}} (α : comm_ring_ops X) : 
   is_prop (comm_ring_laws α) :=
-sorry  
+have H : ∀ β₁ β₂ : comm_ring_laws α, β₁ = β₂, from 
+  begin 
+    intros β₁ β₂, hinduction β₁, hinduction β₂, 
+    apply ap_11 (@comm_ring_laws.mk X α); 
+    { { apply eq_of_homotopy3, intros a b c, exact @is_set.elim X _ _ _ _ _ } <|> 
+      { apply eq_of_homotopy2, intros a b, exact @is_set.elim X _ _ _ _ _ } <|>
+      { apply eq_of_homotopy, intros a, exact @is_set.elim X _ _ _ _ _ } },  
+  end, 
+is_prop.mk H  
 
-@[hott]
+@[hott, hsimp]
 def comm_ring_to_laws {X : Set.{u}} (γ : comm_ring X) : 
   comm_ring_laws (comm_ring_to_ops γ) :=
 let α := comm_ring_to_ops γ in
@@ -319,7 +327,7 @@ begin
   { rwr mul_eq, rwr add_eq, exact γ.right_distrib }
 end
 
-@[hott]
+@[hott, hsimp]
 def comm_ring_mk {X : Set.{u}} (α : comm_ring_ops X) (β : comm_ring_laws α) :
   comm_ring X :=
 comm_ring.mk X.struct α.add β.add_assoc α.zero β.zero_add β.add_zero α.neg β.neg_add
@@ -327,9 +335,15 @@ comm_ring.mk X.struct α.add β.add_assoc α.zero β.zero_add β.add_zero α.neg
                β.right_distrib β.left_distrib β.mul_comm
 
 @[hott]
-def comm_ring_mk_eta {X : Set.{u}} (γ : comm_ring X) : 
-  γ = comm_ring_mk (comm_ring_to_ops γ) (comm_ring_to_laws γ) :=
-sorry                   
+def comm_ring_mk_eta {X : Set.{u}} : Π (γ : comm_ring X), 
+  γ = comm_ring_mk (comm_ring_to_ops γ) (comm_ring_to_laws γ) := 
+assume γ, 
+have is_prop_struct : is_prop (is_set X), from is_prop_is_trunc 0 X,  
+have p : X.struct = γ.is_set_carrier, from is_prop.elim _ _,    
+begin
+  hinduction γ,
+  hsimp, rwr p 
+end                     
 
 @[hott]
 def comm_ring_ops_eq_to_eq {X : Set.{u}} (γ₁ γ₂ : comm_ring X) :
@@ -359,9 +373,6 @@ def comm_ring_std_str {X : Set.{u}} (γ₁ γ₂ : comm_ring X) :
 assume hom_12 hom_21,
 have ops_eq : comm_ring_to_ops γ₁ = comm_ring_to_ops γ₂, from sorry,  
 comm_ring_ops_eq_to_eq γ₁ γ₂ ops_eq  
-
-#print fields comm_ring
-#check comm_ring.mk
 
 end algebra
 
