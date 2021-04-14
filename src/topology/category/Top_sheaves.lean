@@ -1,11 +1,11 @@
-import topology.basic category_theory categorial_limits
+import topology.basic categories.cat_limits
 
 universes u v w
 hott_theory
 
 namespace hott
-open hott.set hott.subset hott.category_theory category_theory.limits
-  category_theory.opposite
+open hott.set hott.subset hott.categories category_theory.limits
+  categories.opposite
 
 /- The category of topological spaces and continuous maps. -/
 @[hott]
