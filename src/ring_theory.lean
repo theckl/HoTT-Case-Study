@@ -1,10 +1,10 @@
-import hott.algebra.ring set_theory categorial_limits pathover2
+import hott.algebra.ring set_theory categories.examples pathover2
 
 universes u v w
 hott_theory
 
 namespace hott
-open hott.is_trunc hott.is_equiv hott.algebra hott.set category_theory 
+open hott.is_trunc hott.is_equiv hott.algebra hott.set categories 
 
 namespace algebra
 
@@ -368,10 +368,43 @@ structure comm_ring_hom {X Y : Set.{u}} (γ₁ : comm_ring X) (γ₂ : comm_ring
 (map_add : ∀ a b : X, f (a + b) = f a + f b)  
 
 @[hott]
+def comm_ring_hom.map_neg {X Y : Set.{u}} {γ₁ : comm_ring X} {γ₂ : comm_ring Y} 
+  {f : X -> Y} (hom_str : comm_ring_hom γ₁ γ₂ f) : ∀ a : X, f (-a) = -(f a) :=
+assume a,  
+calc f (-a) = 0 + f (-a) : (@comm_ring.zero_add _ γ₂ (f (-a)))⁻¹
+     ... = (-(f a) + f a) + f (-a) : ap (λ b : Y, @comm_ring.add _ γ₂ b (f (-a))) 
+                                        (@comm_ring.add_left_inv _ γ₂ (f a))⁻¹
+     ... = -(f a) + (f a + f (-a)) : @comm_ring.add_assoc _ γ₂ _ _ _
+     ... = -(f a) + (f (-a) + f a) : ap (λ b : Y, @comm_ring.add _ γ₂ (-(f a)) b) 
+                                        (@comm_ring.add_comm _ γ₂ _ _)
+     ... = -(f a) + f (-a + a) : by rwr hom_str.map_add 
+     ... = -(f a) + f 0 : ap (λ b : X, @comm_ring.add _ γ₂ (-(f a)) (f b))
+                           (@comm_ring.add_left_inv _ γ₁ a) 
+     ... = -(f a) + 0 : by rwr hom_str.map_zero                                                                                              
+     ... = -(f a) : @comm_ring.add_zero _ γ₂ (-(f a))   
+
+@[hott]
 def comm_ring_std_str {X : Set.{u}} (γ₁ γ₂ : comm_ring X) :
   comm_ring_hom γ₁ γ₂ (id_map X) -> comm_ring_hom γ₂ γ₁ (id_map X) -> γ₁ = γ₂ :=
 assume hom_12 hom_21,
-have ops_eq : comm_ring_to_ops γ₁ = comm_ring_to_ops γ₂, from sorry,  
+let α₁ := comm_ring_to_ops γ₁, α₂ := comm_ring_to_ops γ₂ in 
+have p_add : γ₁.add = γ₂.add, from 
+  have h : ∀ a b : X, @comm_ring.add _ γ₁ a b = @comm_ring.add _ γ₂ a b, from hom_12.map_add,
+  eq_of_homotopy2 h,
+have p_zero : γ₁.zero = γ₂.zero, from hom_12.map_zero,
+have p_neg : γ₁.neg = γ₂.neg, from 
+  have h : ∀ a : X, @comm_ring.neg _ γ₁ a = @comm_ring.neg _ γ₂ a, from 
+    comm_ring_hom.map_neg hom_12,
+  eq_of_homotopy h,  
+have p_mul : γ₁.mul = γ₂.mul, from 
+  have h : ∀ a b : X, @comm_ring.mul _ γ₁ a b = @comm_ring.mul _ γ₂ a b, from hom_12.map_mul,
+  eq_of_homotopy2 h,
+have p_one : γ₁.one = γ₂.one, from hom_12.map_one,
+have ops_eq : α₁ = α₂, from 
+  calc α₁ = comm_ring_ops.mk γ₁.add γ₁.zero γ₁.neg γ₁.mul γ₁.one : rfl
+      ... = comm_ring_ops.mk γ₂.add γ₂.zero γ₂.neg γ₂.mul γ₂.one : 
+            by rwr p_add; rwr p_zero; rwr p_neg; rwr p_mul; rwr p_one 
+      ... = α₂ : rfl,    
 comm_ring_ops_eq_to_eq γ₁ γ₂ ops_eq  
 
 end algebra
