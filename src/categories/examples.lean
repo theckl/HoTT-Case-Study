@@ -4,7 +4,7 @@ universes v u v' u' w
 hott_theory
 
 namespace hott
-open hott.eq hott.set hott.subset hott.is_trunc hott.is_equiv hott.categories
+open hott.eq hott.set hott.subset hott.is_trunc hott.is_equiv hott.equiv hott.categories
 
 namespace categories
 
@@ -475,6 +475,28 @@ def Set_precategory : precategory Set.{u} :=
              (f ≫ g) ≫ h = f ≫ (g ≫ h), from 
     assume A B C D f g h, by refl,
   precategory.mk ic ci as
+
+@[hott]
+def Set_iso_eqv_bijective : Π (A B : Set.{u}), (A ≅ B) ≃ (bijection A B) :=
+  assume A B,
+  have is_inv : Π i : A ≅ B, is_set_inverse_of i.hom i.inv, from assume i,
+    have i_l_inv : is_set_left_inverse_of i.hom i.inv, from 
+      assume a, homotopy_of_eq i.l_inv a,
+    have i_r_inv : is_set_right_inverse_of i.hom i.inv, from 
+      assume a, homotopy_of_eq i.r_inv a,
+    is_set_inverse_of.mk i_r_inv i_l_inv,
+  let iso_to_bij := λ i : A ≅ B, has_inverse_to_bijection i.hom i.inv (is_inv i) in
+      /- bij_to_iso := λ f : bijection A B, iso.mk f.map _ _ _ in -/
+  sorry
+
+@[hott, instance]
+def Set_category : category Set.{u} :=
+  have ideqviso : ∀ A B : Set.{u}, is_equiv (@idtoiso _ _ A B), from assume A B,
+    let iso_eqv_id := (Set_iso_eqv_bijective A B) ⬝e (@set_eq_equiv_bij A B)⁻¹ᵉ in
+    have p : @idtoiso _ _ A B = iso_eqv_id⁻¹ᶠ, from sorry,
+    have eqv : is_equiv iso_eqv_id⁻¹ᶠ, from is_equiv_to_inv iso_eqv_id,
+    p⁻¹ ▸ eqv,
+  category.mk ideqviso  
 
 end categories
 
