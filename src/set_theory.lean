@@ -163,7 +163,7 @@ assume f g map_eq, ap bijection.map map_eq
 def is_set_right_inverse_of {A B : Set.{u}} (f : A -> B) (g : B -> A) :=
   forall b, f (g b) = b
 
-@[hott]
+@[hott, reducible]
 def is_set_left_inverse_of {A B : Set.{u}} (f : A -> B) (g : B -> A) :=
   forall a, g (f a) = a
 
@@ -457,7 +457,7 @@ def bij_to_set_eq {A B : Set} : (bijection A B) -> A = B :=
   (equiv.to_fun set_eq_equiv_bij)⁻¹ᶠ
 
 @[hott]
-/- These equivalence functions extracted from the equivalenc can indeed be used for 
+/- These equivalence functions extracted from the equivalences can indeed be used for 
    calculations. -/
 lemma identity_to_idp {A : Set} : bij_to_set_eq (identity A) = idpath A :=
 calc bij_to_set_eq (identity A) = 
