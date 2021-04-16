@@ -155,6 +155,10 @@ def idtoiso {C : Type u} [precategory.{v} C] {a b : C} : (a = b) -> (a ≅ b) :=
   begin intro eq, hinduction eq, exact id_is_iso a end
 
 /- `idtoiso` is natural. -/
+@[hott, hsimp]
+def idtoiso_refl_eq {C : Type u} [precategory.{v} C] (a : C) : idtoiso (refl a) = id_is_iso a :=
+  by hsimp
+
 @[hott]
 def id_inv_iso_inv {C : Type u} [precategory.{v} C] {c₁ c₂ : C} (p : c₁ = c₂) :
   idtoiso p⁻¹ = inv_iso (idtoiso p) := 
