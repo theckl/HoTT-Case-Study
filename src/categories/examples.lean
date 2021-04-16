@@ -476,26 +476,62 @@ def Set_precategory : precategory Set.{u} :=
     assume A B C D f g h, by refl,
   precategory.mk ic ci as
 
-@[hott]
-def Set_iso_eqv_bijective : Π (A B : Set.{u}), (A ≅ B) ≃ (bijection A B) :=
-  assume A B,
-  have is_inv : Π i : A ≅ B, is_set_inverse_of i.hom i.inv, from assume i,
-    have i_l_inv : is_set_left_inverse_of i.hom i.inv, from 
+@[hott, hsimp]
+def Set_isotocareqv {A B : Set.{u}} : (A ≅ B) -> (A ≃ B) :=
+    assume i,
+  have eqv_iso : is_equiv i.hom, from 
+    have r_inv : ∀ b : B, i.hom (i.inv b) = b, from 
+      assume b, homotopy_of_eq i.r_inv b,
+    have l_inv : ∀ a : A, i.inv (i.hom a) = a, from 
       assume a, homotopy_of_eq i.l_inv a,
-    have i_r_inv : is_set_right_inverse_of i.hom i.inv, from 
-      assume a, homotopy_of_eq i.r_inv a,
-    is_set_inverse_of.mk i_r_inv i_l_inv,
-  let iso_to_bij := λ i : A ≅ B, has_inverse_to_bijection i.hom i.inv (is_inv i) in
-      /- bij_to_iso := λ f : bijection A B, iso.mk f.map _ _ _ in -/
-  sorry
+    adjointify i.hom i.inv r_inv l_inv,
+  equiv.mk i.hom eqv_iso 
+
+@[hott, hsimp]
+def Set_isotoid {A B : Set.{u}} : (A ≅ B) -> (A = B) :=
+  assume i,
+  car_eq_to_set_eq (ua (Set_isotocareqv i))
+
+@[hott, hsimp]
+def Set_idtoiso_hom_eq {A B : Set.{u}} (p : A = B) : 
+  ∀ a : A, ((idtoiso p).hom : A -> B) a = p ▸ a :=
+begin
+  hinduction p, rwr idtoiso_refl_eq, hsimp, 
+  intro a, refl  
+end 
+
+set_option pp.notation false
+
+@[hott, hsimp]
+def Set_isotoid_eq_hom {A B : Set.{u}} (i : A ≅ B) : 
+  ∀ a : A.carrier, (Set_isotoid i) ▸[λ A : Set.{u}, A.carrier] a = i.hom a :=
+assume a, 
+calc (Set_isotoid i) ▸ a = ((ap (trunctype.carrier) (Set_isotoid i)) ▸[λ A : Type u, A] a) : sorry
+         = ((ua (Set_isotocareqv i)) ▸[λ A : Type u, A] a) : sorry
+     ... = i.hom a : sorry
+
+@[hott, hsimp]
+def Set_isotoid_eq_refl {A : Set.{u}} : Set_isotoid (id_is_iso A) = refl A :=
+  sorry  
+
+@[hott]
+def Set_id_iso_rinv {A B : Set.{u}} : ∀ i : A ≅ B, idtoiso (Set_isotoid i) = i :=
+  assume i,
+  have hom_eq : ∀ a : A, ((idtoiso (Set_isotoid i)).hom : A -> B) a = i.hom a, from 
+    assume a, (Set_idtoiso_hom_eq (Set_isotoid i) a) ⬝ Set_isotoid_eq_hom i a,
+  hom_eq_to_iso_eq (eq_of_homotopy hom_eq)
+
+@[hott]
+def Set_id_iso_linv {A B : Set.{u}} : ∀ p : A = B, Set_isotoid (idtoiso p) = p :=
+begin
+  intro p, hinduction p, 
+  rwr idtoiso_refl_eq, exact Set_isotoid_eq_refl
+end  
 
 @[hott, instance]
 def Set_category : category Set.{u} :=
   have ideqviso : ∀ A B : Set.{u}, is_equiv (@idtoiso _ _ A B), from assume A B,
-    let iso_eqv_id := (Set_iso_eqv_bijective A B) ⬝e (@set_eq_equiv_bij A B)⁻¹ᵉ in
-    have p : @idtoiso _ _ A B = iso_eqv_id⁻¹ᶠ, from sorry,
-    have eqv : is_equiv iso_eqv_id⁻¹ᶠ, from is_equiv_to_inv iso_eqv_id,
-    p⁻¹ ▸ eqv,
+    adjointify idtoiso Set_isotoid Set_id_iso_rinv Set_id_iso_linv,
   category.mk ideqviso  
 
 end categories
