@@ -234,6 +234,46 @@ structure nat_trans [precategory.{v} C] [precategory.{v'} D] (F G : C ⥤ D) :=
 
 infixr ` ⟹ `:10 := nat_trans _ _
 
+/- We now define structures on categories and prove the Structure Identity Principle, following
+   the [HoTT-Book], Section 9.8. -/
+@[hott]
+structure std_structures_on (C : Type u) [category.{v} C] :=
+  (P : C -> Type u)
+  (H : Π {x y : C} (α : P x) (β : P y) (f : x ⟶ y), trunctype.{u} -1)
+  (id_H : ∀ {x : C} (α : P x), H α α (𝟙 x))
+  (comp_H : ∀ {x y z : C} (α : P x) (β : P y) (γ : P z) (f : x ⟶ y) (g : y ⟶ z), 
+              H α β f -> H β γ g -> H α γ (f ≫ g))
+  (std : ∀ {x y : C} (α β : P x) , H α β (𝟙 x) -> H β α (𝟙 x) -> α = β)           
+
+@[hott]
+structure std_structure {C : Type u} [category.{v} C] (std_str : std_structures_on C) :=
+  (carrier : C)
+  (str : std_str.P carrier)
+
+@[hott]
+instance {C : Type u} [category.{v} C] (std_str : std_structures_on C) : 
+  has_coe (std_structure std_str) C :=
+⟨λ x : std_structure std_str, x.carrier⟩  
+
+@[hott, instance]
+def std_str_has_hom {C : Type u} [category.{u} C] (std_str : std_structures_on C) :
+  has_hom (std_structure std_str) := 
+has_hom.mk (λ (x y : std_structure std_str), 
+            ↥{ f ∈ (x.carrier ⟶ y) | std_str.H (x.str) (y.str) f })
+
+@[hott]
+def std_str_hom_H {C : Type u} [category.{u} C] (std_str : std_structures_on C) 
+  (x y : std_structure std_str) :
+  Π f : x ⟶ y, std_str.H x.str y.str f :=
+sorry              
+
+@[hott, instance]
+def std_str_cat_struct {C : Type u} [category C] (std_str : std_structures_on C) :
+  category_struct (std_structure std_str) :=
+category_struct.mk (λ x : std_structure std_str, elem_pred (𝟙 ↑x) (std_str.id_H x.str)) 
+  (λ (x y z : std_structure std_str) (f : x ⟶ y) (g : y ⟶ z), 
+   elem_pred (f ≫ g) (std_str.comp_H x.str y.str z.str f g )) 
+
 end
 
 end categories
