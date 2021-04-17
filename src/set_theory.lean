@@ -278,7 +278,7 @@ local notation `car` A := trunctype.carrier A
    constructed by [trunctype_eq_equiv] in [type.trunc] but it is not reducible, 
    hence cannot be used for calculations. Instead we construct the equivalence
    from scratch, making the functions reducible. -/
-@[hott, hsimp]   
+@[hott, hsimp, reducible]   
 def set_eq_to_car_eq {A B : Set} : (A = B) -> ((car A) = (car B)) :=
   assume e, ap trunctype.carrier e
 
