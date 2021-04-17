@@ -487,7 +487,7 @@ def Set_isotocareqv {A B : Set.{u}} : (A ≅ B) -> (A ≃ B) :=
     adjointify i.hom i.inv r_inv l_inv,
   equiv.mk i.hom eqv_iso 
 
-@[hott, hsimp]
+@[hott, hsimp, reducible]
 def Set_isotoid {A B : Set.{u}} : (A ≅ B) -> (A = B) :=
   assume i,
   car_eq_to_set_eq (ua (Set_isotocareqv i))
@@ -506,13 +506,20 @@ set_option pp.notation false
 def Set_isotoid_eq_hom {A B : Set.{u}} (i : A ≅ B) : 
   ∀ a : A.carrier, (Set_isotoid i) ▸[λ A : Set.{u}, A.carrier] a = i.hom a :=
 assume a, 
-calc (Set_isotoid i) ▸ a = ((ap (trunctype.carrier) (Set_isotoid i)) ▸[λ A : Type u, A] a) : sorry
-         = ((ua (Set_isotocareqv i)) ▸[λ A : Type u, A] a) : sorry
-     ... = i.hom a : sorry
+calc (Set_isotoid i) ▸ a = ((ap (trunctype.carrier) (Set_isotoid i)) ▸[λ A : Type u, A] a) : 
+           (tr_ap (λ A : Type u, A) (trunctype.carrier) _ a)⁻¹
+     ... = ((set_eq_to_car_eq (Set_isotoid i)) ▸[λ A : Type u, A] a) : 
+           rfl      
+     ... = ((ua (Set_isotocareqv i)) ▸[λ A : Type u, A] a) : 
+           by rwr rinv_set_eq_car_eq _
+     ... = (equiv_of_eq (ua (Set_isotocareqv i))).to_fun a : cast_def _ _
+     ... = i.hom a : cast_ua (Set_isotocareqv i) a
 
 @[hott, hsimp]
 def Set_isotoid_eq_refl {A : Set.{u}} : Set_isotoid (id_is_iso A) = refl A :=
-  sorry  
+  calc Set_isotoid (id_is_iso A) = car_eq_to_set_eq (ua (equiv.refl ↥A)) : rfl
+       ... = car_eq_to_set_eq (idpath ↥A) : by rwr ua_refl
+       ... = refl A : idp_car_to_idp_set  
 
 @[hott]
 def Set_id_iso_rinv {A B : Set.{u}} : ∀ i : A ≅ B, idtoiso (Set_isotoid i) = i :=
