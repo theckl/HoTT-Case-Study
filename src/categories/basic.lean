@@ -237,7 +237,7 @@ infixr ` ⟹ `:10 := nat_trans _ _
 /- We now define structures on categories and prove the Structure Identity Principle, following
    the [HoTT-Book], Section 9.8. -/
 @[hott]
-structure std_structures_on (C : Type u) [category.{v} C] :=
+structure std_structure_on (C : Type u) [category.{v} C] :=
   (P : C -> Type u)
   (H : Π {x y : C} (α : P x) (β : P y) (f : x ⟶ y), trunctype.{u} -1)
   (id_H : ∀ {x : C} (α : P x), H α α (𝟙 x))
@@ -246,33 +246,67 @@ structure std_structures_on (C : Type u) [category.{v} C] :=
   (std : ∀ {x y : C} (α β : P x) , H α β (𝟙 x) -> H β α (𝟙 x) -> α = β)           
 
 @[hott]
-structure std_structure {C : Type u} [category.{v} C] (std_str : std_structures_on C) :=
+structure std_structure {C : Type u} [category.{v} C] (std_str : std_structure_on C) :=
   (carrier : C)
   (str : std_str.P carrier)
 
 @[hott]
-instance {C : Type u} [category.{v} C] (std_str : std_structures_on C) : 
+instance {C : Type u} [category.{v} C] (std_str : std_structure_on C) : 
   has_coe (std_structure std_str) C :=
 ⟨λ x : std_structure std_str, x.carrier⟩  
 
 @[hott, instance]
-def std_str_has_hom {C : Type u} [category.{u} C] (std_str : std_structures_on C) :
+def std_str_has_hom {C : Type u} [category.{u} C] (std_str : std_structure_on C) :
   has_hom (std_structure std_str) := 
 has_hom.mk (λ (x y : std_structure std_str), 
             ↥{ f ∈ (x.carrier ⟶ y) | std_str.H (x.str) (y.str) f })
 
 @[hott]
-def std_str_hom_H {C : Type u} [category.{u} C] (std_str : std_structures_on C) 
-  (x y : std_structure std_str) :
-  Π f : x ⟶ y, std_str.H x.str y.str f :=
-sorry              
+instance hom_std_C {C : Type u} [category.{u} C] {std_str : std_structure_on C}
+  {x y : std_structure std_str} : has_coe ↥(x ⟶ y) ↥(x.carrier ⟶ y.carrier) :=
+⟨λ f, { f ∈ (x.carrier ⟶ y) | std_str.H (x.str) (y.str) f }.map f⟩  
+
+@[hott]
+def hom_H {C : Type u} [category.{u} C] {std_str : std_structure_on C} 
+  {x y : std_structure std_str} :
+  Π f : x ⟶ y, std_str.H x.str y.str (↑f) :=
+assume f, f.2              
+
+@[hott]
+def hom_eq_C_std {C : Type u} [category.{u} C] {std_str : std_structure_on C} 
+  {x y : std_structure std_str} (f g : x ⟶ y) : 
+  (↑f = (↑g : x.carrier ⟶ y.carrier)) -> (f = g) :=
+sorry  
 
 @[hott, instance]
-def std_str_cat_struct {C : Type u} [category C] (std_str : std_structures_on C) :
+def std_str_cat_struct {C : Type u} [category.{u} C] (std_str : std_structure_on C) :
   category_struct (std_structure std_str) :=
 category_struct.mk (λ x : std_structure std_str, elem_pred (𝟙 ↑x) (std_str.id_H x.str)) 
   (λ (x y z : std_structure std_str) (f : x ⟶ y) (g : y ⟶ z), 
-   elem_pred (f ≫ g) (std_str.comp_H x.str y.str z.str f g )) 
+   elem_pred (↑f ≫ ↑g) (std_str.comp_H x.str y.str z.str ↑f ↑g (hom_H f) (hom_H g))) 
+
+@[hott]
+def idhom_std_C {C : Type u} [category.{u} C] {std_str : std_structure_on C} 
+  (x : std_structure std_str) : ↑(𝟙 x) = 𝟙 x.carrier :=
+sorry  
+
+@[hott]
+def comp_hom_std_C {C : Type u} [category.{u} C] {std_str : std_structure_on C} 
+  {x y z : std_structure std_str} (f : x ⟶ y) (g : y ⟶ z) : 
+  ↑(f ≫ g) = (↑f : x.carrier ⟶ y.carrier) ≫ (↑g : y.carrier ⟶ z.carrier) :=
+sorry  
+
+@[hott, instance]
+def std_str_precategory {C : Type u} [category.{u} C] (std_str : std_structure_on C) :
+  precategory (std_structure std_str) :=
+have ic : ∀ (x y : std_structure std_str) (f : x ⟶ y), 𝟙 x ≫ f = f, from 
+  begin intros x y f, apply hom_eq_C_std _ _, rwr comp_hom_std_C, hsimp end,
+have ci : ∀ (x y : std_structure std_str) (f : x ⟶ y), f ≫ 𝟙 y = f, from 
+  begin intros x y f, apply hom_eq_C_std _ _, rwr comp_hom_std_C, hsimp end,
+have as : ∀ (x y z w: std_structure std_str) (f : x ⟶ y) (g : y ⟶ z) (h : z ⟶ w),
+          (f ≫ g) ≫ h = f ≫ (g ≫ h), from 
+  begin intros x y z w f g h, apply hom_eq_C_std _ _, repeat { rwr comp_hom_std_C }, hsimp end,
+precategory.mk ic ci as          
 
 end
 
