@@ -28,7 +28,7 @@ instance (A : Set) : has_coe_to_sort (Subset A) :=
 attribute [instance] Subset.inj 
 
 @[hott]
-instance {A : Set} (B : Subset A) : has_coe ↥B A :=
+instance {A : Set} (B : Subset A) : has_coe ↥B ↥A :=
   ⟨λ b, B.map b⟩
 
 @[hott]
@@ -622,7 +622,10 @@ def elem_pred {A : Set} {P : Setpred A} (a : A) (pred_a : P a) :
 @[hott]
 def elem_pred_eq {A : Set} {P : Setpred A} (a : A) (pred_a : P a) :
   ({ a ∈ A | P a }).map (elem_pred a pred_a) = a :=
-by hsimp  
+by hsimp 
+
+@[hott]
+def sset_elem_pred {A : Set} {P : Setpred A} (b : (↥(pred_to_sset P) : Set)) : P ↑b := b.2
 
 @[hott]
 def is_subset_of (B C : Subset A) :=
