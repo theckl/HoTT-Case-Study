@@ -276,7 +276,12 @@ assume f, f.2
 def hom_eq_C_std {C : Type u} [category.{u} C] {std_str : std_structure_on C} 
   {x y : std_structure std_str} (f g : x ⟶ y) : 
   (↑f = (↑g : x.carrier ⟶ y.carrier)) -> (f = g) :=
-sorry  
+assume (hom_eq_C : f.1 = g.1), 
+have H_eq : f.2 =[hom_eq_C; λ f : x.carrier ⟶ y, std_str.H x.str y.str f] g.2, from 
+  pathover_prop_eq (λ f : x.carrier ⟶ y, std_str.H x.str y.str f) hom_eq_C (hom_H f) (hom_H g),
+calc f = ⟨f.1, f.2⟩ : (sigma.eta f)⁻¹ 
+   ... = ⟨g.1, g.2⟩ : sigma.dpair_eq_dpair hom_eq_C H_eq
+   ... = g : sigma.eta g 
 
 @[hott, instance]
 def std_str_cat_struct {C : Type u} [category.{u} C] (std_str : std_structure_on C) :
@@ -288,13 +293,13 @@ category_struct.mk (λ x : std_structure std_str, elem_pred (𝟙 ↑x) (std_str
 @[hott]
 def idhom_std_C {C : Type u} [category.{u} C] {std_str : std_structure_on C} 
   (x : std_structure std_str) : ↑(𝟙 x) = 𝟙 x.carrier :=
-sorry  
+rfl  
 
 @[hott]
 def comp_hom_std_C {C : Type u} [category.{u} C] {std_str : std_structure_on C} 
   {x y z : std_structure std_str} (f : x ⟶ y) (g : y ⟶ z) : 
   ↑(f ≫ g) = (↑f : x.carrier ⟶ y.carrier) ≫ (↑g : y.carrier ⟶ z.carrier) :=
-sorry  
+rfl  
 
 @[hott, instance]
 def std_str_precategory {C : Type u} [category.{u} C] (std_str : std_structure_on C) :
@@ -306,7 +311,19 @@ have ci : ∀ (x y : std_structure std_str) (f : x ⟶ y), f ≫ 𝟙 y = f, fro
 have as : ∀ (x y z w: std_structure std_str) (f : x ⟶ y) (g : y ⟶ z) (h : z ⟶ w),
           (f ≫ g) ≫ h = f ≫ (g ≫ h), from 
   begin intros x y z w f g h, apply hom_eq_C_std _ _, repeat { rwr comp_hom_std_C }, hsimp end,
-precategory.mk ic ci as          
+precategory.mk ic ci as 
+
+@[hott]
+def iso_std_C {C : Type u} [category.{u} C] {std_str : std_structure_on C}
+  (x y : std_structure std_str) : (x ≅ y) -> 
+  Σ (f : x.carrier ≅ ↑y), (std_str.H x.str y.str f.hom) and (std_str.H y.str x.str f.inv) :=
+sorry  
+
+@[hott, instance]
+def structure_identity_principle {C : Type u} [category.{u} C] (std_str : std_structure_on C) :
+  category (std_structure std_str) :=
+have idtoiso_eqv : ∀ x y : std_structure std_str, is_equiv (@idtoiso _ _ x y), from sorry,  
+category.mk idtoiso_eqv
 
 end
 
