@@ -177,18 +177,18 @@ class category (obj : Type u) extends precategory.{v} obj :=
 
 attribute [instance] category.ideqviso
 
-@[hott]
+@[hott, hsimp]
 def category.isotoid {obj : Type u} [category.{v} obj] : 
   Π {a b : obj}, a ≅ b -> a = b :=
 assume a b iso,  
 @is_equiv.inv _ _ _ (category.ideqviso a b) iso  
 
-@[hott]
+@[hott, hsimp]
 def category.idtoiso_rinv {obj : Type u} [category.{v} obj] {a b : obj} :
   ∀ i : a ≅ b, idtoiso (idtoiso⁻¹ᶠ i) = i :=
 is_equiv.right_inv (@idtoiso _ _ a b) 
 
-@[hott]
+@[hott, hsimp]
 def category.idtoiso_linv {obj : Type u} [category.{v} obj] {a b : obj} :
   ∀ p : a = b, idtoiso⁻¹ᶠ (idtoiso p) = p :=
 is_equiv.left_inv (@idtoiso _ _ a b) 
@@ -243,7 +243,7 @@ structure std_structure_on (C : Type u) [category.{v} C] :=
   (id_H : ∀ {x : C} (α : P x), H α α (𝟙 x))
   (comp_H : ∀ {x y z : C} (α : P x) (β : P y) (γ : P z) (f : x ⟶ y) (g : y ⟶ z), 
               H α β f -> H β γ g -> H α γ (f ≫ g))
-  (std : ∀ {x y : C} (α β : P x) , H α β (𝟙 x) -> H β α (𝟙 x) -> α = β)           
+  (std : ∀ {x : C} (α β : P x) , H α β (𝟙 x) -> H β α (𝟙 x) -> α = β)           
 
 @[hott]
 structure std_structure {C : Type u} [category.{v} C] (std_str : std_structure_on C) :=
@@ -255,6 +255,8 @@ instance {C : Type u} [category.{v} C] (std_str : std_structure_on C) :
   has_coe (std_structure std_str) C :=
 ⟨λ x : std_structure std_str, x.carrier⟩  
 
+/- As a first step, we need to construct the structure of a precategory on the standard 
+   structures. -/
 @[hott, instance]
 def std_str_has_hom {C : Type u} [category.{u} C] (std_str : std_structure_on C) :
   has_hom (std_structure std_str) := 
@@ -275,7 +277,7 @@ assume f, f.2
 @[hott]
 def hom_eq_C_std {C : Type u} [category.{u} C] {std_str : std_structure_on C} 
   {x y : std_structure std_str} (f g : x ⟶ y) : 
-  (↑f = (↑g : x.carrier ⟶ y.carrier)) -> (f = g) :=
+  (f.1 = (g.1 : x.carrier ⟶ y.carrier)) -> (f = g) :=
 assume (hom_eq_C : f.1 = g.1), 
 have H_eq : f.2 =[hom_eq_C; λ f : x.carrier ⟶ y, std_str.H x.str y.str f] g.2, from 
   pathover_prop_eq (λ f : x.carrier ⟶ y, std_str.H x.str y.str f) hom_eq_C (hom_H f) (hom_H g),
@@ -298,7 +300,7 @@ rfl
 @[hott]
 def comp_hom_std_C {C : Type u} [category.{u} C] {std_str : std_structure_on C} 
   {x y z : std_structure std_str} (f : x ⟶ y) (g : y ⟶ z) : 
-  ↑(f ≫ g) = (↑f : x.carrier ⟶ y.carrier) ≫ (↑g : y.carrier ⟶ z.carrier) :=
+  (f ≫ g).1 = (f.1 : x.carrier ⟶ y.carrier) ≫ (g.1 : y.carrier ⟶ z.carrier) :=
 rfl  
 
 @[hott, instance]
@@ -313,11 +315,37 @@ have as : ∀ (x y z w: std_structure std_str) (f : x ⟶ y) (g : y ⟶ z) (h : 
   begin intros x y z w f g h, apply hom_eq_C_std _ _, repeat { rwr comp_hom_std_C }, hsimp end,
 precategory.mk ic ci as 
 
+/- Now we can start to prove the Structure Identity principle.
+
+   First we define functions needed to produce the equivalence. -/
 @[hott]
-def iso_std_C {C : Type u} [category.{u} C] {std_str : std_structure_on C}
+def iso_std_C_H {C : Type u} [category.{u} C] {std_str : std_structure_on C}
   (x y : std_structure std_str) : (x ≅ y) -> 
   Σ (f : x.carrier ≅ ↑y), (std_str.H x.str y.str f.hom) and (std_str.H y.str x.str f.inv) :=
-sorry  
+assume F, 
+let f_hom := (F.hom).1, f_inv := (F.inv).1,
+    f_hom_H := hom_H F.hom, f_inv_H := hom_H F.inv in
+have rinv : f_inv ≫ f_hom = 𝟙 ↑y, from begin rwr <- comp_hom_std_C, rwr F.r_inv end,
+have linv : f_hom ≫ f_inv = 𝟙 ↑x, from begin rwr <- comp_hom_std_C, rwr F.l_inv end,
+let f := iso.mk f_hom f_inv rinv linv in
+⟨f, ⟨f_hom_H, f_inv_H⟩⟩  
+
+@[hott]
+def iso_C_H_eq {C : Type u} [category.{u} C] {std_str : std_structure_on C}
+  (x y : std_structure std_str) :  
+  (Σ (f : x.carrier ≅ ↑y), (std_str.H x.str y.str f.hom) and (std_str.H y.str x.str f.inv)) ->
+  Σ (p : x.carrier = ↑y), (std_str.H x.str y.str (idtoiso p).hom) and 
+                          (std_str.H y.str x.str (idtoiso p).inv) :=
+assume F_H, 
+let f := F_H.1, H := F_H.2, p := category.isotoid f in
+have eq : f = idtoiso p, by rwr <- category.idtoiso_rinv f,   
+⟨p, eq ▸[λ g : x.carrier ≅ ↑y, (std_str.H x.str y.str g.hom) and (std_str.H y.str x.str g.inv)] H⟩                          
+
+@[hott]
+def iso_H_str_eq {C : Type u} [category.{u} C] {std_str : std_structure_on C} {a b : C}
+  (α : std_str.P a) (β : std_str.P b) (p : a = b) :
+  ((std_str.H α β (idtoiso p).hom) and (std_str.H β α (idtoiso p).inv)) -> (α =[p] β) :=
+begin hinduction p, hsimp, intro H, apply pathover_idp_of_eq, exact std_str.std α β H.1 H.2  end
 
 @[hott, instance]
 def structure_identity_principle {C : Type u} [category.{u} C] (std_str : std_structure_on C) :
