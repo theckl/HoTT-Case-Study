@@ -318,7 +318,7 @@ precategory.mk ic ci as
 /- Now we can start to prove the Structure Identity principle.
 
    First we define functions needed to produce the equivalence. -/
-@[hott]
+@[hott, hsimp, reducible]
 def iso_std_C_H {C : Type u} [category.{u} C] {std_str : std_structure_on C}
   (x y : std_structure std_str) : (x ≅ y) -> 
   Σ (f : x.carrier ≅ ↑y), (std_str.H x.str y.str f.hom) and (std_str.H y.str x.str f.inv) :=
@@ -330,7 +330,7 @@ have linv : f_hom ≫ f_inv = 𝟙 ↑x, from begin rwr <- comp_hom_std_C, rwr F
 let f := iso.mk f_hom f_inv rinv linv in
 ⟨f, ⟨f_hom_H, f_inv_H⟩⟩  
 
-@[hott]
+@[hott, hsimp, reducible]
 def iso_C_H_eq {C : Type u} [category.{u} C] {std_str : std_structure_on C}
   (x y : std_structure std_str) :  
   (Σ (f : x.carrier ≅ ↑y), (std_str.H x.str y.str f.hom) and (std_str.H y.str x.str f.inv)) ->
@@ -341,16 +341,57 @@ let f := F_H.1, H := F_H.2, p := category.isotoid f in
 have eq : f = idtoiso p, by rwr <- category.idtoiso_rinv f,   
 ⟨p, eq ▸[λ g : x.carrier ≅ ↑y, (std_str.H x.str y.str g.hom) and (std_str.H y.str x.str g.inv)] H⟩                          
 
-@[hott]
+@[hott, hsimp, reducible]
 def iso_H_str_eq {C : Type u} [category.{u} C] {std_str : std_structure_on C} {a b : C}
   (α : std_str.P a) (β : std_str.P b) (p : a = b) :
   ((std_str.H α β (idtoiso p).hom) and (std_str.H β α (idtoiso p).inv)) -> (α =[p] β) :=
 begin hinduction p, hsimp, intro H, apply pathover_idp_of_eq, exact std_str.std α β H.1 H.2  end
 
+@[hott, hsimp, reducible]
+def std_str_eta {C : Type u} [category.{u} C] {std_str : std_structure_on C}
+  (x y : std_structure std_str) : (Σ (p : x.carrier = ↑y), x.str =[p] y.str) -> x = y :=
+begin 
+  intro comp_eq, 
+  hinduction x, hinduction y, 
+  fapply apd011 std_structure.mk, 
+  exact comp_eq.1, exact comp_eq.2 
+end  
+
+/- Finally, we show the Structure Identity Principle. -/
 @[hott, instance]
 def structure_identity_principle {C : Type u} [category.{u} C] (std_str : std_structure_on C) :
-  category (std_structure std_str) :=
-have idtoiso_eqv : ∀ x y : std_structure std_str, is_equiv (@idtoiso _ _ x y), from sorry,  
+  category (std_structure std_str) :=  
+have idtoiso_eqv : ∀ x y : std_structure std_str, is_equiv (@idtoiso _ _ x y), from 
+  assume x y,
+  let std_idtoiso := @idtoiso _ _ x y,
+      std_isotoCHeq := λ F : x ≅ y, iso_C_H_eq x y (iso_std_C_H x y F),
+      std_isotoid := λ F : x ≅ y, std_str_eta x y ⟨(std_isotoCHeq F).1, 
+                            iso_H_str_eq x.str y.str (std_isotoCHeq F).1 (std_isotoCHeq F).2⟩,
+      id_H_x := std_str.id_H x.str in                                  
+  have rinv : ∀ F : x ≅ y, std_idtoiso (std_isotoid F) = F, from       
+    begin intro F, apply hom_eq_to_iso_eq, apply hom_eq_C_std _ _, sorry, end,
+  have linv : ∀ q : x = y, std_isotoid (std_idtoiso q) = q, from 
+    have q₁ : iso_std_C_H x x (id_is_iso x) = ⟨id_is_iso ↑x, ⟨id_H_x, id_H_x⟩⟩, from sorry,
+    have q₂ : iso_C_H_eq x x ⟨id_is_iso ↑x, (id_H_x, id_H_x)⟩ = ⟨refl ↑x, (id_H_x, id_H_x)⟩, from
+      sorry, 
+    have q₃ : std_str_eta x x ⟨refl ↑x, iso_H_str_eq x.str x.str (refl ↑x) ⟨id_H_x, id_H_x⟩⟩ = 
+                refl x, from sorry,                    
+    begin 
+      intro q, hinduction q, 
+      change std_isotoid (idtoiso (refl x)) = refl x, rwr idtoiso_refl_eq x,
+      have q₄ : std_isotoCHeq (id_is_iso x) = ⟨refl ↑x, ⟨id_H_x, id_H_x⟩⟩, from 
+      begin
+        change iso_C_H_eq x x (iso_std_C_H x x (id_is_iso x)) = ⟨refl ↑x, ⟨id_H_x, id_H_x⟩⟩,
+        rwr q₁, rwr q₂ 
+      end,
+      change std_str_eta x x ⟨(std_isotoCHeq (id_is_iso x)).1, iso_H_str_eq x.str x.str 
+                        (std_isotoCHeq (id_is_iso x)).1 (std_isotoCHeq (id_is_iso x)).2⟩ = refl x,                  
+      rwr q₄, 
+      change std_str_eta x x ⟨refl ↑x, iso_H_str_eq x.str x.str (refl ↑x) ⟨id_H_x, id_H_x⟩⟩ = 
+             refl x, 
+      exact q₃ 
+    end,  
+  adjointify std_idtoiso std_isotoid rinv linv,  
 category.mk idtoiso_eqv
 
 end
