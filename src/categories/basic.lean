@@ -4,7 +4,7 @@ universes v u v' u' w
 hott_theory
 
 namespace hott
-open hott.eq hott.set hott.subset hott.is_trunc hott.is_equiv
+open hott.eq hott.sigma hott.set hott.subset hott.is_trunc hott.is_equiv
 
 /-
 We introduce precategories and categories following the HoTT book, 
@@ -194,6 +194,11 @@ def category.idtoiso_linv {obj : Type u} [category.{v} obj] {a b : obj} :
 is_equiv.left_inv (@idtoiso _ _ a b) 
 
 @[hott]
+def isotoid_id_refl {obj : Type u} [category.{v} obj] :
+  Π {a : obj}, category.isotoid (id_is_iso a) = refl a :=
+begin intro a, rwr <- idtoiso_refl_eq a, exact category.idtoiso_linv (refl a) end 
+
+@[hott]
 def iso_hom_tr_comp {C : Type u} [category.{v} C] {c₁ c₂ d : C} (i : c₁ ≅ c₂)
   (h : c₁ ⟶ d) : (idtoiso⁻¹ᶠ i) ▸ h = i⁻¹ʰ ≫ h :=
 begin 
@@ -243,7 +248,7 @@ structure std_structure_on (C : Type u) [category.{v} C] :=
   (id_H : ∀ {x : C} (α : P x), H α α (𝟙 x))
   (comp_H : ∀ {x y z : C} (α : P x) (β : P y) (γ : P z) (f : x ⟶ y) (g : y ⟶ z), 
               H α β f -> H β γ g -> H α γ (f ≫ g))
-  (std : ∀ {x : C} (α β : P x) , H α β (𝟙 x) -> H β α (𝟙 x) -> α = β)           
+  (std : ∀ {x : C} (α β : P x) , (H α β (𝟙 x) × H β α (𝟙 x)) ≃ α = β)           
 
 @[hott]
 structure std_structure {C : Type u} [category.{v} C] (std_str : std_structure_on C) :=
@@ -254,6 +259,14 @@ structure std_structure {C : Type u} [category.{v} C] (std_str : std_structure_o
 instance {C : Type u} [category.{v} C] (std_str : std_structure_on C) : 
   has_coe (std_structure std_str) C :=
 ⟨λ x : std_structure std_str, x.carrier⟩  
+
+@[hott, instance]
+def std_str_is_set {C : Type u} [category.{v} C] (std_str : std_structure_on C) :
+  ∀ a : C, is_set (std_str.P a) :=
+assume a, 
+have eq_eq : ∀ (α β : std_str.P a), is_prop (α = β), from 
+  assume α β, is_trunc_equiv_closed -1 (std_str.std α β) (and_is_prop _ _),
+is_trunc_succ_intro eq_eq   
 
 /- As a first step, we need to construct the structure of a precategory on the standard 
    structures. -/
@@ -282,7 +295,7 @@ assume (hom_eq_C : f.1 = g.1),
 have H_eq : f.2 =[hom_eq_C; λ f : x.carrier ⟶ y, std_str.H x.str y.str f] g.2, from 
   pathover_prop_eq (λ f : x.carrier ⟶ y, std_str.H x.str y.str f) hom_eq_C (hom_H f) (hom_H g),
 calc f = ⟨f.1, f.2⟩ : (sigma.eta f)⁻¹ 
-   ... = ⟨g.1, g.2⟩ : sigma.dpair_eq_dpair hom_eq_C H_eq
+   ... = ⟨g.1, g.2⟩ : dpair_eq_dpair hom_eq_C H_eq
    ... = g : sigma.eta g 
 
 @[hott, instance]
@@ -345,7 +358,18 @@ have eq : f = idtoiso p, by rwr <- category.idtoiso_rinv f,
 def iso_H_str_eq {C : Type u} [category.{u} C] {std_str : std_structure_on C} {a b : C}
   (α : std_str.P a) (β : std_str.P b) (p : a = b) :
   ((std_str.H α β (idtoiso p).hom) and (std_str.H β α (idtoiso p).inv)) -> (α =[p] β) :=
-begin hinduction p, hsimp, intro H, apply pathover_idp_of_eq, exact std_str.std α β H.1 H.2  end
+begin hinduction p, hsimp, intro H, apply pathover_idp_of_eq, exact std_str.std α β H end
+
+@[hott]
+def idiso_H_str_eq {C : Type u} [category.{u} C] {std_str : std_structure_on C} 
+  (x : std_structure std_str) : 
+  iso_H_str_eq x.str x.str (refl ↑x) ⟨std_str.id_H x.str, std_str.id_H x.str⟩ = idpo :=
+begin
+  let id_H_x := std_str.id_H x.str,
+  have p : std_str.std x.str x.str (id_H_x, id_H_x) = idp, from is_set.elim _ _,
+  change pathover_idp_of_eq std_str.P (std_str.std x.str x.str (id_H_x, id_H_x)) = idpo,
+  rwr p
+end    
 
 @[hott, hsimp, reducible]
 def std_str_eta {C : Type u} [category.{u} C] {std_str : std_structure_on C}
@@ -371,11 +395,24 @@ have idtoiso_eqv : ∀ x y : std_structure std_str, is_equiv (@idtoiso _ _ x y),
   have rinv : ∀ F : x ≅ y, std_idtoiso (std_isotoid F) = F, from       
     begin intro F, apply hom_eq_to_iso_eq, apply hom_eq_C_std _ _, sorry, end,
   have linv : ∀ q : x = y, std_isotoid (std_idtoiso q) = q, from 
-    have q₁ : iso_std_C_H x x (id_is_iso x) = ⟨id_is_iso ↑x, ⟨id_H_x, id_H_x⟩⟩, from sorry,
+    have q₁ : iso_std_C_H x x (id_is_iso x) = ⟨id_is_iso ↑x, ⟨id_H_x, id_H_x⟩⟩, from 
+    begin 
+      fapply sigma_eq, 
+      { apply hom_eq_to_iso_eq, refl }, 
+      { apply pathover_of_tr_eq, apply is_prop.elim }
+    end,
     have q₂ : iso_C_H_eq x x ⟨id_is_iso ↑x, (id_H_x, id_H_x)⟩ = ⟨refl ↑x, (id_H_x, id_H_x)⟩, from
-      sorry, 
+    begin
+      fapply sigma_eq,
+      { change category.isotoid (id_is_iso ↑x) = refl ↑x, exact isotoid_id_refl },
+      { apply pathover_of_tr_eq, apply is_prop.elim } 
+    end,
     have q₃ : std_str_eta x x ⟨refl ↑x, iso_H_str_eq x.str x.str (refl ↑x) ⟨id_H_x, id_H_x⟩⟩ = 
-                refl x, from sorry,                    
+                refl x, from 
+      begin
+        rwr idiso_H_str_eq x, 
+        hinduction x, change apd011 std_structure.mk idp idpo = idp, refl
+      end,                    
     begin 
       intro q, hinduction q, 
       change std_isotoid (idtoiso (refl x)) = refl x, rwr idtoiso_refl_eq x,
@@ -387,8 +424,6 @@ have idtoiso_eqv : ∀ x y : std_structure std_str, is_equiv (@idtoiso _ _ x y),
       change std_str_eta x x ⟨(std_isotoCHeq (id_is_iso x)).1, iso_H_str_eq x.str x.str 
                         (std_isotoCHeq (id_is_iso x)).1 (std_isotoCHeq (id_is_iso x)).2⟩ = refl x,                  
       rwr q₄, 
-      change std_str_eta x x ⟨refl ↑x, iso_H_str_eq x.str x.str (refl ↑x) ⟨id_H_x, id_H_x⟩⟩ = 
-             refl x, 
       exact q₃ 
     end,  
   adjointify std_idtoiso std_isotoid rinv linv,  
