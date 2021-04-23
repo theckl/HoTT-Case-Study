@@ -329,8 +329,22 @@ have as : ∀ (x y z w: std_structure std_str) (f : x ⟶ y) (g : y ⟶ z) (h : 
 precategory.mk ic ci as 
 
 /- Now we can start to prove the Structure Identity principle.
+   First we extract the underlying isomorphism of a structure isomorphism. -/
+@[hott]
+def iso_std_C {C : Type u} [category.{u} C] {std_str : std_structure_on C}
+  {x y : std_structure std_str} (F : x ≅ y) : x.carrier ≅ ↑y :=
+let f := (F.hom : x ⟶ y).1, g := F.inv.1 in
+have rinv : g ≫ f = 𝟙 ↑y, by rwr <- comp_hom_std_C; rwr F.r_inv,
+have linv : f ≫ g = 𝟙 ↑x, by rwr <- comp_hom_std_C; rwr F.l_inv, 
+iso.mk f g rinv linv  
 
-   First we define functions needed to produce the equivalence. -/
+/- Next we define functions needed to produce the equivalence. -/
+@[hott]
+def idtoiso_str_hom_C {C : Type u} [category.{u} C] {std_str : std_structure_on C}
+  {x y : std_structure std_str} (p : x = y) :
+  ((@idtoiso _ _ x y p).hom : x ⟶ y).1 = (idtoiso (ap std_structure.carrier p)).hom :=
+begin hinduction p, rwr idtoiso_refl_eq end  
+
 @[hott, hsimp, reducible]
 def iso_std_C_H {C : Type u} [category.{u} C] {std_str : std_structure_on C}
   (x y : std_structure std_str) : (x ≅ y) -> 
@@ -379,23 +393,54 @@ begin
   hinduction x, hinduction y, 
   fapply apd011 std_structure.mk, 
   exact comp_eq.1, exact comp_eq.2 
-end  
+end 
 
-/- Finally, we show the Structure Identity Principle. -/
+@[hott]
+def std_str_eta_ap {C : Type u} [category.{u} C] {std_str : std_structure_on C}
+  {x y : std_structure std_str} (q : Σ (p : x.carrier = ↑y), x.str =[p] y.str) : 
+  ap std_structure.carrier (std_str_eta x y q) = q.1 :=
+have H : ∀ (a : C) (α : std_str.P a), std_structure.carrier (std_structure.mk a α) = a, from 
+  assume a α, rfl,   
+begin
+  hinduction x, hinduction y,  
+  change ap std_structure.carrier (apd011 std_structure.mk q.1 q.2) = q.1,
+  rwr ap_comp1_apd011 std_structure.mk std_structure.carrier H q.1 q.2,
+  sorry
+end   
+
+/- Finally, we show the Structure Identity Principle. 
+   We first construct identities from isomorphisms. -/
+@[hott, reducible]
+def std_isotoid {C : Type u} [category.{u} C] {std_str : std_structure_on C}
+  (x y : std_structure std_str) : (x ≅ y) -> (x = y) :=
+assume F, 
+have H_hom : std_str.H x.str y.str (idtoiso (idtoiso⁻¹ᶠ (iso_std_C F))).hom, from 
+  begin rwr category.idtoiso_rinv (iso_std_C F), exact F.hom.2 end,
+have H_inv : std_str.H y.str x.str (idtoiso (idtoiso⁻¹ᶠ (iso_std_C F)))⁻¹ʰ, from 
+  begin rwr category.idtoiso_rinv (iso_std_C F), exact F.inv.2 end,
+std_str_eta x y ⟨category.isotoid (iso_std_C F), iso_H_str_eq x.str y.str _ (H_hom, H_inv)⟩  
+
+/- Now we can prove the equivalence and thus the Structure Identity Principle. -/
 @[hott, instance]
 def structure_identity_principle {C : Type u} [category.{u} C] (std_str : std_structure_on C) :
   category (std_structure std_str) :=  
 have idtoiso_eqv : ∀ x y : std_structure std_str, is_equiv (@idtoiso _ _ x y), from 
   assume x y,
-  let std_idtoiso := @idtoiso _ _ x y,
+/- let std_idtoiso := @idtoiso _ _ x y,
       std_isotoCHeq := λ F : x ≅ y, iso_C_H_eq x y (iso_std_C_H x y F),
       std_isotoid := λ F : x ≅ y, std_str_eta x y ⟨(std_isotoCHeq F).1, 
                             iso_H_str_eq x.str y.str (std_isotoCHeq F).1 (std_isotoCHeq F).2⟩,
-      id_H_x := std_str.id_H x.str in                                  
-  have rinv : ∀ F : x ≅ y, std_idtoiso (std_isotoid F) = F, from       
-    begin intro F, apply hom_eq_to_iso_eq, apply hom_eq_C_std _ _, sorry, end,
-  have linv : ∀ q : x = y, std_isotoid (std_idtoiso q) = q, from 
-    have q₁ : iso_std_C_H x x (id_is_iso x) = ⟨id_is_iso ↑x, ⟨id_H_x, id_H_x⟩⟩, from 
+      id_H_x := std_str.id_H x.str in -/                                   
+  have rinv : ∀ F : x ≅ y, idtoiso (std_isotoid x y F) = F, from 
+    assume F,
+    have p : ap std_structure.carrier (std_isotoid x y F) = idtoiso⁻¹ᶠ (iso_std_C F), from 
+      std_str_eta_ap _,    
+    begin  
+      apply hom_eq_to_iso_eq, apply hom_eq_C_std _ _, 
+      rwr idtoiso_str_hom_C, rwr p, rwr category.idtoiso_rinv 
+    end,
+  have linv : ∀ q : x = y, std_isotoid x y (idtoiso q) = q, from 
+/-    have q₁ : iso_std_C_H x x (id_is_iso x) = ⟨id_is_iso ↑x, ⟨id_H_x, id_H_x⟩⟩, from 
     begin 
       fapply sigma_eq, 
       { apply hom_eq_to_iso_eq, refl }, 
@@ -412,10 +457,10 @@ have idtoiso_eqv : ∀ x y : std_structure std_str, is_equiv (@idtoiso _ _ x y),
       begin
         rwr idiso_H_str_eq x, 
         hinduction x, change apd011 std_structure.mk idp idpo = idp, refl
-      end,                    
+      end, -/                   
     begin 
-      intro q, hinduction q, 
-      change std_isotoid (idtoiso (refl x)) = refl x, rwr idtoiso_refl_eq x,
+      intro q, hinduction q, sorry,
+/-      change std_isotoid (idtoiso (refl x)) = refl x, rwr idtoiso_refl_eq x,
       have q₄ : std_isotoCHeq (id_is_iso x) = ⟨refl ↑x, ⟨id_H_x, id_H_x⟩⟩, from 
       begin
         change iso_C_H_eq x x (iso_std_C_H x x (id_is_iso x)) = ⟨refl ↑x, ⟨id_H_x, id_H_x⟩⟩,
@@ -424,9 +469,9 @@ have idtoiso_eqv : ∀ x y : std_structure std_str, is_equiv (@idtoiso _ _ x y),
       change std_str_eta x x ⟨(std_isotoCHeq (id_is_iso x)).1, iso_H_str_eq x.str x.str 
                         (std_isotoCHeq (id_is_iso x)).1 (std_isotoCHeq (id_is_iso x)).2⟩ = refl x,                  
       rwr q₄, 
-      exact q₃ 
+      exact q₃ -/
     end,  
-  adjointify std_idtoiso std_isotoid rinv linv,  
+  adjointify idtoiso (std_isotoid x y) rinv linv,  
 category.mk idtoiso_eqv
 
 end
