@@ -169,7 +169,6 @@ def id_hom_tr_comp {C : Type u} [precategory.{v} C] {c₁ c₂ d : C} (p : c₁ 
   (h : c₁ ⟶ d) : p ▸ h = (idtoiso p)⁻¹ʰ ≫ h :=
 begin hinduction p, hsimp end   
 
-
 /-- The structure of a category. -/
 @[hott]
 class category (obj : Type u) extends precategory.{v} obj :=
@@ -238,6 +237,8 @@ structure nat_trans [precategory.{v} C] [precategory.{v'} D] (F G : C ⥤ D) :=
                                  (F.map f) ≫ (app c') = (app c) ≫ (G.map f))  
 
 infixr ` ⟹ `:10 := nat_trans _ _
+
+end
 
 /- We now define structures on categories and prove the Structure Identity Principle, following
    the [HoTT-Book], Section 9.8. -/
@@ -328,8 +329,29 @@ have as : ∀ (x y z w: std_structure std_str) (f : x ⟶ y) (g : y ⟶ z) (h : 
   begin intros x y z w f g h, apply hom_eq_C_std _ _, repeat { rwr comp_hom_std_C }, hsimp end,
 precategory.mk ic ci as 
 
-/- Now we can start to prove the Structure Identity principle.
-   First we extract the underlying isomorphism of a structure isomorphism. -/
+/- We prove the Structure Identity principle by splitting up the equivalence making the 
+   precategory into a category into 5 equivalence and by showing that the composition of the
+   5 equivalence maps is `idtoiso`. 
+
+   The first equivalence introduces the structure components in standard structures equalities. -/
+@[hott]
+def std_str_comp_eq {C : Type u} [category.{u} C] {std_str : std_structure_on C}
+  {x y : std_structure std_str} :
+  (x = y) ≃ (std_structure.mk x.carrier x.str = std_structure.mk y.carrier y.str) :=
+begin hinduction x with a α, hinduction y with b β, exact equiv.rfl end
+
+/- The second equivalence is the eta principle for standard structures equalities. -/
+@[hott]
+def std_str_eq_eta {C : Type u} [category.{u} C] {std_str : std_structure_on C}
+  {a b : C} {α : std_str.P a} {β : std_str.P b} :
+  (std_structure.mk a α = std_structure.mk b β) ≃ Σ (p : a = b), α =[p] β :=
+let x := std_structure.mk a α, y := std_structure.mk b β,
+    f := λ p : x = y, @dpair (a = b) (λ p : a = b, α =[p] β) 
+         (ap std_structure.carrier p : a = b) 
+         (pathover_ap std_str.P std_structure.carrier (apd std_structure.str p)),
+    g := λ pq : Σ (p : a = b), α =[p] β, apd011 std_structure.mk pq.1 pq.2 in 
+sorry    
+
 @[hott]
 def iso_std_C {C : Type u} [category.{u} C] {std_str : std_structure_on C}
   {x y : std_structure std_str} (F : x ≅ y) : x.carrier ≅ ↑y :=
@@ -384,7 +406,7 @@ begin
   change pathover_idp_of_eq std_str.P (std_str.std x.str x.str (id_H_x, id_H_x)) = idpo,
   rwr p
 end    
-
+/-
 @[hott, hsimp, reducible]
 def std_str_eta {C : Type u} [category.{u} C] {std_str : std_structure_on C}
   (x y : std_structure std_str) : (Σ (p : x.carrier = ↑y), x.str =[p] y.str) -> x = y :=
@@ -393,19 +415,18 @@ begin
   hinduction x, hinduction y, 
   fapply apd011 std_structure.mk, 
   exact comp_eq.1, exact comp_eq.2 
-end 
-
+end   
+-/
 @[hott]
-def std_str_eta_ap {C : Type u} [category.{u} C] {std_str : std_structure_on C}
-  {x y : std_structure std_str} (q : Σ (p : x.carrier = ↑y), x.str =[p] y.str) : 
-  ap std_structure.carrier (std_str_eta x y q) = q.1 :=
-have H : ∀ (a : C) (α : std_str.P a), std_structure.carrier (std_structure.mk a α) = a, from 
-  assume a α, rfl,   
-begin
-  hinduction x, hinduction y,  
-  change ap std_structure.carrier (apd011 std_structure.mk q.1 q.2) = q.1,
-  rwr ap_comp1_apd011 std_structure.mk std_structure.carrier H q.1 q.2,
-  sorry
+def idtoiso_apd011_hom_C {C : Type u} [category.{u} C] {std_str : std_structure_on C}
+  {a b : C} {α : std_str.P a} {β : std_str.P b} (p₁ : a = b) (p₂ : α =[p₁] β) :
+  let F := idtoiso (apd011 std_structure.mk p₁ p₂) in
+  F.hom.1 = (idtoiso p₁).hom :=
+begin 
+  hinduction p₁, hinduction p₂, 
+  let x := std_structure.mk a α,
+  change ((idtoiso (refl x)).hom : (x ⟶ x).carrier).1 = (idtoiso (refl a)).hom, 
+  rwr idtoiso_refl_eq
 end   
 
 /- Finally, we show the Structure Identity Principle. 
@@ -418,7 +439,12 @@ have H_hom : std_str.H x.str y.str (idtoiso (idtoiso⁻¹ᶠ (iso_std_C F))).hom
   begin rwr category.idtoiso_rinv (iso_std_C F), exact F.hom.2 end,
 have H_inv : std_str.H y.str x.str (idtoiso (idtoiso⁻¹ᶠ (iso_std_C F)))⁻¹ʰ, from 
   begin rwr category.idtoiso_rinv (iso_std_C F), exact F.inv.2 end,
-std_str_eta x y ⟨category.isotoid (iso_std_C F), iso_H_str_eq x.str y.str _ (H_hom, H_inv)⟩  
+begin 
+  hinduction x with a α, hinduction y with b β, 
+  fapply apd011 std_structure.mk,
+  { exact category.isotoid (iso_std_C F) },
+  { exact iso_H_str_eq α β _ (H_hom, H_inv) } 
+end  
 
 /- Now we can prove the equivalence and thus the Structure Identity Principle. -/
 @[hott, instance]
@@ -433,11 +459,18 @@ have idtoiso_eqv : ∀ x y : std_structure std_str, is_equiv (@idtoiso _ _ x y),
       id_H_x := std_str.id_H x.str in -/                                   
   have rinv : ∀ F : x ≅ y, idtoiso (std_isotoid x y F) = F, from 
     assume F,
-    have p : ap std_structure.carrier (std_isotoid x y F) = idtoiso⁻¹ᶠ (iso_std_C F), from 
-      std_str_eta_ap _,    
-    begin  
+    /- have p : ap std_structure.carrier (std_isotoid x y F) = idtoiso⁻¹ᶠ (iso_std_C F), from 
+      std_str_eta_ap _, -/   
+    begin 
+      hinduction x with a α, hinduction y with b β, 
+      let x := std_structure.mk a α, let y := std_structure.mk b β,
       apply hom_eq_to_iso_eq, apply hom_eq_C_std _ _, 
-      rwr idtoiso_str_hom_C, rwr p, rwr category.idtoiso_rinv 
+      have H_hom : ↥(std_str.H α β (idtoiso (idtoiso⁻¹ᶠ (iso_std_C F))).hom), from 
+        begin rwr category.idtoiso_rinv (iso_std_C F), exact F.hom.2 end,
+      have H_inv : ↥(std_str.H β α (idtoiso (idtoiso⁻¹ᶠ (iso_std_C F)))⁻¹ʰ), from 
+        begin rwr category.idtoiso_rinv (iso_std_C F), exact F.inv.2 end,
+      sorry
+      /- rwr idtoiso_str_hom_C, rwr p, rwr category.idtoiso_rinv -/
     end,
   have linv : ∀ q : x = y, std_isotoid x y (idtoiso q) = q, from 
 /-    have q₁ : iso_std_C_H x x (id_is_iso x) = ⟨id_is_iso ↑x, ⟨id_H_x, id_H_x⟩⟩, from 
@@ -471,10 +504,8 @@ have idtoiso_eqv : ∀ x y : std_structure std_str, is_equiv (@idtoiso _ _ x y),
       rwr q₄, 
       exact q₃ -/
     end,  
-  adjointify idtoiso (std_isotoid x y) rinv linv,  
+  adjointify idtoiso (std_isotoid x y) rinv linv,    
 category.mk idtoiso_eqv
-
-end
 
 end categories
 
