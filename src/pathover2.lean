@@ -79,12 +79,6 @@ begin hinduction p, hinduction q, hinduction r₁, hinduction r₂, refl end
 def tr_fn_tr_eval {A B : Type _} {C : A -> B -> Type _} {a₁ a₂ : A}
   (f : Π (b : B), C a₁ b) (p : a₁ = a₂) (b : B) :
   (p ▸ f) b = p ▸ (f b) :=
-begin hinduction p, refl end  
-
-@[hott]
-def ap_comp1_apd011 {A C : Type u} {B : A -> Type u} (f : Π a : A, B a -> C) (g : C -> A)
-  (H : ∀ (a : A) (b : B a), g (f a b) = a) {a₁ a₂ : A} {b₁ : B a₁} {b₂ : B a₂} 
-  (p : a₁ = a₂) (q : b₁ =[p] b₂) : ap g (apd011 f p q) = (H a₁ b₁) ⬝ p ⬝ (H a₂ b₂)⁻¹ :=
-begin hinduction p, hinduction q, hsimp, change ap g (refl (f a₁ b₁)) = idp, refl end  
+begin hinduction p, refl end   
 
 end hott
