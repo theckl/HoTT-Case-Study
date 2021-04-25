@@ -261,13 +261,43 @@ instance {C : Type u} [category.{v} C] (std_str : std_structure_on C) :
   has_coe (std_structure std_str) C :=
 ⟨λ x : std_structure std_str, x.carrier⟩  
 
+@[hott]
+def std_str_eta {C : Type u} [category.{v} C] {std_str : std_structure_on C}
+  (x : std_structure std_str) : x = std_structure.mk x.carrier x.str :=
+begin hinduction x, refl end  
+
 @[hott, instance]
 def std_str_is_set {C : Type u} [category.{v} C] (std_str : std_structure_on C) :
   ∀ a : C, is_set (std_str.P a) :=
 assume a, 
 have eq_eq : ∀ (α β : std_str.P a), is_prop (α = β), from 
   assume α β, is_trunc_equiv_closed -1 (std_str.std α β) (and_is_prop _ _),
-is_trunc_succ_intro eq_eq   
+is_trunc_succ_intro eq_eq 
+
+@[hott, instance]
+def std_str_po_is_prop {C : Type u} [category.{v} C] (std_str : std_structure_on C)
+  {a b : C} {α : std_str.P a} {β : std_str.P b} :
+  ∀ p : a = b, is_prop (α =[p] β) :=
+begin 
+  intro p, hinduction p, 
+  apply is_trunc_equiv_closed_rev -1 (pathover_idp _ α β), 
+  exact is_prop.mk (@is_set.elim _ _ α β)
+end   
+
+/- Equalities like these should be produced automatically. -/
+@[hott]
+def ap_apd011_str {C : Type u} [category.{v} C] {std_str : std_structure_on C} 
+  {a b : C} {α : std_str.P a} {β : std_str.P b} : ∀ (p : a = b) (q : α =[p] β), 
+                     ap std_structure.carrier (apd011 std_structure.mk p q) = p :=
+begin intros p q, hinduction p, hinduction q, refl end 
+
+@[hott]
+def apd011_ap_str {C : Type u} [category.{v} C] {std_str : std_structure_on C} 
+  {x y : std_structure std_str} : ∀ p : x = y, 
+  apd011 std_structure.mk (ap std_structure.carrier p)
+         (pathover_ap std_str.P std_structure.carrier (apd std_structure.str p)) = 
+  (std_str_eta x)⁻¹ ⬝ p ⬝ (std_str_eta y) :=
+begin intro p, hinduction p, hinduction x, refl end  
 
 /- As a first step, we need to construct the structure of a precategory on the standard 
    structures. -/
@@ -349,7 +379,83 @@ let x := std_structure.mk a α, y := std_structure.mk b β,
     f := λ p : x = y, @dpair (a = b) (λ p : a = b, α =[p] β) 
          (ap std_structure.carrier p : a = b) 
          (pathover_ap std_str.P std_structure.carrier (apd std_structure.str p)),
-    g := λ pq : Σ (p : a = b), α =[p] β, apd011 std_structure.mk pq.1 pq.2 in 
+    g := λ pq : Σ (p : a = b), α =[p] β, apd011 std_structure.mk pq.1 pq.2 in                         
+have rinv : ∀ pq : Σ (p : a = b), α =[p] β, f (g pq) = pq, from 
+  assume pq,
+  have pq_1 : (f (g pq)).1 = pq.1, from 
+    calc (f (g pq)).1 = ap std_structure.carrier (apd011 std_structure.mk pq.1 pq.2) : rfl
+         ... = pq.1 : ap_apd011_str pq.1 pq.2,
+  have pq_2 : (f (g pq)).2 =[pq_1; λ p : a = b, α =[p] β] pq.2, from po_proofs pq_1 _ _,
+  calc f (g pq) = ⟨(f (g pq)).1, (f (g pq)).2⟩ : sigma.eta (f (g pq))
+       ... = ⟨pq.1, pq.2⟩ : apd011 sigma.mk pq_1 pq_2
+       ... = pq : sigma.eta pq,
+have linv : ∀ p : x = y, g (f p) = p, from 
+  assume p,
+  have qx : std_str_eta x = idp, from rfl,
+  calc g (f p) = apd011 std_structure.mk (ap std_structure.carrier p) (f p).2 : rfl
+       ... = (std_str_eta x)⁻¹ ⬝ p ⬝ (std_str_eta y) : apd011_ap_str p
+       ... = p : by rwr qx; rwr idp_inv; rwr idp_con p; rwr con_idp p,
+equiv.mk f (adjointify f g rinv linv)    
+
+/- The third equivalence exchanges equalities and isomorphisms. -/
+@[hott]
+def strpair_id_to_iso {C : Type u} [category.{u} C] {std_str : std_structure_on C}
+  {a b : C} {α : std_str.P a} {β : std_str.P b} :
+  (Σ (p : a = b), α =[p] β) ≃ (Σ (f : a ≅ b), std_str.H α β f.hom and std_str.H β α f.inv) :=
+let x := std_structure.mk a α, y := std_structure.mk b β in  
+have po_hom : Π (p : a = b) (q : α =[p] β), std_str.H α β (idtoiso p).hom and 
+                                            std_str.H β α (idtoiso p).inv, from 
+  begin 
+    intros p q, 
+    hinduction p, 
+    have q' : α = β, from eq_of_pathover_idp q,
+    rwr idtoiso_refl_eq, rwr <- q',
+    exact (std_str.id_H α, std_str.id_H α) 
+  end, 
+have idtoiso_hom_po : ∀ p : a = b, 
+     (std_str.H α β (idtoiso p).hom and std_str.H β α (idtoiso p).inv) -> α =[p] β, from
+  begin intros p H, hinduction p, apply pathover_idp_of_eq, exact std_str.std α β H end,                                            
+have hom_po : Π (f : a ≅ b), (std_str.H α β f.hom and std_str.H β α f.inv) ->
+                 α =[category.isotoid f] β, from 
+  assume f H,
+  have r : f = idtoiso (idtoiso⁻¹ᶠ f), by rwr category.idtoiso_rinv f,
+  begin rwr r at H, exact idtoiso_hom_po (idtoiso⁻¹ᶠ f) H end,                                                             
+let F := λ (pq : Σ (p : a = b), α =[p] β), 
+         @dpair (a ≅ b) (λ f : a ≅ b, std_str.H α β f.hom and std_str.H β α f.inv) 
+                (idtoiso pq.1) (po_hom pq.1 pq.2),
+    G := λ iso_H : (Σ (f : a ≅ b), std_str.H α β f.hom and std_str.H β α f.inv), 
+         @dpair (a = b) (λ p : a = b, α =[p] β) 
+                (category.isotoid iso_H.1) (hom_po iso_H.1 iso_H.2) in  
+have rinv : ∀ (iso_H : Σ (f : a ≅ b), std_str.H α β f.hom and std_str.H β α f.inv), 
+            F (G iso_H) = iso_H, from 
+  begin
+    intro iso_H,
+    fapply sigma_eq,
+    { exact category.idtoiso_rinv iso_H.1 },
+    { apply pathover_of_eq_tr, exact is_prop.elim _ _ }
+  end,            
+have linv : ∀ (pq : Σ (p : a = b), α =[p] β), G (F pq) = pq, from 
+  begin
+    intro pq,
+    fapply sigma_eq,
+    { exact category.idtoiso_linv pq.1 },
+    { apply pathover_of_eq_tr, exact is_prop.elim _ _ }, 
+  end,                                                             
+equiv.mk F (adjointify F G rinv linv)  
+
+/- The fourth equivalence splits up equalities of standard structure isomorphisms. -/
+@[hott]
+def str_iso_eq_comp {C : Type u} [category.{u} C] {std_str : std_structure_on C}
+  {a b : C} {α : std_str.P a} {β : std_str.P b} :
+  (Σ (f : a ≅ b), std_str.H α β f.hom and std_str.H β α f.inv) ≃ 
+  (std_structure.mk a α ≅ std_structure.mk b β) :=
+let x := std_structure.mk a α, y := std_structure.mk b β in
+have F : (Σ (f : a ≅ b), std_str.H α β f.hom and std_str.H β α f.inv) -> (x ≅ y), from 
+  assume iso_H, 
+  have f : x ⟶ y, from elem_pred (iso_H.1.hom) (iso_H.2.1),
+  have g : y ⟶ x, from elem_pred (iso_H.1.inv) (iso_H.2.2),
+  have rinv : g ≫ f = 𝟙 y, from sorry,     
+  sorry,
 sorry    
 
 @[hott]
