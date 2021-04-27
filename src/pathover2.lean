@@ -16,6 +16,12 @@ def ap0111 {A : Type u} {B : Type v} {C D : A -> B -> Type _} {E : Type _}
 begin hinduction p₁, hinduction p₂, hinduction p₃, hinduction p₄, refl end  
 
 @[hott]
+def ap_4 {A B C D E : Type u} (f : A -> B -> C -> D -> E) {a₁ a₂ : A} {b₁ b₂ : B} {c₁ c₂ : C}
+  {d₁ d₂ : D} (pA : a₁ = a₂) (pB : b₁ = b₂) (pC : c₁ = c₂) (pD : d₁ = d₂) :
+  f a₁ b₁ c₁ d₁ = f a₂ b₂ c₂ d₂ :=
+begin hinduction pA, hinduction pB, hinduction pC, hinduction pD, refl end  
+
+@[hott]
 def ap_11 {A₁ A₂ A₃ A₄ A₅ A₆ A₇ A₈ A₉ B₀ B₁ C : Type u} 
           (f : A₁ -> A₂ -> A₃ -> A₄ -> A₅ -> A₆ -> A₇ -> A₈ -> A₉ -> B₀ -> B₁ -> C)
           {a₁ a₁' : A₁} {a₂ a₂' : A₂} {a₃ a₃' : A₃} {a₄ a₄' : A₄} {a₅ a₅' : A₅}
