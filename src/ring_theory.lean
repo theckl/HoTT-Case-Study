@@ -8,6 +8,238 @@ open hott.is_trunc hott.is_equiv hott.algebra hott.set categories
 
 namespace algebra
 
+/- `comm_ring R` is a standard structure on a set `R`:
+
+   Homomorphisms are maps between sets with a `comm_ring` structure preserving addition and 
+   multiplications; these laws are propositions, hence being a homomorphism is a proposition. 
+
+   Since it is possible that the same set can be provided with different `comm_ring` structures,
+   these cannot be instances. -/
+@[hott]
+structure is_ring_hom {R S : Set} (α : comm_ring R) (β : comm_ring S) (f : R -> S) := 
+  (map_one : f 1 = 1)
+  (map_mul : ∀ a b : R, f (a * b) = f a * f b)
+  (map_zero : f 0 = 0)
+  (map_add : ∀ a b : R, f (a + b) = f a + f b)
+
+@[hott]
+def is_ring_hom_eta {R S : Set} {α : comm_ring R} {β : comm_ring S} {f : R -> S}
+  (rh : is_ring_hom α β f) : 
+  rh = is_ring_hom.mk rh.map_one rh.map_mul rh.map_zero rh.map_add :=
+begin hinduction rh, refl end   
+
+@[hott, instance]
+def is_prop_is_ring_hom {R S : Set} (α : comm_ring R) (β : comm_ring S) (f : R ⟶ S) :
+  is_prop (is_ring_hom α β f) :=
+have H_one : ∀ p q : f 1 = 1, p = q, from assume p q, is_set.elim p q, 
+have H_mul : ∀ p q : ∀ a b : R, f (a * b) = f a * f b, p = q, from 
+  assume p q, is_prop.elim p q,
+have H_zero : ∀ p q : f 0 = 0, p = q, from assume p q, is_set.elim p q,
+have H_add : ∀ p q : ∀ a b : R, f (a + b) = f a + f b, p = q, from 
+  assume p q, is_prop.elim p q, 
+have H : ∀ rh₁ rh₂ : is_ring_hom α β f, rh₁ = rh₂, from
+  assume rh₁ rh₂, 
+  calc rh₁ = is_ring_hom.mk rh₁.map_one rh₁.map_mul rh₁.map_zero rh₁.map_add : is_ring_hom_eta rh₁
+       ... = is_ring_hom.mk rh₂.map_one rh₂.map_mul rh₂.map_zero rh₂.map_add : 
+             ap_4 is_ring_hom.mk (H_one rh₁.map_one rh₂.map_one) (H_mul rh₁.map_mul rh₂.map_mul) 
+                                 (H_zero rh₁.map_zero rh₂.map_zero) (H_add rh₁.map_add rh₂.map_add)
+       ... = rh₂ : (is_ring_hom_eta rh₂)⁻¹,
+is_prop.mk H 
+
+@[hott]
+def ring_hom_prop {R S : Set} (α : comm_ring R) (β : comm_ring S) (f : R ⟶ S) : Prop :=
+  trunctype.mk (is_ring_hom α β f) (is_prop_is_ring_hom α β f)
+
+/- The identity map on a set is a ring homomorphism with respect to any ring structure. -/
+@[hott]
+def id_ring_hom {R : Set} (α : comm_ring R) : ring_hom_prop α α (𝟙 R) :=
+  let id_R := id_map R in
+  have one_R : id_R 1 = 1, by refl,
+  have mul_R : ∀ r s : R, id_R (r * s) = (id_R r) * (id_R s), 
+    by intros r s; refl,
+  have zero_R : id_R 0 = 0, by refl,
+  have add_R : ∀ r s : R, id_R (r + s) = (id_R r) + (id_R s), 
+    by intros r s; refl,
+  is_ring_hom.mk one_R mul_R zero_R add_R 
+
+/- The composition of two maps that are ring homomorphisms is a ring homomorphism. -/
+def comp_ring_hom {R S T : Set} {α : comm_ring R} {β : comm_ring S} {γ : comm_ring T} {f : R ⟶ S}
+  {g : S ⟶ T} (H₁ : ring_hom_prop α β f) (H₂ : ring_hom_prop β γ g) : ring_hom_prop α γ (f ≫ g) :=
+let h := λ r : R, g (f r) in   
+have h_one : h 1 = 1, from
+    calc h 1 = g (f 1) : rfl
+         ... = g 1 : by rwr H₁.map_one
+         ... = 1 : by rwr H₂.map_one,
+  have h_mul : ∀ r₁ r₂ : R, h (r₁ * r₂) = h r₁ * h r₂, from assume r₁ r₂, 
+    calc h (r₁ * r₂) = g (f (r₁ * r₂)) : rfl
+         ... = g (f r₁ * f r₂) : by rwr H₁.map_mul
+         ... = g (f r₁) * g (f r₂) : by rwr H₂.map_mul
+         ... = h r₁ * h r₂ : rfl,
+  have h_zero : h 0 = 0, from 
+    calc h 0 = g (f 0) : rfl
+         ... = g 0 : by rwr H₁.map_zero
+         ... = 0 : by rwr H₂.map_zero,
+  have h_add : ∀ r₁ r₂ : R, h (r₁ + r₂) = h r₁ + h r₂, from assume r₁ r₂, 
+    calc h (r₁ + r₂) = g (f (r₁ + r₂)) : rfl
+         ... = g (f r₁ + f r₂) : by rwr H₁.map_add
+         ... = g (f r₁) + g (f r₂) : by rwr H₂.map_add
+         ... = h r₁ + h r₂ : rfl,
+is_ring_hom.mk h_one h_mul h_zero h_add 
+
+/- We now start the proof that `is_ring_hom` is a standard structure on sets. 
+
+   We first refactor the definition of a `comm_ring` structure, to simplify proofs
+   of equality, by splitting it up into two structures of operations and laws they
+   need to satisfy. 
+   
+   I don't see how the instance mechanism can be used here to write `add` as `+`
+   etc. The problem is that different additions will appear for the same set `X`;
+   a symbol like `+ₐ` would be better, but cannot be obtained from `has_add X`. -/
+@[hott]
+structure comm_ring_ops (X : Set.{u}) :=
+  (add : X -> X -> X)
+  (zero : X)
+  (neg : X -> X)
+  (mul : X -> X -> X)
+  (one : X)
+
+@[hott, hsimp, reducible]
+def comm_ring_to_ops {X : Set.{u}} (γ : comm_ring X) : comm_ring_ops X :=
+  comm_ring_ops.mk γ.add γ.zero γ.neg γ.mul γ.one
+
+@[hott]
+structure comm_ring_laws {X : Set.{u}} (α : comm_ring_ops X) :=
+  (add_assoc : Π (a b c : X), α.add (α.add a b) c = α.add a (α.add b c)) 
+  (zero_add : Π a : X, α.add α.zero a = a)
+  (add_zero : Π a : X, α.add a α.zero = a)
+  (neg_add : Π a : X, α.add (α.neg a) a = α.zero)
+  (add_comm : Π a b : X, α.add a b = α.add b a) 
+  (mul_assoc : Π (a b c : X), α.mul (α.mul a b) c = α.mul a (α.mul b c)) 
+  (one_mul : Π a : X, α.mul α.one a = a)
+  (mul_one : Π a : X, α.mul a α.one = a)
+  (mul_comm : Π a b : X, α.mul a b = α.mul b a)
+  (right_distrib : Π a b c : X, α.mul a (α.add b c) = 
+                                  α.add (α.mul a b) (α.mul a c)) 
+  (left_distrib : Π a b c : X, α.mul (α.add a b) c = 
+                                  α.add (α.mul a c) (α.mul b c))
+
+@[hott, instance]
+def prop_comm_ring_laws {X : Set.{u}} (α : comm_ring_ops X) : 
+  is_prop (comm_ring_laws α) :=
+have H : ∀ β₁ β₂ : comm_ring_laws α, β₁ = β₂, from 
+  begin 
+    intros β₁ β₂, hinduction β₁, hinduction β₂, 
+    apply ap_11 (@comm_ring_laws.mk X α); 
+    { { apply eq_of_homotopy3, intros a b c, exact @is_set.elim X _ _ _ _ _ } <|> 
+      { apply eq_of_homotopy2, intros a b, exact @is_set.elim X _ _ _ _ _ } <|>
+      { apply eq_of_homotopy, intros a, exact @is_set.elim X _ _ _ _ _ } },  
+  end, 
+is_prop.mk H  
+
+@[hott, hsimp]
+def comm_ring_to_laws {X : Set.{u}} (γ : comm_ring X) : 
+  comm_ring_laws (comm_ring_to_ops γ) :=
+let α := comm_ring_to_ops γ in
+have add_eq : α.add = γ.add, from rfl, 
+have zero_eq : α.zero = γ.zero, from rfl,
+have neg_eq : α.neg = γ.neg, from rfl,
+have mul_eq : α.mul = γ.mul, from rfl,
+have one_eq : α.one = γ.one, from rfl, 
+begin 
+  constructor, 
+  { rwr add_eq, exact γ.add_assoc },
+  { rwr zero_eq, rwr add_eq, exact γ.zero_add },
+  { rwr zero_eq, rwr add_eq, exact γ.add_zero },
+  { rwr zero_eq, rwr add_eq, rwr neg_eq, exact γ.add_left_inv },
+  { rwr add_eq, exact γ.add_comm },
+  { rwr mul_eq, exact γ.mul_assoc },
+  { rwr mul_eq, rwr one_eq, exact γ.one_mul },
+  { rwr mul_eq, rwr one_eq, exact γ.mul_one },
+  { rwr mul_eq, exact γ.mul_comm },
+  { rwr mul_eq, rwr add_eq, exact γ.left_distrib },
+  { rwr mul_eq, rwr add_eq, exact γ.right_distrib }
+end
+
+@[hott, hsimp]
+def comm_ring_mk {X : Set.{u}} (α : comm_ring_ops X) (β : comm_ring_laws α) :
+  comm_ring X :=
+comm_ring.mk X.struct α.add β.add_assoc α.zero β.zero_add β.add_zero α.neg β.neg_add
+               β.add_comm α.mul β.mul_assoc α.one β.one_mul β.mul_one 
+               β.right_distrib β.left_distrib β.mul_comm
+
+@[hott]
+def comm_ring_mk_eta {X : Set.{u}} : Π (γ : comm_ring X), 
+  γ = comm_ring_mk (comm_ring_to_ops γ) (comm_ring_to_laws γ) := 
+assume γ, 
+have is_prop_struct : is_prop (is_set X), from is_prop_is_trunc 0 X,  
+have p : X.struct = γ.is_set_carrier, from is_prop.elim _ _,    
+begin
+  hinduction γ,
+  hsimp, rwr p 
+end                     
+
+@[hott]
+def comm_ring_ops_eq_to_eq {X : Set.{u}} (γ₁ γ₂ : comm_ring X) :
+  comm_ring_to_ops γ₁ = comm_ring_to_ops γ₂ -> γ₁ = γ₂ :=
+let α₁ := comm_ring_to_ops γ₁, α₂ := comm_ring_to_ops γ₂,
+    β₁ := comm_ring_to_laws γ₁, β₂ := comm_ring_to_laws γ₂ in 
+assume p,
+have q : β₁ =[p] β₂, from 
+  begin apply pathover_of_tr_eq, exact is_prop.elim _ _ end,     
+calc γ₁ = comm_ring_mk (comm_ring_to_ops γ₁) (comm_ring_to_laws γ₁) : 
+          comm_ring_mk_eta γ₁
+    ... = comm_ring_mk (comm_ring_to_ops γ₂) (comm_ring_to_laws γ₂) : 
+          apd011 comm_ring_mk p q
+    ... = γ₂ : by rwr <- comm_ring_mk_eta γ₂
+
+@[hott]
+def comm_ring_hom.map_neg {X Y : Set.{u}} {γ₁ : comm_ring X} {γ₂ : comm_ring Y} 
+  {f : X -> Y} (hom_str : is_ring_hom γ₁ γ₂ f) : ∀ a : X, f (-a) = -(f a) :=
+assume a,  
+calc f (-a) = 0 + f (-a) : (@comm_ring.zero_add _ γ₂ (f (-a)))⁻¹
+     ... = (-(f a) + f a) + f (-a) : ap (λ b : Y, @comm_ring.add _ γ₂ b (f (-a))) 
+                                        (@comm_ring.add_left_inv _ γ₂ (f a))⁻¹
+     ... = -(f a) + (f a + f (-a)) : @comm_ring.add_assoc _ γ₂ _ _ _
+     ... = -(f a) + (f (-a) + f a) : ap (λ b : Y, @comm_ring.add _ γ₂ (-(f a)) b) 
+                                        (@comm_ring.add_comm _ γ₂ _ _)
+     ... = -(f a) + f (-a + a) : by rwr hom_str.map_add 
+     ... = -(f a) + f 0 : ap (λ b : X, @comm_ring.add _ γ₂ (-(f a)) (f b))
+                           (@comm_ring.add_left_inv _ γ₁ a) 
+     ... = -(f a) + 0 : by rwr hom_str.map_zero                                                                                              
+     ... = -(f a) : @comm_ring.add_zero _ γ₂ (-(f a))   
+
+@[hott]
+def ring_hom_is_std_str  {R : Set} (α β : comm_ring R) : 
+  (ring_hom_prop α β (𝟙 R) × ring_hom_prop β α (𝟙 R)) ≃ α = β :=
+begin
+  fapply equiv.mk, 
+  /- `F : ↥(ring_hom_prop α β (𝟙 R)) × ↥(ring_hom_prop β α (𝟙 R)) → α = β` -/
+  { intro H,
+    let α₁ := comm_ring_to_ops α, let β₁ := comm_ring_to_ops β,
+    have p_add : α₁.add = β₁.add, from 
+      have h : ∀ a b : R, @comm_ring.add _ α a b = @comm_ring.add _ β a b, from H.1.map_add,
+      eq_of_homotopy2 h,
+    have p_zero : α₁.zero = β₁.zero, from H.1.map_zero,
+    have p_neg : α₁.neg = β₁.neg, from 
+      have h : ∀ a : R, @comm_ring.neg _ α a = @comm_ring.neg _ β a, from 
+        comm_ring_hom.map_neg H.1,
+      eq_of_homotopy h,  
+    have p_mul : α₁.mul = β₁.mul, from 
+      have h : ∀ a b : R, @comm_ring.mul _ α a b = @comm_ring.mul _ β a b, from H.1.map_mul,
+      eq_of_homotopy2 h,
+    have p_one : α₁.one = β₁.one, from H.1.map_one,
+    have ops_eq : α₁ = β₁, from 
+      calc α₁ = comm_ring_ops.mk α₁.add α₁.zero α₁.neg α₁.mul α₁.one : rfl
+          ... = comm_ring_ops.mk β₁.add β₁.zero β₁.neg β₁.mul β₁.one : 
+                by rwr p_add; rwr p_zero; rwr p_neg; rwr p_mul; rwr p_one 
+          ... = β₁ : rfl,    
+    exact comm_ring_ops_eq_to_eq α β ops_eq }, 
+  { fapply adjointify, 
+    { sorry },
+    { sorry },
+    { sorry } }
+end    
+
 /- Bundled structure of commutative rings -/
 @[hott] 
 structure CommRing :=
@@ -251,161 +483,6 @@ def CommRing_isotoSetid (R S : CommRing) : R ≅ S -> R.carrier = S.carrier :=
 def cast_iso_eq {R S : CommRing} (iso : R ≅ S) :
   ∀ r : R, cast (CommRing_isotoTypeid R S iso) r = iso.hom r :=
 by intro r; rwr cast_ua   
-
-/- We check how tedious the proof obligations to use the structure identity 
-   principle on the commutative ring structures over sets are. 
-   
-   We first refactor the definition of a `comm_ring` structure, to simplify proofs
-   of equality, by splitting it up into two structures of operations and laws they
-   need to satisfy. 
-   
-   I don't see how the instance mechanism can be used here to write `add` as `+`
-   etc. The problem is that different additions will appear for the same set `X`;
-   a symbol like `+ₐ` would be better, but cannot be obtained from `has_add X`. -/
-@[hott]
-structure comm_ring_ops (X : Set.{u}) :=
-  (add : X -> X -> X)
-  (zero : X)
-  (neg : X -> X)
-  (mul : X -> X -> X)
-  (one : X)
-
-@[hott, hsimp, reducible]
-def comm_ring_to_ops {X : Set.{u}} (γ : comm_ring X) : comm_ring_ops X :=
-  comm_ring_ops.mk γ.add γ.zero γ.neg γ.mul γ.one
-
-@[hott]
-structure comm_ring_laws {X : Set.{u}} (α : comm_ring_ops X) :=
-  (add_assoc : Π (a b c : X), α.add (α.add a b) c = α.add a (α.add b c)) 
-  (zero_add : Π a : X, α.add α.zero a = a)
-  (add_zero : Π a : X, α.add a α.zero = a)
-  (neg_add : Π a : X, α.add (α.neg a) a = α.zero)
-  (add_comm : Π a b : X, α.add a b = α.add b a) 
-  (mul_assoc : Π (a b c : X), α.mul (α.mul a b) c = α.mul a (α.mul b c)) 
-  (one_mul : Π a : X, α.mul α.one a = a)
-  (mul_one : Π a : X, α.mul a α.one = a)
-  (mul_comm : Π a b : X, α.mul a b = α.mul b a)
-  (right_distrib : Π a b c : X, α.mul a (α.add b c) = 
-                                  α.add (α.mul a b) (α.mul a c)) 
-  (left_distrib : Π a b c : X, α.mul (α.add a b) c = 
-                                  α.add (α.mul a c) (α.mul b c))
-
-@[hott, instance]
-def prop_comm_ring_laws {X : Set.{u}} (α : comm_ring_ops X) : 
-  is_prop (comm_ring_laws α) :=
-have H : ∀ β₁ β₂ : comm_ring_laws α, β₁ = β₂, from 
-  begin 
-    intros β₁ β₂, hinduction β₁, hinduction β₂, 
-    apply ap_11 (@comm_ring_laws.mk X α); 
-    { { apply eq_of_homotopy3, intros a b c, exact @is_set.elim X _ _ _ _ _ } <|> 
-      { apply eq_of_homotopy2, intros a b, exact @is_set.elim X _ _ _ _ _ } <|>
-      { apply eq_of_homotopy, intros a, exact @is_set.elim X _ _ _ _ _ } },  
-  end, 
-is_prop.mk H  
-
-@[hott, hsimp]
-def comm_ring_to_laws {X : Set.{u}} (γ : comm_ring X) : 
-  comm_ring_laws (comm_ring_to_ops γ) :=
-let α := comm_ring_to_ops γ in
-have add_eq : α.add = γ.add, from rfl, 
-have zero_eq : α.zero = γ.zero, from rfl,
-have neg_eq : α.neg = γ.neg, from rfl,
-have mul_eq : α.mul = γ.mul, from rfl,
-have one_eq : α.one = γ.one, from rfl, 
-begin 
-  constructor, 
-  { rwr add_eq, exact γ.add_assoc },
-  { rwr zero_eq, rwr add_eq, exact γ.zero_add },
-  { rwr zero_eq, rwr add_eq, exact γ.add_zero },
-  { rwr zero_eq, rwr add_eq, rwr neg_eq, exact γ.add_left_inv },
-  { rwr add_eq, exact γ.add_comm },
-  { rwr mul_eq, exact γ.mul_assoc },
-  { rwr mul_eq, rwr one_eq, exact γ.one_mul },
-  { rwr mul_eq, rwr one_eq, exact γ.mul_one },
-  { rwr mul_eq, exact γ.mul_comm },
-  { rwr mul_eq, rwr add_eq, exact γ.left_distrib },
-  { rwr mul_eq, rwr add_eq, exact γ.right_distrib }
-end
-
-@[hott, hsimp]
-def comm_ring_mk {X : Set.{u}} (α : comm_ring_ops X) (β : comm_ring_laws α) :
-  comm_ring X :=
-comm_ring.mk X.struct α.add β.add_assoc α.zero β.zero_add β.add_zero α.neg β.neg_add
-               β.add_comm α.mul β.mul_assoc α.one β.one_mul β.mul_one 
-               β.right_distrib β.left_distrib β.mul_comm
-
-@[hott]
-def comm_ring_mk_eta {X : Set.{u}} : Π (γ : comm_ring X), 
-  γ = comm_ring_mk (comm_ring_to_ops γ) (comm_ring_to_laws γ) := 
-assume γ, 
-have is_prop_struct : is_prop (is_set X), from is_prop_is_trunc 0 X,  
-have p : X.struct = γ.is_set_carrier, from is_prop.elim _ _,    
-begin
-  hinduction γ,
-  hsimp, rwr p 
-end                     
-
-@[hott]
-def comm_ring_ops_eq_to_eq {X : Set.{u}} (γ₁ γ₂ : comm_ring X) :
-  comm_ring_to_ops γ₁ = comm_ring_to_ops γ₂ -> γ₁ = γ₂ :=
-let α₁ := comm_ring_to_ops γ₁, α₂ := comm_ring_to_ops γ₂,
-    β₁ := comm_ring_to_laws γ₁, β₂ := comm_ring_to_laws γ₂ in 
-assume p,
-have q : β₁ =[p] β₂, from 
-  begin apply pathover_of_tr_eq, exact is_prop.elim _ _ end,     
-calc γ₁ = comm_ring_mk (comm_ring_to_ops γ₁) (comm_ring_to_laws γ₁) : 
-          comm_ring_mk_eta γ₁
-    ... = comm_ring_mk (comm_ring_to_ops γ₂) (comm_ring_to_laws γ₂) : 
-          apd011 comm_ring_mk p q
-    ... = γ₂ : by rwr <- comm_ring_mk_eta γ₂
-
-@[hott]
-structure comm_ring_hom {X Y : Set.{u}} (γ₁ : comm_ring X) (γ₂ : comm_ring Y) 
-  (f : X -> Y) :=
-(map_one : f 1 = 1)
-(map_mul : ∀ a b : X, f (a * b) = f a * f b)
-(map_zero : f 0 = 0)
-(map_add : ∀ a b : X, f (a + b) = f a + f b)  
-
-@[hott]
-def comm_ring_hom.map_neg {X Y : Set.{u}} {γ₁ : comm_ring X} {γ₂ : comm_ring Y} 
-  {f : X -> Y} (hom_str : comm_ring_hom γ₁ γ₂ f) : ∀ a : X, f (-a) = -(f a) :=
-assume a,  
-calc f (-a) = 0 + f (-a) : (@comm_ring.zero_add _ γ₂ (f (-a)))⁻¹
-     ... = (-(f a) + f a) + f (-a) : ap (λ b : Y, @comm_ring.add _ γ₂ b (f (-a))) 
-                                        (@comm_ring.add_left_inv _ γ₂ (f a))⁻¹
-     ... = -(f a) + (f a + f (-a)) : @comm_ring.add_assoc _ γ₂ _ _ _
-     ... = -(f a) + (f (-a) + f a) : ap (λ b : Y, @comm_ring.add _ γ₂ (-(f a)) b) 
-                                        (@comm_ring.add_comm _ γ₂ _ _)
-     ... = -(f a) + f (-a + a) : by rwr hom_str.map_add 
-     ... = -(f a) + f 0 : ap (λ b : X, @comm_ring.add _ γ₂ (-(f a)) (f b))
-                           (@comm_ring.add_left_inv _ γ₁ a) 
-     ... = -(f a) + 0 : by rwr hom_str.map_zero                                                                                              
-     ... = -(f a) : @comm_ring.add_zero _ γ₂ (-(f a))   
-
-@[hott]
-def comm_ring_std_str {X : Set.{u}} (γ₁ γ₂ : comm_ring X) :
-  comm_ring_hom γ₁ γ₂ (id_map X) -> comm_ring_hom γ₂ γ₁ (id_map X) -> γ₁ = γ₂ :=
-assume hom_12 hom_21,
-let α₁ := comm_ring_to_ops γ₁, α₂ := comm_ring_to_ops γ₂ in 
-have p_add : γ₁.add = γ₂.add, from 
-  have h : ∀ a b : X, @comm_ring.add _ γ₁ a b = @comm_ring.add _ γ₂ a b, from hom_12.map_add,
-  eq_of_homotopy2 h,
-have p_zero : γ₁.zero = γ₂.zero, from hom_12.map_zero,
-have p_neg : γ₁.neg = γ₂.neg, from 
-  have h : ∀ a : X, @comm_ring.neg _ γ₁ a = @comm_ring.neg _ γ₂ a, from 
-    comm_ring_hom.map_neg hom_12,
-  eq_of_homotopy h,  
-have p_mul : γ₁.mul = γ₂.mul, from 
-  have h : ∀ a b : X, @comm_ring.mul _ γ₁ a b = @comm_ring.mul _ γ₂ a b, from hom_12.map_mul,
-  eq_of_homotopy2 h,
-have p_one : γ₁.one = γ₂.one, from hom_12.map_one,
-have ops_eq : α₁ = α₂, from 
-  calc α₁ = comm_ring_ops.mk γ₁.add γ₁.zero γ₁.neg γ₁.mul γ₁.one : rfl
-      ... = comm_ring_ops.mk γ₂.add γ₂.zero γ₂.neg γ₂.mul γ₂.one : 
-            by rwr p_add; rwr p_zero; rwr p_neg; rwr p_mul; rwr p_one 
-      ... = α₂ : rfl,    
-comm_ring_ops_eq_to_eq γ₁ γ₂ ops_eq  
 
 end algebra
 
