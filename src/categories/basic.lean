@@ -249,7 +249,7 @@ structure std_structure_on (C : Type u) [category.{v} C] :=
   (id_H : ∀ {x : C} (α : P x), H α α (𝟙 x))
   (comp_H : ∀ {x y z : C} (α : P x) (β : P y) (γ : P z) (f : x ⟶ y) (g : y ⟶ z), 
               H α β f -> H β γ g -> H α γ (f ≫ g))
-  (std : ∀ {x : C} (α β : P x) , (H α β (𝟙 x) × H β α (𝟙 x)) ≃ α = β)           
+  (std : ∀ {x : C} (α β : P x), (H α β (𝟙 x) × H β α (𝟙 x)) ≃ α = β)           
 
 @[hott]
 structure std_structure {C : Type u} [category.{v} C] (std_str : std_structure_on C) :=
