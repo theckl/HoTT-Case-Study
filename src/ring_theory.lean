@@ -186,14 +186,17 @@ let α₁ := comm_ring_to_ops γ₁, α₂ := comm_ring_to_ops γ₂,
 assume p,
 have q : β₁ =[p] β₂, from 
   begin apply pathover_of_tr_eq, exact is_prop.elim _ _ end,     
-calc γ₁ = comm_ring_mk (comm_ring_to_ops γ₁) (comm_ring_to_laws γ₁) : 
-          comm_ring_mk_eta γ₁
-    ... = comm_ring_mk (comm_ring_to_ops γ₂) (comm_ring_to_laws γ₂) : 
-          apd011 comm_ring_mk p q
+calc γ₁ = comm_ring_mk α₁ β₁ : comm_ring_mk_eta γ₁
+    ... = comm_ring_mk α₂ β₂ : apd011 comm_ring_mk p q
     ... = γ₂ : by rwr <- comm_ring_mk_eta γ₂
 
 @[hott]
-def comm_ring_hom.map_neg {X Y : Set.{u}} {γ₁ : comm_ring X} {γ₂ : comm_ring Y} 
+def comm_ring_ops_refl_to_refl {X : Set.{u}} (γ : comm_ring X) : 
+  comm_ring_ops_eq_to_eq γ γ (refl (comm_ring_to_ops γ)) = refl γ :=
+sorry    
+
+@[hott]
+def comm_ring_hom.map_neg {X Y : Set.{u}} {γ₁ : comm_ring.{u} X} {γ₂ : comm_ring.{u} Y} 
   {f : X -> Y} (hom_str : is_ring_hom γ₁ γ₂ f) : ∀ a : X, f (-a) = -(f a) :=
 assume a,  
 calc f (-a) = 0 + f (-a) : (@comm_ring.zero_add _ γ₂ (f (-a)))⁻¹
@@ -209,6 +212,11 @@ calc f (-a) = 0 + f (-a) : (@comm_ring.zero_add _ γ₂ (f (-a)))⁻¹
      ... = -(f a) : @comm_ring.add_zero _ γ₂ (-(f a))   
 
 @[hott]
+def comm_ring_hom.id_neg_refl {X : Set.{u}} {γ : comm_ring X} :
+  comm_ring_hom.map_neg (id_ring_hom γ) = ∀ a : X, @idp _ (γ.add a) :=
+sorry  
+
+@[hott]
 def ring_hom_is_std_str  {R : Set} (α β : comm_ring R) : 
   (ring_hom_prop α β (𝟙 R) × ring_hom_prop β α (𝟙 R)) ≃ α = β :=
 begin
@@ -216,28 +224,42 @@ begin
   /- `F : ↥(ring_hom_prop α β (𝟙 R)) × ↥(ring_hom_prop β α (𝟙 R)) → α = β` -/
   { intro H,
     let α₁ := comm_ring_to_ops α, let β₁ := comm_ring_to_ops β,
-    have p_add : α₁.add = β₁.add, from 
-      have h : ∀ a b : R, @comm_ring.add _ α a b = @comm_ring.add _ β a b, from H.1.map_add,
-      eq_of_homotopy2 h,
-    have p_zero : α₁.zero = β₁.zero, from H.1.map_zero,
-    have p_neg : α₁.neg = β₁.neg, from 
-      have h : ∀ a : R, @comm_ring.neg _ α a = @comm_ring.neg _ β a, from 
-        comm_ring_hom.map_neg H.1,
-      eq_of_homotopy h,  
-    have p_mul : α₁.mul = β₁.mul, from 
-      have h : ∀ a b : R, @comm_ring.mul _ α a b = @comm_ring.mul _ β a b, from H.1.map_mul,
-      eq_of_homotopy2 h,
-    have p_one : α₁.one = β₁.one, from H.1.map_one,
-    have ops_eq : α₁ = β₁, from 
-      calc α₁ = comm_ring_ops.mk α₁.add α₁.zero α₁.neg α₁.mul α₁.one : rfl
-          ... = comm_ring_ops.mk β₁.add β₁.zero β₁.neg β₁.mul β₁.one : 
-                by rwr p_add; rwr p_zero; rwr p_neg; rwr p_mul; rwr p_one 
-          ... = β₁ : rfl,    
-    exact comm_ring_ops_eq_to_eq α β ops_eq }, 
-  { fapply adjointify, 
-    { sorry },
-    { sorry },
-    { sorry } }
+    fapply comm_ring_ops_eq_to_eq α β,
+    change comm_ring_ops.mk α₁.add α₁.zero α₁.neg α₁.mul α₁.one = 
+           comm_ring_ops.mk β₁.add β₁.zero β₁.neg β₁.mul β₁.one,
+    fapply ap_5,       
+    { exact eq_of_homotopy2 H.1.map_add },
+    { exact H.1.map_zero },
+    { exact eq_of_homotopy (comm_ring_hom.map_neg H.1) },
+    { exact eq_of_homotopy2 H.1.map_mul },
+    { exact H.1.map_one } },
+  { fapply adjointify,
+    /- `G : α = β -> ↥(ring_hom_prop α β (𝟙 R)) × ↥(ring_hom_prop β α (𝟙 R))` -/ 
+    { intro p, rwr p, exact (id_ring_hom β, id_ring_hom β) },
+    /- r_inv : `∀ p : α = β, F (G p) = p` -/
+    { intro p, hinduction p, rwr idp_inv, rwr idp_tr, hsimp, 
+      let α₁ := comm_ring_to_ops α,
+      have p₁ : eq_of_homotopy2 (id_ring_hom α).map_add = refl α₁.add, from 
+        begin 
+          change eq_of_homotopy2 (λ r s : R, refl (α₁.add r s)) = refl α₁.add, 
+          exact eq_of_homotopy2_refl α₁.add 
+        end,
+      have p₂ : (id_ring_hom α).map_zero = refl α₁.zero, from rfl,
+      have p₃ : eq_of_homotopy (comm_ring_hom.map_neg (id_ring_hom α)) = refl α₁.neg, from 
+        begin 
+          change eq_of_homotopy (λ r : R, refl (α₁.neg r)) = refl α₁.neg, 
+          exact eq_of_homotopy_refl α₁.neg 
+        end,
+      have p₄ : eq_of_homotopy2 (id_ring_hom α).map_mul = refl α₁.mul, from 
+        begin 
+          change eq_of_homotopy2 (λ r s : R, refl (α₁.mul r s)) = refl α₁.mul, 
+          exact eq_of_homotopy2_refl α₁.mul 
+        end,
+      have p₅ : (id_ring_hom α).map_one = refl α₁.one, from rfl,
+      rwr p₁, rwr p₂, rwr p₃, rwr p₄, rwr p₅, hsimp,
+      rwr comm_ring_ops_refl_to_refl α },
+    /- l_inv : `∀ H : ↥(ring_hom_prop α β (𝟙 R)) × ↥(ring_hom_prop β α (𝟙 R)), G (F H) = H` -/
+    { intro H, exact is_prop.elim _ _ } }
 end    
 
 /- Bundled structure of commutative rings -/
