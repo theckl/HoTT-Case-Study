@@ -21,6 +21,12 @@ def ap_4 {A B C D E : Type u} (f : A -> B -> C -> D -> E) {a₁ a₂ : A} {b₁ 
   f a₁ b₁ c₁ d₁ = f a₂ b₂ c₂ d₂ :=
 begin hinduction pA, hinduction pB, hinduction pC, hinduction pD, refl end  
 
+@[hott, hsimp]
+def ap_5 {A B C D E F : Type u} (f : A -> B -> C -> D -> E -> F) {a₁ a₂ : A} {b₁ b₂ : B} {c₁ c₂ : C}
+  {d₁ d₂ : D} {e₁ e₂ : E} (pA : a₁ = a₂) (pB : b₁ = b₂) (pC : c₁ = c₂) (pD : d₁ = d₂) (pE : e₁ = e₂) :
+  f a₁ b₁ c₁ d₁ e₁ = f a₂ b₂ c₂ d₂ e₂ :=
+begin hinduction pA, hinduction pB, hinduction pC, hinduction pD, hinduction pE, refl end
+
 @[hott]
 def ap_11 {A₁ A₂ A₃ A₄ A₅ A₆ A₇ A₈ A₉ B₀ B₁ C : Type u} 
           (f : A₁ -> A₂ -> A₃ -> A₄ -> A₅ -> A₆ -> A₇ -> A₈ -> A₉ -> B₀ -> B₁ -> C)
@@ -85,6 +91,16 @@ begin hinduction p, hinduction q, hinduction r₁, hinduction r₂, refl end
 def tr_fn_tr_eval {A B : Type _} {C : A -> B -> Type _} {a₁ a₂ : A}
   (f : Π (b : B), C a₁ b) (p : a₁ = a₂) (b : B) :
   (p ▸ f) b = p ▸ (f b) :=
-begin hinduction p, refl end   
+begin hinduction p, refl end 
+
+@[hott]
+def eq_of_homotopy_refl {A : Type _} {B : A -> Type _} (f : Π a , B a) : 
+  eq_of_homotopy (λ a, @idp _ (f a)) = refl f := 
+sorry  
+
+@[hott]
+def eq_of_homotopy2_refl {A : Type _} {B : A -> Type _} {C : Π a : A, B a -> Type _} 
+  (f : Π a b, C a b) : eq_of_homotopy2 (λ a b, refl (f a b)) = refl f := 
+sorry  
 
 end hott
