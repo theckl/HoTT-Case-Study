@@ -91,16 +91,6 @@ begin hinduction p, hinduction q, hinduction r₁, hinduction r₂, refl end
 def tr_fn_tr_eval {A B : Type _} {C : A -> B -> Type _} {a₁ a₂ : A}
   (f : Π (b : B), C a₁ b) (p : a₁ = a₂) (b : B) :
   (p ▸ f) b = p ▸ (f b) :=
-begin hinduction p, refl end 
-
-@[hott]
-def eq_of_homotopy_refl {A : Type _} {B : A -> Type _} (f : Π a , B a) : 
-  eq_of_homotopy (λ a, @idp _ (f a)) = refl f := 
-sorry  
-
-@[hott]
-def eq_of_homotopy2_refl {A : Type _} {B : A -> Type _} {C : Π a : A, B a -> Type _} 
-  (f : Π a b, C a b) : eq_of_homotopy2 (λ a b, refl (f a b)) = refl f := 
-sorry  
+begin hinduction p, refl end   
 
 end hott
