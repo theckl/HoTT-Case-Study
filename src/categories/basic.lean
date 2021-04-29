@@ -241,9 +241,11 @@ infixr ` ⟹ `:10 := nat_trans _ _
 end
 
 /- We now define structures on categories and prove the Structure Identity Principle, following
-   the [HoTT-Book], Section 9.8. -/
+   the [HoTT-Book], Section 9.8. 
+   
+   Note that the category does lie in a higher universe than its objects. -/
 @[hott]
-structure std_structure_on (C : Type u) [category.{v} C] :=
+structure std_structure_on (C : Type (u+1)) [category.{v} C] :=
   (P : C -> Type u)
   (H : Π {x y : C} (α : P x) (β : P y) (f : x ⟶ y), trunctype.{u} -1)
   (id_H : ∀ {x : C} (α : P x), H α α (𝟙 x))
@@ -252,22 +254,22 @@ structure std_structure_on (C : Type u) [category.{v} C] :=
   (std : ∀ {x : C} (α β : P x), (H α β (𝟙 x) × H β α (𝟙 x)) ≃ α = β)           
 
 @[hott]
-structure std_structure {C : Type u} [category.{v} C] (std_str : std_structure_on C) :=
+structure std_structure {C : Type (u+1)} [category.{v} C] (std_str : std_structure_on C) :=
   (carrier : C)
   (str : std_str.P carrier)
 
 @[hott]
-instance {C : Type u} [category.{v} C] (std_str : std_structure_on C) : 
+instance {C : Type (u+1)} [category.{v} C] (std_str : std_structure_on C) : 
   has_coe (std_structure std_str) C :=
 ⟨λ x : std_structure std_str, x.carrier⟩  
 
 @[hott]
-def std_str_eta {C : Type u} [category.{v} C] {std_str : std_structure_on C}
+def std_str_eta {C : Type (u+1)} [category.{v} C] {std_str : std_structure_on C}
   (x : std_structure std_str) : x = std_structure.mk x.carrier x.str :=
 begin hinduction x, refl end  
 
 @[hott, instance]
-def std_str_is_set {C : Type u} [category.{v} C] (std_str : std_structure_on C) :
+def std_str_is_set {C : Type (u+1)} [category.{v} C] (std_str : std_structure_on C) :
   ∀ a : C, is_set (std_str.P a) :=
 assume a, 
 have eq_eq : ∀ (α β : std_str.P a), is_prop (α = β), from 
@@ -275,7 +277,7 @@ have eq_eq : ∀ (α β : std_str.P a), is_prop (α = β), from
 is_trunc_succ_intro eq_eq 
 
 @[hott, instance]
-def std_str_po_is_prop {C : Type u} [category.{v} C] (std_str : std_structure_on C)
+def std_str_po_is_prop {C : Type (u+1)} [category.{v} C] (std_str : std_structure_on C)
   {a b : C} {α : std_str.P a} {β : std_str.P b} :
   ∀ p : a = b, is_prop (α =[p] β) :=
 begin 
@@ -286,13 +288,13 @@ end
 
 /- Equalities like these should be produced automatically. -/
 @[hott]
-def ap_apd011_str {C : Type u} [category.{v} C] {std_str : std_structure_on C} 
+def ap_apd011_str {C : Type (u+1)} [category.{v} C] {std_str : std_structure_on C} 
   {a b : C} {α : std_str.P a} {β : std_str.P b} : ∀ (p : a = b) (q : α =[p] β), 
                      ap std_structure.carrier (apd011 std_structure.mk p q) = p :=
 begin intros p q, hinduction p, hinduction q, refl end 
 
 @[hott]
-def apd011_ap_str {C : Type u} [category.{v} C] {std_str : std_structure_on C} 
+def apd011_ap_str {C : Type (u+1)} [category.{v} C] {std_str : std_structure_on C} 
   {x y : std_structure std_str} : ∀ p : x = y, 
   apd011 std_structure.mk (ap std_structure.carrier p)
          (pathover_ap std_str.P std_structure.carrier (apd std_structure.str p)) = 
@@ -302,24 +304,24 @@ begin intro p, hinduction p, hinduction x, refl end
 /- As a first step, we need to construct the structure of a precategory on the standard 
    structures. -/
 @[hott, instance]
-def std_str_has_hom {C : Type u} [category.{u} C] (std_str : std_structure_on C) :
+def std_str_has_hom {C : Type (u+1)} [category.{u} C] (std_str : std_structure_on C) :
   has_hom (std_structure std_str) := 
 has_hom.mk (λ (x y : std_structure std_str), 
             ↥{ f ∈ (x.carrier ⟶ y) | std_str.H (x.str) (y.str) f })
 
 @[hott]
-instance hom_std_C {C : Type u} [category.{u} C] {std_str : std_structure_on C}
+instance hom_std_C {C : Type (u+1)} [category.{u} C] {std_str : std_structure_on C}
   {x y : std_structure std_str} : has_coe ↥(x ⟶ y) ↥(x.carrier ⟶ y.carrier) :=
 ⟨λ f, { f ∈ (x.carrier ⟶ y) | std_str.H (x.str) (y.str) f }.map f⟩  
 
 @[hott]
-def hom_H {C : Type u} [category.{u} C] {std_str : std_structure_on C} 
+def hom_H {C : Type (u+1)} [category.{u} C] {std_str : std_structure_on C} 
   {x y : std_structure std_str} :
   Π f : x ⟶ y, std_str.H x.str y.str (↑f) :=
 assume f, f.2              
 
 @[hott]
-def hom_eq_C_std {C : Type u} [category.{u} C] {std_str : std_structure_on C} 
+def hom_eq_C_std {C : Type (u+1)} [category.{u} C] {std_str : std_structure_on C} 
   {x y : std_structure std_str} (f g : x ⟶ y) : 
   (f.1 = (g.1 : x.carrier ⟶ y.carrier)) -> (f = g) :=
 assume (hom_eq_C : f.1 = g.1), 
@@ -330,25 +332,25 @@ calc f = ⟨f.1, f.2⟩ : (sigma.eta f)⁻¹
    ... = g : sigma.eta g 
 
 @[hott, instance]
-def std_str_cat_struct {C : Type u} [category.{u} C] (std_str : std_structure_on C) :
+def std_str_cat_struct {C : Type (u+1)} [category.{u} C] (std_str : std_structure_on C) :
   category_struct (std_structure std_str) :=
 category_struct.mk (λ x : std_structure std_str, elem_pred (𝟙 ↑x) (std_str.id_H x.str)) 
   (λ (x y z : std_structure std_str) (f : x ⟶ y) (g : y ⟶ z), 
    elem_pred (↑f ≫ ↑g) (std_str.comp_H x.str y.str z.str ↑f ↑g (hom_H f) (hom_H g))) 
 
 @[hott]
-def idhom_std_C {C : Type u} [category.{u} C] {std_str : std_structure_on C} 
+def idhom_std_C {C : Type (u+1)} [category.{u} C] {std_str : std_structure_on C} 
   (x : std_structure std_str) : ↑(𝟙 x) = 𝟙 x.carrier :=
 rfl  
 
 @[hott]
-def comp_hom_std_C {C : Type u} [category.{u} C] {std_str : std_structure_on C} 
+def comp_hom_std_C {C : Type (u+1)} [category.{u} C] {std_str : std_structure_on C} 
   {x y z : std_structure std_str} (f : x ⟶ y) (g : y ⟶ z) : 
   (f ≫ g).1 = (f.1 : x.carrier ⟶ y.carrier) ≫ (g.1 : y.carrier ⟶ z.carrier) :=
 rfl  
 
 @[hott, instance]
-def std_str_precategory {C : Type u} [category.{u} C] (std_str : std_structure_on C) :
+def std_str_precategory {C : Type (u+1)} [category.{u} C] (std_str : std_structure_on C) :
   precategory (std_structure std_str) :=
 have ic : ∀ (x y : std_structure std_str) (f : x ⟶ y), 𝟙 x ≫ f = f, from 
   begin intros x y f, apply hom_eq_C_std _ _, rwr comp_hom_std_C, hsimp end,
@@ -365,14 +367,14 @@ precategory.mk ic ci as
 
    The first equivalence introduces the structure components in standard structures equalities. -/
 @[hott]
-def std_str_comp_eq {C : Type u} [category.{u} C] {std_str : std_structure_on C}
+def std_str_comp_eq {C : Type (u+1)} [category.{u} C] {std_str : std_structure_on C}
   {x y : std_structure std_str} :
   (x = y) ≃ (std_structure.mk x.carrier x.str = std_structure.mk y.carrier y.str) :=
 begin hinduction x with a α, hinduction y with b β, exact equiv.rfl end
 
 /- The second equivalence is the eta principle for standard structures equalities. -/
 @[hott]
-def std_str_eq_eta {C : Type u} [category.{u} C] {std_str : std_structure_on C}
+def std_str_eq_eta {C : Type (u+1)} [category.{u} C] {std_str : std_structure_on C}
   {a b : C} {α : std_str.P a} {β : std_str.P b} :
   (std_structure.mk a α = std_structure.mk b β) ≃ Σ (p : a = b), α =[p] β :=
 let x := std_structure.mk a α, y := std_structure.mk b β,
@@ -399,7 +401,7 @@ equiv.mk f (adjointify f g rinv linv)
 
 /- The third equivalence exchanges equalities and isomorphisms. -/
 @[hott]
-def strpair_id_to_iso {C : Type u} [category.{u} C] {std_str : std_structure_on C}
+def strpair_id_to_iso {C : Type (u+1)} [category.{u} C] {std_str : std_structure_on C}
   {a b : C} {α : std_str.P a} {β : std_str.P b} :
   (Σ (p : a = b), α =[p] β) ≃ (Σ (f : a ≅ b), std_str.H α β f.hom and std_str.H β α f.inv) :=
 let x := std_structure.mk a α, y := std_structure.mk b β in  
@@ -445,7 +447,7 @@ equiv.mk F (adjointify F G rinv linv)
 
 /- The fourth equivalence splits up equalities of standard structure isomorphisms. -/
 @[hott]
-def iso_std_C {C : Type u} [category.{u} C] {std_str : std_structure_on C}
+def iso_std_C {C : Type (u+1)} [category.{u} C] {std_str : std_structure_on C}
   {x y : std_structure std_str} (F : x ≅ y) : x.carrier ≅ ↑y :=
 let f := (F.hom : x ⟶ y).1, g := F.inv.1 in
 have rinv : g ≫ f = 𝟙 ↑y, by rwr <- comp_hom_std_C; rwr F.r_inv,
@@ -453,7 +455,7 @@ have linv : f ≫ g = 𝟙 ↑x, by rwr <- comp_hom_std_C; rwr F.l_inv,
 iso.mk f g rinv linv  
 
 @[hott]
-def str_iso_eq_comp {C : Type u} [category.{u} C] {std_str : std_structure_on C}
+def str_iso_eq_comp {C : Type (u+1)} [category.{u} C] {std_str : std_structure_on C}
   {a b : C} {α : std_str.P a} {β : std_str.P b} :
   (Σ (f : a ≅ b), std_str.H α β f.hom and std_str.H β α f.inv) ≃ 
   (std_structure.mk a α ≅ std_structure.mk b β) :=
@@ -489,14 +491,14 @@ end
 
 /- The last equivalence introduces the structure components in standard structures isomorphies. -/
 @[hott]
-def std_str_comp_iso {C : Type u} [category.{u} C] {std_str : std_structure_on C}
+def std_str_comp_iso {C : Type (u+1)} [category.{u} C] {std_str : std_structure_on C}
   {x y : std_structure std_str} :
   (x ≅ y) ≃ (std_structure.mk x.carrier x.str ≅ std_structure.mk y.carrier y.str) :=
 begin hinduction x with a α, hinduction y with b β, exact equiv.rfl end
 
 /- Finally, we show that the composition of the five equivalences is `idtoiso`. -/
 @[hott]
-def comp_eqv_idtoiso {C : Type u} [category.{u} C] {std_str : std_structure_on C}
+def comp_eqv_idtoiso {C : Type (u+1)} [category.{u} C] {std_str : std_structure_on C}
   {x y : std_structure std_str} :
   ∀ (p : x = y), (std_str_comp_iso.to_fun⁻¹ᶠ (str_iso_eq_comp.to_fun (strpair_id_to_iso.to_fun 
                             (std_str_eq_eta.to_fun (std_str_comp_eq.to_fun p))))) = idtoiso p :=                            
@@ -514,13 +516,13 @@ end
 
 /- Now we can prove the equivalence and thus the Structure Identity Principle. -/
 @[hott]
-def std_str_eq_eqv_iso {C : Type u} [category.{u} C] {std_str : std_structure_on C} :
+def std_str_eq_eqv_iso {C : Type (u+1)} [category.{u} C] {std_str : std_structure_on C} :
   ∀ x y : std_structure std_str, (x = y) ≃ (x ≅ y) :=
 assume x y, std_str_comp_eq ⬝e std_str_eq_eta ⬝e strpair_id_to_iso ⬝e 
             str_iso_eq_comp ⬝e std_str_comp_iso⁻¹ᵉ 
 
 @[hott, instance]
-def structure_identity_principle {C : Type u} [category.{u} C] (std_str : std_structure_on C) :
+def structure_identity_principle {C : Type (u+1)} [category.{u} C] (std_str : std_structure_on C) :
   category (std_structure std_str) :=
 have idtoiso_eq : ∀ x y : std_structure std_str, (std_str_eq_eqv_iso x y).to_fun = @idtoiso _ _ x y, from
   begin 
