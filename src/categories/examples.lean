@@ -4,7 +4,7 @@ universes v u v' u' w
 hott_theory
 
 namespace hott
-open hott.eq hott.set hott.subset hott.is_trunc hott.is_equiv hott.equiv hott.categories
+open hott.eq hott.set hott.subset hott.is_trunc hott.is_equiv hott.equiv hott.categories 
 
 namespace categories
 
