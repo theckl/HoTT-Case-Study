@@ -61,6 +61,26 @@ have H : forall (f g : A -> B) (p q : f = g), p = q, from
   @is_prop.elim _ H_eqv p q, 
 is_set.mk (A -> B) H
 
+/- The dependent version; the bundled set will yield the categorical product of sets. -/
+@[hott, instance]
+def is_set_dmap {A : Set.{u}} {B : A -> Set.{u}} : is_set (Π (a : A), B a) :=
+  have H : forall (f g : Π (a : A), B a) (p q : f = g), p = q, from 
+    assume f g p q, 
+    have eq_eqv_hom : (f = g) ≃ (f ~ g), from 
+      eq_equiv_homotopy f g, /- uses function extensionality -/ 
+    have is_prop_hom : is_prop (f ~ g), from 
+      have pP : forall a : A, is_prop (f a = g a), from 
+        assume a, is_trunc_eq -1 (f a) (g a),
+      @is_prop_dprod _ (λ a : A, f a = g a) pP, 
+    have H_eqv : is_prop (f = g), from 
+      is_trunc_is_equiv_closed -1 (equiv.to_fun eq_eqv_hom)⁻¹ᶠ is_prop_hom, 
+    @is_prop.elim _ H_eqv p q,
+  is_set.mk (Π (a : A), B a) H
+
+@[hott]
+def Sections {A : Set.{u}} (B : A -> Set.{u}) : Set.{u} :=
+  Set.mk (Π (a : A), B a) (@is_set_dmap _ _)  
+
 /- That is a HoTT-ism, but should be automatable. -/
 @[hott, instance]
 lemma is_set_inj_is_prop {A B : Set} (f : B -> A): 
