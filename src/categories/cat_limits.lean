@@ -313,6 +313,15 @@ have π : constant_functor ↥walking_parallel_pair C c ⟹ parallel_pair f g, f
   nat_trans.mk app naturality,   
 cone.mk c π 
 
+@[hott]
+def set_limit_cone {J : Set.{v}} [precategory J] (F : J ⥤ Set) : cone F :=
+begin
+  fapply cone.mk,
+  /- The cone vertex -/
+  { exact { u ∈ (Sections F.obj) | ∀ {j k : J} (f : j ⟶ k), F.map f (u j) = u k } },
+  { sorry }
+end  
+
 end category_theory.limits
 
 end hott
