@@ -1,6 +1,6 @@
 import setalgebra pathover2 set_axioms
 
-universes v u v' u' w 
+universes v u v' u' v'' u'' w 
 hott_theory
 
 namespace hott
@@ -207,7 +207,7 @@ begin
 end 
 
 section
-variables (C : Type u) (D : Type u')
+variables (C : Type u) (D : Type u') (E : Type u'')
 
 /- Functors are defined between precategories. -/
 @[hott]
@@ -222,6 +222,20 @@ infixr ` ⥤ `:26 := functor
 
 attribute [hsimp] functor.map_id
 attribute [hsimp] functor.map_comp
+
+/- The composition of functors -/
+@[hott]
+def functor_comp [precategory.{v} C] [precategory.{v'} D] [precategory.{v''} E]
+  (F : C ⥤ D) (G : D ⥤ E) : C ⥤ E := 
+begin
+  fapply functor.mk,  
+  { exact λ c : C, G.obj (F.obj c) }, -- map of objects
+  { intros c c' f, exact G.map (F.map f) },  -- map of morphisms
+  { intro x, hsimp }, -- identity morphisms are preserved
+  { intros x y x f g, hsimp } --composition of morphisms is preserved
+end  
+
+infixr ` ⋙ `:25 := functor_comp
 
 @[hott]
 def constant_functor [precategory.{v} C] [precategory.{v'} D] (d : D) : 
@@ -534,6 +548,18 @@ have idtoiso_eqv : ∀ x y : std_structure std_str, is_equiv (@idtoiso _ _ x y),
   have eqv : is_equiv (std_str_eq_eqv_iso x y).to_fun, from (std_str_eq_eqv_iso x y).to_is_equiv,
   by rwr idtoiso_eq x y at eqv; exact eqv, 
 category.mk idtoiso_eqv
+
+/- The forgetful functor from a category of standard structures to the underlyning category -/
+@[hott]
+def forget_str {C : Type (u+1)} [category.{u} C] (std_str : std_structure_on C) :
+  (std_structure std_str) ⥤ C :=
+begin
+  apply functor.mk,  
+  { exact λ x, x.carrier },
+  { sorry },
+  { sorry },
+  { sorry } 
+end    
 
 end categories
 
