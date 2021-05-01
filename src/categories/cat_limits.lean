@@ -313,14 +313,72 @@ have π : constant_functor ↥walking_parallel_pair C c ⟹ parallel_pair f g, f
   nat_trans.mk app naturality,   
 cone.mk c π 
 
+/- The category of sets has all limits. 
+
+   The limit cone is constructed as the sections of the functor map satisfying the compatibility
+   conditions of the indexing category. 
+   
+   Note that the limit cone vertex may be the empty set - then all cones over the functor `F`
+   are empty. -/
 @[hott]
-def set_limit_cone {J : Set.{v}} [precategory J] (F : J ⥤ Set) : cone F :=
+def set_cone {J : Set.{v}} [precategory.{v} J] (F : J ⥤ Set.{v}) : cone F :=
 begin
   fapply cone.mk,
-  /- The cone vertex -/
-  { exact { u ∈ (Sections F.obj) | ∀ {j k : J} (f : j ⟶ k), F.map f (u j) = u k } },
-  { sorry }
+  /- The limit cone vertex set -/
+  { exact ↥{ u ∈ (Sections F.obj) | to_Prop (∀ {j k : J} (f : j ⟶ k), F.map f (u j) = u k) } },
+  { fapply nat_trans.mk, 
+    /- the leg maps of the limit cone -/
+    { intro j, exact λ u, u.1 j },
+    /- compatibility of the leg maps -/
+    { intros j k f, hsimp, 
+      fapply eq_of_homotopy, intro u, hsimp, 
+      change u.1 k = F.map f (u.1 j), rwr u.2 } }
 end  
+
+@[hott]
+def set_limit_cone_is_limit {J : Set.{v}} [precategory.{v} J] (F : J ⥤ Set.{v}) :
+  is_limit (set_cone F) :=
+begin 
+  fapply is_limit.mk,
+  /- the lift from the limit cone to another cone-/ 
+  { intro s, intro x, fapply sigma.mk, 
+    { intro j, exact s.π.app j x },
+    { intros j k f, hsimp,  
+      exact (homotopy_of_eq (s.π.naturality f) x)⁻¹ } },
+  /- factorising the lift with limit cone legs -/    
+  { intros s j, hsimp, apply eq_of_homotopy, 
+    intro x, refl },
+  /- uniqueness of lift -/  
+  { intros s m lift_m, hsimp, apply eq_of_homotopy,
+    intro x, hsimp, fapply sigma.sigma_eq, 
+    { hsimp, apply eq_of_homotopy, intro j, hsimp, rwr <- lift_m j },
+    { apply pathover_of_tr_eq, apply eq_of_homotopy3, intros j k f, 
+        apply is_set.elim } }  
+end
+
+@[hott]
+def set_limit_cone {J : Set.{v}} [precategory.{v} J] (F : J ⥤ Set.{v}) : limit_cone F :=
+  limit_cone.mk (set_cone F) (set_limit_cone_is_limit F)
+
+@[hott, instance]
+def set_has_limit {J : Set.{v}} [precategory.{v} J] (F : J ⥤ Set.{v}) : has_limit F :=
+  has_limit.mk (set_limit_cone F)
+
+@[hott, instance]
+def set_has_limits_of_shape {J : Set.{v}} [precategory.{v} J] : has_limits_of_shape J Set.{v} :=
+  has_limits_of_shape.mk (λ F, set_has_limit F)     
+
+/- A criterion for a category of standard structures over a category with limits to have limits:
+   - The limit cone of the underlying functor of a shape carries a structure.
+   - The leg morphisms of this limit cone respect the structures.
+   - The lift morphisms to this limit cone respect the structures. -/
+@[hott, instance]
+def std_structure_has_limits_of_shape {J : Set.{v}} [precategory.{v} J] {C : Type (v+1)} 
+  [category.{v} C] [has_limits_of_shape J C] {std_str : std_structure_on C} 
+  (lc_str : Π F : J ⥤ (std_structure std_str), std_str.P (limit.cone F).X) 
+  (lc_legs_H : Π (F : J ⥤ C) (j : J), std_str.H (lc_str F) _ (limit.cone F).π.app) :
+  has_limits_of_shape J (std_structure std_str) :=
+sorry
 
 end category_theory.limits
 
