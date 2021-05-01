@@ -66,7 +66,7 @@ def and_is_prop (A B : Type u) [is_prop A] [is_prop B] : is_prop (A × B) :=
     end,
   is_prop.mk eq_and 
 
-@[hott]
+@[hott, instance]
 lemma is_prop_map {A B : Type u} (pB : is_prop B) : is_prop (A -> B) :=
 have eq_map : forall f1 f2 : A -> B, f1 = f2, from 
   assume f1 f2, 
@@ -75,7 +75,7 @@ have eq_map : forall f1 f2 : A -> B, f1 = f2, from
   eq_of_homotopy map_hom,
 is_prop.mk eq_map 
 
-@[hott]
+@[hott, instance]
 lemma is_prop_dprod {A : Type u} {P : A -> Type u} 
     (pP : forall a : A, is_prop (P a)) : 
   is_prop (forall a : A, P a) :=
