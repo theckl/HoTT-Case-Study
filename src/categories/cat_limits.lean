@@ -371,12 +371,32 @@ def set_has_limits_of_shape {J : Set.{v}} [precategory.{v} J] : has_limits_of_sh
 /- A criterion for a category of standard structures over a category with limits to have limits:
    - The limit cone of the underlying functor of a shape carries a structure.
    - The leg morphisms of this limit cone respect the structures.
-   - The lift morphisms to this limit cone respect the structures. -/
+   - The lift morphisms to this limit cone respect the structures. 
+   
+   We first need to construct the underlying cone of a cone in the category of structures. -/
+@[hott]
+def str_cone_to_cone {J : Set.{v}} [precategory.{v} J] {C : Type (v+1)} [category.{v} C] 
+  {std_str : std_structure_on C} {F : J ⥤ (std_structure std_str)} (s : cone F) :
+  cone (F ⋙ (forget_str std_str)) :=
+begin 
+  fapply cone.mk, 
+  { exact s.X.1 },  -- vertex
+  { fapply nat_trans.mk,
+    { intro j, exact (s.π.app j).1 },  --transformation of objects
+    { intros j k f, hsimp, 
+      change (s.π.app k).1 = (s.π.app j).1 ≫ (F.map f).1, rwr <- comp_hom_std_C _ _,
+      rwr <- ap sigma.fst (s.π.naturality f), hsimp } }  --naturality
+end    
+
 @[hott, instance]
 def std_structure_has_limits_of_shape {J : Set.{v}} [precategory.{v} J] {C : Type (v+1)} 
   [category.{v} C] [has_limits_of_shape J C] {std_str : std_structure_on C} 
-  (lc_str : Π F : J ⥤ (std_structure std_str), std_str.P (limit.cone F).X) 
-  (lc_legs_H : Π (F : J ⥤ C) (j : J), std_str.H (lc_str F) _ (limit.cone F).π.app) :
+  (lc_str : Π F : J ⥤ (std_structure std_str), 
+            std_str.P (limit.cone (F ⋙ (forget_str std_str))).X) 
+  (lc_legs_H : Π (F : J ⥤ (std_structure std_str)) (j : J), 
+    std_str.H (lc_str F) ((F.obj j).str) ((limit.cone (F ⋙ (forget_str std_str))).π.app j))
+  (lift_H : Π (F : J ⥤ (std_structure std_str)) (s : cone F), std_str.H s.X.str (lc_str F) 
+              ((get_limit_cone (F ⋙ (forget_str std_str))).is_limit.lift (str_cone_to_cone s))) : 
   has_limits_of_shape J (std_structure std_str) :=
 sorry
 
