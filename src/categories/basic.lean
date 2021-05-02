@@ -218,24 +218,10 @@ structure functor [precategory.{v} C] [precategory.{v'} D] :
 (map_id   : ∀ (x : C), map (𝟙 x) = 𝟙 (obj x))
 (map_comp : ∀ {x y z : C} (f : x ⟶ y) (g : y ⟶ z), map (f ≫ g) = (map f) ≫ (map g))
 
-infixr ` ⥤ `:26 := functor       
+infixr ` ⥤ ` :26 := functor       
 
 attribute [hsimp] functor.map_id
 attribute [hsimp] functor.map_comp
-
-/- The composition of functors -/
-@[hott]
-def functor_comp [precategory.{v} C] [precategory.{v'} D] [precategory.{v''} E]
-  (F : C ⥤ D) (G : D ⥤ E) : C ⥤ E := 
-begin
-  fapply functor.mk,  
-  { exact λ c : C, G.obj (F.obj c) }, -- map of objects
-  { intros c c' f, exact G.map (F.map f) },  -- map of morphisms
-  { intro x, hsimp }, -- identity morphisms are preserved
-  { intros x y x f g, hsimp } --composition of morphisms is preserved
-end  
-
-infixr ` ⋙ `:25 := functor_comp
 
 @[hott]
 def constant_functor [precategory.{v} C] [precategory.{v'} D] (d : D) : 
@@ -251,6 +237,25 @@ structure nat_trans [precategory.{v} C] [precategory.{v'} D] (F G : C ⥤ D) :=
                                  (F.map f) ≫ (app c') = (app c) ≫ (G.map f))  
 
 infixr ` ⟹ `:10 := nat_trans _ _
+
+end
+
+section
+variables {C : Type u} {D : Type u'} {E : Type u''}
+
+/- The composition of functors -/
+@[hott]
+def functor_comp [precategory.{v} C] [precategory.{v'} D] [precategory.{v''} E]
+  (F : C ⥤ D) (G : D ⥤ E) : C ⥤ E := 
+begin
+  fapply functor.mk,  
+  { exact λ c : C, G.obj (F.obj c) }, -- map of objects
+  { intros c c' f, exact G.map (F.map f) },  -- map of morphisms
+  { intro x, hsimp }, -- identity morphisms are preserved
+  { intros x y x f g, hsimp } --composition of morphisms is preserved
+end  
+
+infixr ` ⋙ `:25 := functor_comp 
 
 end
 
@@ -554,11 +559,11 @@ category.mk idtoiso_eqv
 def forget_str {C : Type (u+1)} [category.{u} C] (std_str : std_structure_on C) :
   (std_structure std_str) ⥤ C :=
 begin
-  apply functor.mk,  
-  { exact λ x, x.carrier },
-  { sorry },
-  { sorry },
-  { sorry } 
+  fapply functor.mk,  
+  { exact λ x, x.carrier },  -- map of objects
+  { intros x y f, exact f.1 },  -- map of morphisms
+  { intro x, exact idhom_std_C x },  -- preserves identity morphisms
+  { intros x y z f g, exact comp_hom_std_C f g }  -- preserves compositions of morphisms 
 end    
 
 end categories
