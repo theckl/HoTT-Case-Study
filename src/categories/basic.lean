@@ -275,7 +275,7 @@ structure std_structure_on (C : Type (u+1)) [category.{v} C] :=
 @[hott]
 structure std_structure {C : Type (u+1)} [category.{v} C] (std_str : std_structure_on C) :=
   (carrier : C)
-  (str : std_str.P carrier)
+  (str : std_str.P carrier)  
 
 @[hott]
 instance {C : Type (u+1)} [category.{v} C] (std_str : std_structure_on C) : 
