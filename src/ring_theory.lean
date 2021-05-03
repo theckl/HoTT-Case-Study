@@ -4,14 +4,14 @@ universes u v w
 hott_theory
 
 namespace hott
-open hott.is_trunc hott.is_equiv hott.algebra hott.set categories 
+open hott.is_trunc hott.is_equiv hott.algebra hott.set subset categories 
 
 namespace algebra
 
 /- `comm_ring R` is a standard structure on a set `R`:
 
    Homomorphisms are maps between sets with a `comm_ring` structure preserving addition and 
-   multiplications; these laws are propositions, hence being a homomorphism is a proposition. 
+   multiplication; these laws are propositions, hence being a homomorphism is a proposition. 
 
    Since it is possible that the same set can be provided with different `comm_ring` structures,
    these cannot be instances. 
@@ -292,19 +292,45 @@ end
 @[hott]
 def comm_ring_str : std_structure_on Set.{u} :=
   std_structure_on.mk comm_ring_set @ring_hom_prop @id_ring_hom_set @comp_ring_hom_set 
-                      @ring_hom_is_std_str                      
+                      @ring_hom_is_std_str                                          
 
 @[hott] 
 def CommRing := std_structure comm_ring_str
 
 @[hott]
 instance CommRing_to_Set : has_coe CommRing.{u} Set.{u} :=
-  ⟨λ R :CommRing, R.carrier⟩
+  ⟨λ R : CommRing, R.carrier⟩
 
 @[hott]
 instance CommRing_to_Type : has_coe_to_sort CommRing.{u} :=
   has_coe_to_sort.mk (Type u) (λ R : CommRing, ↥R.carrier)  
-  
+
+@[hott]
+instance (R : CommRing) : comm_ring ↥R.carrier := R.str  
+
+/- A criterion to decide whether a subset of a commutative ring given by a predicate is a
+   commutative (sub)ring -/ 
+@[hott]   
+def comm_subring {R : CommRing} (P : Setpred R.carrier) 
+  (closed_add : ∀ r s : R, P r -> P s -> P (r + s)) 
+  (closed_zero : P 0) (closed_neg : ∀ r : R, P (-r))
+  (closed_mul : ∀ r s : R, P r -> P s -> P (r * s)) 
+  (closed_one : P 1) : comm_ring ↥{r ∈ R.carrier | P r} :=
+begin  
+  fapply comm_ring_mk,
+  { sorry },
+  { sorry }
+end  
+
+/- The category `CommRing` has all limits. 
+
+   To prove this we use the criterion in [cat_limits], for which we need to show the following:
+   - Products of the underlying sets of commutative rings are also commutative rings.
+   - using the subring criterion above we show that the vertices of limit cones of the underlying 
+     sets of commutative rings are commutative rings. 
+   - The legs and lifts are ring homomorphisms because the subring embedding is a ring 
+     homomorphism and the projections from and the lift to product rings are ring homomorphisms. -/
+
 end algebra
 
 end hott
