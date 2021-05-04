@@ -298,6 +298,10 @@ def comm_ring_str : std_structure_on Set.{u} :=
 def CommRing := std_structure comm_ring_str
 
 @[hott]
+def CommRing.mk (carrier : Set.{u}) (comm_ring_str : comm_ring carrier) : CommRing :=
+  std_structure.mk carrier comm_ring_str
+
+@[hott]
 instance CommRing_to_Set : has_coe CommRing.{u} Set.{u} :=
   ⟨λ R : CommRing, R.carrier⟩
 
@@ -309,17 +313,37 @@ instance CommRing_to_Type : has_coe_to_sort CommRing.{u} :=
 instance (R : CommRing) : comm_ring ↥R.carrier := R.str  
 
 /- A criterion to decide whether a subset of a commutative ring given by a predicate is a
-   commutative (sub)ring -/ 
+   commutative (sub)ring : The ring operation are closed under the predicate. -/ 
 @[hott]   
 def comm_subring {R : CommRing} (P : Setpred R.carrier) 
   (closed_add : ∀ r s : R, P r -> P s -> P (r + s)) 
-  (closed_zero : P 0) (closed_neg : ∀ r : R, P (-r))
+  (closed_zero : P 0) (closed_neg : ∀ r : R, P r -> P (-r))
   (closed_mul : ∀ r s : R, P r -> P s -> P (r * s)) 
   (closed_one : P 1) : comm_ring ↥{r ∈ R.carrier | P r} :=
 begin  
   fapply comm_ring_mk,
-  { sorry },
-  { sorry }
+  { fapply comm_ring_ops.mk, 
+    { intros r s, exact ⟨r.1 + s.1, closed_add r.1 s.1 r.2 s.2⟩ }, --add
+    { exact ⟨0, closed_zero⟩ }, --zero
+    { intro r, exact ⟨-r.1, closed_neg r.1 r.2⟩ }, --neg
+    { intros r s, exact ⟨r.1 * s.1, closed_mul r.1 s.1 r.2 s.2⟩ }, --mul
+    { exact ⟨1, closed_one⟩ } }, --one
+  { fapply comm_ring_laws.mk, 
+    { intros r s t, hsimp, apply sigma_prop_pr1_inj, hsimp, 
+      exact comm_ring.add_assoc r.1 s.1 t.1 }, --add_assoc 
+    { intro r, hsimp, apply sigma_prop_pr1_inj, hsimp, exact comm_ring.zero_add r.1 }, --zero_add
+    { intro r, hsimp, apply sigma_prop_pr1_inj, hsimp, exact comm_ring.add_zero r.1 }, --add_zero 
+    { intro r, hsimp, apply sigma_prop_pr1_inj, hsimp, exact comm_ring.add_left_inv r.1 }, --add_left_inv 
+    { intros r s, hsimp, apply sigma_prop_pr1_inj, hsimp, exact comm_ring.add_comm r.1 s.1 },  --add_comm 
+    { intros r s t, hsimp, apply sigma_prop_pr1_inj, hsimp, 
+      exact comm_ring.mul_assoc r.1 s.1 t.1 }, --mul_assoc
+    { intro r, hsimp, apply sigma_prop_pr1_inj, hsimp, exact comm_ring.one_mul r.1 }, --one_mul 
+    { intro r, hsimp, apply sigma_prop_pr1_inj, hsimp, exact comm_ring.mul_one r.1 }, --mul_one 
+    { intros r s, hsimp, apply sigma_prop_pr1_inj, hsimp, exact comm_ring.mul_comm r.1 s.1 }, --mul_comm
+    { intros r s t, hsimp, apply sigma_prop_pr1_inj, hsimp, 
+      exact comm_ring.left_distrib r.1 s.1 t.1 }, --left_distrib 
+    { intros r s t, hsimp, apply sigma_prop_pr1_inj, hsimp, 
+      exact comm_ring.right_distrib r.1 s.1 t.1 }, } --right_distrib
 end  
 
 /- The category `CommRing` has all limits. 
@@ -330,6 +354,41 @@ end
      sets of commutative rings are commutative rings. 
    - The legs and lifts are ring homomorphisms because the subring embedding is a ring 
      homomorphism and the projections from and the lift to product rings are ring homomorphisms. -/
+@[hott]
+def CommRing_product_str {J : Set.{v}} (F : J -> CommRing.{v}) : 
+  comm_ring (Sections (λ j : J, (F j).carrier)) :=
+begin  
+  fapply comm_ring_mk,
+  { fapply comm_ring_ops.mk, 
+    { intros r s, exact λ j, (r j) + (s j) }, --add 
+    { exact λ j, 0 }, --zero 
+    { intro r, exact λ j, -(r j) }, --neg 
+    { intros r s, exact λ j, (r j) * (s j) }, --mul
+    { exact λ j,  1 } }, --one
+  { fapply comm_ring_laws.mk, 
+    { intros r s t, hsimp, apply eq_of_homotopy, intro j, hsimp, exact comm_ring.add_assoc _ _ _ },
+                                                                                         --add_assoc
+    { intro r, hsimp, apply eq_of_homotopy, intro j, hsimp, exact comm_ring.zero_add _ }, --zero_add 
+    { intro r, hsimp, apply eq_of_homotopy, intro j, hsimp, exact comm_ring.add_zero _ }, --add_zero 
+    { intro r, hsimp, apply eq_of_homotopy, intro j, hsimp, exact comm_ring.add_left_inv _ }, 
+                                                                                     --add_left_inv
+    { intros r s, hsimp, apply eq_of_homotopy, intro j, hsimp, exact comm_ring.add_comm _ _ }, 
+                                                                                     --add_comm 
+    { intros r s t, hsimp, apply eq_of_homotopy, intro j, hsimp, exact comm_ring.mul_assoc _ _ _ },
+                                                                                       --mul_assoc 
+    { intro r, hsimp, apply eq_of_homotopy, intro j, hsimp, exact comm_ring.one_mul _ }, --one_mul 
+    { intro r, hsimp, apply eq_of_homotopy, intro j, hsimp, exact comm_ring.mul_one _ }, --mul_one 
+    { intros r s, hsimp, apply eq_of_homotopy, intro j, hsimp, exact comm_ring.mul_comm _ _ }, 
+                                                                                         --mul_comm
+    { intros r s t, hsimp, apply eq_of_homotopy, intro j, hsimp, exact comm_ring.left_distrib _ _ _ }, 
+                                                                                      --left_distrib
+    { intros r s t, hsimp, apply eq_of_homotopy, intro j, hsimp, exact comm_ring.right_distrib _ _ _ } } 
+                                                                                    --right_distrib
+end    
+
+@[hott]
+def CommRing_product {J : Set.{v}} (F : J -> CommRing.{v}) : CommRing :=
+  CommRing.mk (Sections (λ j : J, (F j).carrier)) (CommRing_product_str F)
 
 end algebra
 
