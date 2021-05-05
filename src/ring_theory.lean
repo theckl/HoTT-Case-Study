@@ -1,10 +1,10 @@
-import hott.algebra.ring set_theory categories.examples pathover2
+import hott.algebra.ring set_theory categories.examples categories.cat_limits pathover2
 
 universes u v w
 hott_theory
 
 namespace hott
-open hott.is_trunc hott.is_equiv hott.algebra hott.set subset categories 
+open hott.is_trunc hott.is_equiv hott.algebra hott.set subset categories hott.category_theory.limits
 
 namespace algebra
 
@@ -294,7 +294,7 @@ def comm_ring_str : std_structure_on Set.{u} :=
   std_structure_on.mk comm_ring_set @ring_hom_prop @id_ring_hom_set @comp_ring_hom_set 
                       @ring_hom_is_std_str                                          
 
-@[hott] 
+@[hott, reducible] 
 def CommRing := std_structure comm_ring_str
 
 @[hott]
@@ -354,7 +354,7 @@ end
      sets of commutative rings are commutative rings. 
    - The legs and lifts are ring homomorphisms because the subring embedding is a ring 
      homomorphism and the projections from and the lift to product rings are ring homomorphisms. -/
-@[hott]
+@[hott, reducible]
 def CommRing_product_str {J : Set.{v}} (F : J -> CommRing.{v}) : 
   comm_ring (Sections (λ j : J, (F j).carrier)) :=
 begin  
@@ -389,6 +389,24 @@ end
 @[hott]
 def CommRing_product {J : Set.{v}} (F : J -> CommRing.{v}) : CommRing :=
   CommRing.mk (Sections (λ j : J, (F j).carrier)) (CommRing_product_str F)
+
+@[hott]
+def limit_comm_ring {J : Set.{v}} [precategory.{v} J] (F : J ⥤ CommRing.{v}) :
+  comm_ring_str.P (limit.cone (F ⋙ (forget_str comm_ring_str))).X :=
+begin
+  let F' := F ⋙ (forget_str comm_ring_str),  
+  change comm_ring_str.P (set_cone F').X, 
+  change comm_ring ↥{ u ∈ (Sections (λ j : J, (F.obj j).carrier)) | 
+    to_Prop (∀ {j k : J} (f : j ⟶ k), F'.map f (u j) = u k) },
+  fapply @comm_subring (CommRing_product F.obj) (λ u : Sections F'.obj,
+    to_Prop (Π {j k : J} (f : (j ⟶ k)), (F.map f).1 (u j) = u k)),
+  { intros r s Hr Hs j k f, change (F.map f).1 (r j + s j) = (r k + s k : F.obj k),
+    change (F.map f).1 (r j : F.obj j) + (F.map f).1 (s j : F.obj j) = (r k + s k : F.obj k), sorry }, 
+  { sorry },
+  { sorry },
+  { sorry },
+  { sorry },
+end    
 
 end algebra
 
