@@ -401,7 +401,7 @@ begin
   fapply @comm_subring (CommRing_product F.obj) (λ u : Sections F'.obj,
     to_Prop (Π {j k : J} (f : (j ⟶ k)), (F.map f).1 (u j) = u k)),
   { intros r s Hr Hs j k f, change (F.map f).1 (r j + s j) = (r k + s k : F.obj k),
-    change (F.map f).1 (r j : F.obj j) + (F.map f).1 (s j : F.obj j) = (r k + s k : F.obj k), sorry }, 
+    rwr (F.map f).map_add (r j) (s j), sorry }, 
   { sorry },
   { sorry },
   { sorry },
