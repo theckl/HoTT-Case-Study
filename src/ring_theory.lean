@@ -314,20 +314,25 @@ instance (R : CommRing) : comm_ring ↥R.carrier := R.str
 
 /- A criterion to decide whether a subset of a commutative ring given by a predicate is a
    commutative (sub)ring : The ring operation are closed under the predicate. -/ 
+@[hott]
+class ring_pred_closed {R : CommRing} (P : Setpred R.carrier) :=
+  (add : ∀ r s : R, P r -> P s -> P (r + s)) 
+  (zero : P 0) 
+  (neg : ∀ r : R, P r -> P (-r))
+  (mul : ∀ r s : R, P r -> P s -> P (r * s)) 
+  (one : P 1)
+
 @[hott]   
-def comm_subring {R : CommRing} (P : Setpred R.carrier) 
-  (closed_add : ∀ r s : R, P r -> P s -> P (r + s)) 
-  (closed_zero : P 0) (closed_neg : ∀ r : R, P r -> P (-r))
-  (closed_mul : ∀ r s : R, P r -> P s -> P (r * s)) 
-  (closed_one : P 1) : comm_ring ↥{r ∈ R.carrier | P r} :=
+def comm_subring {R : CommRing} (P : Setpred R.carrier) [ring_pred_closed P] : 
+  comm_ring ↥{r ∈ R.carrier | P r} :=
 begin  
   fapply comm_ring_mk,
   { fapply comm_ring_ops.mk, 
-    { intros r s, exact ⟨r.1 + s.1, closed_add r.1 s.1 r.2 s.2⟩ }, --add
-    { exact ⟨0, closed_zero⟩ }, --zero
-    { intro r, exact ⟨-r.1, closed_neg r.1 r.2⟩ }, --neg
-    { intros r s, exact ⟨r.1 * s.1, closed_mul r.1 s.1 r.2 s.2⟩ }, --mul
-    { exact ⟨1, closed_one⟩ } }, --one
+    { intros r s, exact ⟨r.1 + s.1, ring_pred_closed.add r.1 s.1 r.2 s.2⟩ }, --add
+    { exact ⟨0, ring_pred_closed.zero P⟩ }, --zero
+    { intro r, exact ⟨-r.1, ring_pred_closed.neg r.1 r.2⟩ }, --neg
+    { intros r s, exact ⟨r.1 * s.1, ring_pred_closed.mul r.1 s.1 r.2 s.2⟩ }, --mul
+    { exact ⟨1, ring_pred_closed.one P⟩ } }, --one
   { fapply comm_ring_laws.mk, 
     { intros r s t, hsimp, apply sigma_prop_pr1_inj, hsimp, 
       exact comm_ring.add_assoc r.1 s.1 t.1 }, --add_assoc 
@@ -346,7 +351,29 @@ begin
       exact comm_ring.right_distrib r.1 s.1 t.1 }, } --right_distrib
 end  
 
-/- The category `CommRing` has all limits. 
+@[hott]
+def CommSubring {R : CommRing} (P : Setpred R.carrier) [ring_pred_closed P] : CommRing :=
+  CommRing.mk ↥{r ∈ R.carrier | P r} (comm_subring P)
+
+@[hott]
+def CommSubring.to_Subset {R : CommRing} (P : Setpred R.carrier) [ring_pred_closed P] : 
+  Subset R.carrier :=
+{r ∈ R.carrier | P r}    
+
+/- The embedding of the underlying subset of a subring into the underlyimh set of the ring is a 
+   ring homomorphism. -/
+@[hott]
+def comm_subring_embed_hom {R : CommRing} (P : Setpred R.carrier) [ring_pred_closed P]:
+  comm_ring_str.H (comm_subring P) R.str (CommSubring.to_Subset P).map :=
+begin 
+  fapply is_ring_hom.mk, 
+  { refl },
+  { intros r s, refl },
+  { refl },
+  { intros r s, refl }
+end    
+
+/-  The category `CommRing` has all limits. 
 
    To prove this we use the criterion in [cat_limits], for which we need to show the following:
    - Products of the underlying sets of commutative rings are also commutative rings.
@@ -391,22 +418,61 @@ def CommRing_product {J : Set.{v}} (F : J -> CommRing.{v}) : CommRing :=
   CommRing.mk (Sections (λ j : J, (F j).carrier)) (CommRing_product_str F)
 
 @[hott]
+def CommRing_product_proj_hom {J : Set.{v}} (F : J -> CommRing.{v}) : 
+  ∀ j : J, comm_ring_str.H (CommRing_product_str F) (F j).str (λ u, u j) :=
+begin  
+  intro j, fapply is_ring_hom.mk, 
+  { refl }, 
+  { intros r s, refl }, 
+  { refl }, 
+  { intros r s, refl },  
+end
+
+@[hott]
 def limit_comm_ring {J : Set.{v}} [precategory.{v} J] (F : J ⥤ CommRing.{v}) :
   comm_ring_str.P (limit.cone (F ⋙ (forget_str comm_ring_str))).X :=
 begin
   let F' := F ⋙ (forget_str comm_ring_str),  
   change comm_ring_str.P (set_cone F').X, 
-  change comm_ring ↥{ u ∈ (Sections (λ j : J, (F.obj j).carrier)) | 
-    to_Prop (∀ {j k : J} (f : j ⟶ k), F'.map f (u j) = u k) },
-  fapply @comm_subring (CommRing_product F.obj) (λ u : Sections F'.obj,
-    to_Prop (Π {j k : J} (f : (j ⟶ k)), (F.map f).1 (u j) = u k)),
-  { intros r s Hr Hs j k f, change (F.map f).1 (r j + s j) = (r k + s k : F.obj k),
-    rwr (F.map f).map_add (r j) (s j), sorry }, 
-  { sorry },
-  { sorry },
-  { sorry },
-  { sorry },
+  let P := λ u : (CommRing_product F.obj).carrier, to_Prop (Π {j k : J} (f : (j ⟶ k)), 
+                    (F.map f).1 (u j) = u k),
+  change comm_ring ↥{ u ∈ Sections F'.obj | P u },
+  have c : ring_pred_closed (P : Setpred (CommRing_product F.obj).carrier), from 
+    begin
+      fapply ring_pred_closed.mk, 
+      { intros r s Hr Hs j k f, change (F.map f).1 (r j + s j) = (r k + s k : F.obj k),
+        rwr (F.map f).2.map_add (r j) (s j), rwr Hr, rwr Hs }, --closed_add
+      { intros j k f, change (F.map f).1 0 = (0 : F.obj k), rwr (F.map f).2.map_zero }, 
+      --closed_zero
+      { intros r Hr j k f, change (F.map f).1 (-(r j)) = (-(r k) : F.obj k),
+        rwr comm_ring_hom.map_neg (F.map f).2 (r j), rwr Hr }, --closed_neg
+      { intros r s Hr Hs j k f, change (F.map f).1 (r j * s j) = (r k * s k : F.obj k),
+        rwr (F.map f).2.map_mul (r j) (s j), rwr Hr, rwr Hs }, --closed_mul
+      { intros j k f, change (F.map f).1 1 = (1 : F.obj k), rwr (F.map f).2.map_one }, 
+      --closed_one
+    end,
+  exact @comm_subring (CommRing_product F.obj) P c
 end    
+
+@[hott]
+def CommRing_limit.cone {J : Set.{v}} [precategory.{v} J] (F : J ⥤ CommRing.{v}) : 
+  CommRing :=
+CommRing.mk (limit.cone (F ⋙ (forget_str comm_ring_str))).X (limit_comm_ring F)  
+
+@[hott]
+def CommRing_limit_cone {J : Set.{v}} [precategory.{v} J] (F : J ⥤ CommRing.{v}) : 
+  limit_cone F :=
+begin 
+  fapply str_limit_cone F, 
+  fapply limit_cone_str_data.mk,
+  { exact  limit_comm_ring F },
+  { intro j, 
+    let P := λ u : (CommRing_product F.obj).carrier, to_Prop (Π {j k : J} (f : (j ⟶ k)), 
+                    (F.map f).1 (u j) = u k),
+    change ↥(comm_ring_str.H (limit_comm_ring F) (F.obj j).str 
+             (CommSubring.to_Subset P).map ≫ (λ u, u j)), sorry },
+  { intro s, sorry } 
+end   
 
 end algebra
 
