@@ -429,35 +429,49 @@ begin
 end
 
 @[hott]
-def limit_comm_ring {J : Set.{v}} [precategory.{v} J] (F : J ⥤ CommRing.{v}) :
-  comm_ring_str.P (limit.cone (F ⋙ (forget_str comm_ring_str))).X :=
+def ring_limit_pred {J : Set.{v}} [precategory.{v} J] (F : J ⥤ CommRing.{v}) : 
+  Setpred (CommRing_product F.obj).carrier :=
+set_limit_pred (forget F)  
+
+@[hott, instance]
+def ring_pred_is_closed {J : Set.{v}} [precategory.{v} J] (F : J ⥤ CommRing.{v}) :
+  ring_pred_closed (ring_limit_pred F) :=
 begin
-  let F' := F ⋙ (forget_str comm_ring_str),  
-  change comm_ring_str.P (set_cone F').X, 
-  let P := λ u : (CommRing_product F.obj).carrier, to_Prop (Π {j k : J} (f : (j ⟶ k)), 
-                    (F.map f).1 (u j) = u k),
-  change comm_ring ↥{ u ∈ Sections F'.obj | P u },
-  have c : ring_pred_closed (P : Setpred (CommRing_product F.obj).carrier), from 
-    begin
-      fapply ring_pred_closed.mk, 
-      { intros r s Hr Hs j k f, change (F.map f).1 (r j + s j) = (r k + s k : F.obj k),
-        rwr (F.map f).2.map_add (r j) (s j), rwr Hr, rwr Hs }, --closed_add
-      { intros j k f, change (F.map f).1 0 = (0 : F.obj k), rwr (F.map f).2.map_zero }, 
+  fapply ring_pred_closed.mk, 
+  { intros r s Hr Hs j k f, change (F.map f).1 (r j + s j) = (r k + s k : F.obj k),
+    rwr (F.map f).2.map_add (r j) (s j), 
+    have pr : (F.map f).1 (r j) = r k, from Hr f, 
+    have ps : (F.map f).1 (s j) = s k, from Hs f,
+    rwr pr, rwr ps }, --closed_add
+  { intros j k f, change (F.map f).1 0 = (0 : F.obj k), rwr (F.map f).2.map_zero }, 
       --closed_zero
-      { intros r Hr j k f, change (F.map f).1 (-(r j)) = (-(r k) : F.obj k),
-        rwr comm_ring_hom.map_neg (F.map f).2 (r j), rwr Hr }, --closed_neg
-      { intros r s Hr Hs j k f, change (F.map f).1 (r j * s j) = (r k * s k : F.obj k),
-        rwr (F.map f).2.map_mul (r j) (s j), rwr Hr, rwr Hs }, --closed_mul
-      { intros j k f, change (F.map f).1 1 = (1 : F.obj k), rwr (F.map f).2.map_one }, 
+  { intros r Hr j k f, change (F.map f).1 (-(r j)) = (-(r k) : F.obj k),
+    rwr comm_ring_hom.map_neg (F.map f).2 (r j), 
+    have pr : (F.map f).1 (r j) = r k, from Hr f, rwr pr }, --closed_neg
+  { intros r s Hr Hs j k f, change (F.map f).1 (r j * s j) = (r k * s k : F.obj k),
+    rwr (F.map f).2.map_mul (r j) (s j), 
+    have pr : (F.map f).1 (r j) = r k, from Hr f, 
+    have ps : (F.map f).1 (s j) = s k, from Hs f,
+    rwr pr, rwr ps }, --closed_mul
+  { intros j k f, change (F.map f).1 1 = (1 : F.obj k), rwr (F.map f).2.map_one }, 
       --closed_one
-    end,
-  exact @comm_subring (CommRing_product F.obj) P c
+    end  
+
+@[hott]
+def limit_comm_ring {J : Set.{v}} [precategory.{v} J] (F : J ⥤ CommRing.{v}) :
+  comm_ring_str.P (limit.cone (forget F)).X :=
+begin 
+  change comm_ring_str.P (set_cone (forget F)).X, 
+  change comm_ring ↥{ u ∈ Sections (forget F).obj | ring_limit_pred F u },
+  exact @comm_subring (CommRing_product F.obj) (ring_limit_pred F) (ring_pred_is_closed F)
 end    
 
 @[hott]
 def CommRing_limit.cone {J : Set.{v}} [precategory.{v} J] (F : J ⥤ CommRing.{v}) : 
   CommRing :=
-CommRing.mk (limit.cone (F ⋙ (forget_str comm_ring_str))).X (limit_comm_ring F)  
+CommRing.mk (limit.cone (forget F)).X (limit_comm_ring F)  
+
+#check comm_ring_str.comp_H
 
 @[hott]
 def CommRing_limit_cone {J : Set.{v}} [precategory.{v} J] (F : J ⥤ CommRing.{v}) : 
@@ -465,13 +479,18 @@ def CommRing_limit_cone {J : Set.{v}} [precategory.{v} J] (F : J ⥤ CommRing.{v
 begin 
   fapply str_limit_cone F, 
   fapply limit_cone_str_data.mk,
-  { exact  limit_comm_ring F },
+  { exact limit_comm_ring F }, --lc_str
   { intro j, 
-    let P := λ u : (CommRing_product F.obj).carrier, to_Prop (Π {j k : J} (f : (j ⟶ k)), 
-                    (F.map f).1 (u j) = u k),
     change ↥(comm_ring_str.H (limit_comm_ring F) (F.obj j).str 
-             (CommSubring.to_Subset P).map ≫ (λ u, u j)), sorry },
-  { intro s, sorry } 
+             ((CommSubring.to_Subset (ring_limit_pred F)).map ≫ (λ u, u j))), 
+    fapply comm_ring_str.comp_H _ (CommRing_product F.obj).str, 
+    { exact comm_subring_embed_hom (ring_limit_pred F) },
+    { exact CommRing_product_proj_hom F.obj j } }, --lc_legs_H
+  { intro s, fapply is_ring_hom.mk, 
+    { sorry },
+    { sorry },
+    { sorry },
+    { sorry } } --lift_H
 end   
 
 end algebra
