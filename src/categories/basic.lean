@@ -564,7 +564,13 @@ begin
   { intros x y f, exact f.1 },  -- map of morphisms
   { intro x, exact idhom_std_C x },  -- preserves identity morphisms
   { intros x y z f g, exact comp_hom_std_C f g }  -- preserves compositions of morphisms 
-end    
+end 
+
+/- The forgetful functor composed with a functor to a category of standard structures -/
+@[hott]
+def forget {J : Type.{u}} [precategory.{u} J] {C : Type (u+1)} [category.{u} C] 
+  {std_str : std_structure_on C} (F : J ⥤ std_structure std_str) : J ⥤ C :=
+F ⋙ (forget_str std_str)  
 
 end categories
 
