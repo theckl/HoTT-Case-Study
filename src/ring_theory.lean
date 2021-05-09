@@ -471,7 +471,7 @@ def CommRing_limit.cone {J : Set.{v}} [precategory.{v} J] (F : J ⥤ CommRing.{v
   CommRing :=
 CommRing.mk (limit.cone (forget F)).X (limit_comm_ring F)  
 
-#check comm_ring_str.comp_H
+#check str_cone_to_cone
 
 @[hott]
 def CommRing_limit_cone {J : Set.{v}} [precategory.{v} J] (F : J ⥤ CommRing.{v}) : 
@@ -487,7 +487,8 @@ begin
     { exact comm_subring_embed_hom (ring_limit_pred F) },
     { exact CommRing_product_proj_hom F.obj j } }, --lc_legs_H
   { intro s, fapply is_ring_hom.mk, 
-    { sorry },
+    { /- change (λ j, ((s.π.app j).1 (1 : s.X) : (F.obj j).carrier)) = (λ j, (1 : F.obj j)),-/ 
+      sorry },
     { sorry },
     { sorry },
     { sorry } } --lift_H
