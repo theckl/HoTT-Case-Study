@@ -342,7 +342,7 @@ begin
 end  
 
 @[hott]
-def set_limit_cone_is_limit {J : Set.{v}} [precategory.{v} J] (F : J ⥤ Set.{v}) :
+def set_cone_is_limit {J : Set.{v}} [precategory.{v} J] (F : J ⥤ Set.{v}) :
   is_limit (set_cone F) :=
 begin 
   fapply is_limit.mk,
@@ -364,7 +364,7 @@ end
 
 @[hott]
 def set_limit_cone {J : Set.{v}} [precategory.{v} J] (F : J ⥤ Set.{v}) : limit_cone F :=
-  limit_cone.mk (set_cone F) (set_limit_cone_is_limit F)
+  limit_cone.mk (set_cone F) (set_cone_is_limit F)
 
 @[hott, instance]
 def set_has_limit {J : Set.{v}} [precategory.{v} J] (F : J ⥤ Set.{v}) : has_limit F :=
