@@ -459,10 +459,8 @@ begin
 
 @[hott]
 def limit_comm_ring {J : Set.{v}} [precategory.{v} J] (F : J ⥤ CommRing.{v}) :
-  comm_ring_str.P (limit.cone (forget F)).X :=
-begin 
-  change comm_ring_str.P (set_cone (forget F)).X, 
-  change comm_ring ↥{ u ∈ Sections (forget F).obj | ring_limit_pred F u },
+  comm_ring_str.P (get_limit_cone (forget F)).cone.X :=
+begin    
   exact @comm_subring (CommRing_product F.obj) (ring_limit_pred F) (ring_pred_is_closed F)
 end    
 
@@ -471,7 +469,9 @@ def CommRing_limit.cone {J : Set.{v}} [precategory.{v} J] (F : J ⥤ CommRing.{v
   CommRing :=
 CommRing.mk (limit.cone (forget F)).X (limit_comm_ring F)  
 
-#check str_cone_to_cone
+#check is_limit.lift
+#check is_ring_hom.mk
+#print fields comm_ring
 
 @[hott]
 def CommRing_limit_cone {J : Set.{v}} [precategory.{v} J] (F : J ⥤ CommRing.{v}) : 
@@ -487,7 +487,15 @@ begin
     { exact comm_subring_embed_hom (ring_limit_pred F) },
     { exact CommRing_product_proj_hom F.obj j } }, --lc_legs_H
   { intro s, fapply is_ring_hom.mk, 
-    { /- change (λ j, ((s.π.app j).1 (1 : s.X) : (F.obj j).carrier)) = (λ j, (1 : F.obj j)),-/ 
+    { have p : get_limit_cone (forget F) = set_limit_cone (forget F), from
+        limit_cone_is_unique (forget F) _ _,
+      have q : (get_limit_cone (forget F)).is_limit.lift 
+                 =[p; λ lc : limit_cone (forget F), Π s : cone (forget F), s.X ⟶ lc.cone.X] 
+                   (set_limit_cone (forget F)).is_limit.lift, from 
+        apd (λ lc : limit_cone (forget F), lc.is_limit.lift) p,  
+      rwr eq_tr_of_pathover q,
+      /- comm_ring.one ↥((get_limit_cone (forget F)).cone.X -/
+      /- change (λ j, ((s.π.app j).1 (1 : s.X) : (F.obj j).carrier)) = (λ j, (1 : F.obj j)),-/ 
       sorry },
     { sorry },
     { sorry },
