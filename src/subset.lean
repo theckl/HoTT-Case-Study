@@ -616,11 +616,11 @@ def pred_elem {A : Set} {P : Setpred A} (a : A) : a ∈ { a ∈ A | P a } <-> P 
 
 @[hott, reducible]
 def elem_pred {A : Set} {P : Setpred A} (a : A) (pred_a : P a) :
-  { a ∈ A | P a }.carrier :=    
+  {a ∈ A | P a}.carrier :=    
 ⟨a, pred_a⟩
 
 @[hott]
-def elem_pred_eq {A : Set} {P : Setpred A} (a : A) (pred_a : P a) :
+def elem_pred_eta {A : Set} {P : Setpred A} (a : A) (pred_a : P a) :
   ({ a ∈ A | P a }).map (elem_pred a pred_a) = a :=
 by hsimp 
 
