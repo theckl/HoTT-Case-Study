@@ -326,7 +326,7 @@ def set_limit_pred {J : Set.{v}} [precategory.{v} J] (F : J ⥤ Set.{v}) :
   Setpred (Sections (λ j : J, F.obj j)) :=
 λ u, to_Prop (∀ {j k : J} (f : j ⟶ k), F.map f (u j) = u k)  
 
-@[hott]
+@[hott, reducible]
 def set_cone {J : Set.{v}} [precategory.{v} J] (F : J ⥤ Set.{v}) : cone F :=
 begin
   fapply cone.mk,
@@ -341,7 +341,7 @@ begin
       change u.1 k = F.map f (u.1 j), rwr u.2 } }
 end  
 
-@[hott]
+@[hott, reducible]
 def set_cone_is_limit {J : Set.{v}} [precategory.{v} J] (F : J ⥤ Set.{v}) :
   is_limit (set_cone F) :=
 begin 
@@ -362,7 +362,7 @@ begin
         apply is_set.elim } }  
 end
 
-@[hott]
+@[hott, reducible]
 def set_limit_cone {J : Set.{v}} [precategory.{v} J] (F : J ⥤ Set.{v}) : limit_cone F :=
   limit_cone.mk (set_cone F) (set_cone_is_limit F)
 
@@ -380,7 +380,7 @@ def set_has_limits_of_shape {J : Set.{v}} [precategory.{v} J] : has_limits_of_sh
    - The lift morphisms to this limit cone respect the structures. 
    
    We first need to construct the underlying cone of a cone in the category of structures. -/
-@[hott]
+@[hott, reducible]
 def str_cone_to_cone {J : Set.{v}} [precategory.{v} J] {C : Type (v+1)} [category.{v} C] 
   {std_str : std_structure_on C} {F : J ⥤ (std_structure std_str)} (s : cone F) :
   cone (forget F) :=
@@ -394,54 +394,55 @@ begin
       rwr <- ap sigma.fst (s.π.naturality f), hsimp } }  --naturality
 end    
 
+/- We define the the structure data of a limit cone for all limit cones of the underlying
+   category at once, because we can change then easily to the best suited construction. -/
 @[hott]
 structure limit_cone_str_data {J : Set.{v}} [precategory.{v} J] {C : Type (v+1)} 
   [category.{v} C] [has_limits_of_shape J C] {std_str : std_structure_on C} 
-  (F : J ⥤ (std_structure std_str)) :=
-(lc_str : std_str.P (limit.cone (forget F)).X) 
-(lc_legs_H : Π (j : J), std_str.H lc_str ((F.obj j).str) ((limit.cone (forget F)).π.app j))
-(lift_H : Π (s : cone F), std_str.H s.X.str lc_str 
-          ((get_limit_cone (forget F)).is_limit.lift (str_cone_to_cone s)))
+  {F : J ⥤ (std_structure std_str)} (lc : limit_cone (forget F)) :=
+(lc_str : std_str.P (lc.cone.X)) 
+(lc_legs_H : Π (j : J), std_str.H lc_str ((F.obj j).str) (lc.cone.π.app j))
+(lift_H : Π (s : cone F), std_str.H s.X.str lc_str (lc.is_limit.lift (str_cone_to_cone s)))
 
 @[hott]
 def str_limit_cone {J : Set.{v}} [precategory.{v} J] {C : Type (v+1)} 
   [category.{v} C] [has_limits_of_shape J C] {std_str : std_structure_on C} 
-  (F : J ⥤ (std_structure std_str)) :
-  Π lcd : limit_cone_str_data F, limit_cone F :=
+  {F : J ⥤ (std_structure std_str)} (lc : limit_cone (forget F))
+  (lcd : limit_cone_str_data lc) : limit_cone F :=
 begin 
-  intro lcd, fapply limit_cone.mk, 
+  fapply limit_cone.mk, 
   { fapply cone.mk, -- the limit cone 
-    { exact std_structure.mk (limit.cone (forget F)).X lcd.lc_str},
+    { exact std_structure.mk lc.cone.X lcd.lc_str},
     { fapply nat_trans.mk, 
       { intro j, 
-        exact ⟨(limit.cone (forget F)).π.app j, lcd.lc_legs_H j⟩ },
+        exact ⟨lc.cone.π.app j, lcd.lc_legs_H j⟩ },
       { intros j k f, apply hom_eq_C_std, rwr comp_hom_std_C,  
-        exact (limit.cone (forget F)).π.naturality f } } },
+        exact lc.cone.π.naturality f } } },
   { fapply is_limit.mk, -- the limit cone is a limit
     { intro s, 
-      exact ⟨(get_limit_cone (forget F)).is_limit.lift (str_cone_to_cone s), lcd.lift_H s⟩ },
+      exact ⟨lc.is_limit.lift (str_cone_to_cone s), lcd.lift_H s⟩ },
     { intros s j, apply hom_eq_C_std, rwr comp_hom_std_C, hsimp, 
-      exact (get_limit_cone (forget F)).is_limit.fac (str_cone_to_cone s) j },
+      exact lc.is_limit.fac (str_cone_to_cone s) j },
     { intros s m fac_m, apply hom_eq_C_std, hsimp, 
-      have fac_m1 : ∀ j : J, m.1 ≫ (limit.cone (forget F)).π.app j = 
+      have fac_m1 : ∀ j : J, m.1 ≫ (lc.cone.π.app j) = 
                                                    (str_cone_to_cone s).π.app j, from 
         assume j, 
-        calc m.1 ≫ (limit.cone (forget F)).π.app j = (s.π.app j).1 : ap sigma.fst (fac_m j)
+        calc m.1 ≫ (lc.cone.π.app j) = (s.π.app j).1 : ap sigma.fst (fac_m j)
              ... = (str_cone_to_cone s).π.app j : rfl,
-      exact (get_limit_cone (forget F)).is_limit.uniq (str_cone_to_cone s) m.1 fac_m1 } }
+      exact lc.is_limit.uniq (str_cone_to_cone s) m.1 fac_m1 } }
 end                
 
 @[hott]
 def str_has_limit {J : Set.{v}} [precategory.{v} J] {C : Type (v+1)} 
   [category.{v} C] [has_limits_of_shape J C] {std_str : std_structure_on C} 
-  (F : J ⥤ (std_structure std_str)) :
-  Π lcd : limit_cone_str_data F, has_limit F :=
-assume lcd, has_limit.mk (str_limit_cone F lcd)                                           
+  (F : J ⥤ (std_structure std_str)) 
+  (lcd : limit_cone_str_data (get_limit_cone (forget F))) : has_limit F :=
+has_limit.mk (str_limit_cone (get_limit_cone (forget F)) lcd)                                           
 
-@[hott]
+@[hott, instance]
 def std_structure_has_limits_of_shape {J : Set.{v}} [precategory.{v} J] {C : Type (v+1)} 
   [category.{v} C] [has_limits_of_shape J C] {std_str : std_structure_on C} 
-  (lcd_F : Π F : J ⥤ (std_structure std_str), limit_cone_str_data F): 
+  (lcd_F : Π F : J ⥤ (std_structure std_str), limit_cone_str_data (get_limit_cone (forget F))): 
   has_limits_of_shape J (std_structure std_str) :=
 has_limits_of_shape.mk (λ F, str_has_limit F (lcd_F F))
 
