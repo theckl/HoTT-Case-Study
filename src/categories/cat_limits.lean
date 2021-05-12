@@ -320,7 +320,7 @@ cone.mk c π
    for use later on.
    
    Note that the limit cone vertex may be the empty set - then all cones over the functor `F`
-   are empty. -/
+   are empty because they cannot factorize through the empty set. -/
 @[hott]
 def set_limit_pred {J : Set.{v}} [precategory.{v} J] (F : J ⥤ Set.{v}) : 
   Setpred (Sections (λ j : J, F.obj j)) :=
