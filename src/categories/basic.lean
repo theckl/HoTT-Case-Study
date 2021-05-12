@@ -112,13 +112,13 @@ calc g   = 𝟙 b ≫ g : by hsimp
 
 @[hott, hsimp]
 def iso_move_rl {C : Type u} [precategory.{v} C] {a b c : C} (i : a ≅ b)
-  (g : c ⟶ a) (h : c ⟶ b) : g ≫ i.hom = h  -> g = h ≫ i.inv :=
+  (g : c ⟶ a) (h : c ⟶ b) : g ≫ i.hom = h -> g = h ≫ i.inv :=
 assume pcl,
 have (g ≫ i.hom) ≫ i.inv = h ≫ i.inv, from ap (λ h : c ⟶ b, h ≫ i.inv) pcl,
 calc g   = g ≫ 𝟙 a : by hsimp
      ... = g ≫ (i.hom ≫ i.inv) : by rwr <-i.l_inv
      ... = (g ≫ i.hom) ≫ i.inv : by hsimp
-     ... = h ≫ i.inv : by rwr pcl 
+     ... = h ≫ i.inv : by rwr pcl     
 
 /- Isomorphisms are uniquely determined by their underlying homomorphism:
    The inverse map by functorial equalities, and the functorial equalities 
@@ -169,6 +169,11 @@ def id_hom_tr_comp {C : Type u} [precategory.{v} C] {c₁ c₂ d : C} (p : c₁ 
   (h : c₁ ⟶ d) : p ▸ h = (idtoiso p)⁻¹ʰ ≫ h :=
 begin hinduction p, hsimp end   
 
+@[hott]
+def id_hom_tr_comp' {C : Type u} [precategory.{v} C] {c₁ c₂ d : C} (p : c₁ = c₂)
+  (h : d ⟶ c₁) : p ▸ h = h ≫ (idtoiso p).hom :=
+begin hinduction p, hsimp end 
+
 /-- The structure of a category. -/
 @[hott]
 class category (obj : Type u) extends precategory.{v} obj :=
@@ -204,6 +209,15 @@ begin
   rwr <-(category.idtoiso_rinv i),  
   rwr category.idtoiso_linv (idtoiso⁻¹ᶠ i),
   exact id_hom_tr_comp (idtoiso⁻¹ᶠ i) h
+end 
+
+@[hott]
+def iso_hom_tr_comp' {C : Type u} [category.{v} C] {c₁ c₂ d : C} (i : c₁ ≅ c₂)
+  (h : d ⟶ c₁) : (idtoiso⁻¹ᶠ i) ▸ h = h ≫ i.hom :=
+begin 
+  rwr <-(category.idtoiso_rinv i),  
+  rwr category.idtoiso_linv (idtoiso⁻¹ᶠ i),
+  exact id_hom_tr_comp' (idtoiso⁻¹ᶠ i) h
 end 
 
 section
