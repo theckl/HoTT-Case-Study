@@ -4,7 +4,7 @@ universes u v w
 hott_theory
 
 namespace hott
-open is_trunc trunc equiv is_equiv hott.prod
+open is_trunc trunc equiv is_equiv hott.prod hott.quotient
 
 /- Should be in [init.function]. -/
 @[inline, reducible] def function.comp {α β φ : Type _} (f : β → φ) (g : α → β) : α → φ :=
@@ -531,6 +531,20 @@ def Prod_Set (A B : Set) : Set :=
   Set.mk (A × B) (prod_of_Sets_is_set A B)  
 
 notation A ` × `:100 B := Prod_Set A B   
+
+/- The quotient of a set by a mere relation is made into a set by truncation. -/
+@[hott]
+def set_quotient {A : Set.{u}} (R : A -> A -> trunctype.{v} -1) : Type (max u v) :=
+  trunc 0 (quotient (λ a b : A, R a b))
+
+@[hott] 
+def set_class_of {A : Set.{u}} (R : A → A → trunctype.{v} -1) (a : A) : set_quotient R :=  
+  tr (class_of (λ a b : A, R a b) a)
+
+@[hott]
+def eq_of_setrel {A : Set.{u}} (R : A → A → trunctype.{v} -1) ⦃a a' : A⦄ (H : R a a') :
+  set_class_of R a = set_class_of R a' :=
+ap tr (eq_of_rel (λ a b : A, R a b) H)  
 
 end set
 
