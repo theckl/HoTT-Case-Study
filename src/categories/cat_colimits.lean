@@ -155,6 +155,39 @@ has_colimits_of_shape.has_colimit F
    
    Note that the limit cocone vertex may be the empty set - then all cones over the functor `F`
    are empty because they cannot factorize through the empty set. -/
+@[hott]
+def colim_rep {J : Set.{v}} [precategory.{v} J] (F : J ⥤ Set.{v}) : Set.{v} := 
+  dprod_Set J (λ j : J, F.obj j)
+
+/- The relation is extended from the map compatibilities by symmetry and translativity. 
+   Its inductive definition requires the outcome to be a type. For the quotient construction
+   we turn it into a mere relation. -/
+@[hott]
+inductive set_colim_rel {J : Set.{v}} [precategory.{v} J] (F : J ⥤ Set.{v}) : 
+  colim_rep F -> colim_rep F -> Type v 
+| map : Π (j k : J) (h : j ⟶ k) (xj : F.obj j), set_colim_rel ⟨j,xj⟩ ⟨k, F.map h xj⟩ 
+| symm : Π (x : colim_rep F), set_colim_rel x x 
+| trans : Π (x y z : colim_rep F) (q : set_colim_rel x y) (r : set_colim_rel y z), 
+          set_colim_rel x z
+
+@[hott]
+def set_colim_mere_rel {J : Set.{v}} [precategory.{v} J] (F : J ⥤ Set.{v}) : 
+  colim_rep F -> colim_rep F -> trunctype.{v} -1 :=
+assume x y, ∥set_colim_rel F x y∥
+
+@[hott, reducible]
+def set_cocone {J : Set.{v}} [precategory.{v} J] (F : J ⥤ Set.{v}) : cocone F :=
+  begin
+  fapply cocone.mk,
+  /- The limit cocone vertex set -/
+  { exact set_quotient (set_colim_mere_rel F) },
+  { fapply nat_trans.mk, 
+    /- the leg maps of the limit cocone -/
+    { sorry },
+    /- compatibility of the leg maps -/
+    { intros j k f,  
+      sorry } }
+  end 
 
 end category_theory.colimits
 
