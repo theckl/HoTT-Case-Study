@@ -4,7 +4,7 @@ universes u v w
 hott_theory
 
 namespace hott
-open is_trunc trunc equiv is_equiv hott.prod hott.quotient
+open is_trunc trunc equiv is_equiv hott.prod hott.quotient hott.sigma
 
 /- Should be in [init.function]. -/
 @[inline, reducible] def function.comp {α β φ : Type _} (f : β → φ) (g : α → β) : α → φ :=
@@ -18,6 +18,11 @@ namespace set
 @[hott]
 def Prop_to_Set : trunctype.{u} -1 -> Set.{u} :=
   λ P, Set.mk P (is_trunc_succ P -1)
+
+/- Nicer name for construction of `Set` from `is_set`. -/
+@[hott]
+def to_Set (A : Type u) [pA : is_set A] : trunctype 0 :=
+  trunctype.mk A pA    
 
 /- We need the empty set, the identity map between sets and some properties of maps between sets. They can be 
    derived from properties of general (n-)types, in [function], but we give them separate definitions adapted 
@@ -520,7 +525,7 @@ def prod_of_Sets_is_set (A B : Set) : is_set (A × B) :=
   have pr_eq : ∀ (p₁ p₂ : A × B) (q r : p₁ = p₂), q = r, from
     assume p₁ p₂ q r, 
     begin
-      rwr <-prod_eq_eta q, rwr <-prod_eq_eta r, 
+      rwr <- prod_eq_eta q, rwr <- prod_eq_eta r, 
       apply prod_eq_eq,
       apply is_set.elim, apply is_set.elim
     end,  
@@ -532,10 +537,42 @@ def Prod_Set (A B : Set) : Set :=
 
 notation A ` × `:100 B := Prod_Set A B   
 
+#check is_equiv.left_inv
+
+/- Pathover equalities of set elements are equal. -/
+@[hott]
+def set_po_eq {A : Set} {B : A -> Set} {a₁ a₂ : A} {p : a₁ = a₂} {b₁ : B a₁} {b₂ : B a₂}
+  (q r : b₁ =[p; λ a, B a] b₂) : q = r := 
+begin 
+  rwr <- is_equiv.left_inv (pathover_equiv_tr_eq p b₁ b₂) q,
+  rwr <- is_equiv.left_inv (pathover_equiv_tr_eq p b₁ b₂) r,
+  apply ap (⇑(pathover_equiv_tr_eq p b₁ b₂))⁻¹ᶠ,
+  exact is_set.elim _ _
+end  
+
+/- The dependent product of sets is a set. -/
+@[hott]
+def dprod_of_Sets_is_set (A : Set) (B : A -> Set) : is_set (Σ (a : A), B a) :=
+  have dpr_eq : ∀ (p₁ p₂ : Σ (a : A), B a) (q r : p₁ = p₂), q = r, from
+    assume p₁ p₂ q r, 
+    begin 
+      hinduction p₁ with a₁ b₁, hinduction p₂ with a₂ b₂, 
+      rwr <- sigma_eq_eta q, rwr <- sigma_eq_eta r,
+      have s₁ : q..1 = r..1, from is_set.elim _ _,
+      have s₂ : q..2 =[s₁; λ s : a₁ = a₂, b₁ =[s; λ a, B a] b₂] r..2, from 
+        begin apply pathover_of_tr_eq, exact set_po_eq _ _ end,
+      exact apd011 sigma_eq s₁ s₂
+    end,
+  is_set.mk _ dpr_eq
+
+@[hott]
+def dprod_Set (A : Set) (B : A -> Set) : Set :=
+  Set.mk (Σ (a : A), B a) (dprod_of_Sets_is_set A B)   
+
 /- The quotient of a set by a mere relation is made into a set by truncation. -/
 @[hott]
-def set_quotient {A : Set.{u}} (R : A -> A -> trunctype.{v} -1) : Type (max u v) :=
-  trunc 0 (quotient (λ a b : A, R a b))
+def set_quotient {A : Set.{u}} (R : A -> A -> trunctype.{v} -1) : Set :=
+  to_Set (trunc 0 (quotient (λ a b : A, R a b)))
 
 @[hott] 
 def set_class_of {A : Set.{u}} (R : A → A → trunctype.{v} -1) (a : A) : set_quotient R :=  
