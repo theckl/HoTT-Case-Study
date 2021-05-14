@@ -166,7 +166,7 @@ def colim_rep {J : Set.{v}} [precategory.{v} J] (F : J ⥤ Set.{v}) : Set.{v} :=
 inductive set_colim_rel {J : Set.{v}} [precategory.{v} J] (F : J ⥤ Set.{v}) : 
   colim_rep F -> colim_rep F -> Type v 
 | map : Π (j k : J) (h : j ⟶ k) (xj : F.obj j), set_colim_rel ⟨j,xj⟩ ⟨k, F.map h xj⟩ 
-| symm : Π (x : colim_rep F), set_colim_rel x x 
+| symm : Π (x y : colim_rep F), set_colim_rel x y -> set_colim_rel y x
 | trans : Π (x y z : colim_rep F) (q : set_colim_rel x y) (r : set_colim_rel y z), 
           set_colim_rel x z
 
@@ -174,6 +174,22 @@ inductive set_colim_rel {J : Set.{v}} [precategory.{v} J] (F : J ⥤ Set.{v}) :
 def set_colim_mere_rel {J : Set.{v}} [precategory.{v} J] (F : J ⥤ Set.{v}) : 
   colim_rep F -> colim_rep F -> trunctype.{v} -1 :=
 assume x y, ∥set_colim_rel F x y∥
+
+@[hott]
+def set_colim_mere_rel.map {J : Set.{v}} [precategory.{v} J] (F : J ⥤ Set.{v}) :
+  Π (j k : J) (h : j ⟶ k) (xj : F.obj j), set_colim_mere_rel F ⟨j,xj⟩ ⟨k, F.map h xj⟩ :=
+begin intros j k h xj, apply tr, constructor end
+
+@[hott]
+def set_colim_mere_rel.symm {J : Set.{v}} [precategory.{v} J] (F : J ⥤ Set.{v}) :
+  Π (x y : colim_rep F), set_colim_mere_rel F x y -> set_colim_mere_rel F y x :=
+begin intros x y, apply trunc_functor, exact set_colim_rel.symm _ _ end
+
+@[hott]
+def set_colim_mere_rel.trans {J : Set.{v}} [precategory.{v} J] (F : J ⥤ Set.{v}) :
+  Π (x y z : colim_rep F) (q : set_colim_mere_rel F x y) (r : set_colim_mere_rel F y z), 
+          set_colim_mere_rel F x z :=
+begin intros x y z, apply trunc_functor2, exact set_colim_rel.trans _ _ _ end         
 
 @[hott, reducible]
 def set_cocone {J : Set.{v}} [precategory.{v} J] (F : J ⥤ Set.{v}) : cocone F :=
@@ -183,11 +199,42 @@ def set_cocone {J : Set.{v}} [precategory.{v} J] (F : J ⥤ Set.{v}) : cocone F 
   { exact set_quotient (set_colim_mere_rel F) },
   { fapply nat_trans.mk, 
     /- the leg maps of the limit cocone -/
-    { sorry },
+    { intro j, exact λ f : F.obj j, set_class_of (set_colim_mere_rel F) ⟨j, f⟩ },
     /- compatibility of the leg maps -/
-    { intros j k f,  
-      sorry } }
+    { intros j k d, rwr constant_functor_map _ _ _ d, rwr precategory.comp_id,
+      apply eq_of_homotopy, intro f, 
+      change set_class_of (set_colim_mere_rel F) ⟨k, F.map d f⟩ = 
+             set_class_of (set_colim_mere_rel F) ⟨j, f⟩,
+      apply eq_of_setrel, apply set_colim_mere_rel.symm, apply set_colim_mere_rel.map } }
   end 
+
+@[hott, reducible]
+def set_cocone_is_colimit {J : Set.{v}} [precategory.{v} J] (F : J ⥤ Set.{v}) :
+  is_colimit (set_cocone F) :=
+begin 
+  fapply is_colimit.mk,
+  /- the descending to the colimit cocone from another cocone -/ 
+  { intro s, intro x, sorry },
+  /- factorising the descending with colimit cocone legs -/    
+  { intros s j, hsimp, apply eq_of_homotopy, 
+    intro x, sorry },
+  /- uniqueness of descending -/  
+  { intros s m desc_m, hsimp, apply eq_of_homotopy,
+    intro x, hsimp, sorry }  
+end 
+
+@[hott, reducible]
+def set_colimit_cocone {J : Set.{v}} [precategory.{v} J] (F : J ⥤ Set.{v}) : 
+  colimit_cocone F :=
+colimit_cocone.mk (set_cocone F) (set_cocone_is_colimit F)
+
+@[hott, instance]
+def set_has_colimit {J : Set.{v}} [precategory.{v} J] (F : J ⥤ Set.{v}) : has_colimit F :=
+  has_colimit.mk (set_colimit_cocone F)
+
+@[hott, instance]
+def set_has_colimits_of_shape {J : Set.{v}} [precategory.{v} J] : has_colimits_of_shape J Set.{v} :=
+  has_colimits_of_shape.mk (λ F, set_has_colimit F) 
 
 end category_theory.colimits
 
