@@ -1,4 +1,4 @@
-import hott.init hott.types.trunc prop_logic hott.types.prod
+import hott.init hott.types.trunc prop_logic hott.types.prod hott.hit.quotient
 
 universes u v w
 hott_theory
@@ -325,7 +325,7 @@ def idp_car_to_idp_set :
 | (trunctype.mk carr struct) :=  
   begin
     hsimp,
-    have est_eq : pathover_of_tr_eq idp = idpatho struct, from 
+    have est_eq : (pathover_idp_of_eq (is_trunc 0) idp) = idpatho struct, from 
       is_prop.elim (pathover_of_tr_eq _) (idpatho struct),
     rwr est_eq
   end
@@ -537,8 +537,6 @@ def Prod_Set (A B : Set) : Set :=
 
 notation A ` × `:100 B := Prod_Set A B   
 
-#check is_equiv.left_inv
-
 /- Pathover equalities of set elements are equal. -/
 @[hott]
 def set_po_eq {A : Set} {B : A -> Set} {a₁ a₂ : A} {p : a₁ = a₂} {b₁ : B a₁} {b₂ : B a₂}
@@ -582,6 +580,33 @@ def set_class_of {A : Set.{u}} (R : A → A → trunctype.{v} -1) (a : A) : set_
 def eq_of_setrel {A : Set.{u}} (R : A → A → trunctype.{v} -1) ⦃a a' : A⦄ (H : R a a') :
   set_class_of R a = set_class_of R a' :=
 ap tr (eq_of_rel (λ a b : A, R a b) H)  
+
+@[hott]
+def set_quotient.rec {A : Set.{u}} (R : A → A → trunctype.{v} -1) 
+  {P : set_quotient R -> Set.{w}} (Pc : Π a : A, P (set_class_of R a))
+  (Pp : Π ⦃ a a' : A ⦄ (H : R a a'), Pc a =[eq_of_setrel R H; λ x, P x] Pc a') 
+  (x : set_quotient R) : P x :=
+begin 
+  let P' := λ x, (P x).carrier, 
+  change P' x, apply trunc.rec, 
+  let P'' := λ a, P' (tr a), 
+  intro a, change P'' a, fapply quotient.rec,
+  { intro a, exact Pc a },
+  { intros a a' H, exact pathover_of_pathover_ap P' tr (Pp H) } 
+end  
+
+@[hott]
+def set_quotient.elim {A : Set.{u}} (R : A → A → trunctype.{v} -1) 
+  {P : Set.{w}} (Pc : A -> P )
+  (Pp : Π ⦃ a a' : A ⦄ (H : R a a'), Pc a = Pc a') 
+  (x : set_quotient R) : P :=
+begin
+  let P' := λ x : set_quotient R, P, change (P' x).carrier, 
+  fapply set_quotient.rec R, 
+  { intro a, exact Pc a },
+  { intros a a' H, change Pc a =[eq_of_setrel R H; λ (x : ↥(set_quotient R)), ↥P] Pc a', 
+    apply pathover_of_eq, exact Pp H }
+end  
 
 end set
 
