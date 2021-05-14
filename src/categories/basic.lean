@@ -237,12 +237,19 @@ infixr ` ⥤ ` :26 := functor
 attribute [hsimp] functor.map_id
 attribute [hsimp] functor.map_comp
 
-@[hott]
+@[hott, reducible]
 def constant_functor [precategory.{v} C] [precategory.{v'} D] (d : D) : 
   C ⥤ D := 
 have id_hom_eq : ∀ d : D, 𝟙 d = 𝟙 d ≫ 𝟙 d, by intro d; hsimp,  
 functor.mk (λ c : C, d) (λ c₁ c₂ f, 𝟙 d) (λ c, rfl) 
   (λ c₁ c₂ c₃ f g, (id_hom_eq d))
+
+
+@[hott]
+def constant_functor_map [precategory.{v} C] [precategory.{v'} D] (d : D) :
+  ∀ {c₁ c₂ : C} (h : c₁ ⟶ c₂), (constant_functor C D d).map h = 𝟙 d :=
+assume c₁ c₂ h, rfl   
+
 
 @[hott]
 structure nat_trans [precategory.{v} C] [precategory.{v'} D] (F G : C ⥤ D) :=
