@@ -214,10 +214,16 @@ def set_cocone_is_colimit {J : Set.{v}} [precategory.{v} J] (F : J ⥤ Set.{v}) 
 begin 
   fapply is_colimit.mk,
   /- the descending to the colimit cocone from another cocone -/ 
-  { intro s, intro x, sorry },
+  { intro s, intro x, fapply set_quotient.elim (set_colim_mere_rel F), 
+    { exact λ fj : colim_rep F, s.π.app fj.1 fj.2 },
+    { intros a a' Rmaa', hinduction Rmaa' with Raa', hinduction Raa', 
+      { exact (homotopy_of_eq (s.π.naturality h) xj)⁻¹ }, 
+      { exact ih⁻¹ },
+      { exact ih_q ⬝ ih_r } },
+    { exact x } },
   /- factorising the descending with colimit cocone legs -/    
   { intros s j, hsimp, apply eq_of_homotopy, 
-    intro x, sorry },
+    intro x, refl },
   /- uniqueness of descending -/  
   { intros s m desc_m, hsimp, apply eq_of_homotopy,
     intro x, hsimp, sorry }  
