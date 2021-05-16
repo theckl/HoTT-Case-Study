@@ -583,11 +583,12 @@ ap tr (eq_of_rel (λ a b : A, R a b) H)
 
 @[hott]
 def set_quotient.rec {A : Set.{u}} (R : A → A → trunctype.{v} -1) 
-  {P : set_quotient R -> Set.{w}} (Pc : Π a : A, P (set_class_of R a))
+  {P : set_quotient R -> Type w} [∀ x : set_quotient R, is_set (P x)] 
+  (Pc : Π a : A, P (set_class_of R a))
   (Pp : Π ⦃ a a' : A ⦄ (H : R a a'), Pc a =[eq_of_setrel R H; λ x, P x] Pc a') 
   (x : set_quotient R) : P x :=
 begin 
-  let P' := λ x, (P x).carrier, 
+  let P' := λ x, P x, 
   change P' x, apply trunc.rec, 
   let P'' := λ a, P' (tr a), 
   intro a, change P'' a, fapply quotient.rec,
@@ -597,15 +598,16 @@ end
 
 @[hott]
 def set_quotient.elim {A : Set.{u}} (R : A → A → trunctype.{v} -1) 
-  {P : Set.{w}} (Pc : A -> P )
+  {P : Type w} [Hs: is_set P] (Pc : A -> P )
   (Pp : Π ⦃ a a' : A ⦄ (H : R a a'), Pc a = Pc a') 
   (x : set_quotient R) : P :=
 begin
-  let P' := λ x : set_quotient R, P, change (P' x).carrier, 
+  let P' := λ x : set_quotient R, P, change P' x, 
   fapply set_quotient.rec R, 
   { intro a, exact Pc a },
-  { intros a a' H, change Pc a =[eq_of_setrel R H; λ (x : ↥(set_quotient R)), ↥P] Pc a', 
-    apply pathover_of_eq, exact Pp H }
+  { intros a a' H, change Pc a =[eq_of_setrel R H; λ (x : ↥(set_quotient R)), P] Pc a', 
+    apply pathover_of_eq, exact Pp H },
+  { intro x, exact Hs }  
 end  
 
 end set
