@@ -220,13 +220,18 @@ begin
       { exact (homotopy_of_eq (s.π.naturality h) xj)⁻¹ }, 
       { exact ih⁻¹ },
       { exact ih_q ⬝ ih_r } },
-    { exact x } },
+    { exact x },
+    { exact s.X.struct } },
   /- factorising the descending with colimit cocone legs -/    
   { intros s j, hsimp, apply eq_of_homotopy, 
     intro x, refl },
   /- uniqueness of descending -/  
   { intros s m desc_m, hsimp, apply eq_of_homotopy,
-    intro x, hsimp, sorry }  
+    intro x, fapply @set_quotient.rec _ (set_colim_mere_rel F) (λ x, m x = _), 
+    { intro a, change m (set_class_of (set_colim_mere_rel F) a) = s.π.app a.1 a.2, 
+      rwr <- homotopy_of_eq (desc_m a.1) a.2, 
+      hinduction a, refl },
+    { intros a a' H, apply pathover_of_tr_eq, exact is_set.elim _ _ } }  
 end 
 
 @[hott, reducible]
@@ -239,8 +244,9 @@ def set_has_colimit {J : Set.{v}} [precategory.{v} J] (F : J ⥤ Set.{v}) : has_
   has_colimit.mk (set_colimit_cocone F)
 
 @[hott, instance]
-def set_has_colimits_of_shape {J : Set.{v}} [precategory.{v} J] : has_colimits_of_shape J Set.{v} :=
-  has_colimits_of_shape.mk (λ F, set_has_colimit F) 
+def set_has_colimits_of_shape {J : Set.{v}} [precategory.{v} J] : 
+  has_colimits_of_shape J Set.{v} :=
+has_colimits_of_shape.mk (λ F, set_has_colimit F) 
 
 end category_theory.colimits
 
