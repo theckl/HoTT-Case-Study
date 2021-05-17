@@ -531,7 +531,7 @@ inductive expr {J : Set.{v}} [precategory.{v} J] (F : J ⥤ CommRing.{v}) : Type
 | add : expr → expr → expr
 | mul : expr → expr → expr
 
-@[hott]
+@[hott, reducible]
 def set_expr {J : Set.{v}} [precategory.{v} J] (F : J ⥤ CommRing.{v}) : Set.{v} :=
   to_Set (trunc 0 (expr F))
 
@@ -579,8 +579,41 @@ inductive ring_colim_rel {J : Set.{v}} [precategory.{v} J] (F : J ⥤ CommRing.{
 @[hott]
 def ring_colim_mere_rel {J : Set.{v}} [precategory.{v} J] (F : J ⥤ CommRing.{v}) : 
   set_expr F → set_expr F → trunctype.{v} -1 :=
-sorry  
-/- assume ρ₁ ρ₂, ∥ring_colim_rel F ρ₁ ρ₂∥   -/
+begin 
+  fapply @trunc.elim 0 (expr F) ((set_expr F) → Prop), 
+  intro p, fapply @trunc.elim 0 (expr F),
+  intro q, exact ∥ring_colim_rel F p q∥
+end  
+
+@[hott]
+def ring_colim_set {J : Set.{v}} [precategory.{v} J] (F : J ⥤ CommRing.{v}) : Set.{v} :=
+  set_quotient (ring_colim_mere_rel F)
+
+@[hott]
+def ring_colim_str {J : Set.{v}} [precategory.{v} J] (F : J ⥤ CommRing.{v}) : 
+  comm_ring (ring_colim_set F) :=
+begin 
+  let R := ring_colim_set F, 
+  fapply comm_ring_mk,
+  { fapply comm_ring_ops.mk, 
+    { sorry }, --add
+    { sorry }, --zero
+    { sorry }, --neg
+    { sorry }, --mul
+    { sorry } }, --one
+  { fapply comm_ring_laws.mk, 
+    { sorry }, 
+    { sorry }, 
+    { sorry }, 
+    { sorry },
+    { sorry },
+    { sorry }, 
+    { sorry }, 
+    { sorry }, 
+    { sorry },
+    { sorry },
+    { sorry } }
+end  
 
 end algebra
 
