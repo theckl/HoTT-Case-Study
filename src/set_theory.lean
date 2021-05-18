@@ -610,6 +610,20 @@ begin
   { intro x, exact Hs }  
 end  
 
+/- The quotient of a set by a mere equivalence relation is a set. -/
+@[hott]
+def set_quotient_is_set {A : Set.{u}} (R : A → A → trunctype.{v} -1) : 
+  is_set (quotient (λ a b : A, R a b)) :=
+  begin
+    let R' := λ a b : A, (R a b).carrier, 
+    apply is_set.mk, 
+    fapply @quotient.rec A R' (λ x : quotient R', Π (y : quotient R') (p q : x = y), p = q), 
+    { intro a, fapply @quotient.rec A R' (λ y : quotient R', Π (p q : class_of R' a = y), p = q),
+      { intro b, sorry },
+      { sorry } },
+    { sorry } 
+  end
+
 end set
 
 end hott
