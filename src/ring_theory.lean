@@ -4,7 +4,7 @@ universes u v w
 hott_theory
 
 namespace hott
-open hott.is_trunc hott.is_equiv hott.algebra hott.set subset categories 
+open hott.is_trunc hott.is_equiv hott.algebra hott.set subset categories hott.trunc
      hott.category_theory.limits hott.sigma
 
 namespace algebra
@@ -576,7 +576,7 @@ inductive ring_colim_rel {J : Set.{v}} [precategory.{v} J] (F : J ⥤ CommRing.{
 | right_distrib : Π (x y z), ring_colim_rel (expr.mul (expr.add x y) z) 
                                             (expr.add (expr.mul x z) (expr.mul y z))   
 
-@[hott]
+@[hott, reducible]
 def ring_colim_mere_rel {J : Set.{v}} [precategory.{v} J] (F : J ⥤ CommRing.{v}) : 
   set_expr F → set_expr F → trunctype.{v} -1 :=
 begin 
@@ -593,10 +593,24 @@ def ring_colim_set {J : Set.{v}} [precategory.{v} J] (F : J ⥤ CommRing.{v}) : 
 def ring_colim_str {J : Set.{v}} [precategory.{v} J] (F : J ⥤ CommRing.{v}) : 
   comm_ring (ring_colim_set F) :=
 begin 
-  let R := ring_colim_set F, 
+  let R := ring_colim_set F, let rel := ring_colim_rel F, let mrel := ring_colim_mere_rel F,
   fapply comm_ring_mk,
   { fapply comm_ring_ops.mk, 
-    { sorry }, --add
+    { fapply @set_quotient.elim (set_expr F) mrel (ring_colim_set F → ring_colim_set F), 
+      { fapply @trunc.elim 0 (expr F) (ring_colim_set F → ring_colim_set F), intro x, 
+        fapply @set_quotient.elim (set_expr F) mrel (ring_colim_set F),
+        { fapply @trunc.elim 0 (expr F) (ring_colim_set F), intro y, 
+          exact set_class_of mrel (tr (expr.add x y)) },
+        { fapply @trunc.rec 0 (expr F) (λ b : set_expr F, Π a' : set_expr F, mrel b a' -> 
+                 trunc.elim (λ (y : expr F), set_class_of mrel (tr (expr.add x y))) b =
+                 trunc.elim (λ (y : expr F), set_class_of mrel (tr (expr.add x y))) a'),
+          intro a, hsimp, 
+          fapply @trunc.rec 0 (expr F) (λ a' : set_expr F, Π r : mrel (tr a) a',
+                 set_class_of mrel (tr (expr.add x a)) = 
+                 trunc.elim (λ y : expr F, set_class_of mrel (tr (expr.add x y))) a'),
+          intro a', hsimp,      
+          sorry  } },
+      { sorry } }, --add
     { sorry }, --zero
     { sorry }, --neg
     { sorry }, --mul
