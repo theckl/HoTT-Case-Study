@@ -1,10 +1,11 @@
-import hott.init hott.types.trunc prop_logic hott.types.prod hott.hit.quotient
+import hott.init hott.types.trunc prop_logic hott.types.prod hott.hit.quotient 
+       hott.algebra.relation
 
 universes u v w
 hott_theory
 
 namespace hott
-open is_trunc trunc equiv is_equiv hott.prod hott.quotient hott.sigma
+open is_trunc trunc equiv is_equiv hott.prod hott.quotient hott.sigma hott.relation
 
 /- Should be in [init.function]. -/
 @[inline, reducible] def function.comp {α β φ : Type _} (f : β → φ) (g : α → β) : α → φ :=
@@ -610,19 +611,42 @@ begin
   { intro x, exact Hs }  
 end  
 
-/- The quotient of a set by a mere equivalence relation is a set. -/
+/- These induction principles should occur in [hit.quotient]. -/
 @[hott]
-def set_quotient_is_set {A : Set.{u}} (R : A → A → trunctype.{v} -1) : 
-  is_set (quotient (λ a b : A, R a b)) :=
-  begin
-    let R' := λ a b : A, (R a b).carrier, 
-    apply is_set.mk, 
-    fapply @quotient.rec A R' (λ x : quotient R', Π (y : quotient R') (p q : x = y), p = q), 
-    { intro a, fapply @quotient.rec A R' (λ y : quotient R', Π (p q : class_of R' a = y), p = q),
-      { intro b, sorry },
-      { sorry } },
-    { sorry } 
-  end
+def quotient.rec2 {A : Set.{u}} (R : A → A → Type v) 
+  {P : quotient R -> quotient R -> Type w}  
+  (Pc : Π a b : A, P (class_of R a) (class_of R b))
+  (Ppl : Π ⦃ a a' b : A ⦄ (H : R a a'), Pc a b =[eq_of_rel R H; λ x, P x (class_of R b)] 
+                                      Pc a' b) 
+  (Ppr : Π ⦃ a b b' : A ⦄ (H : R b b'), Pc a b =[eq_of_rel R H; λ y, P (class_of R a) y] 
+                                      Pc a b') :
+  Π (x y : quotient R), P x y :=
+begin 
+  fapply @quotient.rec A R (λ x : quotient R, Π (y : quotient R), P x y), 
+  { intro a,
+    fapply @quotient.rec A R (λ y : quotient R, P (class_of R a) y),
+    { intro b, exact Pc a b },
+    { intros b b' H, exact Ppr H } },
+  { intros a a' H, sorry } 
+end 
+
+/- The quotient of a set by a mere equivalence relation is automatically a set. The proof 
+   uses [HoTT-Book, Lem.10.1.8] that states the equivalence 
+   `class_of a = class_of b ≃ R a b`. -/
+@[hott]
+def equiv_rel_quotient_is_set {A : Set.{v}} (R : A → A → trunctype.{v} -1) 
+  [is_equivalence.{v} (λ a b : A, R a b)] : is_set (quotient (λ a b : A, R a b)) :=
+begin
+  let R' := λ a b : A, (R a b).carrier, 
+  have H : Π a b : A, class_of R' a = class_of R' b ≃ R' a b, from sorry,
+  have HP : Π a b : A, is_prop (class_of R' a = class_of R' b), from sorry,
+  have HS : Π a b : A, is_set (class_of R' a = class_of R' b), from sorry,
+  apply is_set.mk, 
+  fapply @quotient.rec2 A R' (λ x y : quotient R', Π (p q : x = y), p = q), 
+  { intros a b p q, sorry },
+  { sorry },
+  { sorry } 
+end
 
 end set
 
