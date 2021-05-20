@@ -91,6 +91,6 @@ begin hinduction p, hinduction q, hinduction r₁, hinduction r₂, refl end
 def tr_fn_tr_eval {A B : Type _} {C : A -> B -> Type _} {a₁ a₂ : A}
   (f : Π (b : B), C a₁ b) (p : a₁ = a₂) (b : B) :
   (p ▸ f) b = p ▸ (f b) :=
-begin hinduction p, refl end  
+begin hinduction p, refl end   
 
 end hott
