@@ -1,5 +1,5 @@
 import hott.init hott.types.trunc prop_logic hott.types.prod hott.hit.quotient 
-       hott.algebra.relation
+       hott.algebra.relation 
 
 universes u v w
 hott_theory
@@ -611,14 +611,25 @@ begin
   { intro x, exact Hs }  
 end  
 
+/- What is the best place for this? -/
+@[hott]
+def dep_eq_of_homotopy {A : Type _} {P : A -> A -> Type _} {b b' : A} (p : b = b') 
+  (f : Π a : A, P b a) (f' : Π a : A, P b' a) : 
+  (Π a : A, f a =[p; λ b : A, P b a] f' a) -> f =[p; λ b : A, Π a : A, P b a] f' :=
+begin 
+  hinduction p, 
+  intro htp, apply pathover_idp_of_eq, apply eq_of_homotopy, 
+  intro a, exact eq_of_pathover_idp (htp a) 
+end  
+
 /- These induction principles should occur in [hit.quotient]. -/
 @[hott]
 def quotient.rec2 {A : Set.{u}} (R : A → A → Type v) 
   {P : quotient R -> quotient R -> Type w}  
   (Pc : Π a b : A, P (class_of R a) (class_of R b))
-  (Ppl : Π ⦃ a a' b : A ⦄ (H : R a a'), Pc a b =[eq_of_rel R H; λ x, P x (class_of R b)] 
+  (Ppl : Π ⦃a a' : A⦄ (b : A) (H : R a a'), Pc a b =[eq_of_rel R H; λ x, P x (class_of R b)] 
                                       Pc a' b) 
-  (Ppr : Π ⦃ a b b' : A ⦄ (H : R b b'), Pc a b =[eq_of_rel R H; λ y, P (class_of R a) y] 
+  (Ppr : Π (a : A) ⦃b b' : A⦄ (H : R b b'), Pc a b =[eq_of_rel R H; λ y, P (class_of R a) y] 
                                       Pc a b') :
   Π (x y : quotient R), P x y :=
 begin 
@@ -626,8 +637,11 @@ begin
   { intro a,
     fapply @quotient.rec A R (λ y : quotient R, P (class_of R a) y),
     { intro b, exact Pc a b },
-    { intros b b' H, exact Ppr H } },
-  { intros a a' H, sorry } 
+    { intros b b' Hb, exact Ppr a Hb } },
+  { intros a a' Ha, apply dep_eq_of_homotopy, 
+    fapply quotient.rec, 
+    { intro b, exact Ppl b Ha },
+    { intros b b' Hb, sorry } } 
 end 
 
 /- The quotient of a set by a mere equivalence relation is automatically a set. The proof 
