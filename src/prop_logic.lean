@@ -85,7 +85,19 @@ have eq_prod : forall dP1 dP2 : (forall a : A, P a), dP1 = dP2, from
     assume a, 
     is_prop.elim _ _, 
   eq_of_homotopy dP_hom,
-is_prop.mk eq_prod  
+is_prop.mk eq_prod
+
+@[hott, instance]
+lemma is_prop_dprod2 {A : Type u} {P : A -> A -> Type u} 
+    (pP : forall a b : A, is_prop (P a b)) : 
+  is_prop (forall a b : A, P a b) :=
+have eq_prod : forall dP1 dP2 : (forall a b : A, P a b), dP1 = dP2, from 
+  assume dP1 dP2, 
+  have dP_hom : dP1 ~ dP2, from 
+    assume a, 
+    is_prop.elim _ _, 
+  eq_of_homotopy dP_hom,
+is_prop.mk eq_prod
 
 @[hott, instance]
 def iff_is_prop (A B : Type u) [pA : is_prop A] [pB : is_prop B] : is_prop (A ↔ B) :=
