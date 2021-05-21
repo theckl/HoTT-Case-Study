@@ -611,7 +611,7 @@ begin
   { intro x, exact Hs }  
 end  
 
-/- What is the best place for this? -/
+/- What is the best place for these? [pathover2] requires [set_theory]. -/
 @[hott]
 def dep_eq_of_homotopy {A : Type _} {P : A -> A -> Type _} {b b' : A} (p : b = b') 
   (f : Π a : A, P b a) (f' : Π a : A, P b' a) : 
@@ -622,10 +622,24 @@ begin
   intro a, exact eq_of_pathover_idp (htp a) 
 end  
 
-/- These induction principles should occur in [hit.quotient]. -/
+def dep_set_eq_eq {A : Type _} {B : A -> Type _} {a a' : A} [is_set (B a')]
+  (p : a = a') {b : B a} {b' : B a'} (f f' : b =[p] b') : f = f' :=
+have tr_eq : tr_eq_of_pathover f = tr_eq_of_pathover f', from is_set.elim _ _,
+let po_tr_eq := ap pathover_of_tr_eq tr_eq in
+begin 
+  let F := (pathover_equiv_tr_eq p b b').to_fun,
+  rwr <- is_equiv.left_inv F f,
+  rwr <- is_equiv.left_inv F f',
+  exact po_tr_eq
+end  
+
+/- These induction principles should occur in [hit.quotient]. I can't see how to prove the
+   equalities of equalities needed for double induction for `P a b` not a set, but at the
+   moment the assumption holds in the applications. -/
 @[hott]
-def quotient.rec2 {A : Set.{u}} (R : A → A → Type v) 
-  {P : quotient R -> quotient R -> Type w}  
+def quotients_to_Set.rec2 {A : Set.{u}} (R : A → A → Type v) 
+  {P : quotient R -> quotient R -> Type w} 
+  [HS : ∀ a b : A, is_set (P (class_of R a) (class_of R b))] 
   (Pc : Π a b : A, P (class_of R a) (class_of R b))
   (Ppl : Π ⦃a a' : A⦄ (b : A) (H : R a a'), Pc a b =[eq_of_rel R H; λ x, P x (class_of R b)] 
                                       Pc a' b) 
@@ -641,25 +655,67 @@ begin
   { intros a a' Ha, apply dep_eq_of_homotopy, 
     fapply quotient.rec, 
     { intro b, exact Ppl b Ha },
-    { intros b b' Hb, sorry } } 
+    { intros b b' Hb, apply pathover_of_tr_eq, 
+      apply @dep_set_eq_eq _ (λ x : quotient R, P x (class_of R b')) 
+            (class_of R a) (class_of R a') (HS a' b') } } 
 end 
 
 /- The quotient of a set by a mere equivalence relation is automatically a set. The proof 
    uses [HoTT-Book, Lem.10.1.8] that states the equivalence 
-   `class_of a = class_of b ≃ R a b`. -/
+   `class_of a = class_of b ≃ R a b`. 
+   
+   We start with the extension of the relation to the quotient. -/
+@[hott]
+def equiv_rel_to_quotient_rel {A : Set.{v}} (R : A → A → trunctype.{v} -1) 
+  [is_equivalence.{v} (λ a b : A, R a b)] : 
+  (quotient (λ a b : A, R a b)) -> (quotient (λ a b : A, R a b)) -> trunctype.{v} -1 :=
+begin
+  let R' := λ a b : A, (R a b).carrier,
+  fapply @quotients_to_Set.rec2 A R',
+  { assumption },
+  { intros a a' b H, apply pathover_of_tr_eq, sorry },
+  { sorry }
+end   
+
+/- Next we show the equivalence on the extended relation. -/
+@[hott]
+def quot_eq_eqv_quot_rel {A : Set.{v}} (R : A → A → trunctype.{v} -1) 
+  [is_equivalence.{v} (λ a b : A, R a b)] : Π x y : quotient (λ a b : A, R a b),
+  (x = y) ≃ (equiv_rel_to_quotient_rel R x y) :=
+sorry  
+/- begin
+  intros a b, fapply equiv.mk,
+      { sorry },
+      { fapply is_equiv.adjointify, 
+        { exact @eq_of_rel _ R' a b },
+        { sorry },
+        { sorry } } 
+    end, -/  
+
 @[hott]
 def equiv_rel_quotient_is_set {A : Set.{v}} (R : A → A → trunctype.{v} -1) 
   [is_equivalence.{v} (λ a b : A, R a b)] : is_set (quotient (λ a b : A, R a b)) :=
 begin
   let R' := λ a b : A, (R a b).carrier, 
-  have H : Π a b : A, class_of R' a = class_of R' b ≃ R' a b, from sorry,
-  have HP : Π a b : A, is_prop (class_of R' a = class_of R' b), from sorry,
-  have HS : Π a b : A, is_set (class_of R' a = class_of R' b), from sorry,
+  have HR : Π a b : A, is_prop (R' a b), from assume a b, (R a b).struct,
+  /- This is Lem.10.1.8. -/
+  have H : Π a b : A, class_of R' a = class_of R' b ≃ R' a b, from 
+    assume a b, quot_eq_eqv_quot_rel R (class_of R' a) (class_of R' b),
+  have HP : Π a b : A, is_prop (class_of R' a = class_of R' b), from 
+    assume a b, is_trunc_equiv_closed_rev -1 (H a b) (HR a b),
+  have HS : Π a b : A, is_set (class_of R' a = class_of R' b), from 
+    assume a b, @is_trunc_succ _ _ (HP a b),
+  have HPeq : Π a b : A, is_prop (Π p q : class_of R' a = class_of R' b, p = q), from 
+    assume a b, is_prop_dprod2 (λ p q, @is_trunc_eq _ -1 (HS a b) p q),
+  have HSeq : Π a b : A, is_set (Π p q : class_of R' a = class_of R' b, p = q), from 
+    assume a b, @is_trunc_succ _ _ (HPeq a b),
   apply is_set.mk, 
-  fapply @quotient.rec2 A R' (λ x y : quotient R', Π (p q : x = y), p = q), 
-  { intros a b p q, sorry },
-  { sorry },
-  { sorry } 
+  fapply @quotients_to_Set.rec2 A R' (λ x y : quotient R', Π (p q : x = y), p = q) HSeq, 
+  { intros a b p q, exact @is_prop.elim _ (HP a b) p q },
+  { intros a a' b H, apply pathover_of_tr_eq, 
+    exact @is_prop.elim _ (HPeq a' b) _ _ },
+  { intros a b b' H, apply pathover_of_tr_eq, 
+    exact @is_prop.elim _ (HPeq a b') _ _ } 
 end
 
 end set
