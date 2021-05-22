@@ -76,7 +76,7 @@ have eq_map : forall f1 f2 : A -> B, f1 = f2, from
 is_prop.mk eq_map 
 
 @[hott, instance]
-lemma is_prop_dprod {A : Type u} {P : A -> Type u} 
+lemma is_prop_dprod {A : Type u} {P : A -> Type v} 
     (pP : forall a : A, is_prop (P a)) : 
   is_prop (forall a : A, P a) :=
 have eq_prod : forall dP1 dP2 : (forall a : A, P a), dP1 = dP2, from 
