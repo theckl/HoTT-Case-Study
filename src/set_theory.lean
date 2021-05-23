@@ -662,7 +662,7 @@ end
 
 /- Equlaity in the set-quotient of a set by a mere equivalence relation is equivalent to the 
    relation, extended to the set-quotient. This is [HoTT-Book, Lem.10.1.8] (which actually
-   states the equivalence `class_of a = class_of b ≃ R a b`, a special case. 
+   states the equivalence `class_of a = class_of b ≃ R a b`, a special case). 
    
    We start with the extension of the relation to the quotient, and then to the 
    set-quotient. -/
@@ -697,19 +697,59 @@ begin
   intro a', exact equiv_rel_to_quotient_rel R a a'    
 end  
 
-/- Next we show the equivalence on the extended relation. -/
-@[hott]
+/- Now we can show the equivalence on the extended relation. The quasi-isomorphism 
+   needs reflexivity of the relation, the inverse is constructed by double induction. -/
+@[hott, reducible]
+def quot_rel_to_quot_eq {A : Set.{v}} (R : A → A → trunctype.{v} -1) 
+  [is_equivalence.{v} (λ a b : A, R a b)] : Π x y : quotient (λ a b : A, R a b),
+  (equiv_rel_to_quotient_rel R x y) -> (x = y) :=
+begin
+  let R' := λ a b : A, (R a b).carrier,
+  have HP : Π (a b : A), is_prop
+      (equiv_rel_to_quotient_rel R (class_of R' a) (class_of R' b)) →  
+                              ((class_of R' a) = (class_of R' b)), from 
+    begin intros a b, sorry end,
+  have HS : Π (a b : A), is_set
+      (equiv_rel_to_quotient_rel R (class_of R' a) (class_of R' b)) →  
+                              (class_of R' a) = (class_of R' b), from 
+    begin 
+      intros a b, sorry
+    end,
+  sorry
+end  
+
+@[hott, reducible]
+def quot_rel_to_set_quot_eq {A : Set.{v}} (R : A → A → trunctype.{v} -1) 
+  [is_equivalence.{v} (λ a b : A, R a b)] : Π x y : set_quotient R,
+  (equiv_rel_to_set_quotient_rel R x y) -> (x = y) :=
+begin
+  let R' := λ a b : A, (R a b).carrier,
+  let Rq := equiv_rel_to_set_quotient_rel R, 
+  apply @trunc.rec 0 (quotient R') (λ x : set_quotient R, Π (y : set_quotient R), 
+                                     (equiv_rel_to_set_quotient_rel R x y) -> (x = y)), 
+  intro x', apply @trunc.rec 0 (quotient R') (λ y : set_quotient R, 
+                              (equiv_rel_to_set_quotient_rel R (tr x') y) -> ((tr x') = y)),
+  intro y', change (equiv_rel_to_quotient_rel R x' y') -> (tr x' = tr y'),
+  intro qr, exact ap tr (quot_rel_to_quot_eq R x' y' qr)                                                               
+end    
+
+@[hott, reducible]
 def quot_eq_eqv_quot_rel {A : Set.{v}} (R : A → A → trunctype.{v} -1) 
-  [is_equivalence.{v} (λ a b : A, R a b)] : Π x y : set_quotient (λ a b : A, R a b),
+  [is_equivalence.{v} (λ a b : A, R a b)] : Π x y : set_quotient R,
   (x = y) ≃ (equiv_rel_to_set_quotient_rel R x y) :=
 begin
   let R' := λ a b : A, (R a b).carrier,
-  intros x y, fapply equiv.mk,
-    { sorry },
-    { fapply is_equiv.adjointify, 
-      { sorry },
-      { sorry },
-      { sorry } } 
+  let Rq := equiv_rel_to_set_quotient_rel R,
+  have Rq_symm : Π x : set_quotient R, Rq x x, from 
+    begin 
+      apply @trunc.rec 0 (quotient R') (λ x : set_quotient R, Rq x x), 
+      fapply quotient.rec, 
+      { intro a, change R' a a, exact rel_refl R' a },
+      { intros a a' H, apply pathover_of_tr_eq, exact is_prop.elim _ _ }
+    end,
+  intros x y, apply prop_iff_equiv, apply iff.intro,
+    { intro p, rwr p, exact Rq_symm y },
+    { exact quot_rel_to_set_quot_eq R x y }  
 end  
 
 end set
