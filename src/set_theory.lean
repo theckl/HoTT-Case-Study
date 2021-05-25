@@ -637,101 +637,90 @@ end
    equalities of equalities needed for double induction if `P a b` is not a set, but at the
    moment the assumption holds in the applications. -/
 @[hott]
-def quotients_to_Set.rec2 {A : Set.{u}} (R : A → A → Type v) 
-  {P : quotient R -> quotient R -> Type w} 
-  [HS : ∀ a b : A, is_set (P (class_of R a) (class_of R b))] 
-  (Pc : Π a b : A, P (class_of R a) (class_of R b))
-  (Ppl : Π ⦃a a' : A⦄ (b : A) (H : R a a'), Pc a b =[eq_of_rel R H; λ x, P x (class_of R b)] 
-                                      Pc a' b) 
-  (Ppr : Π (a : A) ⦃b b' : A⦄ (H : R b b'), Pc a b =[eq_of_rel R H; λ y, P (class_of R a) y] 
-                                      Pc a b') :
-  Π (x y : quotient R), P x y :=
-begin 
-  fapply @quotient.rec A R (λ x : quotient R, Π (y : quotient R), P x y), 
+def set_quotient.rec2 {A : Set.{u}} (R : A → A → trunctype.{v} -1) 
+  {P : set_quotient R -> set_quotient R -> Type w} 
+  [HS : ∀ x y : set_quotient R, is_set (P x y)] 
+  (Pc : Π a b : A, P (set_class_of R a) (set_class_of R b))
+  (Ppl : Π ⦃ a a' : A ⦄ (b : A) (H : R a a'), 
+         Pc a b =[eq_of_setrel R H; λ x, P x (set_class_of R b)] Pc a' b) 
+  (Ppr : Π (a : A) ⦃ b b' : A ⦄ (H : R b b'), 
+         Pc a b =[eq_of_setrel R H; λ y, P (set_class_of R a) y] Pc a b')        
+  (x y : set_quotient R) : P x y :=
+begin
+  fapply @set_quotient.rec A R (λ x : set_quotient R, Π (y : set_quotient R), P x y),
   { intro a,
-    fapply @quotient.rec A R (λ y : quotient R, P (class_of R a) y),
+    fapply @set_quotient.rec A R (λ y : set_quotient R, P (set_class_of R a) y),
     { intro b, exact Pc a b },
     { intros b b' Hb, exact Ppr a Hb } },
   { intros a a' Ha, apply dep_eq_of_homotopy, 
-    fapply quotient.rec, 
+    fapply set_quotient.rec, 
     { intro b, exact Ppl b Ha },
     { intros b b' Hb, apply pathover_of_tr_eq, 
-      apply @dep_set_eq_eq _ (λ x : quotient R, P x (class_of R b')) 
-            (class_of R a) (class_of R a') (HS a' b') } } 
+      apply @dep_set_eq_eq _ (λ x : set_quotient R, P x (set_class_of R b')) 
+            (set_class_of R a) (set_class_of R a') 
+            (HS (set_class_of R a') (set_class_of R b')) } } 
 end 
 
-/- Equlaity in the set-quotient of a set by a mere equivalence relation is equivalent to the 
-   relation, extended to the set-quotient. This is [HoTT-Book, Lem.10.1.8] (which actually
-   states the equivalence `class_of a = class_of b ≃ R a b`, a special case). 
-   
-   We start with the extension of the relation to the quotient, and then to the 
-   set-quotient. -/
-@[hott, reducible]
-def equiv_rel_to_quotient_rel {A : Set.{v}} (R : A → A → trunctype.{v} -1) 
-  [is_equivalence.{v} (λ a b : A, R a b)] : 
-  (quotient (λ a b : A, R a b)) -> (quotient (λ a b : A, R a b)) -> trunctype.{v} -1 :=
+@[hott]
+def set_quotient.elim2 {A : Set.{u}} (R : A → A → trunctype.{v} -1) {P : Type w} 
+  [Hs : is_set P] (Pc : A -> A -> P) 
+  (Ppl : Π ⦃ a a' : A ⦄ (b : A) (H : R a a'), Pc a b = Pc a' b) 
+  (Ppr : Π (a : A) ⦃ b b' : A ⦄ (H : R b b'), Pc a b = Pc a b')       
+  (x y : set_quotient R) : P :=
 begin
-  let R' := λ a b : A, (R a b).carrier,
-  fapply @quotients_to_Set.rec2 A R',
-  { assumption },
-  { intros a a' b H, apply pathover_of_eq, apply prop_iff_eq, 
-    { intro H', exact rel_trans R' (rel_symm R' H) H' },
-    { intro H', exact rel_trans R' H H' } },
-  { intros a a' b H, apply pathover_of_eq, apply prop_iff_eq, 
-    { intro H', exact rel_trans R' H' H },
-    { intro H', exact rel_trans R' H' (rel_symm R' H) } }
-end   
+  fapply @set_quotient.rec2 A R (λ x y : set_quotient R, P),
+  { intros a b, exact Pc a b },
+  { intros a a' b Ha, change Pc a b =[eq_of_setrel R Ha; λ (x : set_quotient R), P] Pc a' b,
+    apply pathover_of_eq, exact Ppl b Ha },
+  { intros a b b' Hb, change Pc a b =[eq_of_setrel R Hb; λ (x : set_quotient R), P] Pc a b',
+    apply pathover_of_eq, exact Ppr a Hb },
+  { exact x },
+  { exact y }
+end  
 
+/- Equality in the set-quotient of a set by a mere equivalence relation is equivalent to the 
+   relation, extended to the set-quotient. This is [HoTT-Book, Lem.10.1.8] (which actually
+   states the equivalence `class_of a = class_of b ≃ R a b`, a special case).
+
+   This can be used to deduce equalities of quotient elements from relations between set 
+   elements. 
+   
+   We start with the extension of the relation to the set-quotient. -/
 @[hott, reducible]
 def equiv_rel_to_set_quotient_rel {A : Set.{v}} (R : A → A → trunctype.{v} -1) 
   [is_equivalence.{v} (λ a b : A, R a b)] : 
   (set_quotient R) -> (set_quotient R) -> trunctype.{v} -1 :=
 begin
   let R' := λ a b : A, (R a b).carrier,
-  have Pt : is_set (set_quotient R -> trunctype.{v} -1), from 
-    @is_set_map (set_quotient R) (to_Set (trunctype.{v} -1)),
-  apply @trunc.rec 0 (quotient R') 
-        (λ x : set_quotient R, (set_quotient R) -> trunctype.{v} -1), 
-  intro a, 
-  apply @trunc.rec 0 (quotient R') (λ x : set_quotient R, trunctype.{v} -1), 
-  intro a', exact equiv_rel_to_quotient_rel R a a'    
+  fapply @set_quotient.rec2 A R, 
+  { exact R },
+  { intros a a' b H, apply pathover_of_eq, apply prop_iff_eq, 
+    { intro H', exact rel_trans R' (rel_symm R' H) H' },
+    { intro H', exact rel_trans R' H H' } },
+  { intros a a' b H, apply pathover_of_eq, apply prop_iff_eq, 
+    { intro H', exact rel_trans R' H' H },
+    { intro H', exact rel_trans R' H' (rel_symm R' H) } }
 end  
 
 /- Now we can show the equivalence on the extended relation. The quasi-isomorphism 
    needs reflexivity of the relation, the inverse is constructed by double induction. -/
 @[hott, reducible]
-def quot_rel_to_quot_eq {A : Set.{v}} (R : A → A → trunctype.{v} -1) 
-  [is_equivalence.{v} (λ a b : A, R a b)] : Π x y : quotient (λ a b : A, R a b),
-  (equiv_rel_to_quotient_rel R x y) -> (x = y) :=
-begin
-  let R' := λ a b : A, (R a b).carrier,
-  have HP : Π (a b : A), is_prop
-      (equiv_rel_to_quotient_rel R (class_of R' a) (class_of R' b)) →  
-                              ((class_of R' a) = (class_of R' b)), from 
-    begin intros a b, sorry end,
-  have HS : Π (a b : A), is_set
-      (equiv_rel_to_quotient_rel R (class_of R' a) (class_of R' b)) →  
-                              (class_of R' a) = (class_of R' b), from 
-    begin 
-      intros a b, sorry
-    end,
-  sorry
-end  
-
-@[hott, reducible]
-def quot_rel_to_set_quot_eq {A : Set.{v}} (R : A → A → trunctype.{v} -1) 
+def quot_rel_to_setquot_eq {A : Set.{v}} (R : A → A → trunctype.{v} -1) 
   [is_equivalence.{v} (λ a b : A, R a b)] : Π x y : set_quotient R,
   (equiv_rel_to_set_quotient_rel R x y) -> (x = y) :=
 begin
   let R' := λ a b : A, (R a b).carrier,
-  let Rq := equiv_rel_to_set_quotient_rel R, 
-  apply @trunc.rec 0 (quotient R') (λ x : set_quotient R, Π (y : set_quotient R), 
-                                     (equiv_rel_to_set_quotient_rel R x y) -> (x = y)), 
-  intro x', apply @trunc.rec 0 (quotient R') (λ y : set_quotient R, 
-                              (equiv_rel_to_set_quotient_rel R (tr x') y) -> ((tr x') = y)),
-  intro y', change (equiv_rel_to_quotient_rel R x' y') -> (tr x' = tr y'),
-  intro qr, exact ap tr (quot_rel_to_quot_eq R x' y' qr)                                                               
-end    
+  let HP := λ (a b : A), @is_prop_map 
+            (equiv_rel_to_set_quotient_rel R (set_class_of R a) (set_class_of R b)) 
+            ((set_class_of R a) = (set_class_of R b)) _,
+  intros x y,  
+  fapply @set_quotient.rec2 A R 
+         (λ x y : set_quotient R, (equiv_rel_to_set_quotient_rel R x y) -> (x = y)), 
+  { intros a b H, exact eq_of_setrel R H },
+  { intros a a' b Ha, apply pathover_of_tr_eq, exact is_prop.elim _ _ },
+  { intros a b b' Hb, apply pathover_of_tr_eq, exact is_prop.elim _ _  },
+  { apply is_prop.mk, intros p q, exact is_set.elim _ _ }
+end   
 
 @[hott, reducible]
 def quot_eq_eqv_quot_rel {A : Set.{v}} (R : A → A → trunctype.{v} -1) 
@@ -749,7 +738,7 @@ begin
     end,
   intros x y, apply prop_iff_equiv, apply iff.intro,
     { intro p, rwr p, exact Rq_symm y },
-    { exact quot_rel_to_set_quot_eq R x y }  
+    { exact quot_rel_to_setquot_eq R x y }  
 end  
 
 end set
