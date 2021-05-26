@@ -531,12 +531,81 @@ inductive expr {J : Set.{v}} [precategory.{v} J] (F : J ⥤ CommRing.{v}) : Type
 | add : expr → expr → expr
 | mul : expr → expr → expr
 
+/- The inductive type `expr` is a set. We show this by the encode-decode method, which
+  requires a lot of case distinction. There should be potential for automatisation; the
+  `injection` tactic may provide short-cuts. -/
+@[hott, reducible]
+def code_expr {J : Set.{v}} [precategory.{v} J] (F : J ⥤ CommRing.{v}) : 
+  expr F -> expr F -> Type v 
+| (expr.x_ j r) (expr.x_ k s) := Σ (p : j = k), (r =[p; λ i : J, F.obj i] s)
+| (expr.zero _) (expr.zero _) := One
+| (expr.one _) (expr.one _) := One
+| (expr.neg x) (expr.neg y) := code_expr x y
+| (expr.add x₁ x₂) (expr.add y₁ y₂) := prod (code_expr x₁ y₁) (code_expr x₂ y₂)
+| (expr.mul x₁ x₂) (expr.mul y₁ y₂) := prod (code_expr x₁ y₁) (code_expr x₂ y₂)
+| _ _ := Zero 
+
+@[hott, reducible]
+def code_fun {J : Set.{v}} [precategory.{v} J] (F : J ⥤ CommRing.{v}) : 
+  Π (x : expr F), code_expr F x x :=
+begin 
+  fapply expr.rec, 
+  { intros j r, exact ⟨idp, idpo⟩ },
+  { exact One.star },
+  { exact One.star },
+  { intros x cx, exact cx },
+  { intros x y cx cy, exact ⟨cx, cy⟩ },
+  { intros x y cx cy, exact ⟨cx, cy⟩ }
+end  
+
+@[hott, reducible]
+def encode_expr {J : Set.{v}} [precategory.{v} J] (F : J ⥤ CommRing.{v}) :
+  Π (x y : expr F), (x = y) -> code_expr F x y :=
+assume x y p, p ▸ (code_fun F x)
+
+@[hott, reducible]
+def decode_expr {J : Set.{v}} [precategory.{v} J] (F : J ⥤ CommRing.{v}) :
+  Π (x y : expr F), (code_expr F x y) -> x = y :=
+begin
+  intro x, hinduction x; intro y; hinduction y; intro c,
+  any_goals { exact Zero.rec _ c}, 
+  { exact apd011 expr.x_ c.1 c.2 },
+  { exact idp },
+  { exact idp },
+  { exact ap expr.neg (ih a_1 c) },
+  { exact ap011 expr.add (ih_a a_2 c.1) (ih_a_1 a_3 c.2) },
+  { exact ap011 expr.mul (ih_a a_2 c.1) (ih_a_1 a_3 c.2) }
+end    
+
+@[hott]
+def expr_eq_equiv_code {J : Set.{v}} [precategory.{v} J] (F : J ⥤ CommRing.{v}) :
+  Π (x y : expr F), (x = y) ≃ (code_expr F x y) := 
+have rinv : Π (x y : expr F) (c : code_expr F x y), 
+              encode_expr F x y (decode_expr F x y c) = c, from
+  begin 
+    intro x, hinduction x; intro y; hinduction y; intro c,
+    any_goals { exact Zero.rec _ c}, 
+    { sorry },
+    { sorry },
+    { sorry },
+    { sorry },
+    { sorry },
+    { sorry } 
+  end,
+have linv : Π (x y : expr F) (p : x = y), decode_expr F x y (encode_expr F x y p) = p, from 
+  begin 
+    sorry,
+  end,    
+assume x y,  
+  equiv.mk (encode_expr F x y) 
+      (is_equiv.adjointify (encode_expr F x y) (decode_expr F x y) (rinv x y) (linv x y))         
+
 @[hott, instance]
 def is_set_expr {J : Set.{v}} [precategory.{v} J] (F : J ⥤ CommRing.{v}) : 
   is_set (expr F) :=
 begin 
   fapply is_set.mk, intros x y p q,  
-  hinduction q, hinduction x,
+  hinduction q, hinduction x, 
   { sorry },
   { sorry },
   { sorry },
@@ -544,8 +613,6 @@ begin
   { sorry },
   { sorry }
 end     
-
-#print Two_Set
 
 @[hott, reducible]
 def set_expr {J : Set.{v}} [precategory.{v} J] (F : J ⥤ CommRing.{v}) : Set.{v} :=
