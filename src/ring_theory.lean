@@ -1,11 +1,12 @@
 import hott.algebra.ring set_theory categories.examples categories.cat_limits pathover2
+       hott.types.prod
 
 universes u v w
 hott_theory
 
 namespace hott
 open hott.is_trunc hott.is_equiv hott.algebra hott.set subset categories hott.trunc
-     hott.category_theory.limits hott.sigma
+     hott.category_theory.limits hott.sigma hott.prod
 
 namespace algebra
 
@@ -577,6 +578,8 @@ begin
   { exact ap011 expr.mul (ih_a a_2 c.1) (ih_a_1 a_3 c.2) }
 end    
 
+#print decode_expr
+
 @[hott]
 def expr_eq_equiv_code {J : Set.{v}} [precategory.{v} J] (F : J ⥤ CommRing.{v}) :
   Π (x y : expr F), (x = y) ≃ (code_expr F x y) := 
@@ -585,11 +588,20 @@ have rinv : Π (x y : expr F) (c : code_expr F x y),
   begin 
     intro x, hinduction x; intro y; hinduction y; intro c,
     any_goals { exact Zero.rec _ c}, 
-    { sorry },
-    { sorry },
-    { sorry },
-    { sorry },
-    { sorry },
+    { hinduction c with c1 c2, hinduction c1, hinduction c2, refl },
+    { hinduction c, refl },
+    { hinduction c, refl },
+    { change ap expr.neg (decode_expr F a a_1 c) ▸[λ y : expr F, 
+                             code_expr F (expr.neg a) y] (code_fun F (expr.neg a)) = c, 
+      rwr <- tr_compose, change decode_expr F a a_1 c ▸ code_fun F a = c, exact ih a_1 c },
+    { hinduction c with c₁ c₂, 
+      change ap011 expr.add (decode_expr _ _ _ c₁) (decode_expr _ _ _ c₂) ▸[λ y : expr F, 
+                  code_expr F (expr.add a a_1) y] (code_fun F (expr.add a a_1)) = (c₁, c₂),
+      rwr tr_ap011, 
+      have p : code_fun F (expr.add a a_1) = (code_fun F a, code_fun F a_1), from rfl,
+      rwr p,
+      -- apply pair_eq,      
+      sorry },
     { sorry } 
   end,
 have linv : Π (x y : expr F) (p : x = y), decode_expr F x y (encode_expr F x y p) = p, from 
