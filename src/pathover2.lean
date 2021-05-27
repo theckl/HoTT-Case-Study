@@ -93,4 +93,10 @@ def tr_fn_tr_eval {A B : Type _} {C : A -> B -> Type _} {a₁ a₂ : A}
   (p ▸ f) b = p ▸ (f b) :=
 begin hinduction p, refl end   
 
+@[hott] 
+def tr_ap011 {A B C : Type _} {x₁ y₁ : A} {x₂ y₂ : B} (P : C → Type _) (f : A -> B -> C) 
+  (p : x₁ = y₁) (q : x₂ = y₂) (z : P (f x₁ x₂)) :
+  (ap011 f p q) ▸ z = p ▸ (q ▸ z) :=
+begin hinduction p, hinduction q, refl end
+
 end hott
