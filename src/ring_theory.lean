@@ -578,7 +578,8 @@ begin
   { exact ap011 expr.mul (ih_a a_2 c.1) (ih_a_1 a_3 c.2) }
 end    
 
-#print decode_expr
+set_option pp.implicit true
+set_option pp.notation false
 
 @[hott]
 def expr_eq_equiv_code {J : Set.{v}} [precategory.{v} J] (F : J ⥤ CommRing.{v}) :
@@ -597,10 +598,15 @@ have rinv : Π (x y : expr F) (c : code_expr F x y),
     { hinduction c with c₁ c₂, 
       change ap011 expr.add (decode_expr _ _ _ c₁) (decode_expr _ _ _ c₂) ▸[λ y : expr F, 
                   code_expr F (expr.add a a_1) y] (code_fun F (expr.add a a_1)) = (c₁, c₂),
-      rwr tr_ap011, 
-      have p : code_fun F (expr.add a a_1) = (code_fun F a, code_fun F a_1), from rfl,
-      rwr p,
-      -- apply pair_eq,      
+      rwr @tr_ap011 _ _ _ _ _ _ _ (λ x y : expr F, code_expr F x y) expr.add 
+          (code_fun F) (decode_expr F a a_2 c₁) (decode_expr F a_1 a_3 c₂), 
+      have p : code_fun F (expr.add a a_1) = (code_fun F a, code_fun F a_1), from rfl,      
+      rwr p, 
+      rwr tr_tr_pair (code_fun F) (code_fun F) (decode_expr F a a_2 c₁) 
+                                                      (decode_expr F a_1 a_3 c₂), 
+      have r : (decode_expr F a a_2 c₁ ▸ (code_fun F a), 
+                decode_expr F a_1 a_3 c₂ ▸ (code_fun F a_1)) = (c₁, c₂), from 
+        begin apply pair_eq, exact ih_a a_2 c₁, exact ih_a_1 a_3 c₂ end,                                               
       sorry },
     { sorry } 
   end,
