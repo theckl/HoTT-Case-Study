@@ -1,4 +1,4 @@
-import set_theory
+import set_theory pathover2
 
 universes u v w
 hott_theory
@@ -7,15 +7,12 @@ set_option pp.universes true
 set_option pp.implicit true
 
 namespace hott
-open hott.set hott.is_trunc hott.is_equiv hott.eq hott.trunc hott.sigma
+open hott.set hott.is_trunc hott.is_equiv hott.eq hott.trunc hott.sigma 
 
 namespace subset
 
 /- We define subsets of sets [A] as a set [B] together with an injective map [i: B -> A],
    implemented as a bundled structure.  -/
-
-/- Should be in [init.path]. -/
-notation eq `▸[`:50 P:0 `]`:0 b:50 := transport P eq b 
 
 @[hott]
 structure Subset (A : Set.{u}) :=
