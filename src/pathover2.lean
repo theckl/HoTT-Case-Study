@@ -5,6 +5,9 @@ hott_theory
 
 namespace hott
 
+/- Should be in [init.path]. -/
+notation eq `▸[`:50 P:0 `]`:0 b:50 := transport P eq b 
+
 /- All these equalities should be produced by tactics. -/
 @[hott]
 def ap0111 {A : Type u} {B : Type v} {C D : A -> B -> Type _} {E : Type _}
@@ -94,9 +97,20 @@ def tr_fn_tr_eval {A B : Type _} {C : A -> B -> Type _} {a₁ a₂ : A}
 begin hinduction p, refl end   
 
 @[hott] 
-def tr_ap011 {A B C : Type _} {x₁ y₁ : A} {x₂ y₂ : B} (P : C → Type _) (f : A -> B -> C) 
-  (p : x₁ = y₁) (q : x₂ = y₂) (z : P (f x₁ x₂)) :
-  (ap011 f p q) ▸ z = p ▸ (q ▸ z) :=
+def tr_ap011 {A B C : Type _} {x₁ y₁ : A} {x₂ y₂ : B} {P : C → C -> Type _} (f : A -> B -> C) 
+  (g : Π c : C, P c c) (p : x₁ = y₁) (q : x₂ = y₂) :
+  (ap011 f p q) ▸[λ c : C, P (f x₁ x₂) c] (g (f x₁ x₂)) = 
+  (p ▸[λ a : A, P (f x₁ x₂) (f a y₂)] (q ▸[λ b : B, P (f x₁ x₂) (f x₁ b)] g (f x₁ x₂))) :=
 begin hinduction p, hinduction q, refl end
+
+@[hott]
+def tr_tr_pair {A B : Type _} {F : A -> Type _} (f : Π a : A, F a) {G : B -> Type _} 
+  (g : Π b : B, G b) {a₁ a₂ : A} {b₁ b₂ : B} (p : a₁ = a₂) (q : b₁ = b₂) : 
+  p ▸ (q ▸ (f a₁, g b₁)) = (p ▸ (f a₁), q ▸ (g b₁)) :=
+begin hinduction p, hinduction q, refl end   
+
+@[hott]
+def lhs_rwr {A : Type _} {a b c : A} (p : a = b) : (a = c) -> (b = c) :=
+  assume r, p⁻¹ ⬝ r
 
 end hott
