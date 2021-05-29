@@ -104,13 +104,10 @@ def tr_ap011 {A B C : Type _} {x₁ y₁ : A} {x₂ y₂ : B} {P : C → C -> Ty
 begin hinduction p, hinduction q, refl end
 
 @[hott]
-def tr_tr_pair {A B : Type _} {F : A -> Type _} (f : Π a : A, F a) {G : B -> Type _} 
-  (g : Π b : B, G b) {a₁ a₂ : A} {b₁ b₂ : B} (p : a₁ = a₂) (q : b₁ = b₂) : 
-  p ▸ (q ▸ (f a₁, g b₁)) = (p ▸ (f a₁), q ▸ (g b₁)) :=
+def tr_tr_pair {A B : Type _} {P : A -> A -> Type _} (f : Π a : A, P a a) 
+  {Q : B -> B -> Type _} (g : Π b : B, Q b b) {a₁ a₂ : A} {b₁ b₂ : B} (p : a₁ = a₂) (q : b₁ = b₂) : 
+  p ▸[λ x : A, (P a₁ x) × (Q b₁ b₂)] (q ▸[λ y : B, (P a₁ a₁) × (Q b₁ y)] (f a₁, g b₁)) = 
+  (p ▸[λ x : A, P a₁ x] (f a₁), q ▸[λ y : B, Q b₁ y] (g b₁)) :=
 begin hinduction p, hinduction q, refl end   
-
-@[hott]
-def lhs_rwr {A : Type _} {a b c : A} (p : a = b) : (a = c) -> (b = c) :=
-  assume r, p⁻¹ ⬝ r
 
 end hott
