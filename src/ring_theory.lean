@@ -546,6 +546,27 @@ def code_expr {J : Set.{v}} [precategory.{v} J] (F : J ⥤ CommRing.{v}) :
 | (expr.mul x₁ x₂) (expr.mul y₁ y₂) := prod (code_expr x₁ y₁) (code_expr x₂ y₂)
 | _ _ := Zero 
 
+@[hott]
+def code_expr.rec {J : Set.{v}} [precategory.{v} J] (F : J ⥤ CommRing.{v}) 
+  {P : Type v -> Type v} (H1 : Π j k r s, P (code_expr F (expr.x_ j r) (expr.x_ k s))) 
+  (H2 : P One) (H3 : P Zero) 
+  (H4 : Π x y, P (code_expr F x y) -> P (code_expr F (expr.neg x) (expr.neg y)))
+  (H5 : Π x₁ x₂ y₁ y₂, P (code_expr F x₁ y₁) -> P (code_expr F x₂ y₂) ->
+                       P (code_expr F (expr.add x₁ x₂) (expr.add y₁ y₂))) 
+  (H6 : Π x₁ x₂ y₁ y₂, P (code_expr F x₁ y₁) -> P (code_expr F x₂ y₂) ->
+                       P (code_expr F (expr.mul x₁ x₂) (expr.mul y₁ y₂))) :                    
+  Π (x y : expr F), P (code_expr F x y) :=
+begin 
+  intros x y, hinduction x,  
+  { hinduction y, any_goals { assumption }, exact H1 j j_1 r r_1 },
+  { hinduction y, any_goals { assumption } },
+  { hinduction y, any_goals { assumption } },
+  { sorry }, 
+  { sorry },
+  { sorry }
+end  
+
+
 @[hott, reducible]
 def code_fun {J : Set.{v}} [precategory.{v} J] (F : J ⥤ CommRing.{v}) : 
   Π (x : expr F), code_expr F x x :=
@@ -578,10 +599,10 @@ begin
   { exact ap011 expr.mul (ih_a a_2 c.1) (ih_a_1 a_3 c.2) }
 end    
 
-set_option pp.implicit true
-set_option pp.notation false
+--set_option pp.implicit true
+--set_option pp.notation false
 
-@[hott]
+@[hott, reducible]
 def expr_eq_equiv_code {J : Set.{v}} [precategory.{v} J] (F : J ⥤ CommRing.{v}) :
   Π (x y : expr F), (x = y) ≃ (code_expr F x y) := 
 have rinv : Π (x y : expr F) (c : code_expr F x y), 
@@ -602,17 +623,34 @@ have rinv : Π (x y : expr F) (c : code_expr F x y),
           (code_fun F) (decode_expr F a a_2 c₁) (decode_expr F a_1 a_3 c₂), 
       have p : code_fun F (expr.add a a_1) = (code_fun F a, code_fun F a_1), from rfl,      
       rwr p, 
-      rwr tr_tr_pair (code_fun F) (code_fun F) (decode_expr F a a_2 c₁) 
-                                                      (decode_expr F a_1 a_3 c₂), 
-      have r : (decode_expr F a a_2 c₁ ▸ (code_fun F a), 
-                decode_expr F a_1 a_3 c₂ ▸ (code_fun F a_1)) = (c₁, c₂), from 
-        begin apply pair_eq, exact ih_a a_2 c₁, exact ih_a_1 a_3 c₂ end,                                               
-      sorry },
-    { sorry } 
+      rwr @tr_tr_pair _ _ (λ x y : expr F, code_expr F x y) (code_fun F) 
+                          (λ x y : expr F, code_expr F x y) (code_fun F) _ _ _ _ 
+                          (decode_expr F a a_2 c₁) (decode_expr F a_1 a_3 c₂), 
+      apply pair_eq, exact ih_a a_2 c₁, exact ih_a_1 a_3 c₂ },
+    { hinduction c with c₁ c₂, 
+      change ap011 expr.mul (decode_expr _ _ _ c₁) (decode_expr _ _ _ c₂) ▸[λ y : expr F, 
+                  code_expr F (expr.mul a a_1) y] (code_fun F (expr.mul a a_1)) = (c₁, c₂),
+      rwr @tr_ap011 _ _ _ _ _ _ _ (λ x y : expr F, code_expr F x y) expr.mul 
+          (code_fun F) (decode_expr F a a_2 c₁) (decode_expr F a_1 a_3 c₂), 
+      have p : code_fun F (expr.mul a a_1) = (code_fun F a, code_fun F a_1), from rfl,      
+      rwr p, 
+      rwr @tr_tr_pair _ _ (λ x y : expr F, code_expr F x y) (code_fun F) 
+                          (λ x y : expr F, code_expr F x y) (code_fun F) _ _ _ _ 
+                          (decode_expr F a a_2 c₁) (decode_expr F a_1 a_3 c₂), 
+      apply pair_eq, exact ih_a a_2 c₁, exact ih_a_1 a_3 c₂ } 
   end,
 have linv : Π (x y : expr F) (p : x = y), decode_expr F x y (encode_expr F x y p) = p, from 
   begin 
-    sorry,
+    intros x y p, hinduction p, change decode_expr F x x (code_fun F x) = refl x, 
+    hinduction x,
+    { refl }, { refl }, { refl },
+    { change ap expr.neg (decode_expr F a a (code_fun F a)) = refl (expr.neg a), rwr ih },
+    { change ap011 expr.add (decode_expr F a a (code_fun F a)) 
+                            (decode_expr F a_1 a_1 (code_fun F a_1)) = refl (expr.add a a_1),
+      rwr ih_a, rwr ih_a_1 },
+    { change ap011 expr.mul (decode_expr F a a (code_fun F a)) 
+                            (decode_expr F a_1 a_1 (code_fun F a_1)) = refl (expr.mul a a_1),
+      rwr ih_a, rwr ih_a_1 }
   end,    
 assume x y,  
   equiv.mk (encode_expr F x y) 
@@ -622,14 +660,14 @@ assume x y,
 def is_set_expr {J : Set.{v}} [precategory.{v} J] (F : J ⥤ CommRing.{v}) : 
   is_set (expr F) :=
 begin 
-  fapply is_set.mk, intros x y p q,  
-  hinduction q, hinduction x, 
-  { sorry },
-  { sorry },
-  { sorry },
-  { sorry },
-  { sorry },
-  { sorry }
+  apply is_trunc_succ_intro, intros x y, 
+  apply is_trunc_equiv_closed_rev -1 (expr_eq_equiv_code F x y), 
+  fapply code_expr.rec F, any_goals { apply_instance},
+  { intros a b IH, exact IH },
+  { intros, change is_prop ((code_expr F x₁ y₁) × (code_expr F x₂ y₂)), 
+    exact @is_trunc_prod _ _ _ a a_1 },
+  { intros, change is_prop ((code_expr F x₁ y₁) × (code_expr F x₂ y₂)), 
+    exact @is_trunc_prod _ _ _ a a_1 }
 end     
 
 @[hott, reducible]
