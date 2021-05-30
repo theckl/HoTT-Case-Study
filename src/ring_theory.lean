@@ -546,26 +546,23 @@ def code_expr {J : Set.{v}} [precategory.{v} J] (F : J ⥤ CommRing.{v}) :
 | (expr.mul x₁ x₂) (expr.mul y₁ y₂) := prod (code_expr x₁ y₁) (code_expr x₂ y₂)
 | _ _ := Zero 
 
-@[hott]
+@[hott, reducible]
 def code_expr.rec {J : Set.{v}} [precategory.{v} J] (F : J ⥤ CommRing.{v}) 
   {P : Type v -> Type v} (H1 : Π j k r s, P (code_expr F (expr.x_ j r) (expr.x_ k s))) 
   (H2 : P One) (H3 : P Zero) 
-  (H4 : Π x y, P (code_expr F x y) -> P (code_expr F (expr.neg x) (expr.neg y)))
-  (H5 : Π x₁ x₂ y₁ y₂, P (code_expr F x₁ y₁) -> P (code_expr F x₂ y₂) ->
+  (H4 : Π {x y}, P (code_expr F x y) -> P (code_expr F (expr.neg x) (expr.neg y)))
+  (H5 : Π {x₁ x₂ y₁ y₂}, P (code_expr F x₁ y₁) -> P (code_expr F x₂ y₂) ->
                        P (code_expr F (expr.add x₁ x₂) (expr.add y₁ y₂))) 
-  (H6 : Π x₁ x₂ y₁ y₂, P (code_expr F x₁ y₁) -> P (code_expr F x₂ y₂) ->
+  (H6 : Π {x₁ x₂ y₁ y₂}, P (code_expr F x₁ y₁) -> P (code_expr F x₂ y₂) ->
                        P (code_expr F (expr.mul x₁ x₂) (expr.mul y₁ y₂))) :                    
-  Π (x y : expr F), P (code_expr F x y) :=
+  Π (x y : expr F), P (code_expr F x y) :=         
 begin 
-  intros x y, hinduction x,  
-  { hinduction y, any_goals { assumption }, exact H1 j j_1 r r_1 },
-  { hinduction y, any_goals { assumption } },
-  { hinduction y, any_goals { assumption } },
-  { sorry }, 
-  { sorry },
-  { sorry }
+  intro x; hinduction x; intro y; hinduction y, any_goals { assumption }, 
+  { exact H1 j j_1 r r_1 },
+  { exact H4 (ih a_1) }, 
+  { exact H5 (ih_a a_2) (ih_a_1 a_3) },
+  { exact H6 (ih_a a_2) (ih_a_1 a_3) }
 end  
-
 
 @[hott, reducible]
 def code_fun {J : Set.{v}} [precategory.{v} J] (F : J ⥤ CommRing.{v}) : 
@@ -598,9 +595,6 @@ begin
   { exact ap011 expr.add (ih_a a_2 c.1) (ih_a_1 a_3 c.2) },
   { exact ap011 expr.mul (ih_a a_2 c.1) (ih_a_1 a_3 c.2) }
 end    
-
---set_option pp.implicit true
---set_option pp.notation false
 
 @[hott, reducible]
 def expr_eq_equiv_code {J : Set.{v}} [precategory.{v} J] (F : J ⥤ CommRing.{v}) :
@@ -662,7 +656,7 @@ def is_set_expr {J : Set.{v}} [precategory.{v} J] (F : J ⥤ CommRing.{v}) :
 begin 
   apply is_trunc_succ_intro, intros x y, 
   apply is_trunc_equiv_closed_rev -1 (expr_eq_equiv_code F x y), 
-  fapply code_expr.rec F, any_goals { apply_instance},
+  fapply code_expr.rec F, any_goals { apply_instance },
   { intros a b IH, exact IH },
   { intros, change is_prop ((code_expr F x₁ y₁) × (code_expr F x₂ y₂)), 
     exact @is_trunc_prod _ _ _ a a_1 },
