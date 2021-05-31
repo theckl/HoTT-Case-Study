@@ -1,12 +1,12 @@
 import hott.algebra.ring set_theory categories.examples categories.cat_limits pathover2
-       hott.types.prod
+       hott.types.prod hott.algebra.relation
 
 universes u v w
 hott_theory
 
 namespace hott
 open hott.is_trunc hott.is_equiv hott.algebra hott.set subset categories hott.trunc
-     hott.category_theory.limits hott.sigma hott.prod
+     hott.category_theory.limits hott.sigma hott.prod hott.relation
 
 namespace algebra
 
@@ -712,7 +712,40 @@ inductive ring_colim_rel {J : Set.{v}} [precategory.{v} J] (F : J ⥤ CommRing.{
 @[hott, reducible]
 def ring_colim_mere_rel {J : Set.{v}} [precategory.{v} J] (F : J ⥤ CommRing.{v}) : 
   set_expr F → set_expr F → trunctype.{v} -1 :=
-λ x y : set_expr F, ∥ring_colim_rel F x y∥  
+λ x y : set_expr F, ∥ring_colim_rel F x y∥ 
+
+@[hott, instance]
+def rcm_rel_refl {J : Set.{v}} [precategory.{v} J] (F : J ⥤ CommRing.{v}) : 
+  is_reflexive (λ x y : set_expr F, ring_colim_mere_rel F x y) :=
+begin apply is_reflexive.mk, intro x, exact tr (ring_colim_rel.refl x) end  
+
+@[hott, instance]
+def rcm_rel_symm {J : Set.{v}} [precategory.{v} J] (F : J ⥤ CommRing.{v}) : 
+  is_symmetric (λ x y : set_expr F, ring_colim_mere_rel F x y) :=
+begin 
+  apply is_symmetric.mk, intros x y, 
+  apply trunc.rec, intro r,
+  exact tr (ring_colim_rel.symm x y r) 
+end 
+
+@[hott, instance]
+def rcm_rel_trans {J : Set.{v}} [precategory.{v} J] (F : J ⥤ CommRing.{v}) : 
+  is_transitive (λ x y : set_expr F, ring_colim_mere_rel F x y) :=
+begin 
+  apply is_transitive.mk, intros x y z, 
+  apply @trunc.rec -1 _ (λ r : ring_colim_mere_rel F x y, (ring_colim_mere_rel F y z) ->
+                                                          (ring_colim_mere_rel F x z)),
+  intro r, apply trunc.rec, intro s,                                                         
+  exact tr (ring_colim_rel.trans x y z r s) 
+end 
+
+@[hott, instance]
+def rcm_rel_equiv {J : Set.{v}} [precategory.{v} J] (F : J ⥤ CommRing.{v}) : 
+  is_equivalence (λ x y : set_expr F, ring_colim_mere_rel F x y) :=
+begin 
+  apply is_equivalence.mk, 
+  exact (rcm_rel_refl F).refl, exact (rcm_rel_symm F).symm, exact (rcm_rel_trans F).trans
+end  
 
 @[hott]
 def ring_colim_set {J : Set.{v}} [precategory.{v} J] (F : J ⥤ CommRing.{v}) : Set.{v} :=
@@ -725,23 +758,43 @@ begin
   let R := ring_colim_set F, let rel := ring_colim_rel F, let mrel := ring_colim_mere_rel F,
   fapply comm_ring_mk,
   { fapply comm_ring_ops.mk, 
-    { sorry }, --add
-    { sorry }, --zero
-    { sorry }, --neg
-    { sorry }, --mul
-    { sorry } }, --one
+    { fapply set_quotient.elim2, 
+      { intros x y, exact set_class_of mrel (expr.add x y) },
+      { intros a a' b, apply trunc.rec, intro r, 
+        apply quot_rel_to_setquot_eq mrel, hsimp, 
+        exact tr (ring_colim_rel.add_1 a a' b r) },
+      { intros a b b', apply trunc.rec, intro r, 
+        apply quot_rel_to_setquot_eq mrel, hsimp, 
+        exact tr (ring_colim_rel.add_2 a b b' r) } }, --add
+    { exact set_class_of mrel (expr.zero F) }, --zero
+    { fapply set_quotient.elim, 
+      { intro x, exact set_class_of mrel (expr.neg x) },
+      { intros a a', apply trunc.rec, intro r, 
+        apply quot_rel_to_setquot_eq mrel, hsimp, 
+        exact tr (ring_colim_rel.neg_1 a a' r) } }, --neg
+    { fapply set_quotient.elim2, 
+      { intros x y, exact set_class_of mrel (expr.mul x y) },
+      { intros a a' b, apply trunc.rec, intro r, 
+        apply quot_rel_to_setquot_eq mrel, hsimp, 
+        exact tr (ring_colim_rel.mul_1 a a' b r) },
+      { intros a b b', apply trunc.rec, intro r, 
+        apply quot_rel_to_setquot_eq mrel, hsimp, 
+        exact tr (ring_colim_rel.mul_2 a b b' r) } }, --mul
+    { exact set_class_of mrel (expr.one F) } }, --one
   { fapply comm_ring_laws.mk, 
-    { sorry }, 
-    { sorry }, 
-    { sorry }, 
-    { sorry },
-    { sorry },
-    { sorry }, 
-    { sorry }, 
-    { sorry }, 
-    { sorry },
-    { sorry },
-    { sorry } }
+    { intros x y z, apply quot_rel_to_setquot_eq mrel, hsimp, 
+      /- intros a b c, exact tr (ring_colim_rel.add_assoc a b c) -/
+      sorry }, --add_assoc
+    { sorry }, --zero_add
+    { sorry }, --add_zero
+    { sorry }, --add_neg
+    { sorry }, --add_comm
+    { sorry }, --mul_assoc
+    { sorry }, --one_mul
+    { sorry }, --mul_one
+    { sorry }, --mul_comm
+    { sorry }, --right_distr
+    { sorry } } --left_distr
 end  
 
 end algebra
