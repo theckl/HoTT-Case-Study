@@ -126,7 +126,7 @@ have hom : f ~ g, from assume c, i_inj (f c) (g c) (i_hom c),
 eq_of_homotopy hom  
 
 @[hott, class]
-def is_set_surjective {A B : Set.{u}} (f : B -> A) :=
+def is_set_surjective {A : Set.{u}} {B : Set.{v}} (f : B -> A) :=
   forall a : A, image f a
 
 @[hott, instance]
@@ -576,6 +576,11 @@ def set_quotient {A : Set.{u}} (R : A -> A -> trunctype.{v} -1) : Set :=
 @[hott] 
 def set_class_of {A : Set.{u}} (R : A → A → trunctype.{v} -1) (a : A) : set_quotient R :=  
   tr (class_of (λ a b : A, R a b) a)
+
+@[hott]
+def set_class_of_is_surj {A : Set.{u}} (R : A → A → trunctype.{v} -1) :
+  is_set_surjective (set_class_of R) :=
+sorry  
 
 @[hott]
 def eq_of_setrel {A : Set.{u}} (R : A → A → trunctype.{v} -1) ⦃a a' : A⦄ (H : R a a') :
