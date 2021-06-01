@@ -1,12 +1,13 @@
 import hott.algebra.ring set_theory categories.examples categories.cat_limits pathover2
-       hott.types.prod hott.algebra.relation
+       hott.types.prod hott.algebra.relation categories.cat_colimits
 
 universes u v w
 hott_theory
 
 namespace hott
 open hott.is_trunc hott.is_equiv hott.algebra hott.set subset categories hott.trunc
-     hott.category_theory.limits hott.sigma hott.prod hott.relation
+     hott.category_theory.limits hott.sigma hott.prod hott.relation 
+     hott.category_theory.colimits
 
 namespace algebra
 
@@ -751,51 +752,76 @@ end
 def ring_colim_set {J : Set.{v}} [precategory.{v} J] (F : J ⥤ CommRing.{v}) : Set.{v} :=
   set_quotient (ring_colim_mere_rel F)
 
+@[hott, reducible]
+def ring_colim_ops {J : Set.{v}} [precategory.{v} J] (F : J ⥤ CommRing.{v}) : 
+  comm_ring_ops (ring_colim_set F) :=
+begin
+  let R := ring_colim_set F, let rel := ring_colim_rel F, let mrel := ring_colim_mere_rel F,
+  fapply comm_ring_ops.mk, 
+  { fapply set_quotient.elim2, 
+    { intros x y, exact set_class_of mrel (expr.add x y) },
+    { intros a a' b, apply trunc.rec, intro r, 
+      apply quot_rel_to_setquot_eq mrel, hsimp,         
+      exact tr (ring_colim_rel.add_1 a a' b r) },
+    { intros a b b', apply trunc.rec, intro r, 
+      apply quot_rel_to_setquot_eq mrel, hsimp, 
+      exact tr (ring_colim_rel.add_2 a b b' r) } }, --add
+  { exact set_class_of mrel (expr.zero F) }, --zero
+  { fapply set_quotient.elim, 
+    { intro x, exact set_class_of mrel (expr.neg x) },
+    { intros a a', apply trunc.rec, intro r, 
+      apply quot_rel_to_setquot_eq mrel, hsimp, 
+      exact tr (ring_colim_rel.neg_1 a a' r) } }, --neg
+  { fapply set_quotient.elim2, 
+    { intros x y, exact set_class_of mrel (expr.mul x y) },
+    { intros a a' b, apply trunc.rec, intro r, 
+      apply quot_rel_to_setquot_eq mrel, hsimp, 
+      exact tr (ring_colim_rel.mul_1 a a' b r) },
+    { intros a b b', apply trunc.rec, intro r, 
+      apply quot_rel_to_setquot_eq mrel, hsimp, 
+      exact tr (ring_colim_rel.mul_2 a b b' r) } }, --mul
+  { exact set_class_of mrel (expr.one F) }  --one
+end     
+
 @[hott]
 def ring_colim_str {J : Set.{v}} [precategory.{v} J] (F : J ⥤ CommRing.{v}) : 
   comm_ring (ring_colim_set F) :=
 begin 
   let R := ring_colim_set F, let rel := ring_colim_rel F, let mrel := ring_colim_mere_rel F,
   fapply comm_ring_mk,
-  { fapply comm_ring_ops.mk, 
-    { fapply set_quotient.elim2, 
-      { intros x y, exact set_class_of mrel (expr.add x y) },
-      { intros a a' b, apply trunc.rec, intro r, 
-        apply quot_rel_to_setquot_eq mrel, hsimp, 
-        exact tr (ring_colim_rel.add_1 a a' b r) },
-      { intros a b b', apply trunc.rec, intro r, 
-        apply quot_rel_to_setquot_eq mrel, hsimp, 
-        exact tr (ring_colim_rel.add_2 a b b' r) } }, --add
-    { exact set_class_of mrel (expr.zero F) }, --zero
-    { fapply set_quotient.elim, 
-      { intro x, exact set_class_of mrel (expr.neg x) },
-      { intros a a', apply trunc.rec, intro r, 
-        apply quot_rel_to_setquot_eq mrel, hsimp, 
-        exact tr (ring_colim_rel.neg_1 a a' r) } }, --neg
-    { fapply set_quotient.elim2, 
-      { intros x y, exact set_class_of mrel (expr.mul x y) },
-      { intros a a' b, apply trunc.rec, intro r, 
-        apply quot_rel_to_setquot_eq mrel, hsimp, 
-        exact tr (ring_colim_rel.mul_1 a a' b r) },
-      { intros a b b', apply trunc.rec, intro r, 
-        apply quot_rel_to_setquot_eq mrel, hsimp, 
-        exact tr (ring_colim_rel.mul_2 a b b' r) } }, --mul
-    { exact set_class_of mrel (expr.one F) } }, --one
+  { exact ring_colim_ops F }, 
   { fapply comm_ring_laws.mk, 
-    { intros x y z, apply quot_rel_to_setquot_eq mrel, hsimp, 
-      /- intros a b c, exact tr (ring_colim_rel.add_assoc a b c) -/
-      sorry }, --add_assoc
-    { sorry }, --zero_add
-    { sorry }, --add_zero
-    { sorry }, --add_neg
-    { sorry }, --add_comm
-    { sorry }, --mul_assoc
-    { sorry }, --one_mul
-    { sorry }, --mul_one
-    { sorry }, --mul_comm
-    { sorry }, --right_distr
-    { sorry } } --left_distr
+    { apply set_quotient.prec3, intros x y z, apply quot_rel_to_setquot_eq mrel,
+      exact tr (ring_colim_rel.add_assoc x y z) }, --add_assoc
+    { apply set_quotient.prec, intro x, apply quot_rel_to_setquot_eq mrel,
+      exact tr (ring_colim_rel.zero_add x) }, --zero_add
+    { apply set_quotient.prec, intro x, apply quot_rel_to_setquot_eq mrel,
+      exact tr (ring_colim_rel.add_zero x) }, --add_zero
+    { apply set_quotient.prec, intro x, apply quot_rel_to_setquot_eq mrel,
+      exact tr (ring_colim_rel.add_left_neg x) }, --add_neg
+    { apply set_quotient.prec2, intros x y, apply quot_rel_to_setquot_eq mrel,
+      exact tr (ring_colim_rel.add_comm x y) }, --add_comm
+    { apply set_quotient.prec3, intros x y z, apply quot_rel_to_setquot_eq mrel,
+      exact tr (ring_colim_rel.mul_assoc x y z) }, --mul_assoc
+    { apply set_quotient.prec, intro x, apply quot_rel_to_setquot_eq mrel,
+      exact tr (ring_colim_rel.one_mul x) }, --one_mul
+    { apply set_quotient.prec, intro x, apply quot_rel_to_setquot_eq mrel,
+      exact tr (ring_colim_rel.mul_one x) }, --mul_one
+    { apply set_quotient.prec2, intros x y, apply quot_rel_to_setquot_eq mrel,
+      exact tr (ring_colim_rel.mul_comm x y) }, --mul_comm
+    { apply set_quotient.prec3, intros x y z, apply quot_rel_to_setquot_eq mrel,
+      exact tr (ring_colim_rel.left_distrib x y z) }, --right_distr
+    { apply set_quotient.prec3, intros x y z, apply quot_rel_to_setquot_eq mrel,
+      exact tr (ring_colim_rel.right_distrib x y z)  } } --left_distr
 end  
+
+@[hott, reducible]
+def ring_cocone {J : Set.{v}} [precategory.{v} J] (F : J ⥤ CommRing.{v}) : cocone F :=
+    begin
+  fapply cocone.mk,
+  { exact CommRing.mk (ring_colim_set F) (ring_colim_str F) },
+  { sorry }
+  end
 
 end algebra
 
