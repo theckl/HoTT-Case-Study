@@ -575,12 +575,7 @@ def set_quotient {A : Set.{u}} (R : A -> A -> trunctype.{v} -1) : Set :=
 
 @[hott] 
 def set_class_of {A : Set.{u}} (R : A → A → trunctype.{v} -1) (a : A) : set_quotient R :=  
-  tr (class_of (λ a b : A, R a b) a)
-
-@[hott]
-def set_class_of_is_surj {A : Set.{u}} (R : A → A → trunctype.{v} -1) :
-  is_set_surjective (set_class_of R) :=
-sorry  
+  tr (class_of (λ a b : A, R a b) a) 
 
 @[hott]
 def eq_of_setrel {A : Set.{u}} (R : A → A → trunctype.{v} -1) ⦃a a' : A⦄ (H : R a a') :
@@ -603,6 +598,39 @@ begin
 end  
 
 @[hott]
+def set_quotient.prec {A : Set.{u}} (R : A → A → trunctype.{v} -1) 
+  {P : set_quotient R -> Type w} [∀ x : set_quotient R, is_prop (P x)] 
+  (Pc : Π a : A, P (set_class_of R a)) (x : set_quotient R) : P x :=
+begin 
+  fapply set_quotient.rec, 
+  { exact Pc }, 
+  { intros a a' H, apply pathover_of_tr_eq, exact is_prop.elim _ _ }
+end 
+
+@[hott]
+def set_quotient.prec2 {A : Set.{u}} (R : A → A → trunctype.{v} -1) 
+  {P : set_quotient R -> set_quotient R -> Type w} [∀ x y : set_quotient R, is_prop (P x y)] 
+  (Pc : Π a b : A, P (set_class_of R a) (set_class_of R b)) (x y : set_quotient R) : P x y :=
+begin 
+  fapply set_quotient.prec, 
+  { intro b, revert x, fapply set_quotient.prec, 
+    intro a, exact Pc a b }
+end 
+
+@[hott]
+def set_quotient.prec3 {A : Set.{u}} (R : A → A → trunctype.{v} -1) 
+  {P : set_quotient R -> set_quotient R -> set_quotient R -> Type w} 
+  [∀ x y z : set_quotient R, is_prop (P x y z)] 
+  (Pc : Π a b c : A, P (set_class_of R a) (set_class_of R b) (set_class_of R c)) 
+  (x y z : set_quotient R) : P x y z :=
+begin 
+  fapply set_quotient.prec, 
+  { intro c, revert y, fapply set_quotient.prec, 
+    intro b, revert x, fapply set_quotient.prec, 
+    intro a, exact Pc a b c }
+end 
+
+@[hott]
 def set_quotient.elim {A : Set.{u}} (R : A → A → trunctype.{v} -1) 
   {P : Type w} [Hs: is_set P] (Pc : A -> P )
   (Pp : Π ⦃ a a' : A ⦄ (H : R a a'), Pc a = Pc a') 
@@ -615,6 +643,15 @@ begin
     apply pathover_of_eq, exact Pp H },
   { intro x, exact Hs }  
 end  
+
+@[hott]
+def set_class_of_is_surj {A : Set.{u}} (R : A → A → trunctype.{v} -1) :
+  is_set_surjective (set_class_of R) :=
+begin 
+  fapply set_quotient.rec, 
+  { intro a, exact tr ⟨a, idp⟩ },
+  { intros a a' H, exact pathover_prop_eq _ _ _ _ } 
+end
 
 /- What is the best place for these? [pathover2] requires [set_theory]. -/
 @[hott]
@@ -704,7 +741,7 @@ begin
     { intro H', exact rel_trans R' H H' } },
   { intros a a' b H, apply pathover_of_eq, apply prop_iff_eq, 
     { intro H', exact rel_trans R' H' H },
-    { intro H', exact rel_trans R' H' (rel_symm R' H) } }
+    { intro H', exact rel_trans R' H' (rel_symm R' H) } } 
 end  
 
 /- Now we can show the equivalence on the extended relation. The quasi-isomorphism 
