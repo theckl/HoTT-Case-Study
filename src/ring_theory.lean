@@ -363,7 +363,7 @@ def CommSubring.to_Subset {R : CommRing} (P : Setpred R.carrier) [ring_pred_clos
   Subset R.carrier :=
 {r ∈ R.carrier | P r}    
 
-/- The embedding of the underlying subset of a subring into the underlyimh set of the ring is a 
+/- The embedding of the underlying subset of a subring into the underlying set of the ring is a 
    ring homomorphism. -/
 @[hott]
 def comm_subring_embed_hom {R : CommRing} (P : Setpred R.carrier) [ring_pred_closed P]:
@@ -817,11 +817,63 @@ end
 
 @[hott, reducible]
 def ring_cocone {J : Set.{v}} [precategory.{v} J] (F : J ⥤ CommRing.{v}) : cocone F :=
-    begin
+begin
+  let mR := ring_colim_mere_rel F,
   fapply cocone.mk,
+  /- The limit cocone vertex set -/
   { exact CommRing.mk (ring_colim_set F) (ring_colim_str F) },
+  { fapply nat_trans.mk, 
+    /- the leg homomorphisms of the limit cocone -/
+    { intro j, fapply elem_pred, -- ring homomorphisms consist of a set map satisfying laws
+      { intro r, exact set_class_of mR (expr.x_ j r) },
+      { change is_ring_hom _ _ (λ r, set_class_of mR (expr.x_ j r)), fapply is_ring_hom.mk, 
+        { apply quot_rel_to_setquot_eq mR, exact tr (ring_colim_rel.one F j) },
+        { intros a b, apply quot_rel_to_setquot_eq mR, exact tr (ring_colim_rel.mul j a b) },
+        { apply quot_rel_to_setquot_eq mR, exact tr (ring_colim_rel.zero F j) },
+        { intros a b, apply quot_rel_to_setquot_eq mR, exact tr (ring_colim_rel.add j a b) } } },
+    { intros j k f, apply hom_eq_C_std _ _, apply eq_of_homotopy, --diagram compatibility
+      intro r, apply quot_rel_to_setquot_eq mR, exact tr (ring_colim_rel.map j k f r) } }
+end
+
+#print fields comm_ring
+
+/- To show that the ring cocone constructed above descends to any other cocone over the same
+   diagram we need a variant of the left-adjointness of the free ring construction to the 
+   forgetful functor. -/
+@[hott, reducible]
+def ring_cocone_is_colimit {J : Set.{v}} [precategory.{v} J] (F : J ⥤ CommRing.{v}) : 
+  is_colimit (ring_cocone F) :=
+begin 
+  fapply is_colimit.mk,
+  /- the descending to the colimit cocone from another cocone -/ 
+  { intro s, fapply elem_pred, 
+    { fapply set_quotient.elim, 
+      { intro x, hinduction x, 
+        { exact (s.π.app j).1 r }, 
+        { exact @comm_ring.zero s.X s.X.str },
+        { exact @comm_ring.one s.X s.X.str },
+        { exact @comm_ring.neg s.X s.X.str ih },
+        { exact @comm_ring.add s.X s.X.str ih_a ih_a_1 },
+        { exact @comm_ring.mul s.X s.X.str ih_a ih_a_1 } },
+      { intros x y, apply trunc.rec, intro H, hinduction H, 
+        { refl }, { rwr ih }, { rwr ih_h, rwr <- ih_k }, 
+        { hsimp, exact homotopy_of_eq ((ap sigma.fst (s.π.naturality f))) r }, 
+        { hsimp, exact (s.π.app j).2.map_zero },
+        { hsimp, exact (s.π.app j).2.map_one }, 
+        { hsimp, exact comm_ring_hom.map_neg (s.π.app j).2 x }, 
+        { hsimp, exact (s.π.app j).2.map_add x y }, 
+        { hsimp, exact (s.π.app j).2.map_mul x y }, 
+        any_goals { hsimp at ih, hsimp, rwr ih }, 
+        { hsimp, exact @comm_ring.zero_add s.X s.X.str _ }, 
+        { hsimp, exact @comm_ring.add_zero s.X s.X.str _ }, 
+        { hsimp, exact @comm_ring.one_mul s.X s.X.str _ }, 
+        { hsimp, exact @comm_ring.mul_one s.X s.X.str _ },
+        { hsimp, exact @comm_ring.add_left_inv s.X s.X.str _ }, sorry, sorry, sorry, sorry,
+        sorry, sorry } },
+    { sorry } },
+  { sorry },
   { sorry }
-  end
+end   
 
 end algebra
 
