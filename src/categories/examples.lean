@@ -234,7 +234,18 @@ def subset_precat_precat {A : Set.{u}} [hA : precategory A]
 precategory.mk (λ (b c : ↥↥B) (f : b ⟶ c), precategory.id_comp f) 
                (λ (b c : ↥↥B) (f : b ⟶ c), precategory.comp_id f) 
                (λ (b c d e: ↥↥B) (f : b ⟶ c) (g : c ⟶ d) (h : d ⟶ e), 
-                  precategory.assoc f g h)    
+                  precategory.assoc f g h)  
+/- The inclusion of two subsets of a set that is a precategory defines a functor. -/ 
+@[hott]
+def functor_subsets_precat {A : Set.{u}} [hA : precategory A] {B C : Subset A} (i : B ⊆ C) :
+  ↥B ⥤ ↥C :=
+begin 
+  fapply functor.mk, 
+  { intro b, sorry }, 
+  { sorry },
+  { sorry },
+  { sorry },
+end                     
 
 /- We define the discrete precategory structure on a set, whose morphisms are
    only equalities. 
