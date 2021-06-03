@@ -1,10 +1,10 @@
-import topology.basic categories.cat_limits
+import topology.basic categories.cat_limits categories.cat_colimits
 
 universes u v w
 hott_theory
 
 namespace hott
-open hott.set hott.subset hott.categories category_theory.limits
+open hott.set hott.subset hott.categories category_theory.limits category_theory.colimits
   categories.opposite
 
 /- The category of topological spaces and continuous maps. -/
@@ -75,11 +75,20 @@ assume i, sset_iUnion ↑f i
 def opens.hom_eq {U V : open_sets X} (f g : U ⟶ V) : f = g :=
   power_set_unique_hom f g 
 
-/- As a subset of the power set the set of open sets automatically receives 
-   a precategory instance. Therefore, we can define a presheaf over a 
-   topological space with values in a category `C` as follows: -/
+@[hott] 
+def nbhds (x : X.carrier) : Subset (𝒫 ↥X) := 
+  {U ∈ (𝒫 ↥X) | prop_ulift ((is_open ↥X U) and (x ∈ U))} 
+
+/- As a subset of the power set the set of open sets (and sets of neighborhoods) automatically
+   receive a precategory instance. Therefore, we can define a presheaf over a 
+   topological space with values in a category `C` and its stalks as follows: -/
 @[hott]
 def presheaf (C : Type u) [category.{v} C] := (open_sets X)ᵒᵖ ⥤ C
+
+@[hott]
+def stalk (C : Type u) [category.{v} C] [has_colimits C] (F : presheaf X C) (x : X.carrier) : 
+  C :=
+sorry
 
 /- The product of the sections of a presheaf over a family of open sets. -/
 @[hott]
@@ -200,7 +209,7 @@ end topology
 structure PresheafedSpace (C : Type u) [category.{v} C] :=
   (carrier : Top)
   (presheaf : topology.presheaf carrier C)
-
+    
 @[hott]
 structure SheafedSpace (C : Type u) [category.{v} C] [has_products C] extends 
   PresheafedSpace C := 
