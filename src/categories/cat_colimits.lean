@@ -137,8 +137,7 @@ def colimit {J : Set.{v}} [precategory J] {C : Type u} [category C]
   (F : J ⥤ C) [has_colimit F] := (colimit.cocone F).X
 
 @[hott]
-class has_colimits_of_shape (J : Set) [precategory J] (C : Type u) 
-  [category C] :=
+class has_colimits_of_shape (J : Set) [precategory J] (C : Type u) [category C] :=
   (has_colimit : Π F : J ⥤ C, has_colimit F)
 
 @[hott, priority 100]
@@ -146,6 +145,11 @@ instance has_colimit_of_has_colimits_of_shape
   {J : Set} [precategory J] (C : Type u) [category C] 
   [H : has_colimits_of_shape J C] (F : J ⥤ C) : has_colimit F :=
 has_colimits_of_shape.has_colimit F
+
+@[hott]
+class has_colimits (C : Type u) [category C] :=
+  (has_colimit_of_shape : Π {J : Set} [precategory J], has_colimits_of_shape J C )
+
 
 /- The category of sets has all colimits. 
 
