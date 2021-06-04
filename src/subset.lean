@@ -625,6 +625,20 @@ by hsimp
 def sset_elem_pred {A : Set} {P : Setpred A} (b : (↥(pred_to_sset P) : Set)) : P ↑b := b.2
 
 @[hott]
+def obj_elem {A : Set} {B : Subset A} (b : B.carrier) : ↑b ∈ B :=
+  have p : B.map b = ↑b, from rfl, tr ⟨b, p⟩
+
+@[hott]
+def elem_obj {A : Set} {B : Subset A} (a : A) (H : a ∈ B) : ↥B :=
+  have Hp : is_prop (fiber B.map a), from set_inj_implies_unique_fib _ B.inj a,
+  (@untrunc_of_is_trunc _ -1 Hp H).1   
+
+@[hott]
+def elem_obj_eq {A : Set} {B : Subset A} (a : A) (H : a ∈ B) : ↑(elem_obj a H) = a :=
+  have Hp : is_prop (fiber B.map a), from set_inj_implies_unique_fib _ B.inj a,
+  (@untrunc_of_is_trunc _ -1 Hp H).2
+
+@[hott]
 def is_subset_of (B C : Subset A) :=
   forall a : A, a ∈ B -> a ∈ C
 
