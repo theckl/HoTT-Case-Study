@@ -77,7 +77,15 @@ def opens.hom_eq {U V : open_sets X} (f g : U ⟶ V) : f = g :=
 
 @[hott] 
 def nbhds (x : X.carrier) : Subset (𝒫 ↥X) := 
-  {U ∈ (𝒫 ↥X) | prop_ulift ((is_open ↥X U) and (x ∈ U))} 
+  {U ∈ (𝒫 ↥X) | prop_ulift (is_open ↥X U) and prop_ulift (x ∈ U)} 
+
+@[hott]
+def nbhds_opens_inc (x : X.carrier) : nbhds X x ⊆ open_sets X :=
+begin intros U el, exact (pred_elem U).2 (((pred_elem U).1 el).1) end
+
+@[hott]
+def nbhds_opens_inc_functor (x : X.carrier) : (nbhds X x)ᵒᵖ ⥤ (open_sets X)ᵒᵖ :=
+  @opposite_functor (nbhds X x) (open_sets X) _ _ (functor_subsets_precat (nbhds_opens_inc X x))
 
 /- As a subset of the power set the set of open sets (and sets of neighborhoods) automatically
    receive a precategory instance. Therefore, we can define a presheaf over a 
@@ -86,9 +94,10 @@ def nbhds (x : X.carrier) : Subset (𝒫 ↥X) :=
 def presheaf (C : Type u) [category.{v} C] := (open_sets X)ᵒᵖ ⥤ C
 
 @[hott]
-def stalk (C : Type u) [category.{v} C] [has_colimits C] (F : presheaf X C) (x : X.carrier) : 
+def stalk (C : Type u) [category.{v} C] [H : has_colimits C] (F : presheaf X C) (x : X.carrier) : 
   C :=
-sorry
+have G : (nbhds X x)ᵒᵖ ⥤ C, from nbhds_opens_inc_functor X x ⋙ F,  
+@colimit (op_Set (nbhds X x).carrier) _ _ _ G (@has_colimit_of_has_colimits C _ H _ _ _)
 
 /- The product of the sections of a presheaf over a family of open sets. -/
 @[hott]
