@@ -10,12 +10,16 @@ namespace categories
 
 /- To construct the opposite category, we use the mathlib-trick in [data.opposite]
    that allows the elaborator to do most of the work. -/  
-variables {C : Type u}   
+variables {C : Type u} {D : Type u'}  
 
 @[hott]
 def opposite : Type u := C 
 
 notation C `ᵒᵖ`:std.prec.max_plus := @opposite C
+
+@[hott]
+def op_Set (C : Set.{u}) : Set :=
+  Set.mk Cᵒᵖ (C.struct)
 
 namespace opposite
 
@@ -187,6 +191,16 @@ def ideqviso_op [category.{v} C] : ∀ a b : Cᵒᵖ, is_equiv (@idtoiso _ _ a b
 def category.opposite [category.{v} C] : category.{v} Cᵒᵖ :=
   category.mk ideqviso_op 
 
+@[hott]
+def opposite_functor [precategory.{v} C] [precategory.{v'} D] : (C ⥤ D) -> (Cᵒᵖ ⥤ Dᵒᵖ) :=
+begin
+  intro F, fapply functor.mk,
+  { intro c, exact op (F.obj (unop c)) },
+  { intros x y f, apply hom_op, exact F.map (hom_unop f) },
+  { intro x, hsimp, refl },
+  { intros x y z f g, hsimp, refl }
+end
+
 /- The power set `𝒫 A` of a set `A` is a precategory, with inclusions of 
    subsets as morphisms. -/
 @[hott, instance]   
@@ -234,17 +248,39 @@ def subset_precat_precat {A : Set.{u}} [hA : precategory A]
 precategory.mk (λ (b c : ↥↥B) (f : b ⟶ c), precategory.id_comp f) 
                (λ (b c : ↥↥B) (f : b ⟶ c), precategory.comp_id f) 
                (λ (b c d e: ↥↥B) (f : b ⟶ c) (g : c ⟶ d) (h : d ⟶ e), 
-                  precategory.assoc f g h)  
-/- The inclusion of two subsets of a set that is a precategory defines a functor. -/ 
+                  precategory.assoc f g h) 
+
+/- The inclusion of two subsets of a set that is a precategory defines a functor. 
+
+   We need two equalities easily shown by induction. -/ 
 @[hott]
-def functor_subsets_precat {A : Set.{u}} [hA : precategory A] {B C : Subset A} (i : B ⊆ C) :
+def tr_tr_cat_id {C : Type u} [precategory C] {c c' : C} (p : c = c') : 
+  p ▸[λ d, c' ⟶ d] (p ▸[λ d, d ⟶ c] 𝟙 c) = 𝟙 c' :=
+begin hinduction p, refl end   
+
+@[hott]
+def tr_tr_cat_comp {C : Type u} [precategory C] {c₁ c₁' c₂ c₂' c₃ c₃': C} (p : c₁ = c₁') 
+  (q : c₂ = c₂') (r : c₃ = c₃') (f : c₁' ⟶ c₂') (g : c₂' ⟶ c₃') : 
+  r ▸[λ d, c₁' ⟶ d] (p ▸[λ d, d ⟶ c₃] ((p⁻¹ ▸[λ d, d ⟶ c₂] (q⁻¹ ▸[λ d, c₁' ⟶ d] f)) ≫ 
+                                         (q⁻¹ ▸[λ d, d ⟶ c₃] (r⁻¹ ▸[λ d, c₂' ⟶ d] g)))) = f ≫ g :=
+begin hinduction p, hinduction q, hinduction r, refl end
+
+@[hott]
+def functor_subsets_precat {A : Set.{u}} [hA : precategory A] {B C : Subset A} (inc : B ⊆ C) :
   ↥B ⥤ ↥C :=
 begin 
   fapply functor.mk, 
-  { intro b, sorry }, 
-  { sorry },
-  { sorry },
-  { sorry },
+  { intro b, exact elem_obj ↑b (inc ↑b (obj_elem b)) }, 
+  { intros b b' f, 
+    change ↥(↑(elem_obj ↑b (inc ↑b (obj_elem b))) ⟶ ↑(elem_obj ↑b' (inc ↑b' (obj_elem b')))), 
+    rwr elem_obj_eq, rwr elem_obj_eq, exact f },
+  { intro b, 
+    change _ = 𝟙 (↑(elem_obj ↑b (inc ↑b (obj_elem b)))), 
+    apply inv_tr_eq_of_eq_tr, apply inv_tr_eq_of_eq_tr, rwr tr_tr_cat_id },
+  { intros b₁ b₂ b₃ f g, apply inv_tr_eq_of_eq_tr, apply inv_tr_eq_of_eq_tr, 
+    exact (tr_tr_cat_comp (elem_obj_eq ↑b₁ (inc ↑b₁ (obj_elem b₁))) 
+                       (elem_obj_eq ↑b₂ (inc ↑b₂ (obj_elem b₂))) 
+                       (elem_obj_eq ↑b₃ (inc ↑b₃ (obj_elem b₃))) f g)⁻¹ }
 end                     
 
 /- We define the discrete precategory structure on a set, whose morphisms are
