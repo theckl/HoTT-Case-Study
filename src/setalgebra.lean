@@ -25,14 +25,6 @@ def subset_asymm {A : Set.{u}} (B C : Subset A) :
   B ⊆ C -> C ⊆ B -> B = C :=
 assume BC CB, (sset_eq_iff_inclusion B C).2 ⟨BC, CB⟩  
 
-/- This should be in an [init]-file, maybe called [prop_logic]. It is not
-   contained in [init.logic]. -/
-@[hott]
-protected def and (P Q : Prop) : Prop :=
-  Prop.mk (P × Q) (prod.is_trunc_prod P Q -1)   
-
-infix `and`:50 := hott.and 
-
 namespace subset
 variables {A : Set.{u}}
 
