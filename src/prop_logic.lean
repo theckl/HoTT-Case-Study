@@ -66,6 +66,19 @@ def and_is_prop (A B : Type u) [is_prop A] [is_prop B] : is_prop (A × B) :=
     end,
   is_prop.mk eq_and 
 
+/- We define `and` and `or`. -/
+@[hott]
+protected def and (P Q : Prop) : Prop :=
+  Prop.mk (P × Q) (prod.is_trunc_prod P Q -1)   
+
+infix `and`:50 := hott.and 
+
+@[hott]
+protected def or (P Q : Prop) : Prop :=
+  ∥P ⊎ Q∥ 
+
+infix `or`:49 := hott.or 
+
 @[hott, instance]
 lemma is_prop_map {A B : Type u} (pB : is_prop B) : is_prop (A -> B) :=
 have eq_map : forall f1 f2 : A -> B, f1 = f2, from 
