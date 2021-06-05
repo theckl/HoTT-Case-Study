@@ -376,6 +376,59 @@ begin
   { intros r s, refl }
 end     
 
+/- Units of a ring as a bundled structure. Since for a given ring element there is at most a 
+   unique inverse we can also define a predicate identifying invertible ring elements. -/
+@[hott]
+structure units (R : CommRing) :=
+(val : R)
+(inv : R)
+(val_inv : val * inv = 1)
+
+namespace units
+
+@[hott] 
+instance (R : CommRing) : has_coe (units R) R := ⟨val⟩
+
+end units
+
+open units
+
+@[hott]
+def unique_mul_inv {R : CommRing.{u}} (r : R) : is_prop (Σ (u : units R), r = u) :=
+begin 
+  fapply is_prop.mk, intros x y, fapply sigma_eq, 
+  { hinduction x.1, hinduction y.1, 
+    have H : val = val_1, from
+    begin
+      have p : x.1.val = val, from ap units.val _h, 
+      rwr <- p, change ↑(x.1) = val_1, rwr <- x.2, 
+      have q : y.1.val = val_1, from ap units.val _h_1, 
+      rwr <- q, change r = ↑(y.1), rwr <- y.2
+    end, 
+    have H' : inv = inv_1, from 
+      calc inv = inv * 1 : (comm_ring.mul_one inv)⁻¹
+           ... = inv * (val_1 * inv_1) : by rwr val_inv_1
+           ... = inv * (val * inv_1) : by rwr H
+           ... = (inv * val) * inv_1 : (comm_ring.mul_assoc inv val inv_1)⁻¹
+           ... = (val * inv) * inv_1 : ap (λ r : R, r * inv_1) (comm_ring.mul_comm inv val)
+           ... = 1 * inv_1 : by rwr val_inv
+           ... = inv_1 : comm_ring.one_mul inv_1, 
+    fapply apd001 units.mk, 
+    { exact H },
+    { exact H' },
+    { apply pathover_of_tr_eq, exact is_set.elim _ _ } },
+  { apply pathover_of_tr_eq, exact is_set.elim _ _ } 
+end
+
+@[hott]
+def is_unit {R : CommRing.{u}} (r : R) : trunctype -1 :=
+  trunctype.mk (Σ (u : units R), r = u) (unique_mul_inv r)
+
+@[hott]
+class local_ring (R : CommRing) :=
+  (nontrivial : ¬ (0 = 1))
+  (is_local : ∀ r : R, (is_unit r) or (is_unit (1 - r)))
+
 end algebra
 
 end hott
