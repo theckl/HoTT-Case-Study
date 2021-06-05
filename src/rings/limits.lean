@@ -141,9 +141,13 @@ def CommRing_has_limit {J : Set.{v}} [precategory.{v} J] (F : J ⥤ CommRing.{v}
 has_limit.mk (CommRing_limit_cone F)
 
 @[hott, instance]
-def CommRing_has_limits_of_shape {J : Set.{v}} [precategory.{v} J] :
+def CommRing_has_limits_of_shape (J : Set.{v}) [precategory.{v} J] :
   has_limits_of_shape J CommRing.{v} :=
-has_limits_of_shape.mk (λ F, CommRing_has_limit F)  
+has_limits_of_shape.mk (λ F, CommRing_has_limit F) 
+
+@[hott, instance]
+def CommRing_has_products : has_products CommRing :=
+  has_products.mk (λ J, @CommRing_has_limits_of_shape (discrete J) )
 
 end algebra
 
