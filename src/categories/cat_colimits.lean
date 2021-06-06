@@ -129,30 +129,30 @@ def get_colimit_cocone {J : Set.{v}} [precategory J] {C : Type u} [category C]
 untrunc_of_is_trunc (has_colimit.exists_colimit F)  
 
 @[hott]
-def colimit.cocone {J : Set.{v}} [precategory J] {C : Type u} [category C]
+def colimit.cocone {J : Set.{v}} [precategory J] {C : Type (u+1)} [category.{u} C]
   (F : J ⥤ C) [has_colimit F] : cocone F := (get_colimit_cocone F).cocone
 
 @[hott]
-def colimit {J : Set.{v}} [precategory J] {C : Type u} [category C]
+def colimit {J : Set.{v}} [precategory.{v} J] {C : Type (u+1)} [category.{u} C]
   (F : J ⥤ C) [has_colimit F] := (colimit.cocone F).X
 
 @[hott]
-class has_colimits_of_shape (J : Set) [precategory J] (C : Type u) [category C] :=
+class has_colimits_of_shape (J : Set) [precategory J] (C : Type (u+1)) [category.{u} C] :=
   (has_colimit : Π F : J ⥤ C, has_colimit F)
 
 @[hott, priority 100, instance]
 def has_colimit_of_has_colimits_of_shape
-  {J : Set} [precategory J] (C : Type u) [category C] 
+  {J : Set.{u}} [precategory.{u} J] (C : Type (u+1)) [category.{u} C] 
   [H : has_colimits_of_shape J C] (F : J ⥤ C) : has_colimit F :=
 has_colimits_of_shape.has_colimit F
 
 @[hott]
-class has_colimits (C : Type u) [category C] :=
-  (has_colimit_of_shape : Π (J : Set) [precategory J], has_colimits_of_shape J C )
+class has_colimits (C : Type (u+1)) [category.{u} C] :=
+  (has_colimit_of_shape : Π (J : Set.{u}) [precategory.{u} J], has_colimits_of_shape J C )
 
 @[hott, instance]
-def has_colimit_of_has_colimits (C : Type u) [category C] [H : has_colimits C] {J : Set} 
-  [precategory J] (F : J ⥤ C) : has_colimit F :=
+def has_colimit_of_has_colimits (C : Type (u+1)) [category.{u} C] [H : has_colimits C] 
+  {J : Set.{u}} [precategory.{u} J] (F : J ⥤ C) : has_colimit F :=
 have H' : has_colimits_of_shape J C, from has_colimits.has_colimit_of_shape C J,  
 @has_colimit_of_has_colimits_of_shape _ _ C _ H' F
 
