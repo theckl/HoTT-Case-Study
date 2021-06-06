@@ -102,7 +102,7 @@ begin
 end    
 
 @[hott]
-def CommRing_limit_cone {J : Set.{v}} [precategory.{v} J] (F : J ⥤ CommRing.{v}) : 
+def CommRing_limit_cone {J : Set.{u}} [precategory.{u} J] (F : J ⥤ CommRing.{u}) : 
   limit_cone F :=
 begin 
   fapply str_limit_cone (set_limit_cone (forget F)), 
@@ -136,7 +136,7 @@ begin
 end   
 
 @[hott]
-def CommRing_has_limit {J : Set.{v}} [precategory.{v} J] (F : J ⥤ CommRing.{v}) : 
+def CommRing_has_limit {J : Set.{u}} [precategory.{u} J] (F : J ⥤ CommRing.{u}) : 
   has_limit F :=
 has_limit.mk (CommRing_limit_cone F)
 
@@ -146,8 +146,14 @@ def CommRing_has_limits_of_shape (J : Set.{v}) [precategory.{v} J] :
 has_limits_of_shape.mk (λ F, CommRing_has_limit F) 
 
 @[hott, instance]
+def CommRing_has_limits : has_limits CommRing.{u} :=
+  has_limits.mk (λ (J : Set.{u}) (c : precategory.{u} J), @CommRing_has_limits_of_shape J c)
+
+@[hott, instance]
 def CommRing_has_products : has_products CommRing :=
-  has_products.mk (λ J, @CommRing_has_limits_of_shape (discrete J) )
+begin
+  exact @has_products_of_has_limits CommRing _ CommRing_has_limits
+end
 
 end algebra
 
