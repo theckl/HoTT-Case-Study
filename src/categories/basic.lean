@@ -589,7 +589,7 @@ end
 
 /- The forgetful functor composed with a functor to a category of standard structures -/
 @[hott]
-def forget {J : Type.{u}} [precategory.{u} J] {C : Type (u+1)} [category.{u} C] 
+def forget {J : Type.{u}} [precategory.{v} J] {C : Type (u+1)} [category.{u} C] 
   {std_str : std_structure_on C} (F : J ⥤ std_structure std_str) : J ⥤ C :=
 F ⋙ (forget_str std_str)  
 
