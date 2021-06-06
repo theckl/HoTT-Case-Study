@@ -149,36 +149,45 @@ instance has_limit_of_has_limits_of_shape
 has_limits_of_shape.has_limit F
 
 @[hott]
-abbreviation has_product {C : Type u} [category C] {J : Set.{u}} 
+class has_limits (C : Type (u+1)) [category.{u} C] :=
+  (has_limit_of_shape : Π (J : Set) [precategory J], has_limits_of_shape J C )  
+
+@[hott]
+abbreviation has_product {C : Type (u+1)} [category C] {J : Set.{u}} 
   (f : J -> C) := has_limit (discrete.functor f) 
 
 @[hott]
-abbreviation pi_obj {C : Type u} [category C] {J : Set.{u}} (f : J → C) 
+abbreviation pi_obj {C : Type (u+1)} [category.{u} C] {J : Set.{u}} (f : J → C) 
   [has_product f] := limit (discrete.functor f)
 
 notation `∏ ` f:20 := pi_obj f
 
 @[hott]
-class has_products (C : Type u) [category.{v} C] := 
+class has_products (C : Type (u+1)) [category.{u} C] := 
   (has_limit_of_shape : Π J : Set.{u}, has_limits_of_shape (discrete J) C)
 
 @[hott, priority 100]
 instance has_limits_of_shape_of_has_products 
-  {J : Set} (C : Type u) [category C] [has_products C] :
+  {J : Set} (C : Type (u+1)) [category.{u} C] [has_products C] :
   has_limits_of_shape (discrete J) C :=
 has_products.has_limit_of_shape C J
 
 @[hott, instance, priority 100]
-def has_product_of_has_products {C : Type u} [category C] 
+def has_product_of_has_products {C : Type (u+1)} [category.{u} C] 
   [has_products C] {J : Set.{u}} (f : J -> C) : has_product f :=
 @has_limits_of_shape.has_limit _ _ _ _ 
        (has_products.has_limit_of_shape C J) (discrete.functor f)
 
 @[hott, instance]
-def has_product_of_has_limits_of_shape {C : Type u} [category C] 
+def has_product_of_has_limits_of_shape {C : Type (u+1)} [category.{v} C] 
   {J : Set.{u}} [has_limits_of_shape (discrete J) C] (f : J -> C) : 
   has_product f :=
-has_limits_of_shape.has_limit (discrete.functor f)  
+has_limits_of_shape.has_limit (discrete.functor f) 
+
+@[hott, instance]
+def has_products_of_has_limits (C : Type (u+1)) [category.{u} C] [c : has_limits C] : 
+  has_products C :=
+has_products.mk (λ J, @has_limits.has_limit_of_shape C _ c (discrete J) _)
 
 /-- A fan over `f : J → C` consists of a collection of maps from an object `P`
     to every `f j`. This is enough to determine a cone which factorizes through    
@@ -193,17 +202,17 @@ def fan.mk {J : Set} (C : Type u) [category C] {f : J → C} {P : C}
 cone.mk P (discrete.nat_trans _ _ p)
 
 @[hott, hsimp] 
-def pi.lift {J : Set} (C : Type u) [category C] {f : J → C} [has_product f]
+def pi.lift {J : Set} (C : Type (u+1)) [category.{u} C] {f : J → C} [has_product f]
   {P : C} (p : Π j, P ⟶ f j) : P ⟶ ∏ f :=
 (get_limit_cone (discrete.functor f)).is_limit.lift (fan.mk _ p)  
 
 @[hott, hsimp] 
-def pi.π {J : Set} {C : Type u} [category C] (f : J → C) [has_product f] 
+def pi.π {J : Set} {C : Type (u+1)} [category.{u} C] (f : J → C) [has_product f] 
   (j : J) : ∏ f ⟶ f j :=
 (limit.cone (discrete.functor f)).π.app j 
 
 @[hott]
-def pi.hom_is_lift {J : Set} (C : Type u) [category C] {f : J → C} 
+def pi.hom_is_lift {J : Set} (C : Type (u+1)) [category.{u} C] {f : J → C} 
   [has_product f] {P : C} (h : P ⟶ ∏ f) : 
   h = pi.lift C (λ j : J, h ≫ (pi.π _ j)) :=
 let p := λ j : J, h ≫ (pi.π f j),
@@ -216,7 +225,7 @@ begin
 end  
 
 @[hott]
-def pi.lift_π_eq {J : Set} (C : Type u) [category C] {f : J → C} 
+def pi.lift_π_eq {J : Set} (C : Type (u+1)) [category.{u} C] {f : J → C} 
   [has_product f] {P : C} (p : Π j : J, P ⟶ f j) : 
   ∀ j : J, pi.lift C p ≫ pi.π _ j = p j :=
 assume j, by apply is_limit.fac  
