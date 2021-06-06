@@ -425,8 +425,11 @@ def ring_has_colimits_of_shape (J : Set.{v}) [precategory.{v} J] :
 has_colimits_of_shape.mk (λ F, ring_has_colimit F) 
 
 @[hott, instance]
-def ring_has_colimits : has_colimits CommRing :=
+def ring_has_colimits : has_colimits CommRing.{v} :=
   has_colimits.mk (λ J pJ, @ring_has_colimits_of_shape J pJ)
+
+set_option pp.universes true
+#print ring_has_colimits
 
 end algebra
 
