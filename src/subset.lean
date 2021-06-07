@@ -3,9 +3,6 @@ import set_theory pathover2
 universes u v w
 hott_theory
 
-set_option pp.universes true
-set_option pp.implicit true
-
 namespace hott
 open hott.set hott.is_trunc hott.is_equiv hott.eq hott.trunc hott.sigma 
 
@@ -53,7 +50,7 @@ def empty_Subset (A : Set) : Subset A :=
      injective.
    * Now we have all the ingredients to construct the image as a subset of the codomain. -/  
 @[hott]
-def image_is_set {A B : Set.{u}} (f : A -> B) : is_set (total_image f) :=
+def image_is_set {A B : Set} (f : A -> B) : is_set (total_image f) :=
     have H : forall c d : total_image f, is_prop (c = d), from 
       assume c d, 
       have forall p q : c = d, p = q, from 
@@ -85,7 +82,7 @@ def image_is_set {A B : Set.{u}} (f : A -> B) : is_set (total_image f) :=
     is_trunc_succ_intro H
 
 @[hott]
-def image_Set {A B : Set.{u}} (f : A -> B) := 
+def image_Set {A B : Set} (f : A -> B) := 
   Set.mk (total_image f) (image_is_set f)
 
 @[hott]
@@ -127,10 +124,10 @@ end
    between the underlying sets, but the compatibility makes the bijection unique. -/
 @[hott, reducible]
 def sset_bijection {A : Set} (B C : Subset A) :=
-  Σ (f : bijection ↥B ↥C), (Subset.map C) ∘ (bijection.map f) = (Subset.map B) 
+  Σ (f : bijection.{u u} ↥B ↥C), (Subset.map C) ∘ (bijection.map f) = (Subset.map B) 
 
 @[hott, reducible]
-def sset_identity {A : Set} : Π (B : Subset A), sset_bijection B B 
+def sset_identity {A : Set.{u}} : Π (B : Subset A), sset_bijection B B 
 | (Subset.mk carB mapB injB) :=
   have bij_comp : mapB ∘ (bijection.map (identity carB)) = mapB, from 
     calc mapB ∘ (bijection.map (identity carB)) = mapB ∘ (id_map carB) : 
@@ -169,7 +166,7 @@ by reflexivity
 
 @[hott]
 /- Should be in [init.path] with [A], [B], [C] types, but the elaborator can't handle it. -/
-lemma tr_fun_ext {A B C : Set.{u}} (p : A = B) : 
+lemma tr_fun_ext {A B : Set.{u}} {C : Set} (p : A = B) : 
   forall (h : B -> C) (a : A), (p⁻¹ ▸ h) a = h (p ▸ a) :=
 begin 
   hinduction p,
@@ -181,7 +178,7 @@ end
    We need some auxiliary definitions and lemmas focussing on [Subset]-structures constructed with
    [Subset.mk] - they will be used in inductive arguments. -/
 @[hott, reducible]
-def bij_to_sset_map_eq {A : Set} : Π {B C : Subset A} (ss_bij : sset_bijection B C),
+def bij_to_sset_map_eq {A : Set.{u}} : Π {B C : Subset A} (ss_bij : sset_bijection B C),
   Subset.map B =[bij_to_set_eq ss_bij.1; λ (B : Set), B -> A] Subset.map C
 | (Subset.mk carB mapB injB) (Subset.mk carC mapC injC) :=
   let P := λ (B : Set), B -> A in
@@ -196,14 +193,14 @@ def bij_to_sset_map_eq {A : Set} : Π {B C : Subset A} (ss_bij : sset_bijection 
   pathover_of_eq_tr (comp⁻¹ ⬝ (eq_of_homotopy comp_hom)⁻¹)
 
 @[hott]
-def sset_comp_eq {A : Set.{u}} (car1 car2 : Set.{u}) (map1 : car1 -> A) (map2 : car2 -> A) :=
+def sset_comp_eq {A : Set} (car1 car2 : Set.{u}) (map1 : car1 -> A) (map2 : car2 -> A) :=
   Σ (car_eq : car1 = car2), map1 =[car_eq; λ (B : Set), B -> A] map2
 
 /- This is a subtle point: The equality of maps induced by the equality of subsets is
    already induced by the induced equality of carrier sets. This can be shown using
    [pathover_ap] in [init.pathover]. -/
 @[hott]   
-def sset_mk_eq_to_comp_eq {A : Set.{u}} {car1 car2 : Set} 
+def sset_mk_eq_to_comp_eq {A : Set} {car1 car2 : Set.{u}} 
   {map1 : car1 -> A} {map2 : car2 -> A}
   [inj1 : is_set_injective map1] [inj2 : is_set_injective map2] : 
   (Subset.mk car1 map1 inj1 = Subset.mk car2 map2 inj2) -> 
@@ -215,7 +212,7 @@ have map_car_eq : map1 =[car_eq; λ (B : Set), B -> A] map2, from
 dpair car_eq map_car_eq
 
 @[hott, reducible, hsimp]
-def sset_comp_eq_to_mk_eq {A : Set} {car1 car2 : Set} :
+def sset_comp_eq_to_mk_eq {A : Set} {car1 car2 : Set.{u}} :
   Π (car_eq : car1 = car2) 
   {map1 : car1 -> A} {map2 : car2 -> A} 
   (map_eq : map1 =[car_eq; λ (B : Set), B -> A] map2) 
@@ -240,7 +237,7 @@ def sset_comp_eq_to_sset_eq {A : Set} : Π {B C : Subset A}
   @sset_comp_eq_to_mk_eq _ _ _ car_eq _ _ map_eq injB injC
 
 @[hott, reducible]
-def ap_sset_comp_to_car {A : Set} {car1 car2 : Set} :
+def ap_sset_comp_to_car {A : Set} {car1 car2 : Set.{u}} :
   Π (car_eq : car1 = car2) 
   {map1 : car1 -> A} {map2 : car2 -> A} 
   (map_eq : map1 =[car_eq; λ (B : Set), B -> A] map2) 
@@ -272,7 +269,7 @@ def idp_comp_to_sset_id {A : Set} : Π (B : Subset A),
        ... = idpath (Subset.mk carB mapB injB) : by hsimp 
 
 @[hott, reducible]
-def bij_to_sset_eq {A : Set}: Π {B C : Subset A}, 
+def bij_to_sset_eq {A : Set} : Π {B C : Subset A}, 
   sset_bijection B C -> B = C 
 | (Subset.mk carB mapB injB) (Subset.mk carC mapC injC) := 
   assume comp_bij, let f := comp_bij.1 in 
@@ -344,19 +341,19 @@ lemma bij_sset_eq_bij_set {A : Set} : forall (B C : Subset A)
   begin rwr eq1, rwr eq2 end
 
 @[hott]
-def sset_eq_equiv_bij {A : Set.{u}} (B C : Subset A) : 
+def sset_eq_equiv_bij {A : Set} (B C : Subset A) : 
   B = C ≃ sset_bijection B C := 
-have rinv : forall (fc : sset_bijection B C), 
-              sset_eq_to_bij (@bij_to_sset_eq A B C fc) = fc, from 
+have rinv : forall (fc : sset_bijection.{u} B C), 
+              sset_eq_to_bij (bij_to_sset_eq fc) = fc, from 
   let F := @sset_eq_to_bij A B C, G := @bij_to_sset_eq A B C in
   assume fc, let f := fc.1, FGf := (F (G fc)).1 in 
   have bijmap_hom : bijection.map FGf ~ bijection.map f, from 
     assume b, 
     calc bijection.map FGf b = bijection.map (set_eq_to_bij (ap Subset.carrier (G fc))) b : 
-         apd10 (ap bijection.map (sset_bij_eq_set_bij B C (G fc))) b
+         apd10 (ap bijection.map (sset_bij_eq_set_bij.{u} B C (G fc))) b
          ... = (ap Subset.carrier (G fc)) ▸ b : 
          hom_eq_tr_eq (ap Subset.carrier (G fc)) b
-         ... = (bij_to_set_eq f) ▸ b : bij_sset_eq_bij_set B C fc b
+         ... = (bij_to_set_eq f) ▸ b : bij_sset_eq_bij_set _ _ fc b
          ... = (bijection.map f) b : by rwr <-bij_hom_tr_eq f b,
   have bij_eq : FGf = f, from
     have bijmap_eq : bijection.map FGf = bijection.map f, from
@@ -372,12 +369,12 @@ have linv : forall e : B = C, bij_to_sset_eq (sset_eq_to_bij e) = e,
 equiv.mk sset_eq_to_bij (adjointify sset_eq_to_bij bij_to_sset_eq rinv linv)
 
 @[hott]
-def Powerset_is_set {A : Set.{u}} : is_set (Subset A) := 
+def Powerset_is_set {A : Set} : is_set (Subset A) := 
 have H_eq : forall B C : Subset A, is_prop (B = C), from 
   assume B C,
   let mapB := Subset.map B, mapC := Subset.map C in
   have bij_eq_is_prop : is_prop (sset_bijection B C), from 
-    have H_bij_eq : forall (beq1 beq2 : sset_bijection B C), beq1 = beq2, 
+    have H_bij_eq : forall (beq1 beq2 : sset_bijection.{u} B C), beq1 = beq2, 
       from assume beq1 beq2,
       let f := beq1.1, g := beq2.1 in  
       have p_map : (bijection.map f) = (bijection.map g), from 
@@ -430,7 +427,7 @@ def is_set_pred {A : Set.{u}} : Π (pred : Setpred A), is_set (Σ (a : A), ↥(p
 /- Should be in one of the library files on the sigma type.
    [subtype_eq] is the subtype-version in [types.sigma]. -/
 @[hott]   
-def sigma_prop_pr1_inj {A : Type u} {B : A -> trunctype.{u} -1} : /- Should be [Prop]. -/
+def sigma_prop_pr1_inj {A : Type _} {B : A -> Prop} : /- Should be [Prop]. -/
   forall (b c : Σ (a : A), B a), b.1 = c.1 -> b = c :=
 assume b c pr1_eq,
 have pr2_tr : pr1_eq ▸[λ a : A, B a] b.2 = c.2, from is_prop.elim _ _, 
@@ -452,7 +449,7 @@ let carr := pred_to_sset_car pred in
 λ (b : carr), b.1 
 
 @[hott, reducible]
-def pred_to_sset_inj {A : Set} (pred : Setpred A) :
+def pred_to_sset_inj {A : Set.{u}} (pred : Setpred A) :
   is_set_injective (pred_to_sset_map pred) := 
 assume b1 b2 map_eq, 
 sigma_prop_pr1_inj b1 b2 map_eq
@@ -473,7 +470,7 @@ have fib_a : fiber mapB a, from fiber.mk apr im_a,
 tr fib_a
 
 @[hott]
-def im_to_pred {A : Set} (pred : Setpred A) (a : A) :
+def im_to_pred {A : Set.{u}} (pred : Setpred A) (a : A) :
   image (Subset.map (pred_to_sset pred)) a -> pred a :=
 let B := pred_to_sset pred,
     mapB := Subset.map B,
@@ -485,7 +482,7 @@ have eq_a : fib_a.point.1 = a, from fiber.point_eq fib_a,
 eq_a ▸[λ a : A, pred a] (fiber.point fib_a).2
 
 @[hott, reducible]
-def map_pred_sset {A : Set} (B : Subset A) :
+def map_pred_sset {A : Set.{u}} (B : Subset A) :
   Subset.carrier (pred_to_sset (sset_to_pred B)) -> Subset.carrier B :=
 let mapB := Subset.map B,
     injB := Subset.inj B in
@@ -517,7 +514,7 @@ let a := mapB b in
 dpair a (tr (fiber.mk b idp))
 
 @[hott]
-def inv_pred_sset {A : Set} (B : Subset A) : 
+def inv_pred_sset {A : Set.{u}} (B : Subset A) : 
   is_set_inverse_of (map_pred_sset B) (map_sset_pred B) :=
 let f := map_pred_sset B, g := map_sset_pred B in
 let mapB := Subset.map B,
@@ -585,16 +582,14 @@ calc B = pred_to_sset (sset_to_pred B) : (sset_pred_linv B)⁻¹
 
 /- On subsets we can introduce the standard notations of set theory and prove some 
    facts of (naive) set theory. -/
-variables {A : Set.{u}}
-
 @[hott]
-protected def elem (a : A) (S : Subset A) :=
+protected def elem {A : Set} (a : A) (S : Subset A) :=
 sset_to_pred S a 
 
 hott_theory_cmd "local infix  `∈`:70 := hott.subset.elem"
 
 @[hott, instance]
-def is_prop_elem (a : A) (S : Subset A) : is_prop (a ∈ S) :=
+def is_prop_elem {A : Set} (a : A) (S : Subset A) : is_prop (a ∈ S) :=
   (a ∈ S).struct  
 
 notation `{ ` binder ` ∈ ` B ` | ` P:scoped  ` }` := @pred_to_sset B P 
@@ -609,7 +604,7 @@ def pred_elem {A : Set} {P : Setpred A} (a : A) : a ∈ { a ∈ A | P a } <-> P 
       change ↥(sset_to_pred (pred_to_sset P) a),
       rwr sset_pred_rinv; assumption,
     end,  
-  ⟨imp₁, imp₂⟩    
+  ⟨imp₁, imp₂⟩ 
 
 @[hott, reducible]
 def elem_pred {A : Set} {P : Setpred A} (a : A) (pred_a : P a) :
@@ -629,29 +624,29 @@ def obj_elem {A : Set} {B : Subset A} (b : B.carrier) : ↑b ∈ B :=
   have p : B.map b = ↑b, from rfl, tr ⟨b, p⟩
 
 @[hott]
-def elem_obj {A : Set} {B : Subset A} (a : A) (H : a ∈ B) : ↥B :=
+def elem_obj {A : Set.{u}} {B : Subset A} (a : A) (H : a ∈ B) : ↥B :=
   have Hp : is_prop (fiber B.map a), from set_inj_implies_unique_fib _ B.inj a,
   (@untrunc_of_is_trunc _ -1 Hp H).1   
 
 @[hott]
-def elem_obj_eq {A : Set} {B : Subset A} (a : A) (H : a ∈ B) : ↑(elem_obj a H) = a :=
+def elem_obj_eq {A : Set.{u}} {B : Subset A} (a : A) (H : a ∈ B) : ↑(elem_obj a H) = a :=
   have Hp : is_prop (fiber B.map a), from set_inj_implies_unique_fib _ B.inj a,
   (@untrunc_of_is_trunc _ -1 Hp H).2
 
 @[hott]
-def is_subset_of (B C : Subset A) :=
+def is_subset_of {A : Set} (B C : Subset A) :=
   forall a : A, a ∈ B -> a ∈ C
 
 notation [parsing_only] B `⊆` C := is_subset_of B C
 
 @[hott, instance]
-def is_prop_subset (B C : Subset A) : is_prop (B ⊆ C) :=
+def is_prop_subset {A : Set.{u}} (B C : Subset A) : is_prop (B ⊆ C) :=
   have Pss : ∀ a : A, is_prop (a ∈ B -> a ∈ C), from 
     assume a, is_prop_map ((a ∈ C).struct),
   is_prop_dprod Pss
 
 @[hott]   
-inductive construct_elem (P : A → trunctype.{u} -1) /- Should be [Prop]. -/
+inductive construct_elem {A : Set} (P : A → Prop) 
 | intro (w : A) (h : P w) : construct_elem
 
 attribute [intro] construct_elem.intro
@@ -680,9 +675,6 @@ have imp2 : (B ⊆ C) × (C ⊆ B) -> B = C, from
     eq_of_homotopy pred_hom,
   sset_pred_inj B C pred_eq, 
 prod.mk imp1 imp2
-
-/- TODO : Introduce operations of boolean algebra on subsets and prove formulas, 
-          in new file [setalgebra] -/
 
 end subset
 
