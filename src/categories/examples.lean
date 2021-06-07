@@ -1,6 +1,6 @@
 import setalgebra pathover2 set_axioms categories.basic
 
-universes v u v' u' w 
+universes v v' u u' w 
 hott_theory
 
 namespace hott
@@ -204,21 +204,21 @@ end
 /- The power set `𝒫 A` of a set `A` is a precategory, with inclusions of 
    subsets as morphisms. -/
 @[hott, instance]   
-def power_set_has_hom {A : Set.{u}} : has_hom (𝒫 A) :=
+def power_set_has_hom {A : Set} : has_hom (𝒫 A) :=
   has_hom.mk (λ U V : Subset A, Prop_to_Set (to_Prop (U ⊆ V))) 
   /- I am not sure whether coercions from `Type` to `Prop` and `Prop` to 
     `Set` are a good idea. They may introduce circuitious coercions. -/     
 
 @[hott]
-def power_set_unique_hom {A : Set.{u}} {B C : 𝒫 A} (f g : B ⟶ C) : f = g :=
+def power_set_unique_hom {A : Set} {B C : 𝒫 A} (f g : B ⟶ C) : f = g :=
   @is_prop.elim _ (is_prop_subset B C) f g
 
 @[hott, instance]
-def power_set_cat_struct {A : Set.{u}} : category_struct (𝒫 A) := 
+def power_set_cat_struct {A : Set} : category_struct (𝒫 A) := 
   category_struct.mk subset_refl subset_trans
 
 @[hott, instance]
-def power_set_precat {A : Set.{u}} : precategory (𝒫 A) :=
+def power_set_precat {A : Set} : precategory (𝒫 A) :=
   have id_comp : ∀ (B C : 𝒫 A) (f : B ⟶ C), 𝟙 B ≫ f = f, from 
     assume B C f, power_set_unique_hom _ _,
   have comp_id : ∀ (B C : 𝒫 A) (f : B ⟶ C), f ≫ 𝟙 C = f, from 
@@ -231,19 +231,19 @@ def power_set_precat {A : Set.{u}} : precategory (𝒫 A) :=
 /- Every subset of a set that is a (small?) precategory is a 
    (full sub-)precategory. -/
 @[hott, instance]
-def subset_precat_has_hom {A : Set.{u}} [hA : has_hom A] (B : Subset A) :
+def subset_precat_has_hom {A : Set.{u}} [hA : has_hom.{v} A] (B : Subset A) :
   has_hom ↥B :=
 has_hom.mk (λ x y : ↥↥B, @has_hom.hom _ hA x y)  
 
 @[hott, instance]
-def subset_precat_cat_struct {A : Set.{u}} [hA : category_struct A] 
+def subset_precat_cat_struct {A : Set.{u}} [hA : category_struct.{v} A] 
   (B : Subset A) : category_struct ↥B :=
 category_struct.mk (λ b : ↥↥B, @category_struct.id _ hA ↑b)
   (λ (b c d : ↥↥B) (f : b ⟶ c) (g : c ⟶ d), 
         @category_struct.comp _ hA ↑b ↑c ↑d f g)
-                    
+
 @[hott, instance]
-def subset_precat_precat {A : Set.{u}} [hA : precategory A] 
+def subset_precat_precat {A : Set.{u}} [hA : precategory.{v} A] 
   (B : Subset A) : precategory ↥B :=
 precategory.mk (λ (b c : ↥↥B) (f : b ⟶ c), precategory.id_comp f) 
                (λ (b c : ↥↥B) (f : b ⟶ c), precategory.comp_id f) 
@@ -254,19 +254,19 @@ precategory.mk (λ (b c : ↥↥B) (f : b ⟶ c), precategory.id_comp f)
 
    We need two equalities easily shown by induction. -/ 
 @[hott]
-def tr_tr_cat_id {C : Type u} [precategory C] {c c' : C} (p : c = c') : 
+def tr_tr_cat_id {C : Type u} [precategory.{v} C] {c c' : C} (p : c = c') : 
   p ▸[λ d, c' ⟶ d] (p ▸[λ d, d ⟶ c] 𝟙 c) = 𝟙 c' :=
 begin hinduction p, refl end   
 
 @[hott]
-def tr_tr_cat_comp {C : Type u} [precategory C] {c₁ c₁' c₂ c₂' c₃ c₃': C} (p : c₁ = c₁') 
+def tr_tr_cat_comp {C : Type u} [precategory.{v} C] {c₁ c₁' c₂ c₂' c₃ c₃': C} (p : c₁ = c₁') 
   (q : c₂ = c₂') (r : c₃ = c₃') (f : c₁' ⟶ c₂') (g : c₂' ⟶ c₃') : 
   r ▸[λ d, c₁' ⟶ d] (p ▸[λ d, d ⟶ c₃] ((p⁻¹ ▸[λ d, d ⟶ c₂] (q⁻¹ ▸[λ d, c₁' ⟶ d] f)) ≫ 
                                          (q⁻¹ ▸[λ d, d ⟶ c₃] (r⁻¹ ▸[λ d, c₂' ⟶ d] g)))) = f ≫ g :=
 begin hinduction p, hinduction q, hinduction r, refl end
 
 @[hott]
-def functor_subsets_precat {A : Set.{u}} [hA : precategory A] {B C : Subset A} (inc : B ⊆ C) :
+def functor_subsets_precat {A : Set.{u}} [hA : precategory.{v} A] {B C : Subset A} (inc : B ⊆ C) :
   ↥B ⥤ ↥C :=
 begin 
   fapply functor.mk, 
@@ -315,7 +315,7 @@ def discrete_precategory (A : Set) : precategory (discrete A) :=
   precategory.mk ic ci as
 
 @[hott]
-def discrete.functor {C : Type u} [category C] {J : Set} 
+def discrete.functor {C : Type u} [category.{v} C] {J : Set.{u'}} 
   (f : J -> C) : (discrete J) ⥤ C :=
 let map := λ {j₁ j₂ : discrete J} (h : j₁ ⟶ j₂), 
              h ▸[λ k : discrete J, f j₁ ⟶ f k] 𝟙 (f j₁) in 
@@ -334,7 +334,7 @@ have map_comp : ∀ {j₁ j₂ j₃ : discrete J} (g : j₁ ⟶ j₂) (h : j₂ 
 functor.mk f @map map_id @map_comp
 
 @[hott]
-def discrete.nat_trans {C : Type u} [category C] {J : Set} 
+def discrete.nat_trans {C : Type u} [category.{v} C] {J : Set.{u'}} 
   (F G : (discrete J) ⥤ C) (app : Π j : J, F.obj j ⟶ G.obj j) :
   F ⟹ G :=  
 have natural : ∀ (j j' : J) (f : j ⟶ j'), 
@@ -376,13 +376,13 @@ def wpp_is_set : is_set wp_pair.{u} :=
     intro s; hinduction s; hsimp; hsimp,
   have wpp_eqv_Two: is_equiv wpp_Two, from
     adjointify wpp_Two Two_wpp r_inv l_inv,
-  @is_trunc_is_equiv_closed_rev _ _ 0 wpp_Two wpp_eqv_Two Two_is_set
+  @is_trunc_is_equiv_closed_rev.{u u} _ _ 0 wpp_Two wpp_eqv_Two Two_is_set
 
 @[hott]
-def walking_parallel_pair : Set.{u} :=
-Set.mk wp_pair wpp_is_set
+def walking_parallel_pair : Set :=
+Set.mk wp_pair.{u} wpp_is_set.{u u}
 
-/- Now we construct the precategory structure on `walking__parallel_pair`. -/
+/- Now we construct the precategory structure on `walking_parallel_pair`. -/
 @[hott, hsimp]
 def walking_parallel_pair_hom : Π s t : walking_parallel_pair.{u}, Set.{u} :=
 λ s t, match s, t with
@@ -394,10 +394,10 @@ def walking_parallel_pair_hom : Π s t : walking_parallel_pair.{u}, Set.{u} :=
 
 @[hott, instance]
 def walking_parallel_pair_has_hom : has_hom walking_parallel_pair := 
-  ⟨walking_parallel_pair_hom⟩
+  ⟨walking_parallel_pair_hom.{u u}⟩
 
 @[hott]
-def walking_parallel_pair.id : Π (s : walking_parallel_pair.{u}), s ⟶ s :=
+def walking_parallel_pair.id : Π (s : walking_parallel_pair), s ⟶ s :=
 λ s, match s with 
      | wp_pair.up := One.star
      | wp_pair.down := One.star
