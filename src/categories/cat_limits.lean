@@ -1,11 +1,13 @@
 import setalgebra categories.examples
 
-universes v u v' u' w
+universes v v' u u' w
 hott_theory
 
 namespace hott
 open hott.eq hott.is_trunc hott.trunc hott.set hott.subset 
      hott.categories 
+
+set_option pp.universes true
 
 /- We introduce limits of diagrams mapped to categories, by using cones to 
    pick the universal object and encode the universal property.
@@ -14,13 +16,13 @@ open hott.eq hott.is_trunc hott.trunc hott.set hott.subset
 
 namespace category_theory.limits
 
-structure cone {J : Set.{v}} [precategory J] {C : Type u} 
-  [precategory C] (F : J ⥤ C) :=
+structure cone {J : Set.{u'}} [precategory.{v'} J] {C : Type u} 
+  [precategory.{v} C] (F : J ⥤ C) :=
 (X : C)
 (π : (constant_functor J C X) ⟹ F)
 
 @[hott]
-structure is_limit {J : Set.{v}} [precategory J] {C : Type u} [precategory C] 
+structure is_limit {J : Set.{u'}} [precategory.{v'} J] {C : Type u} [precategory.{v} C] 
   {F : J ⥤ C} (t : cone F) :=
 (lift : Π (s : cone F), s.X ⟶ t.X)
 (fac  : ∀ (s : cone F) (j : J), lift s ≫ t.π.app j = s.π.app j)
