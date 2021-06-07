@@ -53,11 +53,11 @@ def False : Prop :=
 
 @[hott]
 def False_uninhabited : ¬ False := 
-  begin intro false, hinduction false end 
+  begin intro false, hinduction false end   
 
-/- [and] and [iff] produce propositions from propositions. -/
+/- [and], [or] and [iff] produce propositions from propositions. -/
 @[hott, instance]
-def and_is_prop (A B : Type u) [is_prop A] [is_prop B] : is_prop (A × B) :=
+def and_is_prop (A B : Type _) [is_prop A] [is_prop B] : is_prop (A × B) :=
   have eq_and : ∀ c₁ c₂ : A × B, c₁ = c₂, from 
     begin
       intros c₁ c₂, 
@@ -80,7 +80,7 @@ protected def or (P Q : Prop) : Prop :=
 infix `or`:49 := hott.or 
 
 @[hott, instance]
-lemma is_prop_map {A B : Type u} (pB : is_prop B) : is_prop (A -> B) :=
+lemma is_prop_map {A B : Type _} (pB : is_prop B) : is_prop (A -> B) :=
 have eq_map : forall f1 f2 : A -> B, f1 = f2, from 
   assume f1 f2, 
   have map_hom : f1 ~ f2, from 
@@ -101,7 +101,7 @@ have eq_prod : forall dP1 dP2 : (forall a : A, P a), dP1 = dP2, from
 is_prop.mk eq_prod
 
 @[hott, instance]
-lemma is_prop_dprod2 {A : Type u} {P : A -> A -> Type u} 
+lemma is_prop_dprod2 {A : Type u} {P : A -> A -> Type v} 
     (pP : forall a b : A, is_prop (P a b)) : 
   is_prop (forall a b : A, P a b) :=
 have eq_prod : forall dP1 dP2 : (forall a b : A, P a b), dP1 = dP2, from 
@@ -113,7 +113,7 @@ have eq_prod : forall dP1 dP2 : (forall a b : A, P a b), dP1 = dP2, from
 is_prop.mk eq_prod
 
 @[hott, instance]
-def iff_is_prop (A B : Type u) [pA : is_prop A] [pB : is_prop B] : is_prop (A ↔ B) :=
+def iff_is_prop (A B : Type _) [pA : is_prop A] [pB : is_prop B] : is_prop (A ↔ B) :=
   @and_is_prop (A -> B) (B -> A) (is_prop_map pB) (is_prop_map pA)  
 
 /- The next lemmas and constructions are all needed to show that an equivalence of 
@@ -128,7 +128,7 @@ have tr_B : e ▸ b₁ = b₂, from @is_prop.elim _ pBa₂ _ _,
 pathover_of_tr_eq tr_B  
 
 @[hott]
-def adj_eq {A B : Type u} (f₁ f₂ : A -> B) (g₁ g₂ : B -> A) 
+def adj_eq {A B : Type _} (f₁ f₂ : A -> B) (g₁ g₂ : B -> A) 
   (rinv₁ : ∀ b : B, f₁ (g₁ b) = b) (rinv₂ : ∀ b : B, f₂ (g₂ b) = b)  
   (linv₁ : ∀ a : A, g₁ (f₁ a) = a) (linv₂ : ∀ a : A, g₂ (f₂ a) = a)
   (Hf : f₁ = f₂) (Hg : g₁ = g₂) 
@@ -192,14 +192,14 @@ is_prop.mk eq_equiv
 
 /- Inhabited [Prop]s over equalities have pathover. -/
 @[hott]
-def pathover_prop_eq {A : Type.{u}} (P : A -> trunctype.{u} -1) {a₁ a₂ : A} (e : a₁ = a₂) :
+def pathover_prop_eq {A : Type _} (P : A -> trunctype -1) {a₁ a₂ : A} (e : a₁ = a₂) :
   ∀ (p₁ : P a₁) (p₂ : P a₂), p₁ =[e; λ a : A, P a] p₂ :=
 assume p₁ p₂, concato_eq (pathover_tr e p₁) (is_prop.elim (e ▸ p₁) p₂)   
 
 /- Logically equivalent mere propositions are equivalent. -/
 @[hott]
 def prop_iff_equiv : 
-  Π {A B : Type.{u}} [is_prop A] [is_prop B], (A ↔ B) -> (A ≃ B) :=
+  Π {A B : Type u} [is_prop A] [is_prop B], (A ↔ B) -> (A ≃ B) :=
 assume A B pA pB AiffB,
 let AB := AiffB.1, BA := AiffB.2 in
 have rinv : Π b : B, AB (BA b) = b, from assume b, @is_prop.elim B pB _ _,
@@ -207,11 +207,12 @@ have linv : Π a : A, BA (AB a) = a, from assume a, @is_prop.elim A pA _ _,
 equiv.mk AB (adjointify AB BA rinv linv)
 
 @[hott]
-lemma prop_iff_eq : Π {A B : Prop} (imp1 : A -> B) (imp2 : B -> A), A = B 
+lemma prop_iff_eq : Π {A B : trunctype.{u} -1} (imp1 : A -> B) (imp2 : B -> A), A = B 
 | (trunctype.mk carA structA) (trunctype.mk carB structB) :=
   assume imp1 imp2, 
   have car_eqv : carA ≃ carB, from @prop_iff_equiv _ _ structA structB (imp1, imp2),
-  have car_eq : carA = carB, from ua car_eqv, /- Do you really need univalence here? -/
+  have car_eq : carA = carB, from ua car_eqv, 
+  -- Do you really need univalence here? Requires `A` and `B` to be in the same universe.  
   have struct_tr : car_eq ▸ structA = structB, from 
     is_prop.elim _ _,
   have struct_eq : structA =[car_eq] structB, from pathover_of_tr_eq struct_tr,
@@ -219,7 +220,7 @@ lemma prop_iff_eq : Π {A B : Prop} (imp1 : A -> B) (imp2 : B -> A), A = B
 
 @[hott]
 def prop_iff_eqv_equiv :
-  Π (A B : Type.{u}) [is_prop A] [is_prop B], (A ↔ B) ≃ (A ≃ B) :=
+  Π (A B : Type u) [is_prop A] [is_prop B], (A ↔ B) ≃ (A ≃ B) :=
 assume A B pA pB,
 let f := @prop_iff_equiv A B pA pB in
 let g := λ eqv : A ≃ B, (eqv.to_fun, eqv⁻¹ᶠ) in
@@ -231,7 +232,7 @@ equiv.mk f (adjointify f g rinv linv)
 
 @[hott]
 def prop_iff_eqv_eq :
-  Π (A B : Type.{u}) [is_prop A] [is_prop B], (A ↔ B) ≃ (A = B) :=
+  Π (A B : Type u) [is_prop A] [is_prop B], (A ↔ B) ≃ (A = B) :=
 assume A B pA pB,
 equiv.trans (@prop_iff_eqv_equiv A B pA pB) (equiv.symm (eq_equiv_equiv A B))   
 
@@ -270,15 +271,15 @@ prop_iff_eq A_imp_B B_imp_A
 /- Inhabited mere propositions in a type family over equal base points are
    pathover-equal. -/
 @[hott]
-def inhabited_prop_po {A : Type u} (P Q : Type u) {a b : A} (eq : a = b) 
+def inhabited_prop_po {A : Type _} (P Q : Type u) {a b : A} (eq : a = b) 
   [is_prop P] [is_prop Q] (p : P) (q : Q) : 
-  P =[eq; λ a : A, Type u] Q :=
+  P =[eq; λ a : A, Type _] Q :=
 have prop_eq : P = Q, from inhabited_prop_eq P Q p q, 
 pathover_of_eq eq prop_eq  
 
 /- Transported propositions are propositions. -/
 @[hott, instance]
-def tr_prop_prop {A : Type u} {a₁ a₂ : A} (e : a₁ = a₂) 
+def tr_prop_prop {A : Type _} {a₁ a₂ : A} (e : a₁ = a₂) 
   (P : Type u) [is_prop P] : is_prop (e ▸ P) :=
 begin 
   hinduction e, hsimp, assumption,
@@ -286,8 +287,8 @@ end
 
 /- Pathover equalities of propositions are propositions. -/
 @[hott, instance]
-def po_is_prop {A : Type u} {P Q : Type u} {a b : A} (eq : a = b) 
-  [is_prop P] [is_prop Q] : is_prop (P =[eq; λ a : A, Type u] Q) :=
+def po_is_prop {A : Type _} {P Q : Type u} {a b : A} (eq : a = b) 
+  [is_prop P] [is_prop Q] : is_prop (P =[eq; λ a : A, Type _] Q) :=
 have tr_prop : is_prop (eq ▸ P = Q), from 
   @eq_prop_is_prop (eq ▸ P) Q (tr_prop_prop eq P) _,
 is_trunc_is_equiv_closed_rev -1 (pathover_equiv_tr_eq eq P Q) tr_prop
@@ -297,7 +298,7 @@ is_trunc_is_equiv_closed_rev -1 (pathover_equiv_tr_eq eq P Q) tr_prop
    [invalid import: hott.types.sum
     invalid object declaration, environment already has an object named 'sum.rec._ind_info'] -/
 @[hott]
-def is_prop_LEM {A : Type u} [is_prop A] : is_prop (A ⊎ ¬ A) :=
+def is_prop_LEM {A : Type _} [is_prop A] : is_prop (A ⊎ ¬ A) :=
   have eq_sum : ∀ x y : A ⊎ ¬ A, x = y, from 
   begin
     intros x y,
