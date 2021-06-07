@@ -3,9 +3,6 @@ import hott.prop_trunc hott.init hott.types.trunc hott.homotopy.susp prop_logic
 universes u v w
 hott_theory
 
-set_option pp.universes true
-set_option pp.implicit false
-
 namespace hott
 open hott.is_trunc hott.trunc hott.equiv hott.is_equiv hott.sigma hott.susp hott.sum ulift
 
@@ -16,7 +13,7 @@ notation eq `▸[`:50 P:0 `]`:0 b:50 := transport P eq b
    [Zero] and [One] are equivalent to [true] and [false] in [prop_logic], but
    we want to use them without logical connotations. -/
 @[hott]
-inductive Zero : Type u
+inductive Zero : Type _
 
 @[hott]
 def eq_Zero : forall f₁ f₂ : Zero, f₁ = f₂ :=
@@ -34,7 +31,7 @@ def Zero_Set : Set :=
   Set.mk Zero (is_trunc_succ Zero -1)
 
 @[hott]
-inductive One : Type u  
+inductive One : Type _  
 | star : One
 
 @[hott]
@@ -55,14 +52,14 @@ def One_Set : Set :=
   Set.mk One (is_trunc_succ One -1)
 
 @[hott]
-inductive Two : Type u 
+inductive Two : Type _ 
 | zero : Two 
 | one : Two 
 
 /- We prove that [Two] is a set using the encode-decode method presented in the
    HoTT-book, Sec.2.13. -/
 @[hott, hsimp]
-def code_Two : Two.{u} -> Two.{u} -> Type.{u} :=
+def code_Two : Two.{u} -> Two.{u} -> Type u :=
 begin
   intros t₁ t₂, 
   induction t₁,
@@ -86,7 +83,7 @@ begin
 end    
 
 @[hott]
-def Two_eq_equiv_code : ∀ t₁ t₂ : Two.{u}, (t₁ = t₂) ≃ code_Two t₁ t₂ := 
+def Two_eq_equiv_code : ∀ t₁ t₂ : Two, (t₁ = t₂) ≃ code_Two t₁ t₂ := 
   assume t₁ t₂, 
   have z1 : code_Two Two.zero Two.one -> Zero, from λ c, c,
   have z2 : code_Two.{u} Two.one Two.zero -> Zero, from λ c, c,
@@ -125,7 +122,7 @@ def Two_Set : Set :=
   Set.mk Two Two_is_set  
 
 @[hott]
-def Two_is_decidable : ∀ t₁ t₂ : Two.{u}, (t₁ = t₂) ⊎ ¬ (t₁ = t₂) :=
+def Two_is_decidable : ∀ t₁ t₂ : Two, (t₁ = t₂) ⊎ ¬ (t₁ = t₂) :=
 begin 
   intros t₁ t₂, 
   induction t₁, 
@@ -163,12 +160,12 @@ def Two_equiv_lift : Two.{u} ≃ Two.{u+1} :=
    Thm.7.2.2 in the HoTT-book. Its proof requires a lemma. -/
 /- Should be in [path.lean]. -/
 @[hott, hsimp]
-def concat_eq_tr_eq : Π {A : Type.{u}} {a b c: A} (p : a = c) (u : b = a),
+def concat_eq_tr_eq : Π {A : Type _} {a b c: A} (p : a = c) (u : b = a),
   u ⬝ p = p ▸ u :=
 by intros A a b c p u; induction p; hsimp
 
 @[hott]   
-def refl_rel_set : Π {X : Type.{u}} (R : X -> X -> Type.{u}) 
+def refl_rel_set : Π {X : Type _} (R : X -> X -> Type _) 
      (mere_rel : ∀ x y, is_prop (R x y)) (refl_rel : Π x, R x x) 
      (rel_id : Π x y, R x y -> x = y), (is_set X) × (∀ x y, R x y ≃ x = y) :=
 assume X R mere_rel refl_rel rel_id, 
@@ -205,7 +202,7 @@ have rel_equiv_id : ∀ x y, R x y ≃ x = y, from
    as subsets. Therefore it is also contained as [is_set_pred] in [subset.lean]. 
    But we want to avoid dependencies.  -/
 @[hott, instance]   
-def Sigma_Set_Prop_is_set (X : Set.{u}) (P : X -> trunctype.{u} -1) : 
+def Sigma_Set_Prop_is_set (X : Set) (P : X -> Prop) : 
   is_set (Σ x : X, P x) := 
 have forall (x : X), is_set (P x), from 
   assume x, 
@@ -214,7 +211,7 @@ have forall (x : X), is_set (P x), from
 is_trunc_sigma (λ x : X, ↥(P x)) 0    
 
 @[hott, instance]
-def fib_set_map_is_set {A B : Set.{u}} (f : A -> B) (b : B) : is_set (fiber f b) :=
+def fib_set_map_is_set {A B : Set} (f : A -> B) (b : B) : is_set (fiber f b) :=
   have sig_fib_is_set : is_set (Σ a : A, f a = b), from 
     let P := λ a : A, Prop.mk (f a = b) (is_prop.mk (@is_set.elim _ _ (f a) b)) in
     Sigma_Set_Prop_is_set A P,
@@ -224,23 +221,23 @@ def fib_set_map_is_set {A B : Set.{u}} (f : A -> B) (b : B) : is_set (fiber f b)
    and (3.8.3). We postulate both as axioms, to keep track of their use, even if by 
    Lem.3.8.2, the two are equivalent. -/
 @[hott]
-def Choice := Π (X : Set.{u}) (A : X -> Set.{u}) 
-  (P: Π x : X, A x -> trunctype.{u} -1),
+def Choice := Π (X : Set.{u}) (A : X -> Set.{v}) 
+  (P: Π x : X, A x -> trunctype.{v} -1),
 (forall x : X, ∥ Σ a : A x, P x a ∥) -> ∥ Σ (g : Π x : X, A x), Π x : X, P x (g x) ∥   
 
 @[hott]
 axiom AC : Choice
 
 @[hott]
-def Choice_nonempty := Π (X : Set.{u}) (Y : X -> Set.{u}), 
+def Choice_nonempty := Π (X : Set.{u}) (Y : X -> Set.{v}), 
   (Π x : X, ∥ Y x ∥) -> ∥ Π x : X, Y x ∥ 
 
 @[hott]
 axiom AC_nonempty : Choice_nonempty
 
 @[hott]
-lemma AxChoice_equiv : Choice.{u} ↔ Choice_nonempty.{u} :=
-  have imp1 : Choice.{u} -> Choice_nonempty.{u}, from 
+lemma AxChoice_equiv : Choice.{u v} ↔ Choice_nonempty.{u v} :=
+  have imp1 : Choice.{u v} -> Choice_nonempty.{u v}, from 
     assume AxCh, assume X Y pi_trunc, 
     have pi_trunc_T : Π x : X, ∥ Σ y : Y x, True ∥, from 
       assume x, trunc_functor -1 (λ y : Y x, ⟨y,true.intro⟩) (pi_trunc x),
@@ -249,7 +246,7 @@ lemma AxChoice_equiv : Choice.{u} ↔ Choice_nonempty.{u} :=
     have sigma_pi_T : (Σ (g : Π x : X, Y x), ∀ x : X, True) -> (Π x : X, Y x), from
       assume sigma_T, sigma_T.1,    
     trunc_functor -1 sigma_pi_T trunc_sigma_T,
-  have imp2 : Choice_nonempty -> Choice, from 
+  have imp2 : Choice_nonempty.{u v} -> Choice.{u v}, from 
     assume AxCh_ne, assume X A P pi_trunc, 
     have sigma_P_is_set : Π x : X, is_set (Σ (a : A x), P x a), from 
       assume x, Sigma_Set_Prop_is_set (A x) (P x),
@@ -262,12 +259,10 @@ lemma AxChoice_equiv : Choice.{u} ↔ Choice_nonempty.{u} :=
   (imp1, imp2)
 
 /- The Law of the Excluded Middle, following the HoTT-book, (3.4.1) -/
-def ExcludedMiddle := Π (A : trunctype.{u} -1), A ⊎ ¬ A
+def ExcludedMiddle := Π (A : Prop), A ⊎ ¬ A
 
 @[hott]
 axiom LEM : ExcludedMiddle
-
-set_option pp.universes true
 
 /- The next lemmas are needed for deducing propositional resizing from LEM. -/
 @[hott]
@@ -336,7 +331,7 @@ def LEM_Prop_equiv_Two : ExcludedMiddle.{u} -> (trunctype.{u} -1 ≃ Two.{u}) :=
 
 /- We define the relation on [⅀ A × ⅀ A] using double induction. -/
 @[hott]
-def susp_of_prop_rel (A : Type u) [is_prop A] : ⅀ A -> ⅀ A -> Type.{u} :=
+def susp_of_prop_rel (A : Type _) [is_prop A] : ⅀ A -> ⅀ A -> Type _ :=
 let P := λ x y : ⅀ A, Type.{u} in
 begin
   intros x y,
