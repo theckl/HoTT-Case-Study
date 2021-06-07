@@ -17,12 +17,12 @@ namespace set
 
 /- `Prop`s are `Set`s. -/
 @[hott]
-def Prop_to_Set : trunctype.{u} -1 -> Set.{u} :=
+def Prop_to_Set : Prop -> Set :=
   λ P, Set.mk P (is_trunc_succ P -1)
 
 /- Nicer name for construction of `Set` from `is_set`. -/
 @[hott]
-def to_Set (A : Type u) [pA : is_set A] : trunctype 0 :=
+def to_Set (A : Type _) [pA : is_set A] : Set :=
   trunctype.mk A pA    
 
 /- We need the empty set, the identity map between sets and some properties of maps between sets. They can be 
@@ -36,24 +36,24 @@ def empty_Set : Set :=
   Set.mk false (is_trunc_succ false -1)
 
 @[hott, hsimp, reducible]
-def id {A : Type u} (a : A) : A := a 
+def id {A : Type _} (a : A) : A := a 
 
 @[hott, hsimp, reducible]
 def id_map (A : Set) : A -> A := @id A  
 
 @[hott]
-def id_map_is_right_neutral {A B : Set.{u}} (map : A -> B) :
+def id_map_is_right_neutral {A : Set} {B : Set} (map : A -> B) :
   map ∘ (id_map A) = map :=  
 by hsimp   
 
 @[hott, class]
-def is_set_injective {A B : Set.{u}} (f : B -> A) := 
+def is_set_injective {A : Set} {B : Set} (f : B -> A) := 
   forall b1 b2 : B, f b1 = f b2 -> b1 = b2
   
 /- Maps between two given sets are sets. 
    Looks like a HoTT-ism, but is actually a rule to construct sets from known sets. -/
 @[hott, instance]
-def is_set_map {A : Set.{u}} {B : Set.{v}} : is_set (A -> B) :=
+def is_set_map {A : Set} {B : Set} : is_set (A -> B) :=
 have H : forall (f g : A -> B) (p q : f = g), p = q, from   
   assume f g p q, 
   have eq_eqv_hom : (f = g) ≃ (f ~ g), from 
@@ -69,7 +69,7 @@ is_set.mk (A -> B) H
 
 /- The dependent version; the bundled set will yield the categorical product of sets. -/
 @[hott, instance]
-def is_set_dmap {A : Set.{u}} {B : A -> Set.{u}} : is_set (Π (a : A), B a) :=
+def is_set_dmap {A : Set} {B : A -> Set} : is_set (Π (a : A), B a) :=
   have H : forall (f g : Π (a : A), B a) (p q : f = g), p = q, from 
     assume f g p q, 
     have eq_eqv_hom : (f = g) ≃ (f ~ g), from 
@@ -84,12 +84,12 @@ def is_set_dmap {A : Set.{u}} {B : A -> Set.{u}} : is_set (Π (a : A), B a) :=
   is_set.mk (Π (a : A), B a) H
 
 @[hott]
-def Sections {A : Set.{u}} (B : A -> Set.{u}) : Set.{u} :=
+def Sections {A : Set} (B : A -> Set) : Set :=
   Set.mk (Π (a : A), B a) (@is_set_dmap _ _)  
 
 /- That is a HoTT-ism, but should be automatable. -/
 @[hott, instance]
-lemma is_set_inj_is_prop {A B : Set} (f : B -> A): 
+lemma is_set_inj_is_prop {A : Set} {B : Set} (f : B -> A): 
   is_prop (is_set_injective f) := 
 have eq_imp : forall b1 b2 : B, is_prop (f b1 = f b2 -> b1 = b2), from 
   assume b1 b2, is_prop_map (is_trunc_eq -1 b1 b2),
@@ -100,7 +100,7 @@ let P := assume b1, forall b2 : B, f b1 = f b2 -> b1 = b2 in
 
 /- fibers of injective maps only contain one element. -/
 @[hott]
-def set_inj_implies_unique_fib {A B : Set} (f : B -> A) : 
+def set_inj_implies_unique_fib {A : Set} {B : Set} (f : B -> A) : 
   is_set_injective f -> forall a : A, is_prop (fiber f a) :=
 assume f_inj a,
 have H : forall fb1 fb2 : fiber f a, fb1 = fb2, from
@@ -114,8 +114,8 @@ is_prop.mk H
 
 /- This is the universal property of injective maps. -/
 @[hott]
-lemma univ_prop_of_inj {A B : Set.{u}} (i : A -> B) (i_inj : is_set_injective i) : 
-  forall (C : Set.{u}) (f g : C -> A), i ∘ f = i ∘ g -> f = g :=
+lemma univ_prop_of_inj {A : Set} {B : Set} (i : A -> B) (i_inj : is_set_injective i) : 
+  forall (C : Set) (f g : C -> A), i ∘ f = i ∘ g -> f = g :=
 assume C f g comp_eq, 
 have i_hom : forall c : C, i (f c) = i (g c), from 
   assume c, 
@@ -126,11 +126,11 @@ have hom : f ~ g, from assume c, i_inj (f c) (g c) (i_hom c),
 eq_of_homotopy hom  
 
 @[hott, class]
-def is_set_surjective {A : Set.{u}} {B : Set.{v}} (f : B -> A) :=
+def is_set_surjective {A : Set} {B : Set} (f : B -> A) :=
   forall a : A, image f a
 
 @[hott, instance]
-lemma is_set_surj_is_prop {A B : Set} (f : B -> A): 
+lemma is_set_surj_is_prop {A : Set} {B : Set} (f : B -> A): 
   is_prop (is_set_surjective f) :=
 have forall a : A, is_prop (image f a), from assume a, by apply_instance, 
 have pre_im_is_prop : is_prop (forall a : A, image f a), from
@@ -141,11 +141,11 @@ have surj_eq : forall surj1 surj2 : is_set_surjective f, surj1 = surj2, from
 is_prop.mk surj_eq   
 
 @[hott]
-class is_set_bijective {A B : Set} (f : B -> A) := 
+class is_set_bijective {A : Set} {B : Set} (f : B -> A) := 
  (inj : is_set_injective f) (surj : is_set_surjective f)
 
 @[hott, instance]
-lemma is_set_bij_is_prop {A B : Set} (f : B -> A) : 
+lemma is_set_bij_is_prop {A : Set} {B : Set} (f : B -> A) : 
   is_prop (is_set_bijective f) :=
 have H : forall bij1 bij2 : is_set_bijective f, bij1 = bij2, from
   assume bij1 bij2,
@@ -156,18 +156,18 @@ is_prop.mk H
 
 /- Bijective maps, bundled up and provided with a coercion. -/
 @[hott]
-structure bijection (A B : Set) :=
+structure bijection (A : Set) (B : Set) :=
   (map: A -> B) (bij : is_set_bijective map)
 
 @[hott]
-instance bij_to_map (A B : Set.{u}) : 
+instance bij_to_map (A : Set) (B : Set) : 
   has_coe_to_fun (bijection A B) :=
 has_coe_to_fun.mk (λ _, A -> B) (λ f, f.map)
 
 attribute [instance] bijection.bij 
 
 @[hott]
-lemma bijection_eq_from_map_eq {A B : Set} : 
+lemma bijection_eq_from_map_eq {A : Set} {B : Set}: 
   forall f g : bijection A B, bijection.map f = bijection.map g -> f = g  
 | (bijection.mk map1 bij1) (bijection.mk map2 bij2) := 
    assume map_eq, 
@@ -177,7 +177,7 @@ lemma bijection_eq_from_map_eq {A B : Set} :
    apd011 bijection.mk map_eq is_bij_eq
 
 @[hott]
-lemma map_eq_from_bijection_eq {A B : Set} :
+lemma map_eq_from_bijection_eq {A : Set} {B : Set}:
   forall f g : bijection A B, f = g -> bijection.map f = bijection.map g :=
 assume f g map_eq, ap bijection.map map_eq
 
@@ -186,15 +186,15 @@ assume f g map_eq, ap bijection.map map_eq
    Similarly, the idpaths must be mapped to each other. -/
 
 @[hott]
-def is_set_right_inverse_of {A B : Set.{u}} (f : A -> B) (g : B -> A) :=
+def is_set_right_inverse_of {A : Set} {B : Set} (f : A -> B) (g : B -> A) :=
   forall b, f (g b) = b
 
 @[hott, reducible]
-def is_set_left_inverse_of {A B : Set.{u}} (f : A -> B) (g : B -> A) :=
+def is_set_left_inverse_of {A : Set} {B : Set} (f : A -> B) (g : B -> A) :=
   forall a, g (f a) = a
 
 @[hott]
-class is_set_inverse_of {A B : Set} (f : A -> B) (g : B -> A) := 
+class is_set_inverse_of {A : Set} {B : Set} (f : A -> B) (g : B -> A) := 
   (r_inv : is_set_right_inverse_of f g) (l_inv : is_set_left_inverse_of f g)
 
 @[hott]
@@ -208,7 +208,7 @@ def id_is_inv_to_id (A : Set) : is_set_inverse_of (id_map A) (id_map A) :=
 
 /- The inverse is uniquely determined. -/
 @[hott]
-lemma inv_is_unique {A B : Set} (f : A -> B) (g : B -> A) (g' : B -> A) :
+lemma inv_is_unique {A : Set} {B : Set} (f : A -> B) (g : B -> A) (g' : B -> A) :
   is_set_inverse_of f g -> is_set_inverse_of f g' -> g = g' :=
 assume inv_g inv_g', 
 have hom : g ~ g', from assume b,
@@ -220,7 +220,7 @@ eq_of_homotopy hom /- here, function extensionality is used -/
 
 /- Constructing the inverse of a bijection -/
 @[hott, reducible, hsimp] 
-def inv_of_bijection {A B : Set.{u}} (f : bijection A B) : 
+def inv_of_bijection {A : Set} {B : Set} (f : bijection A B) : 
   Σ (g : B -> A), is_set_inverse_of f g :=
 let f_inj := is_set_bijective.inj f, f_surj := is_set_bijective.surj f in
 have inv_f : forall b : B, fiber f b, from assume b, 
@@ -238,7 +238,7 @@ sigma.mk g (is_set_inverse_of.mk r_inv_f l_inv_f)
 
 /- Functions with inverses are bijective. -/
 @[hott, reducible, hsimp]
-def has_inverse_to_bijection {A B : Set} (f : A -> B) (g : B -> A) :
+def has_inverse_to_bijection {A : Set} {B : Set} (f : A -> B) (g : B -> A) :
   is_set_inverse_of f g -> bijection A B :=
 assume inv_f_g,
 have f_inj : is_set_injective f, from assume a1 a2 feq,
@@ -254,19 +254,19 @@ bijection.mk f is_bij
 
 /- The inverse of a bijection is a bijection. -/
 @[hott]
-def set_inv_inv {A B : Set} (f : A -> B) (g : B -> A) :
+def set_inv_inv {A : Set} {B : Set} (f : A -> B) (g : B -> A) :
   is_set_inverse_of f g -> is_set_inverse_of g f :=
 assume inv_f_g,
 is_set_inverse_of.mk (@is_set_inverse_of.l_inv _ _ f g inv_f_g) 
                      (@is_set_inverse_of.r_inv _ _ f g inv_f_g)
 
 @[hott, reducible, hsimp]
-def inv_bijection_of {A B : Set} (f : bijection A B) : bijection B A :=
+def inv_bijection_of {A : Set} {B : Set} (f : bijection A B) : bijection B A :=
   let g := (inv_of_bijection f).1, inv_f_g := (inv_of_bijection f).2 in
   has_inverse_to_bijection g f (set_inv_inv f g inv_f_g)
 
 @[hott]
-lemma inv_bij_is_inv {A B : Set} (f : bijection A B) :
+lemma inv_bij_is_inv {A : Set} {B : Set} (f : bijection A B) :
   is_set_inverse_of f (inv_bijection_of f) := 
 (inv_of_bijection f).2
 
@@ -344,7 +344,7 @@ end
    a dependent proposition. -/
 @[hott]   
 lemma ap_car_apd011_set_mk {cA cB: Type _} :
-  Π (ec :cA = cB) [s : is_set cA] [t : is_set cB] (est : s =[ec] t), 
+  Π (ec : cA = cB) [s : is_set cA] [t : is_set cB] (est : s =[ec] t), 
   ap trunctype.carrier (apd011 Set.mk ec est) = ec := 
 begin 
   intro ec,
@@ -448,7 +448,7 @@ def fun_eqv_trans_comp_eqv {A B C : Type u} : Π (F : A ≃ B) (G : B ≃ C),
 assume F G, by reflexivity 
 
 @[hott]
-def car_eqv_equiv_bij {A B : Set} : ((car A) ≃ (car B)) ≃ (bijection A B) :=
+def car_eqv_equiv_bij {A B : Set.{u}} : ((car A) ≃ (car B)) ≃ (bijection A B) :=
   let F := @car_eqv_to_bij A B, G := @bij_to_car_eqv A B in
   have rinv : forall f, F (G f) = f, from assume f, 
     have map_eq : bijection.map (F (G f)) = bijection.map f, from rinv_set_equiv_bijection f,
@@ -471,15 +471,15 @@ lemma id_eqv_to_identity (A : Set) : car_eqv_to_bij (id_map_eqv A) = identity A 
   bijection_eq_from_map_eq _ _ map_eq
 
 @[hott]
-def set_eq_equiv_bij {A B : Set} : (A = B) ≃ (bijection A B) :=
+def set_eq_equiv_bij {A B : Set.{u}} : (A = B) ≃ (bijection A B) :=
   (set_eq_equiv_car_eq ⬝e car_eq_equiv_car_eqv) ⬝e car_eqv_equiv_bij
 
 @[hott]
-def set_eq_to_bij {A B : Set} : A = B -> (bijection A B) :=
+def set_eq_to_bij {A B : Set.{u}} : A = B -> (bijection A B) :=
   equiv.to_fun set_eq_equiv_bij
 
 @[hott]
-def bij_to_set_eq {A B : Set} : (bijection A B) -> A = B :=
+def bij_to_set_eq {A B : Set.{u}} : (bijection A B) -> A = B :=
   (equiv.to_fun set_eq_equiv_bij)⁻¹ᶠ
 
 @[hott]
@@ -522,7 +522,7 @@ namespace set
 
 /- The Cartesian product of two sets is a set. -/
 @[hott]
-def prod_of_Sets_is_set (A B : Set) : is_set (A × B) :=
+def prod_of_Sets_is_set (A : Set) (B : Set) : is_set (A × B) :=
   have pr_eq : ∀ (p₁ p₂ : A × B) (q r : p₁ = p₂), q = r, from
     assume p₁ p₂ q r, 
     begin
@@ -533,7 +533,7 @@ def prod_of_Sets_is_set (A B : Set) : is_set (A × B) :=
   is_set.mk _ pr_eq 
 
 @[hott]
-def Prod_Set (A B : Set) : Set :=
+def Prod_Set (A : Set) (B : Set) : Set :=
   Set.mk (A × B) (prod_of_Sets_is_set A B)  
 
 notation A ` × `:100 B := Prod_Set A B   
@@ -547,7 +547,7 @@ begin
   rwr <- is_equiv.left_inv (pathover_equiv_tr_eq p b₁ b₂) r,
   apply ap (⇑(pathover_equiv_tr_eq p b₁ b₂))⁻¹ᶠ,
   exact is_set.elim _ _
-end  
+end   
 
 /- The dependent product of sets is a set. -/
 @[hott]
@@ -570,22 +570,21 @@ def dprod_Set (A : Set) (B : A -> Set) : Set :=
 
 /- The quotient of a set by a mere relation is made into a set by truncation. -/
 @[hott]
-def set_quotient {A : Set.{u}} (R : A -> A -> trunctype.{v} -1) : Set :=
+def set_quotient {A : Set} (R : A -> A -> Prop) : Set :=
   to_Set (trunc 0 (quotient (λ a b : A, R a b)))
 
 @[hott] 
-def set_class_of {A : Set.{u}} (R : A → A → trunctype.{v} -1) (a : A) : set_quotient R :=  
+def set_class_of {A : Set} (R : A → A → Prop) (a : A) : set_quotient R :=  
   tr (class_of (λ a b : A, R a b) a) 
 
 @[hott]
-def eq_of_setrel {A : Set.{u}} (R : A → A → trunctype.{v} -1) ⦃a a' : A⦄ (H : R a a') :
+def eq_of_setrel {A : Set} (R : A → A → Prop) ⦃a a' : A⦄ (H : R a a') :
   set_class_of R a = set_class_of R a' :=
 ap tr (eq_of_rel (λ a b : A, R a b) H)  
 
 @[hott]
-def set_quotient.rec {A : Set.{u}} (R : A → A → trunctype.{v} -1) 
-  {P : set_quotient R -> Type w} [∀ x : set_quotient R, is_set (P x)] 
-  (Pc : Π a : A, P (set_class_of R a))
+def set_quotient.rec {A : Set} (R : A → A → Prop) {P : set_quotient R -> Type _} 
+  [∀ x : set_quotient R, is_set (P x)] (Pc : Π a : A, P (set_class_of R a))
   (Pp : Π ⦃ a a' : A ⦄ (H : R a a'), Pc a =[eq_of_setrel R H; λ x, P x] Pc a') 
   (x : set_quotient R) : P x :=
 begin 
@@ -598,9 +597,9 @@ begin
 end  
 
 @[hott]
-def set_quotient.prec {A : Set.{u}} (R : A → A → trunctype.{v} -1) 
-  {P : set_quotient R -> Type w} [∀ x : set_quotient R, is_prop (P x)] 
-  (Pc : Π a : A, P (set_class_of R a)) (x : set_quotient R) : P x :=
+def set_quotient.prec {A : Set} (R : A → A → Prop) {P : set_quotient R -> Type _} 
+  [∀ x : set_quotient R, is_prop (P x)] (Pc : Π a : A, P (set_class_of R a)) 
+  (x : set_quotient R) : P x :=
 begin 
   fapply set_quotient.rec, 
   { exact Pc }, 
@@ -608,8 +607,8 @@ begin
 end 
 
 @[hott]
-def set_quotient.prec2 {A : Set.{u}} (R : A → A → trunctype.{v} -1) 
-  {P : set_quotient R -> set_quotient R -> Type w} [∀ x y : set_quotient R, is_prop (P x y)] 
+def set_quotient.prec2 {A : Set} (R : A → A → Prop) 
+  {P : set_quotient R -> set_quotient R -> Type _} [∀ x y : set_quotient R, is_prop (P x y)] 
   (Pc : Π a b : A, P (set_class_of R a) (set_class_of R b)) (x y : set_quotient R) : P x y :=
 begin 
   fapply set_quotient.prec, 
@@ -618,8 +617,8 @@ begin
 end 
 
 @[hott]
-def set_quotient.prec3 {A : Set.{u}} (R : A → A → trunctype.{v} -1) 
-  {P : set_quotient R -> set_quotient R -> set_quotient R -> Type w} 
+def set_quotient.prec3 {A : Set} (R : A → A → Prop) 
+  {P : set_quotient R -> set_quotient R -> set_quotient R -> Type _} 
   [∀ x y z : set_quotient R, is_prop (P x y z)] 
   (Pc : Π a b c : A, P (set_class_of R a) (set_class_of R b) (set_class_of R c)) 
   (x y z : set_quotient R) : P x y z :=
@@ -631,8 +630,7 @@ begin
 end 
 
 @[hott]
-def set_quotient.elim {A : Set.{u}} (R : A → A → trunctype.{v} -1) 
-  {P : Type w} [Hs: is_set P] (Pc : A -> P )
+def set_quotient.elim {A : Set} (R : A → A → Prop) {P : Type _} [Hs : is_set P] (Pc : A -> P)
   (Pp : Π ⦃ a a' : A ⦄ (H : R a a'), Pc a = Pc a') 
   (x : set_quotient R) : P :=
 begin
@@ -645,7 +643,7 @@ begin
 end  
 
 @[hott]
-def set_class_of_is_surj {A : Set.{u}} (R : A → A → trunctype.{v} -1) :
+def set_class_of_is_surj {A : Set} (R : A → A → Prop) :
   is_set_surjective (set_class_of R) :=
 begin 
   fapply set_quotient.rec, 
@@ -679,8 +677,8 @@ end
    equalities of equalities needed for double induction if `P a b` is not a set, but at the
    moment the assumption holds in the applications. -/
 @[hott]
-def set_quotient.rec2 {A : Set.{u}} (R : A → A → trunctype.{v} -1) 
-  {P : set_quotient R -> set_quotient R -> Type w} 
+def set_quotient.rec2 {A : Set} (R : A → A → Prop) 
+  {P : set_quotient R -> set_quotient R -> Type _} 
   [HS : ∀ x y : set_quotient R, is_set (P x y)] 
   (Pc : Π a b : A, P (set_class_of R a) (set_class_of R b))
   (Ppl : Π ⦃ a a' : A ⦄ (b : A) (H : R a a'), 
@@ -704,7 +702,7 @@ begin
 end 
 
 @[hott]
-def set_quotient.elim2 {A : Set.{u}} (R : A → A → trunctype.{v} -1) {P : Type w} 
+def set_quotient.elim2 {A : Set} (R : A → A → Prop) {P : Type _} 
   [Hs : is_set P] (Pc : A -> A -> P) 
   (Ppl : Π ⦃ a a' : A ⦄ (b : A) (H : R a a'), Pc a b = Pc a' b) 
   (Ppr : Π (a : A) ⦃ b b' : A ⦄ (H : R b b'), Pc a b = Pc a b')       
@@ -729,9 +727,9 @@ end
    
    We start with the extension of the relation to the set-quotient. -/
 @[hott, reducible]
-def equiv_rel_to_set_quotient_rel {A : Set.{v}} (R : A → A → trunctype.{v} -1) 
-  [is_equivalence.{v} (λ a b : A, R a b)] : 
-  (set_quotient R) -> (set_quotient R) -> trunctype.{v} -1 :=
+def equiv_rel_to_set_quotient_rel {A : Set} (R : A → A → Prop) 
+  [is_equivalence (λ a b : A, R a b)] : 
+  (set_quotient R) -> (set_quotient R) -> Prop :=
 begin
   let R' := λ a b : A, (R a b).carrier,
   fapply @set_quotient.rec2 A R, 
@@ -747,8 +745,8 @@ end
 /- Now we can show the equivalence on the extended relation. The quasi-isomorphism 
    needs reflexivity of the relation, the inverse is constructed by double induction. -/
 @[hott, reducible]
-def quot_rel_to_setquot_eq {A : Set.{v}} (R : A → A → trunctype.{v} -1) 
-  [is_equivalence.{v} (λ a b : A, R a b)] : Π x y : set_quotient R,
+def quot_rel_to_setquot_eq {A : Set} (R : A → A → Prop) 
+  [is_equivalence (λ a b : A, R a b)] : Π x y : set_quotient R,
   (equiv_rel_to_set_quotient_rel R x y) -> (x = y) :=
 begin
   let R' := λ a b : A, (R a b).carrier,
@@ -765,8 +763,8 @@ begin
 end   
 
 @[hott, reducible]
-def quot_eq_eqv_quot_rel {A : Set.{v}} (R : A → A → trunctype.{v} -1) 
-  [is_equivalence.{v} (λ a b : A, R a b)] : Π x y : set_quotient R,
+def quot_eq_eqv_quot_rel {A : Set} (R : A → A → Prop) 
+  [is_equivalence (λ a b : A, R a b)] : Π x y : set_quotient R,
   (x = y) ≃ (equiv_rel_to_set_quotient_rel R x y) :=
 begin
   let R' := λ a b : A, (R a b).carrier,
