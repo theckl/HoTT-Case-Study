@@ -3,30 +3,27 @@ import subset set_axioms hott.types.prod
 universes u v w
 hott_theory
 
-set_option pp.universes true
-set_option pp.implicit true
-
 namespace hott
 open hott.set hott.subset prod
 
 /- `⊆` induces a weak or partial order on the subsets of a set `A`:
    It is a reflexive, transitive and anti-symmetric relation. -/
 @[hott, hsimp]
-def subset_refl {A : Set.{u}} (B : Subset A) : B ⊆ B :=
+def subset_refl {A : Set} (B : Subset A) : B ⊆ B :=
   assume a a_in_B, a_in_B
 
 @[hott, hsimp]
-def subset_trans {A : Set.{u}} (B C D : Subset A) : 
+def subset_trans {A : Set} (B C D : Subset A) : 
   B ⊆ C -> C ⊆ D -> B ⊆ D :=
 assume BC CD a a_in_B, CD a (BC a a_in_B)
 
 @[hott, hsimp]
-def subset_asymm {A : Set.{u}} (B C : Subset A) : 
+def subset_asymm {A : Set} (B C : Subset A) : 
   B ⊆ C -> C ⊆ B -> B = C :=
 assume BC CB, (sset_eq_iff_inclusion B C).2 ⟨BC, CB⟩  
 
 namespace subset
-variables {A : Set.{u}}
+variables {A : Set}
 
 @[hott]
 protected def inter (S₁ S₂ : Subset A) : Subset A :=
@@ -51,7 +48,7 @@ def inter.symm (S₁ S₂ : Subset A) : S₁ ∩ S₂ = S₂ ∩ S₁ :=
   (sset_eq_iff_inclusion _ _).2 ⟨ss1, ss2⟩
 
 @[hott]
-def inter_sset_l (U V : Subset.{u} A) : U ∩ V ⊆ U :=
+def inter_sset_l (U V : Subset A) : U ∩ V ⊆ U :=
   assume a el, ((pred_elem a).1 el).1
 
 @[hott]
@@ -65,15 +62,15 @@ def sUnion (S : Subset (𝒫 A)) : Subset A :=
 hott_theory_cmd "local prefix `⋃₀`:110 := hott.subset.sUnion"
 
 @[hott, reducible]
-def iUnion {I : Set.{u}} (f : I -> 𝒫 A) : Subset A :=
+def iUnion {A : Set.{u}} {I : Set.{u}} (f : I -> 𝒫 A) : Subset A :=
   {t ∈ A | ∥ Σ i : I, t ∈ f i ∥}
 
 hott_theory_cmd "local prefix `⋃ᵢ`:110 := hott.subset.iUnion"  
 
 @[hott]
-def sset_iUnion {I : Set.{u}} (f : I -> 𝒫 A) (i : I) : f i ⊆ ⋃ᵢ f :=
+def sset_iUnion {A : Set.{u}} {I : Set.{u}} (f : I -> 𝒫 A) (i : I) : f i ⊆ ⋃ᵢ f :=
   assume a el, (pred_elem a).2 (@trunc.tr -1 (Σ i : I, a ∈ f i) ⟨i, el⟩) 
-  
+
 end subset
 
 end hott
