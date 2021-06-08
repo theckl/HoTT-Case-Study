@@ -7,8 +7,6 @@ namespace hott
 open hott.eq hott.is_trunc hott.trunc hott.set hott.subset 
      hott.categories 
 
-set_option pp.universes true
-
 /- We introduce limits of diagrams mapped to categories, by using cones to 
    pick the universal object and encode the universal property.
 
@@ -30,13 +28,13 @@ structure is_limit {J : Set.{u'}} [precategory.{v'} J] {C : Type u} [precategory
           (w : ∀ j : J, m ≫ t.π.app j = s.π.app j), m = lift s)
 
 @[hott] 
-def lift_itself_id {J : Set.{v}} [precategory J] {C : Type u} [precategory C] 
+def lift_itself_id {J : Set.{u'}} [precategory.{v'} J] {C : Type u} [precategory.{v} C] 
   {F : J ⥤ C} {t : cone F} (l : is_limit t) : l.lift t = 𝟙 t.X :=
 have t_fac : ∀ j : J, 𝟙 t.X ≫ t.π.app j = t.π.app j, by intro j; hsimp,  
 (l.uniq _ _ t_fac)⁻¹             
 
 @[hott]
-def limit_cone_point_iso {J : Set.{v}} [precategory J] {C : Type u} [precategory C] 
+def limit_cone_point_iso {J : Set.{u'}} [precategory.{v'} J] {C : Type u} [precategory.{v} C] 
   {F : J ⥤ C} {s t : cone F} (lₛ : is_limit s) (lₜ : is_limit t) : 
 Σ i : s.X ≅ t.X, i.hom = lₜ.lift s :=
 let st := lₜ.lift s, ts := lₛ.lift t in 
@@ -55,7 +53,7 @@ have comp_t : ts ≫ st = 𝟙 t.X, from lₜ.uniq _ _ t_fac ⬝ lift_itself_id 
 /- `limit_cone F` contains a cone over `F` together with the information that 
    it is a limit. -/
 @[hott]
-structure limit_cone {J : Set.{v}} [precategory J] {C : Type u} [precategory C] 
+structure limit_cone {J : Set.{u'}} [precategory.{v'} J] {C : Type u} [precategory.{v} C] 
   (F : J ⥤ C) :=
 (cone : cone F)
 (is_limit : is_limit cone)
@@ -63,12 +61,12 @@ structure limit_cone {J : Set.{v}} [precategory J] {C : Type u} [precategory C]
 /- `has_limit F` represents the mere existence of a limit for `F`. This allows
    to define it as a class with instances. -/ 
 @[hott]   
-class has_limit {J : Set.{v}} [precategory J] {C : Type u} [precategory C] 
+class has_limit {J : Set.{u'}} [precategory.{v'} J] {C : Type u} [precategory.{v} C] 
   (F : J ⥤ C) :=
 mk' :: (exists_limit : ∥limit_cone F∥)
 
 @[hott]
-def has_limit.mk {J : Set.{v}} [precategory J] {C : Type u} [precategory C] 
+def has_limit.mk {J : Set.{u'}} [precategory.{v'} J] {C : Type u} [precategory.{v} C] 
   {F : J ⥤ C} (d : limit_cone F) :=
 has_limit.mk' (tr d)  
 
@@ -80,7 +78,7 @@ has_limit.mk' (tr d)
    
    Thus, we can produce a `limit_cone F` from `has_limit F`. -/
 @[hott]
-def limit_cone_is_unique {J : Set.{v}} [precategory J] {C : Type u} [category C] 
+def limit_cone_is_unique {J : Set.{u'}} [precategory.{v'} J] {C : Type u} [category.{v} C] 
   (F : J ⥤ C) : ∀ lc₁ lc₂ : limit_cone F, lc₁ = lc₂ :=
 begin
   intros lc₁ lc₂, 
@@ -122,72 +120,71 @@ begin
 end    
 
 @[hott, instance]
-def limit_cone_is_prop {J : Set.{v}} [precategory J] {C : Type u} [category C] 
+def limit_cone_is_prop {J : Set.{u'}} [precategory.{v'} J] {C : Type u} [category.{v} C] 
   (F : J ⥤ C) : is_trunc -1 (limit_cone F) :=
 is_prop.mk (limit_cone_is_unique F)
 
 @[hott]
-def get_limit_cone {J : Set.{v}} [precategory J] {C : Type u} [category C] 
+def get_limit_cone {J : Set.{u'}} [precategory.{v'} J] {C : Type u} [category.{v} C] 
   (F : J ⥤ C) [has_limit F] : limit_cone F :=
 untrunc_of_is_trunc (has_limit.exists_limit F)  
 
 @[hott]
-def limit.cone {J : Set.{v}} [precategory J] {C : Type u} [category C]
+def limit.cone {J : Set.{u'}} [precategory.{v'} J] {C : Type u} [category.{v} C]
   (F : J ⥤ C) [has_limit F] : cone F := (get_limit_cone F).cone
 
 @[hott]
-def limit {J : Set.{v}} [precategory J] {C : Type u} [category C]
+def limit {J : Set.{u'}} [precategory.{v'} J] {C : Type u} [category.{v} C]
   (F : J ⥤ C) [has_limit F] := (limit.cone F).X
 
 @[hott]
-class has_limits_of_shape (J : Set) [precategory J] (C : Type u) 
-  [category C] :=
+class has_limits_of_shape (J : Set.{u'}) [precategory.{v'} J] (C : Type u) [category.{v} C] :=
   (has_limit : Π F : J ⥤ C, has_limit F)
 
 @[hott, priority 100]
 instance has_limit_of_has_limits_of_shape
-  {J : Set} [precategory J] (C : Type u) [category C] 
+  {J : Set.{u'}} [precategory.{v'} J] (C : Type u) [category.{v} C] 
   [H : has_limits_of_shape J C] (F : J ⥤ C) : has_limit F :=
 has_limits_of_shape.has_limit F
 
 @[hott]
-class has_limits (C : Type (u+1)) [category.{u} C] :=
-  (has_limit_of_shape : Π (J : Set) [precategory J], has_limits_of_shape J C )  
+class has_limits (C : Type u) [category.{v} C] :=
+  (has_limit_of_shape : Π (J : Set.{u'}) [precategory.{v'} J], has_limits_of_shape J C )  
 
 @[hott]
-abbreviation has_product {C : Type (u+1)} [category C] {J : Set.{u}} 
+abbreviation has_product {C : Type u} [category.{v} C] {J : Set.{u'}} 
   (f : J -> C) := has_limit (discrete.functor f) 
 
 @[hott]
-abbreviation pi_obj {C : Type (u+1)} [category.{u} C] {J : Set.{u}} (f : J → C) 
+abbreviation pi_obj {C : Type u} [category.{v} C] {J : Set.{u'}} (f : J → C) 
   [has_product f] := limit (discrete.functor f)
 
 notation `∏ ` f:20 := pi_obj f
 
 @[hott]
-class has_products (C : Type (u+1)) [category.{u} C] := 
-  (has_limit_of_shape : Π J : Set.{u}, has_limits_of_shape (discrete J) C)
+class has_products (C : Type u) [category.{v} C] := 
+  (has_limit_of_shape : Π J : Set.{u'}, has_limits_of_shape (discrete J) C)
 
 @[hott, priority 100]
 instance has_limits_of_shape_of_has_products 
-  {J : Set} (C : Type (u+1)) [category.{u} C] [has_products C] :
+  {J : Set.{u'}} (C : Type u) [category.{v} C] [has_products.{v u u'} C] :
   has_limits_of_shape (discrete J) C :=
 has_products.has_limit_of_shape C J
 
 @[hott, instance, priority 100]
-def has_product_of_has_products {C : Type (u+1)} [category.{u} C] 
-  [has_products C] {J : Set.{u}} (f : J -> C) : has_product f :=
+def has_product_of_has_products {C : Type u} [category.{v} C] 
+  [has_products C] {J : Set.{u'}} (f : J -> C) : has_product f :=
 @has_limits_of_shape.has_limit _ _ _ _ 
        (has_products.has_limit_of_shape C J) (discrete.functor f)
 
 @[hott, instance]
-def has_product_of_has_limits_of_shape {C : Type (u+1)} [category.{v} C] 
-  {J : Set.{u}} [has_limits_of_shape (discrete J) C] (f : J -> C) : 
+def has_product_of_has_limits_of_shape {C : Type u} [category.{v} C] 
+  {J : Set.{u'}} [has_limits_of_shape (discrete J) C] (f : J -> C) : 
   has_product f :=
 has_limits_of_shape.has_limit (discrete.functor f) 
 
 @[hott, instance]
-def has_products_of_has_limits (C : Type (u+1)) [category.{u} C] [c : has_limits C] : 
+def has_products_of_has_limits (C : Type u) [category.{v} C] [c : has_limits C] : 
   has_products C :=
 has_products.mk (λ J, @has_limits.has_limit_of_shape C _ c (discrete J) _)
 
@@ -195,26 +192,26 @@ has_products.mk (λ J, @has_limits.has_limit_of_shape C _ c (discrete J) _)
     to every `f j`. This is enough to determine a cone which factorizes through    
     the product. -/
 @[hott]    
-abbreviation fan {J : Set} {C : Type u} [category C] (f : J → C) := 
+abbreviation fan {J : Set.{u'}} {C : Type u} [category.{v} C] (f : J → C) := 
   cone (discrete.functor f)
 
 @[hott, hsimp]
-def fan.mk {J : Set} (C : Type u) [category C] {f : J → C} {P : C} 
+def fan.mk {J : Set.{u'}} (C : Type u) [category.{v} C] {f : J → C} {P : C} 
   (p : Π j, P ⟶ f j) : fan f :=
 cone.mk P (discrete.nat_trans _ _ p)
 
 @[hott, hsimp] 
-def pi.lift {J : Set} (C : Type (u+1)) [category.{u} C] {f : J → C} [has_product f]
+def pi.lift {J : Set.{u'}} (C : Type u) [category.{v} C] {f : J → C} [has_product f]
   {P : C} (p : Π j, P ⟶ f j) : P ⟶ ∏ f :=
 (get_limit_cone (discrete.functor f)).is_limit.lift (fan.mk _ p)  
 
 @[hott, hsimp] 
-def pi.π {J : Set} {C : Type (u+1)} [category.{u} C] (f : J → C) [has_product f] 
+def pi.π {J : Set.{u'}} {C : Type u} [category.{v} C] (f : J → C) [has_product f] 
   (j : J) : ∏ f ⟶ f j :=
 (limit.cone (discrete.functor f)).π.app j 
 
 @[hott]
-def pi.hom_is_lift {J : Set} (C : Type (u+1)) [category.{u} C] {f : J → C} 
+def pi.hom_is_lift {J : Set.{u'}} (C : Type u) [category.{v} C] {f : J → C} 
   [has_product f] {P : C} (h : P ⟶ ∏ f) : 
   h = pi.lift C (λ j : J, h ≫ (pi.π _ j)) :=
 let p := λ j : J, h ≫ (pi.π f j),
@@ -227,7 +224,7 @@ begin
 end  
 
 @[hott]
-def pi.lift_π_eq {J : Set} (C : Type (u+1)) [category.{u} C] {f : J → C} 
+def pi.lift_π_eq {J : Set.{u'}} (C : Type u) [category.{v} C] {f : J → C} 
   [has_product f] {P : C} (p : Π j : J, P ⟶ f j) : 
   ∀ j : J, pi.lift C p ≫ pi.π _ j = p j :=
 assume j, by apply is_limit.fac  
@@ -235,7 +232,7 @@ assume j, by apply is_limit.fac
 /- `parallel_pair f g` is the diagram in `C` consisting of the two morphisms `f` and `g` with
     common domain and codomain. -/
 @[hott, hsimp]
-def parallel_pair_obj {C : Type u} [category C] {a b : C} 
+def parallel_pair_obj {C : Type u} [category.{v} C] {a b : C} 
   (f g : a ⟶ b) : walking_parallel_pair.{u} -> C :=
 λ s, match s with
      | wp_pair.up := a
@@ -243,7 +240,7 @@ def parallel_pair_obj {C : Type u} [category C] {a b : C}
      end    
 
 @[hott, hsimp]
-def parallel_pair_map {C : Type u} [category C] {a b : C} 
+def parallel_pair_map {C : Type u} [category.{v} C] {a b : C} 
   (f g : a ⟶ b) : Π {s t : walking_parallel_pair.{u}}, 
   (s ⟶ t) -> (parallel_pair_obj f g s ⟶ parallel_pair_obj f g t) :=
 assume s t h, 
@@ -260,19 +257,19 @@ begin
 end 
 
 @[hott, hsimp]
-def parallel_pair_map_id {C : Type u} [category C] {a b : C} 
+def parallel_pair_map_id {C : Type u} [category.{v} C] {a b : C} 
   (f g : a ⟶ b) : ∀ s : walking_parallel_pair.{u}, 
   parallel_pair_map f g (𝟙 s) = 𝟙 (parallel_pair_obj f g s) :=
 by intro s; hinduction s; hsimp; hsimp  
 
 @[hott, hsimp]
-def parallel_pair_map_id' {C : Type u} [category C] {a b : C} 
+def parallel_pair_map_id' {C : Type u} [category.{v} C] {a b : C} 
   (f g : a ⟶ b) : ∀ (s : walking_parallel_pair.{u}) (h : s ⟶ s), 
   parallel_pair_map f g h = 𝟙 (parallel_pair_obj f g s) :=
 by intros s h; hinduction s; hsimp; hsimp  
 
 @[hott, hsimp]
-def parallel_pair_map_comp {C : Type u} [category C] 
+def parallel_pair_map_comp {C : Type u} [category.{v} C] 
   {a b : C} (f g : a ⟶ b) : ∀ {s t u : walking_parallel_pair.{u}} 
   (h : s ⟶ t) (i : t ⟶ u), parallel_pair_map f g (h ≫ i) = 
                   (parallel_pair_map f g h) ≫ (parallel_pair_map f g i) :=
@@ -290,7 +287,7 @@ begin
 end  
 
 @[hott]
-def parallel_pair {C : Type u} [category C] {a b : C} 
+def parallel_pair {C : Type u} [category.{v} C] {a b : C} 
   (f g : a ⟶ b) : walking_parallel_pair.{u} ⥤ C :=
 categories.functor.mk (parallel_pair_obj f g) 
                            (@parallel_pair_map _ _ _ _ f g) 
@@ -298,11 +295,11 @@ categories.functor.mk (parallel_pair_obj f g)
                            (@parallel_pair_map_comp _ _ _ _ f g)   
 
 @[hott]
-abbreviation fork {C : Type u} [category C] {a b : C} 
+abbreviation fork {C : Type u} [category.{v} C] {a b : C} 
   (f g : a ⟶ b) := cone (parallel_pair f g) 
 
 @[hott]
-def fork.of_i {C : Type u} [category C] {a b c : C} 
+def fork.of_i {C : Type u} [category.{v} C] {a b c : C} 
   (f g : a ⟶ b) (i : c ⟶ a) (w : i ≫ f = i ≫ g) : fork f g :=
 have π : constant_functor ↥walking_parallel_pair C c ⟹ parallel_pair f g, from
   let app :=  @wp_pair.rec (λ x, c ⟶ (parallel_pair f g).obj x) i (i ≫ f) in
@@ -333,9 +330,9 @@ cone.mk c π
    Note that the limit cone vertex may be the empty set - then all cones over the functor `F`
    are empty because they cannot factorize through the empty set. -/
 @[hott]
-def set_limit_pred {J : Set.{v}} [precategory.{v} J] (F : J ⥤ Set.{v}) : 
+def set_limit_pred {J : Set.{u'}} [precategory.{u'} J] (F : J ⥤ Set.{u}) : 
   Setpred (Sections (λ j : J, F.obj j)) :=
-λ u, to_Prop (∀ {j k : J} (f : j ⟶ k), F.map f (u j) = u k)  
+λ s, to_Prop (∀ (j k : J) (f : j ⟶ k), F.map f (s j) = s k)  
 
 @[hott, reducible]
 def set_cone {J : Set.{v}} [precategory.{v} J] (F : J ⥤ Set.{v}) : cone F :=
@@ -392,7 +389,7 @@ def set_has_limits_of_shape {J : Set.{v}} [precategory.{v} J] : has_limits_of_sh
    
    We first need to construct the underlying cone of a cone in the category of structures. -/
 @[hott, reducible]
-def str_cone_to_cone {J : Set.{v}} [precategory.{v} J] {C : Type (v+1)} [category.{v} C] 
+def str_cone_to_cone {J : Set.{u'}} [precategory.{v'} J] {C : Type u} [category.{v} C] 
   {std_str : std_structure_on C} {F : J ⥤ (std_structure std_str)} (s : cone F) :
   cone (forget F) :=
 begin 
@@ -408,7 +405,7 @@ end
 /- We define the the structure data of a limit cone for all limit cones of the underlying
    category at once, because we can change then easily to the best suited construction. -/
 @[hott]
-structure limit_cone_str_data {J : Set.{v}} [precategory.{v} J] {C : Type (v+1)} 
+structure limit_cone_str_data {J : Set.{u'}} [precategory.{v'} J] {C : Type u} 
   [category.{v} C] [has_limits_of_shape J C] {std_str : std_structure_on C} 
   {F : J ⥤ (std_structure std_str)} (lc : limit_cone (forget F)) :=
 (lc_str : std_str.P (lc.cone.X)) 
@@ -416,7 +413,7 @@ structure limit_cone_str_data {J : Set.{v}} [precategory.{v} J] {C : Type (v+1)}
 (lift_H : Π (s : cone F), std_str.H s.X.str lc_str (lc.is_limit.lift (str_cone_to_cone s)))
 
 @[hott]
-def str_limit_cone {J : Set.{v}} [precategory.{v} J] {C : Type (v+1)} 
+def str_limit_cone {J : Set.{u'}} [precategory.{v'} J] {C : Type u} 
   [category.{v} C] [has_limits_of_shape J C] {std_str : std_structure_on C} 
   {F : J ⥤ (std_structure std_str)} (lc : limit_cone (forget F))
   (lcd : limit_cone_str_data lc) : limit_cone F :=
@@ -444,14 +441,14 @@ begin
 end                
 
 @[hott]
-def str_has_limit {J : Set.{v}} [precategory.{v} J] {C : Type (v+1)} 
+def str_has_limit {J : Set.{u'}} [precategory.{v'} J] {C : Type u} 
   [category.{v} C] [has_limits_of_shape J C] {std_str : std_structure_on C} 
   (F : J ⥤ (std_structure std_str)) 
   (lcd : limit_cone_str_data (get_limit_cone (forget F))) : has_limit F :=
 has_limit.mk (str_limit_cone (get_limit_cone (forget F)) lcd)                                           
 
 @[hott, instance]
-def std_structure_has_limits_of_shape {J : Set.{v}} [precategory.{v} J] {C : Type (v+1)} 
+def std_structure_has_limits_of_shape {J : Set.{u'}} [precategory.{v'} J] {C : Type u} 
   [category.{v} C] [has_limits_of_shape J C] {std_str : std_structure_on C} 
   (lcd_F : Π F : J ⥤ (std_structure std_str), limit_cone_str_data (get_limit_cone (forget F))): 
   has_limits_of_shape J (std_structure std_str) :=
