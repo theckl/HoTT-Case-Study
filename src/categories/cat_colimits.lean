@@ -14,13 +14,13 @@ open hott.eq hott.is_trunc hott.trunc hott.set hott.subset
 
 namespace category_theory.colimits
 
-structure cocone {J : Set.{v}} [precategory J] {C : Type u} 
-  [precategory C] (F : J ⥤ C) :=
+structure cocone {J : Set.{u'}} [precategory.{v'} J] {C : Type u} 
+  [precategory.{v} C] (F : J ⥤ C) :=
 (X : C)
 (π : F ⟹ (constant_functor J C X))
 
 @[hott]
-structure is_colimit {J : Set.{v}} [precategory J] {C : Type u} [precategory C] 
+structure is_colimit {J : Set.{u'}} [precategory.{v'} J] {C : Type u} [precategory.{v} C] 
   {F : J ⥤ C} (t : cocone F) :=
 (desc : Π (s : cocone F), t.X ⟶ s.X)
 (fac  : ∀ (s : cocone F) (j : J), t.π.app j ≫ desc s = s.π.app j)
@@ -28,13 +28,14 @@ structure is_colimit {J : Set.{v}} [precategory J] {C : Type u} [precategory C]
           (w : ∀ j : J, t.π.app j ≫ m = s.π.app j), m = desc s)
 
 @[hott] 
-def desc_itself_id {J : Set.{v}} [precategory J] {C : Type u} [precategory C] 
+def desc_itself_id {J : Set.{u'}} [precategory.{v'} J] {C : Type u} [precategory.{v} C] 
   {F : J ⥤ C} {t : cocone F} (l : is_colimit t) : l.desc t = 𝟙 t.X :=
 have t_fac : ∀ j : J, t.π.app j ≫ 𝟙 t.X = t.π.app j, by intro j; hsimp,  
 (l.uniq _ _ t_fac)⁻¹             
 
 @[hott]
-def colimit_cocone_point_iso {J : Set.{v}} [precategory J] {C : Type u} [precategory C] 
+def colimit_cocone_point_iso {J : Set.{u'}} [precategory.{v'} J] {C : Type u} 
+  [precategory.{v} C] 
   {F : J ⥤ C} {s t : cocone F} (lₛ : is_colimit s) (lₜ : is_colimit t) : 
 Σ i : t.X ≅ s.X, i.hom = lₜ.desc s :=
 let st := lₜ.desc s, ts := lₛ.desc t in 
@@ -53,20 +54,20 @@ have comp_t : st ≫ ts = 𝟙 t.X, from lₜ.uniq _ _ t_fac ⬝ desc_itself_id 
 /- `colimit_cocone F` contains a cocone over `F` together with the information that 
    it is a colimit. -/
 @[hott]
-structure colimit_cocone {J : Set.{v}} [precategory J] {C : Type u} [precategory C] 
-  (F : J ⥤ C) :=
+structure colimit_cocone {J : Set.{u'}} [precategory.{v'} J] {C : Type u} 
+  [precategory.{v} C] (F : J ⥤ C) :=
 (cocone : cocone F)
 (is_colimit : is_colimit cocone)
 
 /- `has_colimit F` represents the mere existence of a colimit for `F`. This allows
    to define it as a class with instances. -/ 
 @[hott]   
-class has_colimit {J : Set.{v}} [precategory J] {C : Type u} [precategory C] 
+class has_colimit {J : Set.{u'}} [precategory.{v'} J] {C : Type u} [precategory.{v} C] 
   (F : J ⥤ C) :=
 mk' :: (exists_colimit : ∥colimit_cocone F∥)
 
 @[hott]
-def has_colimit.mk {J : Set.{v}} [precategory J] {C : Type u} [precategory C] 
+def has_colimit.mk {J : Set.{u'}} [precategory.{v'} J] {C : Type u} [precategory.{v} C] 
   {F : J ⥤ C} (d : colimit_cocone F) :=
 has_colimit.mk' (tr d) 
 
@@ -78,8 +79,8 @@ has_colimit.mk' (tr d)
    
    Thus, we can produce a `colimit_cocone F` from `has_colimit F`. -/
 @[hott]
-def colimit_cocone_is_unique {J : Set.{v}} [precategory J] {C : Type u} [category C] 
-  (F : J ⥤ C) : ∀ lc₁ lc₂ : colimit_cocone F, lc₁ = lc₂ :=
+def colimit_cocone_is_unique {J : Set.{u'}} [precategory.{v'} J] {C : Type u} 
+  [category.{v} C] (F : J ⥤ C) : ∀ lc₁ lc₂ : colimit_cocone F, lc₁ = lc₂ :=
 begin
   intros lc₁ lc₂, 
   hinduction lc₁ with cocone₁ is_colimit₁, hinduction lc₂ with cocone₂ is_colimit₂,
@@ -119,39 +120,40 @@ begin
 end  
 
 @[hott, instance]
-def colimit_cocone_is_prop {J : Set.{v}} [precategory J] {C : Type u} [category C] 
+def colimit_cocone_is_prop {J : Set.{u'}} [precategory.{v'} J] {C : Type u} [category.{v} C] 
   (F : J ⥤ C) : is_trunc -1 (colimit_cocone F) :=
 is_prop.mk (colimit_cocone_is_unique F)
 
 @[hott]
-def get_colimit_cocone {J : Set.{v}} [precategory J] {C : Type u} [category C] 
+def get_colimit_cocone {J : Set.{u'}} [precategory.{v'} J] {C : Type u} [category.{v} C] 
   (F : J ⥤ C) [has_colimit F] : colimit_cocone F :=
 untrunc_of_is_trunc (has_colimit.exists_colimit F)  
 
 @[hott]
-def colimit.cocone {J : Set.{v}} [precategory J] {C : Type (u+1)} [category.{u} C]
+def colimit.cocone {J : Set.{u'}} [precategory.{v'} J] {C : Type u} [category.{v} C]
   (F : J ⥤ C) [has_colimit F] : cocone F := (get_colimit_cocone F).cocone
 
 @[hott]
-def colimit {J : Set.{v}} [precategory.{v} J] {C : Type (u+1)} [category.{u} C]
+def colimit {J : Set.{u'}} [precategory.{v'} J] {C : Type u} [category.{v} C]
   (F : J ⥤ C) [has_colimit F] := (colimit.cocone F).X
 
 @[hott]
-class has_colimits_of_shape (J : Set) [precategory J] (C : Type (u+1)) [category.{u} C] :=
-  (has_colimit : Π F : J ⥤ C, has_colimit F)
+class has_colimits_of_shape (J : Set.{u'}) [precategory.{v'} J] (C : Type u) 
+  [category.{v} C] :=
+(has_colimit : Π F : J ⥤ C, has_colimit F)
 
 @[hott, priority 100, instance]
 def has_colimit_of_has_colimits_of_shape
-  {J : Set.{u}} [precategory.{u} J] (C : Type (u+1)) [category.{u} C] 
+  {J : Set.{u'}} [precategory.{v'} J] (C : Type u) [category.{v} C] 
   [H : has_colimits_of_shape J C] (F : J ⥤ C) : has_colimit F :=
 has_colimits_of_shape.has_colimit F
 
 @[hott]
-class has_colimits (C : Type (u+1)) [category.{u} C] :=
+class has_colimits (C : Type u) [category.{v} C] :=
   (has_colimit_of_shape : Π (J : Set.{u}) [precategory.{u} J], has_colimits_of_shape J C )
 
 @[hott, instance]
-def has_colimit_of_has_colimits (C : Type (u+1)) [category.{u} C] [H : has_colimits C] 
+def has_colimit_of_has_colimits (C : Type u) [category.{v} C] [H : has_colimits C] 
   {J : Set.{u}} [precategory.{u} J] (F : J ⥤ C) : has_colimit F :=
 have H' : has_colimits_of_shape J C, from has_colimits.has_colimit_of_shape C J,  
 @has_colimit_of_has_colimits_of_shape _ _ C _ H' F
