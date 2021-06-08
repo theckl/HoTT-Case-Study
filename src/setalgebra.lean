@@ -25,9 +25,9 @@ assume BC CB, (sset_eq_iff_inclusion B C).2 ⟨BC, CB⟩
 namespace subset
 variables {A : Set}
 
-@[hott]
+@[hott, reducible]
 protected def inter (S₁ S₂ : Subset A) : Subset A :=
-{a ∈ A | a ∈ S₁ and a ∈ S₂ }
+{a ∈ A | a ∈ S₁ and a ∈ S₂}
 
 @[hott, instance]
 def subset_inter : has_inter (Subset A) :=
@@ -48,8 +48,10 @@ def inter.symm (S₁ S₂ : Subset A) : S₁ ∩ S₂ = S₂ ∩ S₁ :=
   (sset_eq_iff_inclusion _ _).2 ⟨ss1, ss2⟩
 
 @[hott]
-def inter_sset_l (U V : Subset A) : U ∩ V ⊆ U :=
-  assume a el, ((pred_elem a).1 el).1
+def inter_sset_l (U V : Subset A) : subset.inter U V ⊆ U :=
+  assume a el, 
+  have p : a ∈ U and a ∈ V, from (pred_elem a).1 el,
+  p.1
 
 @[hott]
 def inter_sset_r (U V : Subset A) : U ∩ V ⊆ V :=
