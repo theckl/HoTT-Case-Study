@@ -1,6 +1,6 @@
 import topology.basic categories.cat_limits categories.cat_colimits
 
-universes u v w
+universes v v' u u' w w'
 hott_theory
 
 namespace hott
@@ -23,7 +23,7 @@ instance topological_space_unbundled (X : Top) :
 
 namespace topology
 
-variables (X : Top.{u})
+variables (X : Top.{w})
 
 /- The set of open sets in a topological space and its lattice structure. -/
 @[hott]
@@ -32,7 +32,7 @@ def open_sets : Subset (𝒫 ↥X) :=
 
 @[hott]
 instance Subset_Set_to_Set : has_coe_to_sort (Subset (𝒫 ↥X)) :=
-  has_coe_to_sort.mk (Type (u+1)) (λ T, T.carrier)
+  has_coe_to_sort.mk (Type (w+1)) (λ T, T.carrier)
 
 @[hott]
 protected def open_sets.inter (U V : open_sets X) : open_sets X :=
@@ -40,7 +40,7 @@ have U_is_open : is_open ↥X U, from ulift.down U.2,
 have V_is_open : is_open ↥X V, from ulift.down V.2,
 have inter_is_open : prop_ulift (is_open ↥X (↑U ∩ ↑V)), from 
   ulift.up (is_open_inter ↥X U_is_open V_is_open),
-elem_pred.{u+1} (↑U ∩ ↑V) inter_is_open  
+elem_pred.{w+1} (↑U ∩ ↑V) inter_is_open  
 
 @[hott, instance]
 def open_sets_inter : has_inter (open_sets X) :=
@@ -52,7 +52,7 @@ have U_i_is_open : ∀ i : I, is_open ↥X (f i), from
   assume i, ulift.down (f i).2, 
 have open_union : is_open ↥X (⋃ᵢ ↑f), from
   is_open_iUnion ↥X U_i_is_open,  
-elem_pred.{u+1} (⋃ᵢ ↑f) (ulift.up open_union)    
+elem_pred.{w+1} (⋃ᵢ ↑f) (ulift.up open_union)    
 
 @[hott]
 def open_sets_incl_to_hom {U V : open_sets X} (i : @is_subset_of ↥X ↑U ↑V) : 
@@ -85,60 +85,58 @@ begin intros U el, exact (pred_elem U).2 (((pred_elem U).1 el).1) end
 
 @[hott]
 def nbhds_opens_inc_functor (x : X.carrier) : (nbhds X x)ᵒᵖ ⥤ (open_sets X)ᵒᵖ :=
-  @opposite_functor (nbhds X x) (open_sets X) _ _ (functor_subsets_precat (nbhds_opens_inc X x))
+  opposite_functor (functor_subsets_precat (nbhds_opens_inc X x))
 
 /- As a subset of the power set the set of open sets (and sets of neighborhoods) automatically
    receive a precategory instance. Therefore, we can define a presheaf over a 
    topological space with values in a category `C` and its stalks as follows: -/
 @[hott]
-def presheaf (C : Type (u+1)) [category.{u} C] := (open_sets X)ᵒᵖ ⥤ C
-
-set_option pp.universes true
+def presheaf (C : Type u') [category.{v'} C] := (open_sets X)ᵒᵖ ⥤ C
 
 @[hott]
-def stalk (C : Type (u+1)) [category.{u} C] [H : has_colimits C] (F : presheaf X C) (x : X.carrier) : 
-  C :=
-have G : (nbhds X x)ᵒᵖ ⥤ C, from nbhds_opens_inc_functor X x ⋙ F,  
-@colimit (op_Set (nbhds X x).carrier) 
-  (@precategory.opposite _ (@subset_precat_precat _ power_set_precat (nbhds X x))) 
-  _ _ G (@has_colimit_of_has_colimits C _ H _ _ _)
+def stalk (C : Type u') [category.{v'} C] [H : has_colimits C] (F : presheaf X C) 
+  (x : X.carrier) : C :=
+have G : (nbhds X x)ᵒᵖ ⥤ C, from nbhds_opens_inc_functor X x ⋙ F, 
+@colimit (op_Set (nbhds X x).carrier) _ _ _ G (@has_colimit_of_has_colimits C _ H _ _ _) 
 
 /- The product of the sections of a presheaf over a family of open sets. -/
 @[hott]
-def pi_opens {C : Type (u+1)} [category.{u} C] [has_products C] 
-  {I : Set} (U : I -> open_sets X) (F : presheaf X C) : C :=   
+def pi_opens {C : Type u} [category.{v} C] [has_products.{v u w'} C] 
+  {I : Set.{w'}} (U : I -> open_sets X) (F : presheaf X C) : C :=   
 ∏ (λ i : I, F.obj (op (U i)))
 
 /- The product of the sections of a presheaf over the pairwise intersections 
    of a family of open sets.-/
 @[hott]
-def pi_inters {C : Type (u+1)} [category.{u} C] [has_products C]
-  {I : Set} (U : I -> open_sets X) (F : presheaf X C) : C :=  
+def pi_inters {C : Type u} [category.{v} C] [has_products.{v u w'} C]
+  {I : Set.{w'}} (U : I -> open_sets X) (F : presheaf X C) : C :=  
 ∏ (λ p : ↥(I × I), F.obj (op (U p.1 ∩ U p.2)))
 
 @[hott, reducible]
-def left_res {C : Type (u+1)} [category.{u} C] [has_products C]
-  {I : Set} (U : I -> open_sets X) (F : presheaf X C) : 
+def left_res {C : Type u} [category.{v} C] [has_products.{v u w'} C]
+  {I : Set.{w'}} (U : I -> open_sets X) (F : presheaf X C) : 
   (pi_opens X U F) ⟶ (pi_inters X U F) :=
 pi.lift C (λ p : ↥(I × I), pi.π _ p.1 ≫ 
                         F.map (hom_op (opens.inf_le_l X (U p.1) (U p.2))))
 
 @[hott, reducible]
-def right_res {C : Type (u+1)} [category.{u} C] [has_products C]
-  {I : Set} (U : I -> open_sets X) (F : presheaf X C) : 
+def right_res {C : Type u} [category.{v} C] [has_products.{v u w'} C]
+  {I : Set.{w'}} (U : I -> open_sets X) (F : presheaf X C) : 
   (pi_opens X U F) ⟶ (pi_inters X U F) :=
 pi.lift C (λ p : ↥I × I, pi.π _ p.2 ≫ 
                        F.map (hom_op (opens.inf_le_r X (U p.1) (U p.2))))
 
 @[hott, reducible]
-def res {C : Type (u+1)} [category.{u} C] [has_products C]
+def res {C : Type u} [category.{v} C] [has_products C]
   {I : Set} (U : I -> open_sets X) (F : presheaf X C) :
   (F.obj (op (open_sets.iUnion X U))) ⟶ (pi_opens X U F) :=  
 pi.lift C (λ i : I, F.map (hom_op (opens.le_union X U i))) 
 
+#print res
+
 @[hott]
-def w_res {C : Type (u+1)} [category.{u} C] [has_products C]
-  {I : Set.{u}} (U : I -> open_sets X) (F : presheaf X C) :
+def w_res {C : Type u} [category.{v} C] [has_products.{v u w} C]
+  {I : Set.{w}} (U : I -> open_sets X) (F : presheaf X C) :
   (res X U F) ≫ (left_res X U F) = (res X U F) ≫ (right_res X U F) :=  
 have left_eq : Π p : ↥(I × I), ((res X U F) ≫ (left_res X U F)) ≫ pi.π _ p =
   F.map (hom_op (opens.inf_le_l X (U p.1) (U p.2) ≫ opens.le_union X U p.1)), from
@@ -202,29 +200,29 @@ calc (res X U F) ≫ (left_res X U F) = pi.lift C (λ p : ↥I × I,
   are the long names. -/
 
 @[hott]
-def sheaf_condition_equalizer_products.fork {C : Type (u+1)} [category.{u} C] 
+def sheaf_condition_equalizer_products.fork {C : Type u} [category.{v} C] 
   [has_products C] {I : Set} (U : I -> open_sets X) 
   (F : presheaf X C) : fork (left_res X U F) (right_res X U F) :=
 fork.of_i _ _ (res X U F) (w_res X U F)
 
 @[hott]
-def sheaf_condition {C : Type (u+1)} [category.{u} C] [has_products C] (F : presheaf X C) := Π {I : Set} (U : I -> open_sets X), 
+def sheaf_condition {C : Type u} [category.{v} C] [has_products.{v u w} C] (F : presheaf X C) := Π {I : Set} (U : I -> open_sets X), 
   is_limit (sheaf_condition_equalizer_products.fork X U F)
 
 @[hott]
-structure sheaf (C : Type (u+1)) [category.{u} C] [has_products C] :=
+structure sheaf (C : Type u) [category.{v} C] [has_products.{v u w} C] :=
 (presheaf : presheaf X C)
 (sheaf_condition : sheaf_condition X presheaf)
 
 end topology
 
 @[hott]
-structure PresheafedSpace (C : Type (u+1)) [category.{u} C] :=
+structure PresheafedSpace (C : Type u) [category.{v} C] :=
   (carrier : Top)
   (presheaf : topology.presheaf carrier C)
     
 @[hott]
-structure SheafedSpace (C : Type (u+1)) [category.{u} C] [has_products C] extends 
+structure SheafedSpace (C : Type u) [category.{v} C] [has_products C] extends 
   PresheafedSpace C := 
   (sheaf_condition : topology.sheaf_condition carrier presheaf)   
 
