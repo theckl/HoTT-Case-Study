@@ -1,7 +1,7 @@
 import hott.algebra.ring set_theory categories.examples categories.cat_limits pathover2
        hott.types.prod rings.basic
 
-universes u v w
+universes v v' u u' w
 hott_theory
 
 namespace hott
@@ -9,6 +9,8 @@ open hott.is_trunc hott.is_equiv hott.algebra hott.set subset categories hott.tr
      hott.category_theory.limits hott.sigma hott.prod 
 
 namespace algebra
+
+set_option pp.universes true
 
 /-  The category `CommRing` has all limits. 
 
@@ -19,7 +21,7 @@ namespace algebra
    - The legs and lifts are ring homomorphisms because the subring embedding is a ring 
      homomorphism and the projections from and the lift to product rings are ring homomorphisms. -/
 @[hott, reducible]
-def CommRing_product_str {J : Set.{v}} (F : J -> CommRing.{v}) : 
+def CommRing_product_str {J : Set.{u'}} (F : J -> CommRing.{u}) : 
   comm_ring (Sections (λ j : J, (F j).carrier)) :=
 begin  
   fapply comm_ring_mk,
@@ -51,11 +53,13 @@ begin
 end    
 
 @[hott]
-def CommRing_product {J : Set.{v}} (F : J -> CommRing.{v}) : CommRing :=
+def CommRing_product {J : Set.{u'}} (F : J -> CommRing.{u}) : CommRing :=
   CommRing.mk (Sections (λ j : J, (F j).carrier)) (CommRing_product_str F)
 
+#print CommRing_product
+
 @[hott]
-def CommRing_product_proj_hom {J : Set.{v}} (F : J -> CommRing.{v}) : 
+def CommRing_product_proj_hom {J : Set.{u'}} (F : J -> CommRing.{u}) : 
   ∀ j : J, comm_ring_str.H (CommRing_product_str F) (F j).str (λ u, u j) :=
 begin  
   intro j, fapply is_ring_hom.mk, 
@@ -66,12 +70,12 @@ begin
 end
 
 @[hott]
-def ring_limit_pred {J : Set.{v}} [precategory.{v} J] (F : J ⥤ CommRing.{v}) : 
+def ring_limit_pred {J : Set.{u}} [precategory.{v} J] (F : J ⥤ CommRing.{v}) : 
   Setpred (CommRing_product F.obj).carrier :=
 set_limit_pred (forget F)  
 
 @[hott, instance]
-def ring_pred_is_closed {J : Set.{v}} [precategory.{v} J] (F : J ⥤ CommRing.{v}) :
+def ring_pred_is_closed {J : Set.{u}} [precategory.{v} J] (F : J ⥤ CommRing.{v}) :
   ring_pred_closed (ring_limit_pred F) :=
 begin
   fapply ring_pred_closed.mk, 
