@@ -19,7 +19,7 @@ namespace categories
 
 /-- A 'notation typeclass' on the way to defining a precategory. -/
 @[hott]
-class has_hom (obj : Type u) : Type (max u (v + 1)) :=
+class has_hom (obj : Type u) : Type (max u (v+1)) :=
   (hom : obj → obj → Set.{v})
 
 infixr ` ⟶ `:10 := has_hom.hom  -- type as \h
@@ -285,7 +285,7 @@ end
    the [HoTT-Book], Section 9.8.  -/
 @[hott]
 structure std_structure_on (C : Type u) [category.{v} C] :=
-  (P : C -> Type u)
+  (P : C -> Type w)
   (H : Π {x y : C} (α : P x) (β : P y) (f : x ⟶ y), trunctype.{v} -1)
   (id_H : ∀ {x : C} (α : P x), H α α (𝟙 x))
   (comp_H : ∀ {x y z : C} (α : P x) (β : P y) (γ : P z) (f : x ⟶ y) (g : y ⟶ z), 
@@ -506,10 +506,8 @@ begin
     fapply iso.mk,
     { exact elem_pred (iso_H.1.hom) (iso_H.2.1) },
     { exact elem_pred (iso_H.1.inv) (iso_H.2.2) },
-    { apply hom_eq_C_std _ _, repeat { rwr comp_hom_std_C }, hsimp, 
-      change _ = 𝟙 ↑y, rwr iso_H.1.r_inv },
-    { apply hom_eq_C_std _ _, repeat { rwr comp_hom_std_C }, hsimp, 
-      change _ = 𝟙 ↑x, rwr iso_H.1.l_inv } },
+    { apply hom_eq_C_std _ _, repeat { rwr comp_hom_std_C }, hsimp, rwr iso_H.1.r_inv },
+    { apply hom_eq_C_std _ _, repeat { rwr comp_hom_std_C }, hsimp, rwr iso_H.1.l_inv } },
   { fapply adjointify,
     /- Now we define `G : (x ≅ y) -> (Σ (f : a ≅ b), std_str.H α β f.hom and std_str.H β α f.inv)`-/
     { intro f, 
