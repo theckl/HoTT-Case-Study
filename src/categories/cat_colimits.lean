@@ -150,11 +150,11 @@ has_colimits_of_shape.has_colimit F
 
 @[hott]
 class has_colimits (C : Type u) [category.{v} C] :=
-  (has_colimit_of_shape : Π (J : Set.{u}) [precategory.{u} J], has_colimits_of_shape J C )
+  (has_colimit_of_shape : Π (J : Set.{u'}) [precategory.{v'} J], has_colimits_of_shape J C )
 
 @[hott, instance]
-def has_colimit_of_has_colimits (C : Type u) [category.{v} C] [H : has_colimits C] 
-  {J : Set.{u}} [precategory.{u} J] (F : J ⥤ C) : has_colimit F :=
+def has_colimit_of_has_colimits (C : Type u) [category.{v} C] [H : has_colimits.{v u v' u'} C] 
+  {J : Set.{u'}} [precategory.{v'} J] (F : J ⥤ C) : has_colimit F :=
 have H' : has_colimits_of_shape J C, from has_colimits.has_colimit_of_shape C J,  
 @has_colimit_of_has_colimits_of_shape _ _ C _ H' F
 
