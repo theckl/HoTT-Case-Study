@@ -11,6 +11,8 @@ open hott.is_trunc hott.is_equiv hott.algebra hott.set subset categories hott.tr
 
 namespace algebra
 
+set_option pp.universes true
+
 /- `comm_ring R` is a standard structure on a set `R`:
 
    Homomorphisms are maps between sets with a `comm_ring` structure preserving addition and 
@@ -21,10 +23,10 @@ namespace algebra
    
    Since the set structure underlying `comm_ring` is not bundled we need a variation of `comm_ring`. -/
 @[hott]
-def comm_ring_set (X : Set.{u}) := comm_ring.{u} X
+def comm_ring_set (X : Set) := comm_ring X
 
 @[hott]
-instance {X : Set.{u}} : has_coe (comm_ring_set X) (comm_ring X) :=
+instance {X : Set} : has_coe (comm_ring_set X) (comm_ring X) :=
   ⟨λ α : comm_ring_set X, α ⟩
 
 @[hott]
@@ -117,7 +119,7 @@ def comp_ring_hom_set {R S T : Set} {α : comm_ring_set R} {β : comm_ring_set S
    etc. The problem is that different additions will appear for the same set `X`;
    a symbol like `+ₐ` would be better, but cannot be obtained from `has_add X`. -/
 @[hott]
-structure comm_ring_ops (X : Set.{u}) :=
+structure comm_ring_ops (X : Set) :=
   (add : X -> X -> X)
   (zero : X)
   (neg : X -> X)
@@ -125,11 +127,11 @@ structure comm_ring_ops (X : Set.{u}) :=
   (one : X)
 
 @[hott, hsimp, reducible]
-def comm_ring_to_ops {X : Set.{u}} (γ : comm_ring X) : comm_ring_ops X :=
+def comm_ring_to_ops {X : Set} (γ : comm_ring X) : comm_ring_ops X :=
   comm_ring_ops.mk γ.add γ.zero γ.neg γ.mul γ.one
 
 @[hott]
-structure comm_ring_laws {X : Set.{u}} (α : comm_ring_ops X) :=
+structure comm_ring_laws {X : Set} (α : comm_ring_ops X) :=
   (add_assoc : Π (a b c : X), α.add (α.add a b) c = α.add a (α.add b c)) 
   (zero_add : Π a : X, α.add α.zero a = a)
   (add_zero : Π a : X, α.add a α.zero = a)
@@ -158,7 +160,7 @@ have H : ∀ β₁ β₂ : comm_ring_laws α, β₁ = β₂, from
 is_prop.mk H  
 
 @[hott, hsimp]
-def comm_ring_to_laws {X : Set.{u}} (γ : comm_ring X) : 
+def comm_ring_to_laws {X : Set} (γ : comm_ring X) : 
   comm_ring_laws (comm_ring_to_ops γ) :=
 let α := comm_ring_to_ops γ in
 have add_eq : α.add = γ.add, from rfl, 
@@ -179,17 +181,17 @@ begin
   { rwr mul_eq, exact γ.mul_comm },
   { rwr mul_eq, rwr add_eq, exact γ.left_distrib },
   { rwr mul_eq, rwr add_eq, exact γ.right_distrib }
-end
+end 
 
 @[hott, hsimp]
-def comm_ring_mk {X : Set.{u}} (α : comm_ring_ops X) (β : comm_ring_laws α) :
+def comm_ring_mk {X : Set} (α : comm_ring_ops X) (β : comm_ring_laws α) :
   comm_ring X :=
 comm_ring.mk X.struct α.add β.add_assoc α.zero β.zero_add β.add_zero α.neg β.neg_add
                β.add_comm α.mul β.mul_assoc α.one β.one_mul β.mul_one 
                β.right_distrib β.left_distrib β.mul_comm
 
 @[hott]
-def comm_ring_mk_eta {X : Set.{u}} : Π (γ : comm_ring X), 
+def comm_ring_mk_eta {X : Set} : Π (γ : comm_ring X), 
   γ = comm_ring_mk (comm_ring_to_ops γ) (comm_ring_to_laws γ) := 
 assume γ, 
 have is_prop_struct : is_prop (is_set X), from is_prop_is_trunc 0 X,  
@@ -200,7 +202,7 @@ begin
 end                     
 
 @[hott]
-def comm_ring_ops_eq_to_eq {X : Set.{u}} (γ₁ γ₂ : comm_ring X) :
+def comm_ring_ops_eq_to_eq {X : Set} (γ₁ γ₂ : comm_ring X) :
   comm_ring_to_ops γ₁ = comm_ring_to_ops γ₂ -> γ₁ = γ₂ :=
 let α₁ := comm_ring_to_ops γ₁, α₂ := comm_ring_to_ops γ₂,
     β₁ := comm_ring_to_laws γ₁, β₂ := comm_ring_to_laws γ₂ in 
@@ -209,7 +211,7 @@ let q := pathover_of_tr_eq (is_prop.elim (p ▸ β₁) β₂) in
 (comm_ring_mk_eta γ₁) ⬝ (apd011 comm_ring_mk p q) ⬝ (comm_ring_mk_eta γ₂)⁻¹
 
 @[hott]
-def comm_ring_ops_refl_to_refl {X : Set.{u}} (γ : comm_ring X) : 
+def comm_ring_ops_refl_to_refl {X : Set} (γ : comm_ring X) : 
   comm_ring_ops_eq_to_eq γ γ (refl (comm_ring_to_ops γ)) = refl γ :=
 let α := comm_ring_to_ops γ, β := comm_ring_to_laws γ, 
     p := idpath α, q := pathover_of_tr_eq (is_prop.elim (p ▸ β) β), q' := idpatho β in     
@@ -226,7 +228,7 @@ calc comm_ring_ops_eq_to_eq γ γ (refl α) =
      ... = idp : con.right_inv _     
 
 @[hott]
-def comm_ring_hom.map_neg {X Y : Set.{u}} {γ₁ : comm_ring.{u} X} {γ₂ : comm_ring.{u} Y} 
+def comm_ring_hom.map_neg {X Y : Set} {γ₁ : comm_ring X} {γ₂ : comm_ring Y} 
   {f : X -> Y} (hom_str : is_ring_hom γ₁ γ₂ f) : ∀ a : X, f (-a) = -(f a) :=
 assume a,  
 calc f (-a) = 0 + f (-a) : (@comm_ring.zero_add _ γ₂ (f (-a)))⁻¹
@@ -242,14 +244,14 @@ calc f (-a) = 0 + f (-a) : (@comm_ring.zero_add _ γ₂ (f (-a)))⁻¹
      ... = -(f a) : @comm_ring.add_zero _ γ₂ (-(f a))   
 
 @[hott]
-def comm_ring_hom.id_neg_refl {X : Set.{u}} {γ : comm_ring X} :
+def comm_ring_hom.id_neg_refl {X : Set} {γ : comm_ring X} :
   comm_ring_hom.map_neg (id_ring_hom γ) = λ a : X, idpath (-a) :=
 have H : ∀ a : X, comm_ring_hom.map_neg (id_ring_hom γ) a = idpath (-a), from 
   assume a, is_set.elim _ _,  
-eq_of_homotopy H
+eq_of_homotopy.{u u} H
 
 @[hott]
-def ring_hom_is_std_str  {R : Set.{u}} (α β : comm_ring_set.{u} R) : 
+def ring_hom_is_std_str {R : Set.{u}} (α β : comm_ring_set R) : 
   (ring_hom_prop α β (𝟙 R) × ring_hom_prop β α (𝟙 R)) ≃ α = β :=
 begin
   fapply equiv.mk, 
@@ -291,7 +293,7 @@ begin
     { intro H, exact is_prop.elim _ _ } }
 end    
 
-/- The category of commutative rings, as the category of `comm_ring` structures on sets -/
+/- The category of commutative rings, as the category of `comm_ring`-structures on sets -/
 @[hott]
 def comm_ring_str : std_structure_on Set.{u} :=
   std_structure_on.mk comm_ring_set @ring_hom_prop @id_ring_hom_set @comp_ring_hom_set 
@@ -301,16 +303,16 @@ def comm_ring_str : std_structure_on Set.{u} :=
 def CommRing := std_structure comm_ring_str
 
 @[hott]
-def CommRing.mk (carrier : Set.{u}) (comm_ring_str : comm_ring carrier) : CommRing :=
+def CommRing.mk (carrier : Set) (comm_ring_str : comm_ring carrier) : CommRing :=
   std_structure.mk carrier comm_ring_str
 
 @[hott]
-instance CommRing_to_Set : has_coe CommRing.{u} Set.{u} :=
+instance CommRing_to_Set : has_coe CommRing Set :=
   ⟨λ R : CommRing, R.carrier⟩
 
 @[hott]
 instance CommRing_to_Type : has_coe_to_sort CommRing.{u} :=
-  has_coe_to_sort.mk (Type u) (λ R : CommRing, ↥R.carrier)  
+  has_coe_to_sort.mk (Type u) (λ R : CommRing.{u}, R.carrier)  
 
 @[hott]
 instance (R : CommRing) : comm_ring ↥R.carrier := R.str  
@@ -421,7 +423,7 @@ begin
 end
 
 @[hott]
-def is_unit {R : CommRing.{u}} (r : R) : trunctype -1 :=
+def is_unit {R : CommRing} (r : R) : trunctype -1 :=
   trunctype.mk (Σ (u : units R), r = u) (unique_mul_inv r)
 
 @[hott]
