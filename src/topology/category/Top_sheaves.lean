@@ -132,8 +132,6 @@ def res {C : Type u} [category.{v} C] [has_products C]
   (F.obj (op (open_sets.iUnion X U))) ⟶ (pi_opens X U F) :=  
 pi.lift C (λ i : I, F.map (hom_op (opens.le_union X U i))) 
 
-#print res
-
 @[hott]
 def w_res {C : Type u} [category.{v} C] [has_products.{v u w} C]
   {I : Set.{w}} (U : I -> open_sets X) (F : presheaf X C) :
