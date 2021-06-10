@@ -10,6 +10,8 @@ open hott.is_trunc hott.is_equiv hott.algebra hott.set subset categories hott.tr
 
 namespace algebra
 
+set_option pp.universes true
+
 /- We now show that the category of commutative rings has all colimits. 
    
    To construct colimits of diagrams of rings we follow the strategy in 
@@ -22,7 +24,7 @@ namespace algebra
    the quotient by the compatibility relations - it adds an additional layer to calculations
    and proofs, without shortening the construction. -/
 @[hott]
-inductive expr {J : Set.{v}} [precategory.{v} J] (F : J ⥤ CommRing.{v}) : Type v
+inductive expr {J : Set.{v+1}} [precategory.{v+1} J] (F : J ⥤ CommRing.{v}) : Type (v+1)
 -- one free variable $x_{j,r}$ for each element r in each ring of the diagram
 | x_ : Π (j : J) (r : F.obj j), expr
 -- Then one generator for each operation
@@ -36,8 +38,8 @@ inductive expr {J : Set.{v}} [precategory.{v} J] (F : J ⥤ CommRing.{v}) : Type
   requires a lot of case distinction. There should be potential for automatisation; the
   `injection` tactic may provide short-cuts. -/
 @[hott, reducible]
-def code_expr {J : Set.{v}} [precategory.{v} J] (F : J ⥤ CommRing.{v}) : 
-  expr F -> expr F -> Type v 
+def code_expr {J : Set.{v+1}} [precategory.{v+1} J] (F : J ⥤ CommRing.{v}) : 
+  expr F -> expr F -> Type (v+1) 
 | (expr.x_ j r) (expr.x_ k s) := Σ (p : j = k), (r =[p; λ i : J, F.obj i] s)
 | (expr.zero _) (expr.zero _) := One
 | (expr.one _) (expr.one _) := One
@@ -47,8 +49,8 @@ def code_expr {J : Set.{v}} [precategory.{v} J] (F : J ⥤ CommRing.{v}) :
 | _ _ := Zero 
 
 @[hott, reducible]
-def code_expr.rec {J : Set.{v}} [precategory.{v} J] (F : J ⥤ CommRing.{v}) 
-  {P : Type v -> Type v} (H1 : Π j k r s, P (code_expr F (expr.x_ j r) (expr.x_ k s))) 
+def code_expr.rec {J : Set.{v+1}} [precategory.{v+1} J] (F : J ⥤ CommRing.{v}) 
+  {P : Type (v+1) -> Type (v+1)} (H1 : Π j k r s, P (code_expr F (expr.x_ j r) (expr.x_ k s))) 
   (H2 : P One) (H3 : P Zero) 
   (H4 : Π {x y}, P (code_expr F x y) -> P (code_expr F (expr.neg x) (expr.neg y)))
   (H5 : Π {x₁ x₂ y₁ y₂}, P (code_expr F x₁ y₁) -> P (code_expr F x₂ y₂) ->
@@ -65,7 +67,7 @@ begin
 end  
 
 @[hott, reducible]
-def code_fun {J : Set.{v}} [precategory.{v} J] (F : J ⥤ CommRing.{v}) : 
+def code_fun {J : Set.{v+1}} [precategory.{v+1} J] (F : J ⥤ CommRing.{v}) : 
   Π (x : expr F), code_expr F x x :=
 begin 
   fapply expr.rec, 
@@ -78,12 +80,12 @@ begin
 end  
 
 @[hott, reducible]
-def encode_expr {J : Set.{v}} [precategory.{v} J] (F : J ⥤ CommRing.{v}) :
+def encode_expr {J : Set.{v+1}} [precategory.{v+1} J] (F : J ⥤ CommRing.{v}) :
   Π (x y : expr F), (x = y) -> code_expr F x y :=
 assume x y p, p ▸ (code_fun F x)
 
 @[hott, reducible]
-def decode_expr {J : Set.{v}} [precategory.{v} J] (F : J ⥤ CommRing.{v}) :
+def decode_expr {J : Set.{v+1}} [precategory.{v+1} J] (F : J ⥤ CommRing.{v}) :
   Π (x y : expr F), (code_expr F x y) -> x = y :=
 begin
   intro x, hinduction x; intro y; hinduction y; intro c,
@@ -97,7 +99,7 @@ begin
 end    
 
 @[hott, reducible]
-def expr_eq_equiv_code {J : Set.{v}} [precategory.{v} J] (F : J ⥤ CommRing.{v}) :
+def expr_eq_equiv_code {J : Set.{v+1}} [precategory.{v+1} J] (F : J ⥤ CommRing.{v}) :
   Π (x y : expr F), (x = y) ≃ (code_expr F x y) := 
 have rinv : Π (x y : expr F) (c : code_expr F x y), 
               encode_expr F x y (decode_expr F x y c) = c, from
@@ -151,7 +153,7 @@ assume x y,
       (is_equiv.adjointify (encode_expr F x y) (decode_expr F x y) (rinv x y) (linv x y))         
 
 @[hott, instance]
-def is_set_expr {J : Set.{v}} [precategory.{v} J] (F : J ⥤ CommRing.{v}) : 
+def is_set_expr {J : Set.{v+1}} [precategory.{v+1} J] (F : J ⥤ CommRing.{v}) : 
   is_set (expr F) :=
 begin 
   apply is_trunc_succ_intro, intros x y, 
@@ -165,12 +167,12 @@ begin
 end     
 
 @[hott, reducible]
-def set_expr {J : Set.{v}} [precategory.{v} J] (F : J ⥤ CommRing.{v}) : Set.{v} :=
+def set_expr {J : Set.{v+1}} [precategory.{v+1} J] (F : J ⥤ CommRing.{v}) : Set.{v+1} :=
   Set.mk (expr F) (is_set_expr F)
 
 @[hott]
-inductive ring_colim_rel {J : Set.{v}} [precategory.{v} J] (F : J ⥤ CommRing.{v}) : 
-  expr F → expr F → Type v
+inductive ring_colim_rel {J : Set.{v+1}} [precategory.{v+1} J] (F : J ⥤ CommRing.{v}) : 
+  expr F → expr F → Type (v+1)
 -- Make it an equivalence relation:
 | refl : Π (x), ring_colim_rel x x
 | symm : Π (x y) (h : ring_colim_rel x y), ring_colim_rel y x
@@ -210,17 +212,17 @@ inductive ring_colim_rel {J : Set.{v}} [precategory.{v} J] (F : J ⥤ CommRing.{
                                             (expr.add (expr.mul x z) (expr.mul y z))   
 
 @[hott, reducible]
-def ring_colim_mere_rel {J : Set.{v}} [precategory.{v} J] (F : J ⥤ CommRing.{v}) : 
-  set_expr F → set_expr F → trunctype.{v} -1 :=
+def ring_colim_mere_rel {J : Set.{v+1}} [precategory.{v+1} J] (F : J ⥤ CommRing.{v}) : 
+  set_expr F → set_expr F → trunctype.{v+1} -1 :=
 λ x y : set_expr F, ∥ring_colim_rel F x y∥ 
 
 @[hott, instance]
-def rcm_rel_refl {J : Set.{v}} [precategory.{v} J] (F : J ⥤ CommRing.{v}) : 
+def rcm_rel_refl {J : Set.{v+1}} [precategory.{v+1} J] (F : J ⥤ CommRing.{v}) : 
   is_reflexive (λ x y : set_expr F, ring_colim_mere_rel F x y) :=
 begin apply is_reflexive.mk, intro x, exact tr (ring_colim_rel.refl x) end  
 
 @[hott, instance]
-def rcm_rel_symm {J : Set.{v}} [precategory.{v} J] (F : J ⥤ CommRing.{v}) : 
+def rcm_rel_symm {J : Set.{v+1}} [precategory.{v+1} J] (F : J ⥤ CommRing.{v}) : 
   is_symmetric (λ x y : set_expr F, ring_colim_mere_rel F x y) :=
 begin 
   apply is_symmetric.mk, intros x y, 
@@ -229,7 +231,7 @@ begin
 end 
 
 @[hott, instance]
-def rcm_rel_trans {J : Set.{v}} [precategory.{v} J] (F : J ⥤ CommRing.{v}) : 
+def rcm_rel_trans {J : Set.{v+1}} [precategory.{v+1} J] (F : J ⥤ CommRing.{v}) : 
   is_transitive (λ x y : set_expr F, ring_colim_mere_rel F x y) :=
 begin 
   apply is_transitive.mk, intros x y z, 
@@ -240,7 +242,7 @@ begin
 end 
 
 @[hott, instance]
-def rcm_rel_equiv {J : Set.{v}} [precategory.{v} J] (F : J ⥤ CommRing.{v}) : 
+def rcm_rel_equiv {J : Set.{v+1}} [precategory.{v+1} J] (F : J ⥤ CommRing.{v}) : 
   is_equivalence (λ x y : set_expr F, ring_colim_mere_rel F x y) :=
 begin 
   apply is_equivalence.mk, 
@@ -248,11 +250,11 @@ begin
 end  
 
 @[hott]
-def ring_colim_set {J : Set.{v}} [precategory.{v} J] (F : J ⥤ CommRing.{v}) : Set.{v} :=
+def ring_colim_set {J : Set.{v+1}} [precategory.{v+1} J] (F : J ⥤ CommRing.{v}) : Set.{v+1} :=
   set_quotient (ring_colim_mere_rel F)
 
 @[hott, reducible]
-def ring_colim_ops {J : Set.{v}} [precategory.{v} J] (F : J ⥤ CommRing.{v}) : 
+def ring_colim_ops {J : Set.{v+1}} [precategory.{v+1} J] (F : J ⥤ CommRing.{v}) : 
   comm_ring_ops (ring_colim_set F) :=
 begin
   let R := ring_colim_set F, let rel := ring_colim_rel F, let mrel := ring_colim_mere_rel F,
@@ -283,7 +285,7 @@ begin
 end     
 
 @[hott]
-def ring_colim_str {J : Set.{v}} [precategory.{v} J] (F : J ⥤ CommRing.{v}) : 
+def ring_colim_str {J : Set.{v+1}} [precategory.{v+1} J] (F : J ⥤ CommRing.{v}) : 
   comm_ring (ring_colim_set F) :=
 begin 
   let R := ring_colim_set F, let rel := ring_colim_rel F, let mrel := ring_colim_mere_rel F,
@@ -315,7 +317,7 @@ begin
 end  
 
 @[hott, reducible]
-def ring_cocone {J : Set.{v}} [precategory.{v} J] (F : J ⥤ CommRing.{v}) : cocone F :=
+def ring_cocone {J : Set.{v+1}} [precategory.{v+1} J] (F : J ⥤ CommRing.{v}) : cocone F :=
 begin
   let mR := ring_colim_mere_rel F,
   fapply cocone.mk,
@@ -338,7 +340,7 @@ end
    diagram we need a variant of the left-adjointness of the free ring construction to the 
    forgetful functor. -/
 @[hott, reducible]
-def ring_cocone_desc {J : Set.{v}} [precategory.{v} J] {F : J ⥤ CommRing.{v}} (S : cocone F) :
+def ring_cocone_desc {J : Set.{v+1}} [precategory.{v+1} J] {F : J ⥤ CommRing.{v}} (S : cocone F) :
   (ring_cocone F).X ⟶ S.X :=
 begin
   fapply elem_pred, 
@@ -376,7 +378,7 @@ begin
 end       
 
 @[hott, reducible]
-def ring_cocone_is_colimit {J : Set.{v}} [precategory.{v} J] (F : J ⥤ CommRing.{v}) : 
+def ring_cocone_is_colimit {J : Set.{v+1}} [precategory.{v+1} J] (F : J ⥤ CommRing.{v}) : 
   is_colimit (ring_cocone F) :=
 begin 
   fapply is_colimit.mk, 
@@ -411,25 +413,23 @@ begin
 end 
 
 @[hott, reducible]
-def ring_colimit_cocone {J : Set.{v}} [precategory.{v} J] (F : J ⥤ CommRing.{v}) : 
+def ring_colimit_cocone {J : Set.{v+1}} [precategory.{v+1} J] (F : J ⥤ CommRing.{v}) : 
   colimit_cocone F :=
 colimit_cocone.mk (ring_cocone F) (ring_cocone_is_colimit F)
 
 @[hott, instance]
-def ring_has_colimit {J : Set.{v}} [precategory.{v} J] (F : J ⥤ CommRing.{v}) : has_colimit F :=
-  has_colimit.mk (ring_colimit_cocone F)
+def ring_has_colimit {J : Set.{v+1}} [precategory.{v+1} J] (F : J ⥤ CommRing.{v}) : 
+  has_colimit F :=
+has_colimit.mk (ring_colimit_cocone F)
 
 @[hott, instance]
-def ring_has_colimits_of_shape (J : Set.{v}) [precategory.{v} J] : 
+def ring_has_colimits_of_shape (J : Set.{v+1}) [precategory.{v+1} J] : 
   has_colimits_of_shape J CommRing.{v} :=
 has_colimits_of_shape.mk (λ F, ring_has_colimit F) 
 
 @[hott, instance]
 def ring_has_colimits : has_colimits CommRing.{v} :=
   has_colimits.mk (λ J pJ, @ring_has_colimits_of_shape J pJ)
-
-set_option pp.universes true
-#print ring_has_colimits
 
 end algebra
 
