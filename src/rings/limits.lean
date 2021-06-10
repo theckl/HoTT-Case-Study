@@ -10,8 +10,6 @@ open hott.is_trunc hott.is_equiv hott.algebra hott.set subset categories hott.tr
 
 namespace algebra
 
-set_option pp.universes true
-
 /-  The category `CommRing` has all limits. 
 
    To prove this we use the criterion in [cat_limits], for which we need to show the following:
@@ -21,7 +19,7 @@ set_option pp.universes true
    - The legs and lifts are ring homomorphisms because the subring embedding is a ring 
      homomorphism and the projections from and the lift to product rings are ring homomorphisms. -/
 @[hott, reducible]
-def CommRing_product_str {J : Set.{u'}} (F : J -> CommRing.{u}) : 
+def CommRing_product_str {J : Set.{u}} (F : J -> CommRing.{u}) : 
   comm_ring (Sections (λ j : J, (F j).carrier)) :=
 begin  
   fapply comm_ring_mk,
@@ -53,14 +51,12 @@ begin
 end    
 
 @[hott]
-def CommRing_product {J : Set.{u'}} (F : J -> CommRing.{u}) : CommRing :=
-  CommRing.mk (Sections (λ j : J, (F j).carrier)) (CommRing_product_str F)
-
-#print CommRing_product
+def CommRing_product {J : Set.{u}} (F : J -> CommRing.{u}) : CommRing :=
+  CommRing.mk (Sections.{u u} (λ j : J, (F j).carrier)) (CommRing_product_str F)
 
 @[hott]
-def CommRing_product_proj_hom {J : Set.{u'}} (F : J -> CommRing.{u}) : 
-  ∀ j : J, comm_ring_str.H (CommRing_product_str F) (F j).str (λ u, u j) :=
+def CommRing_product_proj_hom {J : Set.{u}} (F : J -> CommRing.{u}) : 
+  ∀ j : J, comm_ring_str.H (CommRing_product_str F) (F j).str (λ s, s j) :=
 begin  
   intro j, fapply is_ring_hom.mk, 
   { refl }, 
@@ -70,39 +66,39 @@ begin
 end
 
 @[hott]
-def ring_limit_pred {J : Set.{u}} [precategory.{v} J] (F : J ⥤ CommRing.{v}) : 
+def ring_limit_pred {J : Set.{u}} [precategory.{u} J] (F : J ⥤ CommRing.{u}) : 
   Setpred (CommRing_product F.obj).carrier :=
-set_limit_pred (forget F)  
+set_limit_pred (forget.{u u u+1 u} F)  
 
 @[hott, instance]
-def ring_pred_is_closed {J : Set.{u}} [precategory.{v} J] (F : J ⥤ CommRing.{v}) :
+def ring_pred_is_closed {J : Set.{u}} [precategory.{u} J] (F : J ⥤ CommRing.{u}) :
   ring_pred_closed (ring_limit_pred F) :=
 begin
   fapply ring_pred_closed.mk, 
   { intros r s Hr Hs j k f, change (F.map f).1 (r j + s j) = (r k + s k : F.obj k),
     rwr (F.map f).2.map_add (r j) (s j), 
-    have pr : (F.map f).1 (r j) = r k, from Hr f, 
-    have ps : (F.map f).1 (s j) = s k, from Hs f,
+    have pr : (F.map f).1 (r j) = r k, from Hr j k f, 
+    have ps : (F.map f).1 (s j) = s k, from Hs j k f,
     rwr pr, rwr ps }, --closed_add
   { intros j k f, change (F.map f).1 0 = (0 : F.obj k), rwr (F.map f).2.map_zero }, 
       --closed_zero
   { intros r Hr j k f, change (F.map f).1 (-(r j)) = (-(r k) : F.obj k),
     rwr comm_ring_hom.map_neg (F.map f).2 (r j), 
-    have pr : (F.map f).1 (r j) = r k, from Hr f, rwr pr }, --closed_neg
+    have pr : (F.map f).1 (r j) = r k, from Hr j k f, rwr pr }, --closed_neg
   { intros r s Hr Hs j k f, change (F.map f).1 (r j * s j) = (r k * s k : F.obj k),
     rwr (F.map f).2.map_mul (r j) (s j), 
-    have pr : (F.map f).1 (r j) = r k, from Hr f, 
-    have ps : (F.map f).1 (s j) = s k, from Hs f,
+    have pr : (F.map f).1 (r j) = r k, from Hr j k f, 
+    have ps : (F.map f).1 (s j) = s k, from Hs j k f,
     rwr pr, rwr ps }, --closed_mul
   { intros j k f, change (F.map f).1 1 = (1 : F.obj k), rwr (F.map f).2.map_one }, 
       --closed_one
     end  
 
 @[hott]
-def limit_comm_ring {J : Set.{v}} [precategory.{v} J] (F : J ⥤ CommRing.{v}) :
+def limit_comm_ring {J : Set.{u}} [precategory.{u} J] (F : J ⥤ CommRing.{u}) :
   comm_ring_str.P (set_limit_cone (forget F)).cone.X :=
 begin    
-  exact @comm_subring (CommRing_product F.obj) (ring_limit_pred F) (ring_pred_is_closed F)
+  exact @comm_subring.{u u} (CommRing_product F.obj) (ring_limit_pred F) (ring_pred_is_closed F)
 end    
 
 @[hott]
@@ -145,8 +141,8 @@ def CommRing_has_limit {J : Set.{u}} [precategory.{u} J] (F : J ⥤ CommRing.{u}
 has_limit.mk (CommRing_limit_cone F)
 
 @[hott, instance]
-def CommRing_has_limits_of_shape (J : Set.{v}) [precategory.{v} J] :
-  has_limits_of_shape J CommRing.{v} :=
+def CommRing_has_limits_of_shape (J : Set.{u}) [precategory.{u} J] :
+  has_limits_of_shape J CommRing.{u} :=
 has_limits_of_shape.mk (λ F, CommRing_has_limit F) 
 
 @[hott, instance]
