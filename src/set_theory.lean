@@ -1,7 +1,7 @@
 import hott.init hott.types.trunc prop_logic hott.types.prod hott.hit.quotient 
        hott.algebra.relation 
 
-universes u v w
+universes u u' v w
 hott_theory
 
 namespace hott
@@ -780,6 +780,12 @@ begin
     { intro p, rwr p, exact Rq_symm y },
     { exact quot_rel_to_setquot_eq R x y }  
 end  
+
+/- Lift of trunctypes, in particular sets. -/
+@[hott]
+def trunctype_ulift {n : ℕ₋₂} : trunctype.{u} n -> trunctype.{(max u' u)} n := 
+  assume trunctype_u, 
+  trunctype.mk (ulift.{u' u} ↥trunctype_u) (@is_trunc_lift ↥trunctype_u n _)
 
 end set
 
