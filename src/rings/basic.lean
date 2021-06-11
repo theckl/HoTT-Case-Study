@@ -1,13 +1,13 @@
 import hott.algebra.ring set_theory categories.examples categories.cat_limits pathover2
        hott.types.prod hott.algebra.relation categories.cat_colimits
 
-universes u v w
+universes u u' v w
 hott_theory
 
 namespace hott
 open hott.is_trunc hott.is_equiv hott.algebra hott.set subset categories hott.trunc
      hott.category_theory.limits hott.sigma hott.prod hott.relation 
-     hott.category_theory.colimits
+     hott.category_theory.colimits hott.ulift
 
 namespace algebra
 
@@ -430,6 +430,41 @@ def is_unit {R : CommRing} (r : R) : trunctype -1 :=
 class local_ring (R : CommRing) :=
   (nontrivial : ¬ (0 = 1))
   (is_local : ∀ r : R, (is_unit r) or (is_unit (1 - r)))
+
+#print fields comm_ring
+
+/- For the constructions of limits and colimits of rings over diagrams in arbitrary universe 
+   levels we need to lift the universe level of commutative rings. -/
+@[hott]
+def CommRing_ulift : CommRing.{u} -> CommRing.{(max u' u)} :=
+begin
+  intro R, fapply CommRing.mk,
+  { exact trunctype_ulift R.carrier },
+  { let α := comm_ring_to_ops R.str,
+    fapply comm_ring_mk, 
+    { fapply comm_ring_ops.mk, 
+      { intros r s, exact ulift.up (α.add (ulift.down r) (ulift.down s)) }, --add
+      { exact ulift.up α.zero }, --zero
+      { intro r, exact ulift.up (α.neg (ulift.down r)) }, --neg
+      { intros r s, exact ulift.up (α.mul (ulift.down r) (ulift.down s)) }, --mul
+      { exact ulift.up α.one }, }, --one
+    { fapply comm_ring_laws.mk, 
+      { intros r s t, hsimp, rwr R.str.add_assoc }, --add_assoc
+      { intro r, hsimp, rwr R.str.zero_add, change ulift.up (ulift.down r) = r, 
+        induction r, refl }, --zero_add
+      { intro r, hsimp, rwr R.str.add_zero, change ulift.up (ulift.down r) = r, 
+        induction r, refl }, --add_zero
+      { intro r, hsimp, rwr R.str.add_left_inv }, --neg_add
+      { intros r s, hsimp, rwr R.str.add_comm }, --add_comm
+      { intros r s t, hsimp, rwr R.str.mul_assoc }, --mul_assoc
+      { intro r, hsimp, rwr R.str.one_mul, change ulift.up (ulift.down r) = r, 
+        induction r, refl }, --one_mul
+      { intro r, hsimp, rwr R.str.mul_one, change ulift.up (ulift.down r) = r, 
+        induction r, refl }, --mul_one
+      { intros r s, hsimp, rwr R.str.mul_comm }, --mul_comm
+      { intros r s t, hsimp, rwr R.str.left_distrib }, --left_distrib
+      { intros r s t, hsimp, rwr R.str.right_distrib } } } --right_distrib
+end    
 
 end algebra
 
