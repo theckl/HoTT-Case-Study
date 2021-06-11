@@ -330,33 +330,33 @@ cone.mk c π
    Note that the limit cone vertex may be the empty set - then all cones over the functor `F`
    are empty because they cannot factorize through the empty set. -/
 @[hott]
-def set_limit_pred {J : Set.{u'}} [precategory.{u'} J] (F : J ⥤ Set.{u}) : 
-  Setpred (Sections (λ j : J, F.obj j)) :=
-λ s, to_Prop (∀ (j k : J) (f : j ⟶ k), F.map f (s j) = s k)  
+def set_limit_pred {J : Set.{u'}} [precategory.{v'} J] (F : J ⥤ Set.{u}) : 
+  Setpred (trunctype_ulift.{(max u u') v'} (Sections F.obj)) :=
+λ s, to_Prop (∀ (j k : J) (f : j ⟶ k), F.map f (s.down j) = s.down k)  
 
 @[hott, reducible]
-def set_cone {J : Set.{v}} [precategory.{v} J] (F : J ⥤ Set.{v}) : cone F :=
+def set_cone {J : Set} [precategory J] (F : J ⥤ Set) : cone F :=
 begin
   fapply cone.mk,
   /- The limit cone vertex set -/
-  { exact ↥{ u ∈ (Sections F.obj) | set_limit_pred F u } },
+  { exact ↥{ s ∈ trunctype_ulift (Sections F.obj) | set_limit_pred F s } },
   { fapply nat_trans.mk, 
     /- the leg maps of the limit cone -/
-    { intro j, exact λ u, u.1 j },
+    { intro j, exact λ u, u.1.down j },
     /- compatibility of the leg maps -/
     { intros j k f, hsimp, 
       fapply eq_of_homotopy, intro u, hsimp, 
-      change u.1 k = F.map f (u.1 j), rwr u.2 } }
+      change u.1.down k = F.map f (u.1.down j), rwr u.2 } }
 end  
 
 @[hott, reducible]
-def set_cone_is_limit {J : Set.{v}} [precategory.{v} J] (F : J ⥤ Set.{v}) :
+def set_cone_is_limit {J : Set} [precategory J] (F : J ⥤ Set) :
   is_limit (set_cone F) :=
 begin 
   fapply is_limit.mk,
   /- the lift from the limit cone to another cone-/ 
   { intro s, intro x, fapply sigma.mk, 
-    { intro j, exact s.π.app j x },
+    { apply ulift.up, intro j, exact s.π.app j x },
     { intros j k f, hsimp,  
       exact (homotopy_of_eq (s.π.naturality f) x)⁻¹ } },
   /- factorising the lift with limit cone legs -/    
@@ -365,21 +365,21 @@ begin
   /- uniqueness of lift -/  
   { intros s m lift_m, hsimp, apply eq_of_homotopy,
     intro x, hsimp, fapply sigma.sigma_eq, 
-    { hsimp, apply eq_of_homotopy, intro j, hsimp, rwr <- lift_m j },
+    { hsimp, apply down_eq_up, apply eq_of_homotopy, intro j, hsimp, rwr <- lift_m j },
     { apply pathover_of_tr_eq, apply eq_of_homotopy3, intros j k f, 
         apply is_set.elim } }  
 end
 
 @[hott, reducible]
-def set_limit_cone {J : Set.{v}} [precategory.{v} J] (F : J ⥤ Set.{v}) : limit_cone F :=
+def set_limit_cone {J : Set} [precategory J] (F : J ⥤ Set) : limit_cone F :=
   limit_cone.mk (set_cone F) (set_cone_is_limit F)
 
 @[hott, instance]
-def set_has_limit {J : Set.{v}} [precategory.{v} J] (F : J ⥤ Set.{v}) : has_limit F :=
+def set_has_limit {J : Set} [precategory J] (F : J ⥤ Set) : has_limit F :=
   has_limit.mk (set_limit_cone F)
 
 @[hott, instance]
-def set_has_limits_of_shape {J : Set.{v}} [precategory.{v} J] : has_limits_of_shape J Set.{v} :=
+def set_has_limits_of_shape {J : Set} [precategory J] : has_limits_of_shape J Set :=
   has_limits_of_shape.mk (λ F, set_has_limit F)     
 
 /- A criterion for a category of standard structures over a category with limits to have limits:
