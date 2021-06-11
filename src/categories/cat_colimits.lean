@@ -167,43 +167,43 @@ have H' : has_colimits_of_shape J C, from has_colimits.has_colimit_of_shape C J,
    Note that the limit cocone vertex may be the empty set - then all cones over the functor `F`
    are empty because they cannot factorize through the empty set. -/
 @[hott]
-def colim_rep {J : Set.{v}} [precategory.{v} J] (F : J ⥤ Set.{v}) : Set.{v} := 
+def colim_rep {J : Set} [precategory J] (F : J ⥤ Set) : Set := 
   dprod_Set J (λ j : J, F.obj j)
 
 /- The relation is extended from the map compatibilities by symmetry and translativity. 
    Its inductive definition requires the outcome to be a type. For the quotient construction
    we turn it into a mere relation. -/
 @[hott]
-inductive set_colim_rel {J : Set.{v}} [precategory.{v} J] (F : J ⥤ Set.{v}) : 
-  colim_rep F -> colim_rep F -> Type v 
+inductive set_colim_rel {J : Set.{u'}} [precategory.{v'} J] (F : J ⥤ Set.{u}) : 
+  colim_rep F -> colim_rep F -> Type (max u' v' u) 
 | map : Π (j k : J) (h : j ⟶ k) (xj : F.obj j), set_colim_rel ⟨j,xj⟩ ⟨k, F.map h xj⟩ 
 | symm : Π (x y : colim_rep F), set_colim_rel x y -> set_colim_rel y x
 | trans : Π (x y z : colim_rep F) (q : set_colim_rel x y) (r : set_colim_rel y z), 
           set_colim_rel x z
 
 @[hott]
-def set_colim_mere_rel {J : Set.{v}} [precategory.{v} J] (F : J ⥤ Set.{v}) : 
-  colim_rep F -> colim_rep F -> trunctype.{v} -1 :=
+def set_colim_mere_rel {J : Set} [precategory J] (F : J ⥤ Set) : 
+  colim_rep F -> colim_rep F -> trunctype -1 :=
 assume x y, ∥set_colim_rel F x y∥
 
 @[hott]
-def set_colim_mere_rel.map {J : Set.{v}} [precategory.{v} J] (F : J ⥤ Set.{v}) :
+def set_colim_mere_rel.map {J : Set} [precategory J] (F : J ⥤ Set) :
   Π (j k : J) (h : j ⟶ k) (xj : F.obj j), set_colim_mere_rel F ⟨j,xj⟩ ⟨k, F.map h xj⟩ :=
 begin intros j k h xj, apply tr, constructor end
 
 @[hott]
-def set_colim_mere_rel.symm {J : Set.{v}} [precategory.{v} J] (F : J ⥤ Set.{v}) :
+def set_colim_mere_rel.symm {J : Set} [precategory J] (F : J ⥤ Set) :
   Π (x y : colim_rep F), set_colim_mere_rel F x y -> set_colim_mere_rel F y x :=
 begin intros x y, apply trunc_functor, exact set_colim_rel.symm _ _ end
 
 @[hott]
-def set_colim_mere_rel.trans {J : Set.{v}} [precategory.{v} J] (F : J ⥤ Set.{v}) :
+def set_colim_mere_rel.trans {J : Set} [precategory J] (F : J ⥤ Set) :
   Π (x y z : colim_rep F) (q : set_colim_mere_rel F x y) (r : set_colim_mere_rel F y z), 
           set_colim_mere_rel F x z :=
 begin intros x y z, apply trunc_functor2, exact set_colim_rel.trans _ _ _ end         
 
 @[hott, reducible]
-def set_cocone {J : Set.{v}} [precategory.{v} J] (F : J ⥤ Set.{v}) : cocone F :=
+def set_cocone {J : Set} [precategory J] (F : J ⥤ Set) : cocone F :=
   begin
   fapply cocone.mk,
   /- The limit cocone vertex set -/
@@ -220,7 +220,7 @@ def set_cocone {J : Set.{v}} [precategory.{v} J] (F : J ⥤ Set.{v}) : cocone F 
   end 
 
 @[hott, reducible]
-def set_cocone_is_colimit {J : Set.{v}} [precategory.{v} J] (F : J ⥤ Set.{v}) :
+def set_cocone_is_colimit {J : Set} [precategory J] (F : J ⥤ Set) :
   is_colimit (set_cocone F) :=
 begin 
   fapply is_colimit.mk,
@@ -246,17 +246,17 @@ begin
 end 
 
 @[hott, reducible]
-def set_colimit_cocone {J : Set.{v}} [precategory.{v} J] (F : J ⥤ Set.{v}) : 
+def set_colimit_cocone {J : Set} [precategory J] (F : J ⥤ Set) : 
   colimit_cocone F :=
 colimit_cocone.mk (set_cocone F) (set_cocone_is_colimit F)
 
 @[hott, instance]
-def set_has_colimit {J : Set.{v}} [precategory.{v} J] (F : J ⥤ Set.{v}) : has_colimit F :=
+def set_has_colimit {J : Set} [precategory J] (F : J ⥤ Set) : has_colimit F :=
   has_colimit.mk (set_colimit_cocone F)
 
 @[hott, instance]
-def set_has_colimits_of_shape {J : Set.{v}} [precategory.{v} J] : 
-  has_colimits_of_shape J Set.{v} :=
+def set_has_colimits_of_shape {J : Set} [precategory J] : 
+  has_colimits_of_shape J Set :=
 has_colimits_of_shape.mk (λ F, set_has_colimit F) 
 
 end category_theory.colimits
