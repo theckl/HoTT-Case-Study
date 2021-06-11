@@ -312,4 +312,12 @@ def is_prop_LEM {A : Type _} [is_prop A] : is_prop (A ⊎ ¬ A) :=
   end,
   is_prop.mk eq_sum    
 
+/- We prove some lemmas on universe lifting. There may be a better place for them. -/
+@[hott]
+def down_up_eq {A : Type u} (x : A) : (ulift.up.{v} x).down = x := idp
+
+@[hott]
+def down_eq_up {A : Type u} (x : ulift.{v u} A) (y : A) : x.down = y -> x = ulift.up y :=
+  begin hinduction x, intro H, rwr down_up_eq down at H, exact ap ulift.up H end
+
 end hott
