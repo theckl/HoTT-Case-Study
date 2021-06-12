@@ -117,43 +117,49 @@ begin
   { intro j, 
     change ↥(comm_ring_str.H (limit_comm_ring F) (F.obj j).str 
              ((CommSubring.to_Subset (ring_limit_pred F)).map ≫ (λ s, s.down j))), 
-    fapply comm_ring_str.comp_H _ (CommRing_ulift (CommRing_product F.obj)).str, 
-    { exact comm_subring_embed_hom (ring_limit_pred F) },
-    { exact CommRing_product_proj_hom F.obj j } }, --lc_legs_H
+    fapply comm_ring_str.comp_H, 
+    { exact (CommRing_ulift (CommRing_product F.obj)).str }, 
+    { exact comm_subring_embed_hom (ring_limit_pred F) }, 
+    { fapply is_ring_hom.mk, 
+      { refl }, 
+      { intros r s, refl }, 
+      { refl }, 
+      { intros r s, refl } } }, --lc_legs_H
   { intro s, fapply is_ring_hom.mk, 
     { fapply sigma_eq,
-      { change (λ j, (s.π.app j).1 (1 : s.X.carrier)) = (λ j, (1 : F.obj j)),
+      { apply ap ulift.up,
         apply eq_of_homotopy, intro j, hsimp, exact (s.π.app j).2.map_one }, 
       { apply pathover_of_tr_eq, apply is_prop.elim } },
     { intros t₁ t₂, fapply sigma_eq, 
-      { change (λ j, (s.π.app j).1 (t₁ * t₂)) = 
+      { apply ap ulift.up, change (λ j, (s.π.app j).1 (t₁ * t₂)) = 
                               (λ j, (((s.π.app j).1 t₁) * ((s.π.app j).1 t₂) : F.obj j)),
         apply eq_of_homotopy, intro j, hsimp, exact (s.π.app j).2.map_mul t₁ t₂ },
       { apply pathover_of_tr_eq, apply is_prop.elim } },  
     { fapply sigma_eq,
-      { change (λ j, (s.π.app j).1 (0 : s.X.carrier)) = (λ j, (0 : F.obj j)),
+      { apply ap ulift.up, 
+        change (λ j, (s.π.app j).1 (0 : s.X.carrier)) = (λ j, (0 : F.obj j)),
         apply eq_of_homotopy, intro j, hsimp, exact (s.π.app j).2.map_zero }, 
       { apply pathover_of_tr_eq, apply is_prop.elim } },    
     { intros t₁ t₂, fapply sigma_eq, 
-      { change (λ j, (s.π.app j).1 (t₁ + t₂)) = 
+      { apply ap ulift.up, change (λ j, (s.π.app j).1 (t₁ + t₂)) = 
                               (λ j, (((s.π.app j).1 t₁) + ((s.π.app j).1 t₂) : F.obj j)),
         apply eq_of_homotopy, intro j, hsimp, exact (s.π.app j).2.map_add t₁ t₂ },
       { apply pathover_of_tr_eq, apply is_prop.elim } } } --lift_H
 end   
 
 @[hott]
-def CommRing_has_limit {J : Set.{u}} [precategory.{u} J] (F : J ⥤ CommRing.{u}) : 
+def CommRing_has_limit {J : Set} [precategory J] (F : J ⥤ CommRing) : 
   has_limit F :=
 has_limit.mk (CommRing_limit_cone F)
 
 @[hott, instance]
-def CommRing_has_limits_of_shape (J : Set.{u}) [precategory.{u} J] :
-  has_limits_of_shape J CommRing.{u} :=
+def CommRing_has_limits_of_shape (J : Set) [precategory J] :
+  has_limits_of_shape J CommRing :=
 has_limits_of_shape.mk (λ F, CommRing_has_limit F) 
 
 @[hott, instance]
-def CommRing_has_limits : has_limits CommRing.{u} :=
-  has_limits.mk (λ (J : Set.{u}) (c : precategory.{u} J), @CommRing_has_limits_of_shape J c)
+def CommRing_has_limits : has_limits CommRing :=
+  has_limits.mk (λ (J : Set) (c : precategory J), @CommRing_has_limits_of_shape J c)
 
 @[hott, instance]
 def CommRing_has_products : has_products CommRing :=
