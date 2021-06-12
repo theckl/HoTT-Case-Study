@@ -14,6 +14,8 @@ open hott.eq hott.is_trunc hott.trunc hott.set hott.subset
 
 namespace category_theory.limits
 
+set_option pp.universes true
+
 structure cone {J : Set.{u'}} [precategory.{v'} J] {C : Type u} 
   [precategory.{v} C] (F : J ⥤ C) :=
 (X : C)
@@ -415,12 +417,12 @@ structure limit_cone_str_data {J : Set.{u'}} [precategory.{v'} J] {C : Type u}
 @[hott]
 def str_limit_cone {J : Set.{u'}} [precategory.{v'} J] {C : Type u} 
   [category.{v} C] [has_limits_of_shape J C] {std_str : std_structure_on C} 
-  {F : J ⥤ (std_structure std_str)} (lc : limit_cone (forget F))
+  {F : J ⥤ (std_structure.{v u w} std_str)} (lc : limit_cone (forget F))
   (lcd : limit_cone_str_data lc) : limit_cone F :=
 begin 
   fapply limit_cone.mk, 
   { fapply cone.mk, -- the limit cone 
-    { exact std_structure.mk lc.cone.X lcd.lc_str},
+    { exact std_structure.mk lc.cone.X lcd.lc_str },
     { fapply nat_trans.mk, 
       { intro j, 
         exact ⟨lc.cone.π.app j, lcd.lc_legs_H j⟩ },
