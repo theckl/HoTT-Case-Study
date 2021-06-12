@@ -431,8 +431,6 @@ class local_ring (R : CommRing) :=
   (nontrivial : ¬ (0 = 1))
   (is_local : ∀ r : R, (is_unit r) or (is_unit (1 - r)))
 
-#print fields comm_ring
-
 /- For the constructions of limits and colimits of rings over diagrams in arbitrary universe 
    levels we need to lift the universe level of commutative rings. -/
 @[hott]
@@ -465,6 +463,24 @@ begin
       { intros r s t, hsimp, rwr R.str.left_distrib }, --left_distrib
       { intros r s t, hsimp, rwr R.str.right_distrib } } } --right_distrib
 end    
+
+@[hott]
+def ring_ulift_functor : CommRing.{u} ⥤ CommRing.{(max u' u)} :=
+begin
+  fapply categories.functor.mk,
+  { exact CommRing_ulift },
+  { intros R S f, fapply dpair, 
+    { intro r, exact ulift.up (f.1 r.down) },
+    { hsimp, fapply is_ring_hom.mk, 
+      { apply hott.eq.inverse, apply down_eq_up, apply (f.2.map_one)⁻¹ }, 
+      { intros r s, apply ap ulift.up, apply (f.2.map_mul) }, 
+      { apply hott.eq.inverse, apply down_eq_up, apply (f.2.map_zero)⁻¹ }, 
+      { intros r s, apply ap ulift.up, apply (f.2.map_add) } } },
+  { hsimp, intro R, apply hom_eq_C_std, hsimp, apply eq_of_homotopy, 
+    intro r, hsimp, apply hott.eq.inverse, apply down_eq_up, refl },
+  { hsimp, intros R S T f g, apply hom_eq_C_std, hsimp, apply eq_of_homotopy,
+    intro r, hsimp, apply hott.eq.inverse, apply down_eq_up, refl }
+end  
 
 end algebra
 
