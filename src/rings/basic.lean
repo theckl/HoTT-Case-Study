@@ -11,8 +11,6 @@ open hott.is_trunc hott.is_equiv hott.algebra hott.set subset categories hott.tr
 
 namespace algebra
 
-set_option pp.universes true
-
 /- `comm_ring R` is a standard structure on a set `R`:
 
    Homomorphisms are maps between sets with a `comm_ring` structure preserving addition and 
