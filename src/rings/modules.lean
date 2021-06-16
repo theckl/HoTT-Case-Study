@@ -1,4 +1,4 @@
-import rings.basic
+import rings.basic pathover2
 
 universes u u' v w
 hott_theory
@@ -7,7 +7,7 @@ set_option old_structure_cmd true
 
 namespace hott
 
-open hott.algebra hott.subset
+open hott.algebra hott.subset is_trunc
 
 namespace algebra
 
@@ -15,7 +15,7 @@ namespace algebra
 structure module_str (R : CommRing) (M : Set) extends ab_group M renaming 
   mul→add mul_assoc→add_assoc one→zero one_mul→zero_add mul_one→add_zero inv→neg 
   mul_left_inv→add_left_inv mul_comm→add_comm :=
-(smul : R -> M -> M)  
+(smul : R.carrier -> M -> M)  
 (smul_assoc : ∀ (r s : R) (m : M), smul r (smul s m) = smul (r * s) m)
 (add_smul : ∀ (r s : R) (m : M), smul (r + s) m = 
                                                     add (smul r m) (smul s m))
@@ -64,7 +64,32 @@ def module_smul {R : CommRing} {M : Module R} : has_scalar R M :=
 /- A commutative ring `R` is an `R`-module. -/
 @[hott]
 def ring_as_module (R : CommRing) : Module R :=
-  sorry
+begin
+  fapply Module.mk,
+  { exact R.carrier },
+  { fapply module_str.mk, 
+    { apply_instance }, 
+    { exact R.str.add }, 
+    { exact R.str.add_assoc }, 
+    { exact R.str.zero }, 
+    { exact R.str.zero_add }, 
+    { exact R.str.add_zero }, 
+    { exact R.str.neg }, 
+    { exact R.str.add_left_inv }, 
+    { exact R.str.add_comm }, 
+    { exact R.str.mul }, 
+    { intros r s m, 
+      change comm_ring.mul r (comm_ring.mul s m) = 
+             comm_ring.mul (comm_ring.mul r s) m, rwr R.str.mul_assoc }, 
+    { intros r s m, 
+      change comm_ring.mul (comm_ring.add r s) m = 
+             comm_ring.add (comm_ring.mul r m) (comm_ring.mul s m),
+      rwr R.str.right_distrib }, 
+    { exact R.str.left_distrib }, 
+    { intro m, change 0 * m = 0, rwr ring.zero_mul }, 
+    { intro m, change m * 0 = 0, rwr ring.mul_zero }, 
+    { exact R.str.one_mul } }
+end  
 
 @[hott]
 structure submodule_str {R : CommRing} (M : Module R) (N : Subset M.carrier) :=
@@ -85,6 +110,32 @@ instance Module_to_Subset (R : CommRing) (M : Module R) :
 
 @[hott]
 def Ideal (R : CommRing) := Submodule R (ring_as_module R)
+
+@[hott]
+instance Ideal_to_Subset (R : CommRing) (I : Ideal R) : 
+  has_coe (Ideal R) (Subset R.carrier) :=
+  ⟨λ N : Ideal R, N.carrier⟩
+
+@[hott]
+structure PrimeIdeal (R : CommRing) :=
+  (ideal : Ideal R)
+  (ne_all : ¬((1:R) ∈ ideal.carrier))
+  (mem_or_mem : ∀ r s : R, r * s ∈ ideal.carrier -> 
+                           ((r ∈ ideal.carrier) or (s ∈ ideal.carrier)))
+
+/- This is a HoTT-ism. -/
+@[hott]
+def PrimeIdeal_is_set (R : CommRing) : is_set (PrimeIdeal R) :=
+begin
+  fapply is_set.mk, intros P Q p q,
+  hinduction p, hinduction P with P HP1 HP2, 
+  --apply apdd_inj_eq,
+  sorry 
+end
+
+@[hott]
+def PrimeIdeal_Set (R : CommRing) : Set :=
+  Set.mk (PrimeIdeal R) (PrimeIdeal_is_set R)                            
 
 end algebra
 
