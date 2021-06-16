@@ -53,6 +53,32 @@ begin
 end  
 
 @[hott]
+def apdd {A : Type _} {B C : A -> Type _} {D : Type _}
+  (f : Π (a : A) (b : B a) (c : C a), D)
+  {a₁ a₂ : A} {b₁ : B a₁} {b₂ : B a₂} {c₁ : C a₁} {c₂ : C a₂}
+  (p : a₁ = a₂) (q : b₁ =[p] b₂) (r : c₁ =[p] c₂) : f a₁ b₁ c₁ = f a₂ b₂ c₂ :=
+begin hinduction p, hinduction q, hinduction r, refl end 
+
+@[hott]
+def apo01 {A B : Type _} {C : B -> Type _} (f : A -> B) 
+  (g : Π a : A, C (f a)) {a₁ a₂ : A} (p : a₁ = a₂) : 
+  g a₁ =[p; λ a : A, C (f a)] g a₂ ↔ g a₁ =[ap f p; λ b : B, C b] g a₂ :=
+begin 
+  hinduction p, apply prod.mk,
+  { intro q, rwr ap_idp },
+  { intro q, exact pathover_of_pathover_ap C f q } 
+end  
+
+@[hott]
+def apdd_inj_eq {A : Type _} {B C : A -> Type _} {D : Type _}
+  (f : Π (a : A) (b : B a) (c : C a), D) (f₁ : D -> A) 
+  (f₂ : Π d : D, B (f₁ d)) (f₃ : Π d : D, C (f₁ d)) 
+  (inj : Π (d : D), d = f (f₁ d) (f₂ d) (f₃ d)) (d₁ d₂ : D) :
+Π (e : d₁ = d₂), (inj d₁)⁻¹ ⬝ e ⬝ (inj d₂) = apdd f (ap f₁ e) 
+        ((apo01 f₁ f₂ e).1 (apd f₂ e)) ((apo01 f₁ f₃ e).1 (apd f₃ e)) :=
+begin intro e, hinduction e, hsimp, refl end        
+
+@[hott]
 def apdo0111 {A : Type _} {B C : A -> Type _} {D : Π a : A, B a -> Type _}
   (f : Π (a : A) (b : B a) (d : D a b), C a)
   {a₁ a₂ : A} {b₁ : B a₁} {b₂ : B a₂} {d₁ : D a₁ b₁} {d₂ : D a₂ b₂}
