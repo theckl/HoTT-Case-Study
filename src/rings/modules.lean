@@ -112,9 +112,38 @@ instance Module_to_Subset (R : CommRing) (M : Module R) :
 def Ideal (R : CommRing) := Submodule R (ring_as_module R)
 
 @[hott]
+def Ideal.mk {R : CommRing} : Π (I : Subset (ring_as_module R).carrier) 
+  (str : submodule_str (ring_as_module R) I), Ideal R :=
+λ I str, Submodule.mk I str  
+
+@[hott]
+def Ideal.to_Subset {R : CommRing} (I : Ideal R) := I.carrier
+
+@[hott]
+def Ideal.to_str {R : CommRing} (I : Ideal R) := I.str
+
+@[hott]
 instance Ideal_to_Subset (R : CommRing) (I : Ideal R) : 
   has_coe (Ideal R) (Subset R.carrier) :=
   ⟨λ N : Ideal R, N.carrier⟩
+
+/- This is a HoTT-ism. -/
+@[hott, instance]
+def Ideal_is_set (R : CommRing) : is_set (Ideal R) :=
+begin
+  fapply is_set.mk, intros I J p q,
+  hinduction p, hinduction I,
+  have inj : Π I : Ideal R, I = Ideal.mk I.carrier I.str, from
+    begin intro I, hinduction I, refl end,
+  rwr apdd_inj_eq Ideal.mk Ideal.to_Subset Ideal.to_str inj q,
+  rwr apdd_inj_eq Ideal.mk Ideal.to_Subset Ideal.to_str inj 
+                  (refl (Submodule.mk carrier str)), 
+  apply ap (λ q, concat q (inj (Ideal.mk carrier str))⁻¹),
+  apply ap (concat (inj (Ideal.mk carrier str))), 
+  fapply apdd (apdd Ideal.mk),
+  { apply is_set.elim },                 
+  { sorry }
+end  
 
 @[hott]
 structure PrimeIdeal (R : CommRing) :=
@@ -124,13 +153,24 @@ structure PrimeIdeal (R : CommRing) :=
                            ((r ∈ ideal.carrier) or (s ∈ ideal.carrier)))
 
 /- This is a HoTT-ism. -/
-@[hott]
+@[hott, instance]
 def PrimeIdeal_is_set (R : CommRing) : is_set (PrimeIdeal R) :=
 begin
   fapply is_set.mk, intros P Q p q,
   hinduction p, hinduction P with P HP1 HP2, 
-  --apply apdd_inj_eq,
-  sorry 
+  have inj : Π (P : PrimeIdeal R), P = 
+                        PrimeIdeal.mk P.ideal P.ne_all P.mem_or_mem, from 
+    begin intro P, hinduction P, refl end,
+  rwr apdd2_inj_eq PrimeIdeal.mk PrimeIdeal.ideal PrimeIdeal.ne_all 
+                  PrimeIdeal.mem_or_mem inj q,
+  rwr apdd2_inj_eq PrimeIdeal.mk PrimeIdeal.ideal PrimeIdeal.ne_all 
+            PrimeIdeal.mem_or_mem inj (refl (PrimeIdeal.mk P HP1 HP2)), 
+  apply ap (λ q, concat q (inj (PrimeIdeal.mk P HP1 HP2))⁻¹),
+  apply ap (concat (inj (PrimeIdeal.mk P HP1 HP2))), 
+  fapply apdd2 (apdd2 PrimeIdeal.mk),              
+  { apply is_set.elim },
+  { apply pathover_of_tr_eq, apply is_prop.elim },
+  { apply pathover_of_tr_eq, apply is_prop.elim } 
 end
 
 @[hott]
