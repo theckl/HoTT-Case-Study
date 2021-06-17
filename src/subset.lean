@@ -368,7 +368,7 @@ have linv : forall e : B = C, bij_to_sset_eq (sset_eq_to_bij e) = e,
   end,  
 equiv.mk sset_eq_to_bij (adjointify sset_eq_to_bij bij_to_sset_eq rinv linv)
 
-@[hott]
+@[hott, instance]
 def Powerset_is_set {A : Set.{u}} : is_set (Subset A) := 
 have H_eq : forall B C : Subset A, is_prop (B = C), from 
   assume B C,
