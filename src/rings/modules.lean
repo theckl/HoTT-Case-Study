@@ -96,6 +96,15 @@ structure submodule_str {R : CommRing} (M : Module R) (N : Subset M.carrier) :=
   (add_closed : ∀ n₁ n₂ : M, n₁ ∈ N -> n₂ ∈ N -> (n₁ + n₂) ∈ N)
   (smul_closed : ∀ (r : R) (n : M), n ∈ N -> r • n ∈ N)
 
+/- This is a HoTT-ism. -/
+@[hott, instance]
+def submodule_str_is_prop {R : CommRing} (M : Module R) (N : Subset M.carrier) :
+  is_prop (submodule_str M N) :=
+begin
+  apply is_prop.mk, intros s t, hinduction s, hinduction t, 
+  fapply ap011 submodule_str.mk, all_goals { apply is_prop.elim },
+end      
+
 /- At some point we may need the module structure on a submodule. -/
 
 @[hott]
@@ -142,40 +151,34 @@ begin
   apply ap (concat (inj (Ideal.mk carrier str))), 
   fapply apdd (apdd Ideal.mk),
   { apply is_set.elim },                 
-  { sorry }
+  { apply pathover_of_tr_eq, apply is_prop.elim }
 end  
 
 @[hott]
-structure PrimeIdeal (R : CommRing) :=
-  (ideal : Ideal R)
-  (ne_all : ¬((1:R) ∈ ideal.carrier))
-  (mem_or_mem : ∀ r s : R, r * s ∈ ideal.carrier -> 
-                           ((r ∈ ideal.carrier) or (s ∈ ideal.carrier)))
+def Ideal_Set (R : CommRing) : Set := 
+  Set.mk (Ideal R) (Ideal_is_set R)
+
+@[hott]
+structure is_prime {R : CommRing} (P : Ideal R) :=
+  (ne_all : ¬((1:R) ∈ P.carrier))
+  (mem_or_mem : ∀ r s : R, r * s ∈ P.carrier -> 
+                           ((r ∈ P.carrier) or (s ∈ P.carrier)))
 
 /- This is a HoTT-ism. -/
 @[hott, instance]
-def PrimeIdeal_is_set (R : CommRing) : is_set (PrimeIdeal R) :=
+def is_prime_is_prop {R : CommRing} (P : Ideal R) : is_prop (is_prime P) :=
 begin
-  fapply is_set.mk, intros P Q p q,
-  hinduction p, hinduction P with P HP1 HP2, 
-  have inj : Π (P : PrimeIdeal R), P = 
-                        PrimeIdeal.mk P.ideal P.ne_all P.mem_or_mem, from 
-    begin intro P, hinduction P, refl end,
-  rwr apdd2_inj_eq PrimeIdeal.mk PrimeIdeal.ideal PrimeIdeal.ne_all 
-                  PrimeIdeal.mem_or_mem inj q,
-  rwr apdd2_inj_eq PrimeIdeal.mk PrimeIdeal.ideal PrimeIdeal.ne_all 
-            PrimeIdeal.mem_or_mem inj (refl (PrimeIdeal.mk P HP1 HP2)), 
-  apply ap (λ q, concat q (inj (PrimeIdeal.mk P HP1 HP2))⁻¹),
-  apply ap (concat (inj (PrimeIdeal.mk P HP1 HP2))), 
-  fapply apdd2 (apdd2 PrimeIdeal.mk),              
-  { apply is_set.elim },
-  { apply pathover_of_tr_eq, apply is_prop.elim },
-  { apply pathover_of_tr_eq, apply is_prop.elim } 
+  fapply is_prop.mk, intros P Q,
+  hinduction P, hinduction Q, apply ap011, all_goals { apply is_prop.elim }
 end
 
 @[hott]
+def is_prime_pred {R : CommRing} : Setpred (Ideal_Set R) :=
+  λ I, prop_ulift (Prop.mk (is_prime I) (is_prime_is_prop I))
+
+@[hott]
 def PrimeIdeal_Set (R : CommRing) : Set :=
-  Set.mk (PrimeIdeal R) (PrimeIdeal_is_set R)                            
+  ↥{P ∈ (Ideal_Set R) | is_prime_pred P}                           
 
 end algebra
 
