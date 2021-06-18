@@ -7,11 +7,11 @@ namespace hott
 open hott.set hott.subset 
 
 /- A topology on the Set [T]. -/
-variable T : Set.{u}
+variable T : Set
 
 @[hott]
 structure topological_space :=
-(is_open        : Subset T → trunctype.{u} -1)
+(is_open        : Subset T → trunctype -1)
 (is_open_univ   : is_open (total_Subset T))
 (is_open_inter  : ∀ U V : Subset T, is_open U → is_open V → is_open (U ∩ V)) 
 (is_open_iUnion : ∀ (I : Set) (f : I -> 𝒫 T), (∀ i : I, is_open (f i)) -> 
@@ -42,5 +42,17 @@ topological_space.is_open_inter t U V h₁ h₂
 def is_open_iUnion [t : topological_space T] {I : Set} {f : I -> 𝒫 T}
   (h : ∀ i : I, is_open T (f i)) : is_open T (⋃ᵢ f) :=
 topological_space.is_open_iUnion t I f h  
+
+/- A constructor for topologies by specifying the closed sets, and showing 
+   that they satisfy the appropriate conditions. -/
+def topological_space.of_closed 
+  (is_closed : Subset T -> Prop) 
+  (is_closed_empty : is_closed (empty_Subset T)) 
+  (is_closed_union : ∀ U V : Subset T, is_closed U → is_closed V → 
+                                                     is_closed (U ∪ V)) 
+  (is_closed_iInter : ∀ (I : Set) (f : I -> 𝒫 T), 
+                        (∀ i : I, is_closed (f i)) -> is_closed (⋂ᵢ f)) : 
+  topological_space T :=
+sorry  
 
 end hott
