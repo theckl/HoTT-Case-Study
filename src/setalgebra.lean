@@ -1,10 +1,10 @@
-import subset set_axioms hott.types.prod
+import subset set_axioms hott.types.prod 
 
 universes u v w
 hott_theory
 
 namespace hott
-open hott.set hott.subset prod
+open hott.set hott.subset prod trunc sum
 
 /- `⊆` induces a weak or partial order on the subsets of a set `A`:
    It is a reflexive, transitive and anti-symmetric relation. -/
@@ -48,14 +48,61 @@ def inter.symm (S₁ S₂ : Subset A) : S₁ ∩ S₂ = S₂ ∩ S₁ :=
   (sset_eq_iff_inclusion _ _).2 ⟨ss1, ss2⟩
 
 @[hott]
-def inter_sset_l (U V : Subset A) : subset.inter U V ⊆ U :=
+def inter_sset_l (U V : Subset A) : (subset.inter U V) ⊆ U :=
   assume a el, 
   have p : a ∈ U and a ∈ V, from (pred_elem a).1 el,
   p.1
 
 @[hott]
-def inter_sset_r (U V : Subset A) : U ∩ V ⊆ V :=
+def inter_sset_r (U V : Subset A) : is_Subset_of (U ∩ V) V :=
   by rwr inter.symm U V; exact inter_sset_l V U  
+
+@[hott, reducible]
+def sInter (S : Subset (𝒫 A)) : Subset A := 
+  {t ∈ A | prop_resize (to_Prop (∀ B : 𝒫 A, B ∈ S -> t ∈ B))}
+
+hott_theory_cmd "local prefix `⋂₀`:110 := hott.subset.sInter"
+
+@[hott, reducible]
+def iInter {A : Set.{u}} {I : Set.{u}} (f : I -> 𝒫 A) : Subset A :=
+  {t ∈ A | to_Prop (∀ i : I, t ∈ f i) }
+
+hott_theory_cmd "local prefix `⋂ᵢ`:110 := hott.subset.iInter"  
+
+@[hott]
+def sset_iInter {A : Set.{u}} {I : Set.{u}} (f : I -> 𝒫 A) (i : I) : 
+  (⋂ᵢ f) ⊆ (f i):=
+begin intros a el, exact (pred_elem a).1 el i end  
+
+@[hott, reducible]
+protected def union (S₁ S₂ : Subset A) : Subset A :=
+{a ∈ A | a ∈ S₁ or a ∈ S₂}
+
+@[hott, instance]
+def subset_union : has_union (Subset A) :=
+⟨subset.union⟩
+
+@[hott]
+def union.symm (S₁ S₂ : Subset A) : S₁ ∪ S₂ = S₂ ∪ S₁ :=
+  have ss1 : S₁ ∪ S₂ ⊆ S₂ ∪ S₁, from 
+    assume a el, 
+    have p : a ∈ S₁ or a ∈ S₂, from (pred_elem a).1 el,
+    have q : a ∈ S₂ or a ∈ S₁, from or_symm p,
+    (pred_elem a).2 q,
+  have ss2 : S₂ ∪ S₁ ⊆ S₁ ∪ S₂, from 
+    assume a el, 
+    have p : a ∈ S₂ or a ∈ S₁, from (pred_elem a).1 el,
+    have q : a ∈ S₁ or a ∈ S₂, from or_symm p,
+    (pred_elem a).2 q,
+  (sset_eq_iff_inclusion _ _).2 ⟨ss1, ss2⟩
+
+@[hott]
+def union_sset_l (U V : Subset A) : U ⊆ U ∪ V:=
+begin intros a el, apply (pred_elem a).2, exact or_inl (a ∈ U) (a ∈ V) el end
+
+@[hott]
+def union_sset_r (U V : Subset A) : V ⊆ U ∪ V :=
+  by rwr union.symm U V; exact union_sset_l V U 
 
 @[hott, reducible]
 def sUnion (S : Subset (𝒫 A)) : Subset A := 
@@ -70,8 +117,9 @@ def iUnion {A : Set.{u}} {I : Set.{u}} (f : I -> 𝒫 A) : Subset A :=
 hott_theory_cmd "local prefix `⋃ᵢ`:110 := hott.subset.iUnion"  
 
 @[hott]
-def sset_iUnion {A : Set.{u}} {I : Set.{u}} (f : I -> 𝒫 A) (i : I) : f i ⊆ ⋃ᵢ f :=
-  assume a el, (pred_elem a).2 (@trunc.tr -1 (Σ i : I, a ∈ f i) ⟨i, el⟩) 
+def sset_iUnion {A : Set.{u}} {I : Set.{u}} (f : I -> 𝒫 A) (i : I) : 
+  (f i) ⊆ (⋃ᵢ f) :=
+assume a el, (pred_elem a).2 (@trunc.tr -1 (Σ i : I, a ∈ f i) ⟨i, el⟩) 
 
 end subset
 
