@@ -617,7 +617,8 @@ def elem_pred_eta {A : Set} {P : Setpred A} (a : A) (pred_a : P a) :
 by hsimp 
 
 @[hott]
-def sset_elem_pred {A : Set} {P : Setpred A} (b : (↥(pred_to_sset P) : Set)) : P ↑b := b.2
+def sset_elem_pred {A : Set} {P : Setpred A} (b : (↥(pred_to_sset P) : Set)) : 
+  P ↑b := b.2
 
 @[hott]
 def obj_elem {A : Set} {B : Subset A} (b : B.carrier) : ↑b ∈ B :=
@@ -637,13 +638,17 @@ def elem_obj_eq {A : Set} {B : Subset A} (a : A) (H : a ∈ B) : ↑(elem_obj a 
 def is_subset_of {A : Set} (B C : Subset A) :=
   forall a : A, a ∈ B -> a ∈ C
 
-notation [parsing_only] B `⊆` C := is_subset_of B C
-
 @[hott, instance]
-def is_prop_subset {A : Set} (B C : Subset A) : is_prop (B ⊆ C) :=
+def is_prop_subset {A : Set} (B C : Subset A) : is_prop (is_subset_of B C) :=
   have Pss : ∀ a : A, is_prop (a ∈ B -> a ∈ C), from 
     assume a, is_prop_map.{u u} ((a ∈ C).struct),
   is_prop_dprod Pss
+
+@[hott]
+def is_Subset_of {A : Set} (B C : Subset A) : trunctype -1 :=
+  Prop.mk (is_subset_of B C) (is_prop_subset B C)
+
+hott_theory_cmd "local infix `⊆`:50 := hott.subset.is_Subset_of"
 
 @[hott]   
 inductive construct_elem {A : Set.{u}} (P : A → trunctype.{u} -1) 
