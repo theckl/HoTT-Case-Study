@@ -79,6 +79,22 @@ protected def or (P Q : Prop) : Prop :=
 
 infix `or`:49 := hott.or 
 
+@[hott]
+def or_inl (P Q : Prop) : P -> P or Q :=
+begin intro p, apply tr, exact sum.inl p end
+
+@[hott]
+def or_inr (P Q : Prop) : Q -> P or Q :=
+begin intro q, apply tr, exact sum.inr q end
+
+@[hott]
+def or_symm {P Q : Prop} : P or Q -> Q or P :=
+begin
+  intro r, hinduction r, hinduction a with p q, 
+  { apply tr, exact sum.inr p }, 
+  { apply tr, exact sum.inl q }
+end  
+
 @[hott, instance]
 lemma is_prop_map {A B : Type _} (pB : is_prop B) : is_prop (A -> B) :=
 have eq_map : forall f1 f2 : A -> B, f1 = f2, from 
