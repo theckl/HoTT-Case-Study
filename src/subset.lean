@@ -416,6 +416,16 @@ def sset_to_pred {A : Set} : Π (B : Subset A), Setpred A :=
   assume B, λ (a : A), image (Subset.map B) a
 
 @[hott]
+def total_pred {A : Set} (a : A) : sset_to_pred (total_Subset A) a = True :=
+  inhabited_Prop_eq _ _ (tr ⟨a, idp⟩) true.intro
+
+@[hott]
+def empty_pred {A : Set} (a : A) : sset_to_pred (empty_Subset A) a = False :=
+  have ne : ¬(sset_to_pred (empty_Subset A) a), from 
+    begin intro p, hinduction p with e, hinduction e.1 end,
+  uninhabited_Prop_eq _ _ ne False_uninhabited  
+
+@[hott]
 def is_set_pred {A : Set} : Π (pred : Setpred A), is_set (Σ (a : A), ↥(pred a)) :=
   assume pred, 
   have forall (a : A), is_set (pred a), from 
@@ -584,9 +594,25 @@ calc B = pred_to_sset (sset_to_pred B) : (sset_pred_linv B)⁻¹
    facts of (naive) set theory. -/
 @[hott]
 protected def elem {A : Set} (a : A) (S : Subset A) :=
-sset_to_pred S a 
+sset_to_pred S a
+
+@[hott]
+protected def not_elem {A : Set} (a : A) (S : Subset A) :=
+  Not (sset_to_pred S a)
 
 hott_theory_cmd "local infix  `∈`:70 := hott.subset.elem"
+hott_theory_cmd "local infix  `∉`:70 := hott.subset.not_elem"  
+
+@[hott]
+def all_elem {A : Set} (a : A) : a ∈ total_Subset A :=
+begin 
+  change ↥(sset_to_pred (total_Subset A) a), 
+  rwr total_pred a, exact true.intro
+end
+
+@[hott]
+def empty_not_elem {A : Set} (a : A) : a ∉ empty_Subset A :=
+  begin intro ne, rwr empty_pred a at ne, assumption end
 
 @[hott, instance]
 def is_prop_elem {A : Set} (a : A) (S : Subset A) : is_prop (a ∈ S) :=
