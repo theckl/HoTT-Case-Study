@@ -95,6 +95,10 @@ begin
   { apply tr, exact sum.inl q }
 end  
 
+@[hott] 
+def Not (P : trunctype.{u} -1) : Prop :=
+  to_Prop (P -> False.{u})
+
 @[hott, instance]
 lemma is_prop_map {A B : Type _} (pB : is_prop B) : is_prop (A -> B) :=
 have eq_map : forall f1 f2 : A -> B, f1 = f2, from 
