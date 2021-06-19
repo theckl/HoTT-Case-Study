@@ -121,6 +121,24 @@ def sset_iUnion {A : Set.{u}} {I : Set.{u}} (f : I -> 𝒫 A) (i : I) :
   (f i) ⊆ (⋃ᵢ f) :=
 assume a el, (pred_elem a).2 (@trunc.tr -1 (Σ i : I, a ∈ f i) ⟨i, el⟩) 
 
+@[hott]
+def complement (U : Subset A) : Subset A :=
+  {x ∈ A | x ∉ U}
+
+notation `C(`U`)` := complement U  
+
+@[hott]
+def compl_total_empty : C(total_Subset A) = empty_Subset A :=
+begin
+  apply (sset_eq_iff_inclusion _ _).2, apply pair,
+  { intros a el, 
+    have not_el : ↥(a ∉ (total_Subset A)), from (pred_elem a).1 el,
+    have el' : ↥(a ∈ (total_Subset A)), from all_elem a,
+    hinduction (not_el el') },
+  { intros a el, apply (pred_elem a).2, intro ne_all, 
+    exact empty_not_elem a el }
+end   
+
 end subset
 
 end hott
