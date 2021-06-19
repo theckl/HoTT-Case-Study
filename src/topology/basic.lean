@@ -53,6 +53,13 @@ def topological_space.of_closed
   (is_closed_iInter : ∀ (I : Set) (f : I -> 𝒫 T), 
                         (∀ i : I, is_closed (f i)) -> is_closed (⋂ᵢ f)) : 
   topological_space T :=
-sorry  
+begin
+  fapply topological_space.mk, 
+  { intro U, exact is_closed C(U) },
+  { change (is_closed C(total_Subset T)).carrier, rwr compl_total_empty, 
+    assumption },
+  { intros U V cCU cCV, sorry },
+  { sorry }
+end    
 
 end hott
