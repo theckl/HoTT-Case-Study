@@ -58,8 +58,10 @@ begin
   { intro U, exact is_closed C(U) },
   { change (is_closed C(total_Subset T)).carrier, rwr compl_total_empty, 
     assumption },
-  { intros U V cCU cCV, sorry },
-  { sorry }
+  { intros U V cCU cCV, change (is_closed C(U ∩ V)).carrier, 
+    rwr compl_inter U V, apply is_closed_union; assumption },
+  { intros I f cCfi, change (is_closed C(⋃ᵢ f)).carrier, 
+    rwr compl_iUnion, apply is_closed_iInter; assumption }
 end    
 
 end hott
