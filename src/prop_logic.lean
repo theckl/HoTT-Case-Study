@@ -6,6 +6,17 @@ hott_theory
 namespace hott
 open is_trunc trunc equiv hott.is_equiv hott.prod
 
+set_option pp.universes true
+
+/- We do Classical Logic. Note that LEM follows form the Axiom of Choice, by
+   Diaconescu's Theorem (see [set_axioms]).
+   
+   The Law of the Excluded Middle, following the HoTT-book, (3.4.1) -/
+def ExcludedMiddle := Π (A : Prop), A ⊎ ¬ A
+
+@[hott]
+axiom LEM : ExcludedMiddle
+
 /- Nicer name for construction of `Prop` from `is_prop`. -/
 @[hott]
 def to_Prop (A : Type u) [pA : is_prop A] : trunctype -1 :=
@@ -93,11 +104,25 @@ begin
   intro r, hinduction r, hinduction a with p q, 
   { apply tr, exact sum.inr p }, 
   { apply tr, exact sum.inl q }
-end  
+end 
 
 @[hott] 
 def Not (P : trunctype.{u} -1) : Prop :=
   to_Prop (P -> False.{u})
+
+@[hott]
+def not_and (P Q : trunctype.{u} -1) : Not (P and Q) <-> (Not P) or (Not Q) :=
+begin
+  apply pair,
+  { intro na, apply tr, hinduction LEM P, --this is non-constructive
+    { hinduction LEM Q, 
+      { hinduction na ⟨val, val_1⟩ },
+      { exact sum.inr (λ q, empty.elim (val_1 q)) } }, 
+    { exact sum.inl (λ p, empty.elim (val p)) } },
+  { intro norn, intro PQ, hinduction norn, hinduction a, 
+    { exact val PQ.1 }, 
+    { exact val PQ.2 } }
+end 
 
 @[hott, instance]
 lemma is_prop_map {A B : Type _} (pB : is_prop B) : is_prop (A -> B) :=
@@ -227,10 +252,12 @@ have linv : Π a : A, BA (AB a) = a, from assume a, @is_prop.elim A pA _ _,
 equiv.mk AB (adjointify AB BA rinv linv)
 
 @[hott]
-lemma prop_iff_eq : Π {A B : trunctype.{u} -1} (imp1 : A -> B) (imp2 : B -> A), A = B 
+lemma prop_iff_eq : Π {A B : trunctype.{u} -1} (imp1 : A -> B) (imp2 : B -> A), 
+  A = B 
 | (trunctype.mk carA structA) (trunctype.mk carB structB) :=
   assume imp1 imp2, 
-  have car_eqv : carA ≃ carB, from @prop_iff_equiv _ _ structA structB (imp1, imp2),
+  have car_eqv : carA ≃ carB, from @prop_iff_equiv _ _ structA structB 
+                                                                 (imp1, imp2),
   have car_eq : carA = carB, from ua car_eqv, 
   -- Do you really need univalence here? Requires `A` and `B` to be in the same universe.  
   have struct_tr : car_eq ▸ structA = structB, from 
