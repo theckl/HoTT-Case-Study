@@ -34,6 +34,20 @@ def subset_inter : has_inter (Subset A) :=
 ⟨subset.inter⟩
 
 @[hott]
+def elem_inter_iff (U V : Subset A) : 
+  Π (a : A), a ∈ (U ∩ V) <-> (a ∈ U and a ∈ V) :=
+begin
+  intro a, apply pair,
+  { intro el, exact (pred_elem a).1 el },
+  { intro and_el, exact (pred_elem a).2 and_el }
+end  
+
+@[hott]
+def elem_inter_eq (U V : Subset A) : 
+  Π (a : A), a ∈ (U ∩ V) = (a ∈ U and a ∈ V) :=
+λ a, prop_iff_eq (elem_inter_iff U V a).1 (elem_inter_iff U V a).2  
+
+@[hott]
 def inter.symm (S₁ S₂ : Subset A) : S₁ ∩ S₂ = S₂ ∩ S₁ :=
   have ss1 : S₁ ∩ S₂ ⊆ S₂ ∩ S₁, from 
     assume a el, 
@@ -125,19 +139,47 @@ assume a el, (pred_elem a).2 (@trunc.tr -1 (Σ i : I, a ∈ f i) ⟨i, el⟩)
 def complement (U : Subset A) : Subset A :=
   {x ∈ A | x ∉ U}
 
-notation `C(`U`)` := complement U  
+notation `C(`U`) ` := complement U  
+
+@[hott]
+def elem_comp_iff (U : Subset A) : Π a : A, a ∈ C(U) <-> a ∉ U :=
+begin 
+  intro a, apply pair, 
+  { intro el, exact (pred_elem a).1 el },
+  { intro not_el, exact (pred_elem a).2 not_el }
+end    
+
+@[hott]
+def elem_comp_eq (U : Subset A) : Π a : A, a ∈ C(U) = a ∉ U :=
+  λ a, prop_iff_eq (elem_comp_iff U a).1 (elem_comp_iff U a).2
 
 @[hott]
 def compl_total_empty : C(total_Subset A) = empty_Subset A :=
 begin
   apply (sset_eq_iff_inclusion _ _).2, apply pair,
-  { intros a el, 
-    have not_el : ↥(a ∉ (total_Subset A)), from (pred_elem a).1 el,
-    have el' : ↥(a ∈ (total_Subset A)), from all_elem a,
-    hinduction (not_el el') },
-  { intros a el, apply (pred_elem a).2, intro ne_all, 
-    exact empty_not_elem a el }
+  { intros a el, rwr elem_comp_eq _ a at el, 
+    hinduction (el (all_elem a)) },
+  { intros a el, hinduction empty_not_elem a el }
 end   
+
+@[hott]
+def compl_inter (U V : Subset A) : C(U ∩ V) = C(U) ∪ C(V) :=
+begin
+  apply (sset_eq_iff_inclusion _ _).2, apply pair,
+  { intros x el, apply (pred_elem x).2, 
+    have not_el_inter : ↥(x ∉ (U ∩ V)), from (pred_elem x).1 el,
+    rwr elem_comp_eq, rwr elem_comp_eq, 
+    apply (not_and (x∈U) (x∈V)).1, rwr <- elem_inter_eq, assumption },
+  { intros x el, apply (elem_comp_iff (U ∩ V) x).2, 
+    intro el', 
+    have not_el_or : ↥(x∈C(U) or x∈C(V)), from (pred_elem x).1 el,
+    rwr elem_comp_eq at not_el_or, rwr elem_comp_eq at not_el_or, 
+    exact (not_and (x∈U) (x∈V)).2 not_el_or ((pred_elem x).1 el') }
+end 
+
+@[hott]
+def compl_iUnion {I : Set} (f : I -> 𝒫 A) : C(⋃ᵢ f) = ⋂ᵢ (λ i, C(f i)) :=
+  sorry
 
 end subset
 
