@@ -258,12 +258,6 @@ lemma AxChoice_equiv : Choice.{u v} ↔ Choice_nonempty.{u v} :=
     trunc_functor -1 pssp trunc_pi,
   (imp1, imp2)
 
-/- The Law of the Excluded Middle, following the HoTT-book, (3.4.1) -/
-def ExcludedMiddle := Π (A : Prop), A ⊎ ¬ A
-
-@[hott]
-axiom LEM : ExcludedMiddle
-
 /- The next lemmas are needed for deducing propositional resizing from LEM. -/
 @[hott]
 def prop_ulift : trunctype.{u} -1 -> trunctype.{u+1} -1 := 
