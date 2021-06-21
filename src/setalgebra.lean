@@ -179,7 +179,17 @@ end
 
 @[hott]
 def compl_iUnion {I : Set} (f : I -> 𝒫 A) : C(⋃ᵢ f) = ⋂ᵢ (λ i, C(f i)) :=
-  sorry
+begin  
+  apply (sset_eq_iff_inclusion _ _).2, apply pair,
+  { intros x el, apply (pred_elem x).2, 
+    change Π (i : I), x∈C(f i), intro i, apply (elem_comp_iff (f i) x).2, 
+    intro el_i, apply (elem_comp_iff (⋃ᵢ f) x).1 el,
+    apply (pred_elem x).2, exact tr ⟨i, el_i⟩ },
+  { intros x el, apply (pred_elem x).2, intro el_Ui, 
+    have i_el : Π i : I, x∈C(f i), from (pred_elem x).1 el,
+    hinduction (pred_elem x).1 el_Ui with el_i, 
+    exact (elem_comp_iff (f a.1) x).1 (i_el a.1) a.2 }
+end  
 
 end subset
 
