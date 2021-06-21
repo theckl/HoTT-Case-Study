@@ -118,6 +118,20 @@ instance Module_to_Subset (R : CommRing) (M : Module R) :
   ⟨λ N : Submodule R M, N.carrier⟩
 
 @[hott]
+def module_as_submodule {R : CommRing} (M : Module R) : Submodule R M :=
+begin  
+  fapply Submodule.mk,
+  { exact total_Subset M },
+  { fapply submodule_str.mk,
+    { intros n₁ n₂ el₁ el₂, 
+      change (sset_to_pred (total_Subset M.carrier) (n₁ + n₂)).carrier,
+      rwr total_pred (n₁+n₂), exact true.intro },
+    { intros r n el_n, 
+      change (sset_to_pred (total_Subset M.carrier) (r•n)).carrier,
+      rwr total_pred (r•n), exact true.intro } }
+end  
+
+@[hott]
 def Ideal (R : CommRing) := Submodule R (ring_as_module R)
 
 @[hott]
@@ -135,6 +149,12 @@ def Ideal.to_str {R : CommRing} (I : Ideal R) := I.str
 instance Ideal_to_Subset (R : CommRing) (I : Ideal R) : 
   has_coe (Ideal R) (Subset R.carrier) :=
   ⟨λ N : Ideal R, N.carrier⟩
+
+@[hott]
+def all_Ideal (R : CommRing) : Ideal R :=
+  module_as_submodule (ring_as_module R)  
+
+notation R`•1` := all_Ideal R 
 
 /- This is a HoTT-ism. -/
 @[hott, instance]
@@ -176,9 +196,32 @@ end
 def is_prime_pred {R : CommRing} : Setpred (Ideal_Set R) :=
   λ I, prop_ulift (Prop.mk (is_prime I) (is_prime_is_prop I))
 
+#print is_prime_pred
+
+@[hott]
+def prime_pred_prime {R : CommRing} (P : Ideal_Set R) : 
+  is_prime_pred P -> is_prime P :=
+assume H, sorry
+
 @[hott]
 def PrimeIdeal_Set (R : CommRing) : Set :=
-  ↥{P ∈ (Ideal_Set R) | is_prime_pred P}                           
+  ↥{P ∈ (Ideal_Set R) | is_prime_pred P}  
+
+@[hott]
+def PrimeIdeal_to_Subset {R : CommRing} (P : PrimeIdeal_Set R) :
+  Subset R.carrier :=
+(Subset.map _ P).carrier
+
+@[hott]
+def proper_prime_ideal {R : CommRing} (P : PrimeIdeal_Set R) : 
+  Not ((R•1).carrier ⊆ PrimeIdeal_to_Subset P) :=
+begin
+  have prime_P: is_prime (Subset.map _ P), from 
+    prime_pred_prime _ ((pred_elem (Subset.map _ P)).1 (obj_elem P)),
+  have one_el : ↥((1:R)∈((R•1).carrier)), from sorry,
+  intro el, apply empty.elim, 
+  apply prime_P.ne_all, exact el _ one_el
+end     
 
 end algebra
 
