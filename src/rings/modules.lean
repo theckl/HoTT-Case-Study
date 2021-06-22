@@ -132,7 +132,33 @@ begin
 end  
 
 @[hott]
-def Ideal (R : CommRing) := Submodule R (ring_as_module R)
+protected def submodule.inter {R : CommRing} {M : Module R} 
+  (N₁ N₂ : Submodule R M) : Submodule R M :=
+begin
+  fapply Submodule.mk,
+  { exact N₁ ∩ N₂ },
+  { fapply submodule_str.mk,
+    { intros n₁ n₂ el₁ el₂, 
+      apply (pred_elem (n₁ + n₂)).2, apply pair,  
+      { apply N₁.str.add_closed, 
+        { exact ((pred_elem n₁).1 el₁).1 },
+        { exact ((pred_elem n₂).1 el₂).1 } },
+      { apply N₂.str.add_closed, 
+        { exact ((pred_elem n₁).1 el₁).2 },
+        { exact ((pred_elem n₂).1 el₂).2 } } },
+    { intros r n el, 
+      apply (pred_elem (r•n)).2, apply pair, 
+      { apply N₁.str.smul_closed, exact ((pred_elem n).1 el).1 },
+      { apply N₂.str.smul_closed, exact ((pred_elem n).1 el).2 } } }
+end  
+
+@[hott, instance]
+def submodule_inter {R : CommRing} {M : Module R} : 
+  has_inter (Submodule R M) :=
+⟨submodule.inter⟩
+
+@[hott]
+def Ideal (R : CommRing) := Submodule R (ring_as_module R)  
 
 @[hott]
 def Ideal.mk {R : CommRing} : Π (I : Subset (ring_as_module R).carrier) 
@@ -144,11 +170,6 @@ def Ideal.to_Subset {R : CommRing} (I : Ideal R) := I.carrier
 
 @[hott]
 def Ideal.to_str {R : CommRing} (I : Ideal R) := I.str
-
-@[hott]
-instance Ideal_to_Subset (R : CommRing) (I : Ideal R) : 
-  has_coe (Ideal R) (Subset R.carrier) :=
-  ⟨λ N : Ideal R, N.carrier⟩
 
 @[hott]
 def all_Ideal (R : CommRing) : Ideal R :=
@@ -179,6 +200,19 @@ def Ideal_Set (R : CommRing) : Set :=
   Set.mk (Ideal R) (Ideal_is_set R)
 
 @[hott]
+instance Ideal_to_Subset {R : CommRing} :
+  has_coe (Ideal_Set R) (Subset (ring_as_module R).carrier) :=
+⟨λ I, I.carrier⟩
+
+@[hott, reducible]
+protected def ideal.inter {R : CommRing} (I J : Ideal R) : Ideal R :=
+  submodule.inter I J
+
+@[hott, instance]
+def ideal_inter {R : CommRing} : has_inter (Ideal_Set R) :=
+  ⟨ideal.inter⟩
+
+@[hott]
 structure is_prime {R : CommRing} (P : Ideal R) :=
   (ne_all : ¬((1:R) ∈ P.carrier))
   (mem_or_mem : ∀ r s : R, r * s ∈ P.carrier -> 
@@ -196,32 +230,39 @@ end
 def is_prime_pred {R : CommRing} : Setpred (Ideal_Set R) :=
   λ I, prop_ulift (Prop.mk (is_prime I) (is_prime_is_prop I))
 
-#print is_prime_pred
-
 @[hott]
 def prime_pred_prime {R : CommRing} (P : Ideal_Set R) : 
   is_prime_pred P -> is_prime P :=
-assume H, sorry
+assume H, prop_ulift_inv (Prop.mk (is_prime P) (is_prime_is_prop P)) H
 
 @[hott]
 def PrimeIdeal_Set (R : CommRing) : Set :=
   ↥{P ∈ (Ideal_Set R) | is_prime_pred P}  
 
 @[hott]
-def PrimeIdeal_to_Subset {R : CommRing} (P : PrimeIdeal_Set R) :
-  Subset R.carrier :=
-(Subset.map _ P).carrier
+instance PrimeIdeal_to_Subset {R : CommRing} :
+  has_coe (PrimeIdeal_Set R) (Subset (ring_as_module R).carrier) :=
+⟨λ P, (Subset.map _ P).carrier⟩
 
 @[hott]
 def proper_prime_ideal {R : CommRing} (P : PrimeIdeal_Set R) : 
-  Not ((R•1).carrier ⊆ PrimeIdeal_to_Subset P) :=
+  Not ((R•1).carrier ⊆ ↑P) :=
 begin
   have prime_P: is_prime (Subset.map _ P), from 
     prime_pred_prime _ ((pred_elem (Subset.map _ P)).1 (obj_elem P)),
-  have one_el : ↥((1:R)∈((R•1).carrier)), from sorry,
+  have one_el : ↥((1:R)∈((R•1).carrier)), from all_elem 1,
   intro el, apply empty.elim, 
   apply prime_P.ne_all, exact el _ one_el
 end     
+
+@[hott]
+def inter_prime {R : CommRing} (P : PrimeIdeal_Set R) (I J : Ideal_Set R) :
+  (I ∩ J).carrier ⊆ ↑P <-> I.carrier ⊆ ↑P or J.carrier ⊆ ↑P :=
+begin  
+  apply pair, 
+  { intro inter_ss, sorry },
+  { sorry }
+end    
 
 end algebra
 
