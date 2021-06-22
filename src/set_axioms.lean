@@ -258,12 +258,7 @@ lemma AxChoice_equiv : Choice.{u v} ↔ Choice_nonempty.{u v} :=
     trunc_functor -1 pssp trunc_pi,
   (imp1, imp2)
 
-/- The next lemmas are needed for deducing propositional resizing from LEM. -/
-@[hott]
-def prop_ulift : trunctype.{u} -1 -> trunctype.{u+1} -1 := 
-  assume prop_u, 
-  trunctype.mk (ulift.{u+1 u} ↥prop_u) (@is_trunc_lift ↥prop_u -1 _)
-
+/- The next lemmaa is needed for deducing propositional resizing from LEM. -/
 @[hott]
 def LEM_resize : ExcludedMiddle.{u+1} -> ExcludedMiddle.{u} :=
   assume LEM_u1 A,
