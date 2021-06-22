@@ -6,8 +6,6 @@ hott_theory
 namespace hott
 open is_trunc trunc equiv hott.is_equiv hott.prod
 
-set_option pp.universes true
-
 /- We do Classical Logic. Note that LEM follows form the Axiom of Choice, by
    Diaconescu's Theorem (see [set_axioms]).
    
@@ -283,6 +281,15 @@ def prop_iff_eqv_eq :
 assume A B pA pB,
 equiv.trans (@prop_iff_eqv_equiv A B pA pB) (equiv.symm (eq_equiv_equiv A B))   
 
+/- A useful rule to deal with negated statements. -/
+@[hott]
+def Not_eq_False {P : Prop} : Not P -> P = False :=
+begin  
+  intro np, apply prop_iff_eq, 
+  { intro p, hinduction np p },
+  { intro f, induction f }
+end  
+
 /- Equality of proposition is a mere proposition. -/
 @[hott, instance]
 def eq_prop_is_prop (P Q : Type u) [is_prop P] [is_prop Q] : is_prop (P = Q) :=
@@ -364,8 +371,34 @@ def is_prop_LEM {A : Type _} [is_prop A] : is_prop (A ⊎ ¬ A) :=
 def down_up_eq {A : Type u} (x : A) : (ulift.up.{v} x).down = x := idp
 
 @[hott]
+def up_down_eq {A : Type u} (x : ulift.{v u} A) : ulift.up.{v} x.down = x := 
+begin hinduction x, hsimp end
+
+@[hott]
+def ulift_equiv {A : Type u} : ulift.{v u} A ≃ A :=
+  equiv.mk ulift.down (adjointify ulift.down ulift.up down_up_eq up_down_eq)
+
+@[hott]
 def down_eq_up {A : Type u} (x : ulift.{v u} A) (y : A) : 
   x.down = y -> x = ulift.up y :=
 begin hinduction x, intro H, rwr down_up_eq down at H, exact ap ulift.up H end
+
+/- We bundle the universe lift of propositions. -/
+@[hott]
+def prop_ulift : trunctype.{u} -1 -> trunctype.{u+1} -1 := 
+  assume prop_u, 
+  trunctype.mk (ulift.{u+1 u} ↥prop_u) (@is_trunc_lift ↥prop_u -1 _)
+
+@[hott]
+def prop_ulift_inv (P : Prop) : prop_ulift P -> P :=
+  @ulift_equiv ↥P 
+
+@[hott]
+def ulift_False : prop_ulift False.{u} = False.{u+1} :=
+begin 
+  apply prop_iff_eq, 
+  { intro f, hinduction ulift_equiv.to_fun f },
+  { intro f, hinduction f } 
+end
 
 end hott
