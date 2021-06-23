@@ -687,6 +687,20 @@ def exists_elem {A : Set} (P : A → Prop) : Prop :=
 
 notation `∃` binder `∈` B `,` P:scoped := @exists_elem B P 
 
+/- A criterion for not being a subset -/
+@[hott]
+def not_ss_elem {A : Set} (B₁ B₂ : Subset A) : 
+  Not (B₁ ⊆ B₂) <-> ∃ a ∈ A, a ∈ B₁ and Not (a ∈ B₂) :=
+begin 
+  apply pair,
+  { intro not_ss, 
+    have not_all_imp : ↥(Not (to_Prop (∀ a : A, a ∈ B₁ -> a ∈ B₂))), from sorry,
+    have ex_not_imp : ↥∥Σ a : A, Not (to_Prop (a ∈ B₁ -> a ∈ B₂))∥, from sorry, 
+    hinduction ex_not_imp with eni, 
+    apply tr, sorry },
+  { sorry }
+end    
+
 /- Two subsets are equal iff they are subsets of each other. -/
 @[hott]
 def sset_eq_iff_inclusion {A : Set} (B C : Subset A) :
