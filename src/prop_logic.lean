@@ -108,6 +108,19 @@ end
 def Not (P : trunctype.{u} -1) : Prop :=
   to_Prop (P -> False.{u})
 
+/- Double negation -/
+@[hott]
+def not_not (P : Prop) : Not (Not P) <-> P :=
+begin
+  apply pair,
+  { intro nnP, hinduction LEM P, --non-constructive
+    { assumption },
+    { have nP : ↥(Not P), by intro p; hinduction val p,
+      hinduction nnP nP } },
+  { intros p nP, hinduction nP p }
+end  
+
+/- De Morgan's Laws which are partially non-constructive. -/
 @[hott]
 def not_and (P Q : trunctype.{u} -1) : Not (P and Q) <-> (Not P) or (Not Q) :=
 begin
@@ -121,6 +134,31 @@ begin
     { exact val PQ.1 }, 
     { exact val PQ.2 } }
 end 
+
+@[hott]
+def not_or (P Q : trunctype.{u} -1) : Not (P or Q) <-> (Not P) and (Not Q) :=
+begin
+  apply pair,
+  { intro no, 
+    have nP : ↥(Not P), by intro p; hinduction no (or_inl P Q p),
+    have nQ : ↥(Not Q), by intro q; hinduction no (or_inr P Q q),
+    exact ⟨nP, nQ⟩ },
+  { intros nPnQ PorQ, hinduction PorQ, hinduction a with p q, 
+    { exact nPnQ.1 p },
+    { exact nPnQ.2 q } }
+end  
+
+/- Contraposition -/
+@[hott]
+def contrapos (P Q : trunctype.{u} -1) : (P -> Q) <-> (Not Q -> Not P) :=
+begin
+  apply pair,
+  { intros imp nQ p, exact nQ (imp p) },
+  { intros nimp p, hinduction LEM Q, 
+    { assumption },
+    { have nQ : ↥(Not Q), by intro q; hinduction val q, 
+      hinduction nimp nQ p } }
+end  
 
 @[hott, instance]
 lemma is_prop_map {A B : Type _} (pB : is_prop B) : is_prop (A -> B) :=
@@ -281,6 +319,32 @@ def prop_iff_eqv_eq :
 assume A B pA pB,
 equiv.trans (@prop_iff_eqv_equiv A B pA pB) (equiv.symm (eq_equiv_equiv A B))   
 
+/- Interchanging between types that are proposition and `Prop` -/
+@[hott]
+def to_Prop_eq (P : Prop) : to_Prop ↥P = P :=
+  have to_Prop_iff : to_Prop ↥P <-> P, from 
+    begin
+      apply pair,
+      { intro tP, assumption }, 
+      { intro P, assumption }
+    end,
+  prop_iff_eq to_Prop_iff.1 to_Prop_iff.2
+  
+/- Negation of implication -/
+@[hott]
+def neg_imp (P Q : Prop) : Not (to_Prop (P -> Q)) <-> (P and Not Q) :=
+begin 
+  apply pair, 
+  { apply (contrapos _ _).2, 
+    rwr prop_iff_eq (not_and _ _).1 (not_and _ _).2, 
+    rwr prop_iff_eq (not_not Q).1 (not_not Q).2,
+    rwr prop_iff_eq (not_not _).1 (not_not _).2, 
+    intro nPorQ, hinduction nPorQ, hinduction a with nP q, 
+    { intro p, hinduction nP p },
+    { exact λ p, q } },
+  { intros PnQ PQ, exact PnQ.2 (PQ PnQ.1) }
+end 
+
 /- A useful rule to deal with negated statements. -/
 @[hott]
 def Not_eq_False {P : Prop} : Not P -> P = False :=
@@ -400,5 +464,20 @@ begin
   { intro f, hinduction ulift_equiv.to_fun f },
   { intro f, hinduction f } 
 end
+
+/- We need some statements from first-order logic. -/
+@[hott]
+def not_all {A : Type _} (P : A -> Prop) : 
+  Not (to_Prop (∀ a : A, P a)) <-> ∥Σ a : A, Not (P a)∥ :=
+begin
+  apply pair,  
+  { apply (contrapos _ _).2, intros nenP, 
+    apply (not_not (to_Prop (Π (a : A), P a))).2, intro a, 
+    hinduction LEM (P a), 
+    { assumption },
+    { have nPa : ↥(Not (P a)), by intro Pa; hinduction val Pa,
+      hinduction nenP (tr ⟨a, nPa⟩) } },
+  { intros enP aP, hinduction enP, exact a.2 (aP a.1) }
+end  
 
 end hott
