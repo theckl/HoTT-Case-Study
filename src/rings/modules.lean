@@ -260,7 +260,8 @@ def inter_prime {R : CommRing} (P : PrimeIdeal_Set R) (I J : Ideal_Set R) :
   (I ∩ J).carrier ⊆ ↑P <-> I.carrier ⊆ ↑P or J.carrier ⊆ ↑P :=
 begin  
   apply pair, 
-  { intro inter_ss, sorry },
+  { apply (contrapos _ _).2, intro nor, rwr prop_iff_eq (not_or _ _).1 at nor, 
+    sorry },
   { sorry }
 end    
 
