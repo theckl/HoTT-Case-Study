@@ -676,6 +676,10 @@ def is_Subset_of {A : Set} (B C : Subset A) : trunctype -1 :=
 
 hott_theory_cmd "local infix `⊆`:50 := hott.subset.is_Subset_of"
 
+@[hott]
+def ss_trans {A : Set} (B C D : Subset A) : B ⊆ C -> C ⊆ D -> B ⊆ D :=
+  sorry
+
 @[hott]   
 inductive construct_elem {A : Set.{u}} (P : A → trunctype.{u} -1) 
 | intro (w : A) (h : P w) : construct_elem
@@ -694,11 +698,14 @@ def not_ss_elem {A : Set} (B₁ B₂ : Subset A) :
 begin 
   apply pair,
   { intro not_ss, 
-    have not_all_imp : ↥(Not (to_Prop (∀ a : A, a ∈ B₁ -> a ∈ B₂))), from sorry,
-    have ex_not_imp : ↥∥Σ a : A, Not (to_Prop (a ∈ B₁ -> a ∈ B₂))∥, from sorry, 
+    have ex_not_imp : ↥∥Σ a : A, Not (to_Prop (a ∈ B₁ -> a ∈ B₂))∥, from 
+      (not_all _).1 not_ss, 
     hinduction ex_not_imp with eni, 
-    apply tr, sorry },
-  { sorry }
+    apply tr, fapply construct_elem.intro, 
+    { exact eni.1 },
+    { exact (neg_imp _ _).1 eni.2 } },
+  { intros ex Bss, hinduction ex with cons, hinduction cons with a' Pa, 
+    exact (neg_imp _ _).2 Pa (Bss a') }
 end    
 
 /- Two subsets are equal iff they are subsets of each other. -/
