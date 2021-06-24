@@ -62,7 +62,7 @@ def inter.symm (S₁ S₂ : Subset A) : S₁ ∩ S₂ = S₂ ∩ S₁ :=
   (sset_eq_iff_inclusion _ _).2 ⟨ss1, ss2⟩
 
 @[hott]
-def inter_sset_l (U V : Subset A) : (subset.inter U V) ⊆ U :=
+def inter_sset_l (U V : Subset A) : U ∩ V ⊆ U :=
   assume a el, 
   have p : a ∈ U and a ∈ V, from (pred_elem a).1 el,
   p.1
