@@ -7,7 +7,7 @@ set_option old_structure_cmd true
 
 namespace hott
 
-open hott.algebra hott.subset is_trunc
+open hott.algebra hott.subset is_trunc trunc
 
 namespace algebra
 
@@ -62,7 +62,7 @@ def module_smul {R : CommRing} {M : Module R} : has_scalar R M :=
 ⟨M.str.smul⟩
 
 /- A commutative ring `R` is an `R`-module. -/
-@[hott]
+@[hott, reducible]
 def ring_as_module (R : CommRing) : Module R :=
 begin
   fapply Module.mk,
@@ -90,6 +90,27 @@ begin
     { intro m, change m * 0 = 0, rwr ring.mul_zero }, 
     { exact R.str.one_mul } }
 end  
+
+@[hott, reducible]
+def ring_to_mod {R : CommRing} (r : R) : ring_as_module R := r
+
+@[hott, reducible]
+def mod_to_ring {R : CommRing} (r : ring_as_module R) : R := r 
+
+@[hott]
+def rm_mr_inv {R : CommRing} : 
+  ∀ r : ring_as_module R, ring_to_mod (mod_to_ring r) = r :=
+assume r, rfl 
+
+@[hott]
+def mr_rm_inv {R : CommRing} : 
+  ∀ r : R, mod_to_ring (ring_to_mod r) = r :=
+assume r, rfl 
+
+@[hott]
+def rm_mul_smul {R : CommRing} (r s : R) : 
+  ring_to_mod (r * s) = r • (ring_to_mod s) :=
+rfl  
 
 @[hott]
 structure submodule_str {R : CommRing} (M : Module R) (N : Subset M.carrier) :=
@@ -236,33 +257,58 @@ def prime_pred_prime {R : CommRing} (P : Ideal_Set R) :
 assume H, prop_ulift_inv (Prop.mk (is_prime P) (is_prime_is_prop P)) H
 
 @[hott]
-def PrimeIdeal_Set (R : CommRing) : Set :=
-  ↥{P ∈ (Ideal_Set R) | is_prime_pred P}  
+def PrimeIdeal_Set (R : CommRing) :=
+  {P ∈ (Ideal_Set R) | is_prime_pred P}  
 
 @[hott]
-instance PrimeIdeal_to_Subset {R : CommRing} :
-  has_coe (PrimeIdeal_Set R) (Subset (ring_as_module R).carrier) :=
-⟨λ P, (Subset.map _ P).carrier⟩
-
-@[hott]
-def proper_prime_ideal {R : CommRing} (P : PrimeIdeal_Set R) : 
+def proper_prime_ideal {R : CommRing} (P : (PrimeIdeal_Set R).carrier) : 
   Not ((R•1).carrier ⊆ ↑P) :=
 begin
-  have prime_P: is_prime (Subset.map _ P), from 
-    prime_pred_prime _ ((pred_elem (Subset.map _ P)).1 (obj_elem P)),
+  have prime_P: is_prime ↑P, from 
+    prime_pred_prime _ ((pred_elem ↑P).1 (obj_elem P)),
   have one_el : ↥((1:R)∈((R•1).carrier)), from all_elem 1,
   intro el, apply empty.elim, 
   apply prime_P.ne_all, exact el _ one_el
 end     
 
 @[hott]
-def inter_prime {R : CommRing} (P : PrimeIdeal_Set R) (I J : Ideal_Set R) :
+def inter_prime {R : CommRing} (P : (PrimeIdeal_Set R).carrier) (I J : Ideal_Set R) :
   (I ∩ J).carrier ⊆ ↑P <-> I.carrier ⊆ ↑P or J.carrier ⊆ ↑P :=
 begin  
   apply pair, 
-  { apply (contrapos _ _).2, intro nor, rwr prop_iff_eq (not_or _ _).1 at nor, 
-    sorry },
-  { sorry }
+  { apply (contrapos _ _).2, intro nor, 
+    rwr prop_iff_eq (not_or _ _).1 (not_or _ _).2 at nor, 
+    rwr prop_iff_eq (not_ss_elem _ _).1 (not_ss_elem _ _).2 at nor,
+    rwr prop_iff_eq (not_ss_elem _ _).1 (not_ss_elem _ _).2 at nor,
+    hinduction nor.1 with tr1 cons1, hinduction nor.2 with tr2 cons2, 
+    clear tr1 tr2 nor,
+    hinduction cons1 with r₁ Pr1, hinduction cons2 with r₂ Pr2,
+    apply (not_ss_elem _ _).2, 
+    let r := mod_to_ring r₁, let s := mod_to_ring r₂, 
+    let rs := ring_to_mod (comm_ring.mul r s),
+    have eI : ring_to_mod (comm_ring.mul r s) = s • r₁, 
+      by rwr R.str.mul_comm; rwr rm_mul_smul r s; rwr rm_mr_inv,
+    have eJ : ring_to_mod (comm_ring.mul r s) = r • r₂, 
+      by change ring_to_mod (r * s) = r•r₂; rwr rm_mul_smul r s; rwr rm_mr_inv,
+    have el : ↥(rs ∈ (I ∩ J).carrier), from 
+      begin  
+        apply (pred_elem (ring_to_mod (comm_ring.mul r s))).2, apply pair, 
+        { rwr eI, apply I.str.smul_closed, exact Pr1.1 },
+        { rwr eJ, apply J.str.smul_closed, exact Pr2.1 }
+      end, 
+    have prime_P: is_prime ↑P, from 
+      prime_pred_prime _ ((pred_elem ↑P).1 (obj_elem P)),  
+    have nel : ↥(Not (rs ∈ (Subset.map _ P).carrier)), from 
+      begin  
+        intro el_rs, hinduction prime_P.mem_or_mem r s el_rs with tr_or r_or_s, 
+        clear tr_or, hinduction r_or_s with elr els, 
+        { exact Pr1.2 elr },
+        { exact Pr2.2 els }
+      end,
+    exact tr (construct_elem.intro rs ⟨el, nel⟩) },
+  { intro I_or_J, hinduction I_or_J with tr_or, hinduction tr_or with Iss Jss, 
+    { sorry },
+    { sorry } }
 end    
 
 end algebra
