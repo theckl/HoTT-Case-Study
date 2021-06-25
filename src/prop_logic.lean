@@ -458,6 +458,20 @@ def prop_ulift_inv (P : Prop) : prop_ulift P -> P :=
   @ulift_equiv ↥P 
 
 @[hott]
+def prop_ulift_or (P Q : Prop) : 
+  prop_ulift (P or Q) = (prop_ulift P or prop_ulift Q) :=
+begin 
+  apply prop_iff_eq, 
+  { intro lift_or, hinduction lift_or with tr_PorQ, hinduction tr_PorQ with PorQ,
+    hinduction PorQ with p q,
+    { apply tr, exact sum.inl (ulift.up p) },
+    { apply tr, exact sum.inr (ulift.up q) } },
+  { intro or_lift, hinduction or_lift with sum_lift, hinduction sum_lift with p q, 
+    { hinduction p with p', apply ulift.up, apply tr, exact sum.inl p' },
+    { hinduction q with q', apply ulift.up, apply tr, exact sum.inr q' } }
+end    
+
+@[hott]
 def ulift_False : prop_ulift False.{u} = False.{u+1} :=
 begin 
   apply prop_iff_eq, 
