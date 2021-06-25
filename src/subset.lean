@@ -677,8 +677,8 @@ def is_Subset_of {A : Set} (B C : Subset A) : trunctype -1 :=
 hott_theory_cmd "local infix `⊆`:50 := hott.subset.is_Subset_of"
 
 @[hott]
-def ss_trans {A : Set} (B C D : Subset A) : B ⊆ C -> C ⊆ D -> B ⊆ D :=
-  sorry
+def sset_trans {A : Set} {B C D : Subset A} : B ⊆ C -> C ⊆ D -> B ⊆ D :=
+begin intros BC CD b bB, exact CD b (BC b bB) end  
 
 @[hott]   
 inductive construct_elem {A : Set.{u}} (P : A → trunctype.{u} -1) 
