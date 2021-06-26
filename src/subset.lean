@@ -42,71 +42,55 @@ def empty_Subset (A : Set) : Subset A :=
   have is_inj_f : is_set_injective f, by intro e; induction e,
   Subset.mk empty_Set f is_inj_f
 
-/- The image of a map betweens sets is a subset of the codomain. We show this in several steps:
-   * First, we show that [total_image] from [function] is a set. This works more generally: 
-     A sigma type whose dependent components are sets is a set. It can be shown for n-types 
-     using the results in [hit.trunc] on truncations of sigma types. 
-   * Second, we construct a map from [total_image] into the codomain and show that it is 
+/- The image of a map betweens sets applied on a subset of the domain is a subset of the 
+   codomain. We show this in several steps:
+   * First, we generalize [image] from [function] to the image of a subset and show that it is 
+     a set. This works more generally: A sigma type whose dependent components are sets is a 
+     set. It can be shown for n-types using the results in [hit.trunc] on truncations of sigma types. 
+   * Second, we construct a map from [ss_image] into the codomain and show that it is 
      injective.
-   * Now we have all the ingredients to construct the image as a subset of the codomain. -/  
+   * Now we have all the ingredients to construct the image of a subset as a subset of the 
+     codomain. -/  
 @[hott]
-def image_is_set {A B : Set} (f : A -> B) : is_set (total_image f) :=
-    have H : forall c d : total_image f, is_prop (c = d), from 
-      assume c d, 
-      have forall p q : c = d, p = q, from 
-        assume p q, 
-        have eq1 : p..1 = q..1, from 
-          @is_prop.elim (c.1 = d.1) (is_trunc_eq -1 c.1 d.1) p..1 q..1,
-        let I := λ (p1 : c.1 = d.1), c.2 =[p1; λ (b : B), image f b] d.2 in    
-        have eq2 : p..2 =[eq1; I] q..2, from 
-          have Hchpq : change_path eq1 p..2 = q..2, from 
-            let p2 := tr_eq_of_pathover (change_path eq1 p..2),
-                q2 := tr_eq_of_pathover q..2 in
-            have Heq_pq : p2 = q2, from is_prop.elim p2 q2,
-            have H_equiv : equiv (c.2 =[q..1; λ (b : B), image f b] d.2) 
-                                 (q..1 ▸[λ (b : B), image f b] c.2 = d.2), 
-              from pathover_equiv_tr_eq _ _ _,
-            let F := (equiv.to_fun H_equiv)⁻¹ᶠ, fib := fiber f c.1 in
-            have HF : is_equiv F, from is_equiv_inv (equiv.to_fun H_equiv),
-            have H_trunc1 : is_prop (q..1 ▸[λ (b : B), image f b] c.2 = d.2), 
-              from 
-              have H_prop : is_prop (trunc -1 fib), from is_trunc_trunc -1 _ ,
-              have H_set : is_set (trunc -1 fib), from is_trunc_succ _ _,
-              is_trunc_eq -1 _ _,
-            have H_trunc2 : is_prop (c.2 =[q..1; λ (b : B), image f b] d.2), from 
-              is_trunc_is_equiv_closed -1 F H_trunc1,
-            is_prop.elim (change_path eq1 p..2) q..2,
-          pathover_of_change_path eq1 p..2 q..2 Hchpq,
-        sigma_eq2 eq1 eq2,
-      is_prop.mk this,
-    is_trunc_succ_intro H
+def ss_image {A B : Set} (f : A -> B) (C : Subset A) : Type _ := 
+  Σ (b : B), image (f ∘ C.map) b
+
+@[hott, instance]
+def ss_image_is_set {A B : Set} (f : A -> B) (C : Subset A) : is_set (ss_image f C) :=
+begin 
+  fapply is_set.mk, intros c₁ c₂ p q, 
+  fapply sigma_eq2, 
+  { fapply is_prop.elim },
+  { fapply pathover_of_change_path, fapply is_prop.elim }
+end   
 
 @[hott]
-def image_Set {A B : Set} (f : A -> B) := 
-  Set.mk (total_image f) (image_is_set f)
+def ss_image_Set {A B : Set} (f : A -> B) (C : Subset A) := 
+  Set.mk (ss_image f C) (ss_image_is_set f C)
 
 @[hott]
-def image_embedding {A B : Set} (f : A -> B) : (image_Set f) -> B :=
-  λ (bf : total_image f), bf.1
+def ss_image_embedding {A B : Set} (f : A -> B) (C : Subset A) : (ss_image_Set f C) -> B :=
+  λ (bf : ss_image f C), bf.1
 
 @[hott]
-lemma im_emb_is_inj {A B : Set} (f : A -> B) : 
-  is_set_injective (image_embedding f) :=
-let im_emb := image_embedding f in
-show forall (bf1 bf2 : total_image f), im_emb bf1 = im_emb bf2 -> bf1 = bf2, from
-assume bf1 bf2,
-match bf1, bf2 with (sigma.mk b1 f1), (sigma.mk b2 f2) :=
-  assume (im_emb_eq : b1 = b2), 
-  have tr_eq : im_emb_eq ▸ f1 = f2, from is_prop.elim _ _,
-  have fib_eq : f1 =[im_emb_eq; λ (b : B), image f b] f2, from 
-    pathover_of_tr_eq tr_eq,
-  apd011 sigma.mk im_emb_eq fib_eq 
-end  
+def ss_im_emb_is_inj {A B : Set} (f : A -> B) (C : Subset A) : 
+  is_set_injective (ss_image_embedding f C) :=
+begin
+  intros bf₁ bf₂ im_emb_eq, hinduction bf₁ with b₁ im₁, hinduction bf₂ with b₂ im₂,
+  fapply sigma_eq,
+  { assumption },
+  { apply pathover_of_tr_eq, apply is_prop.elim }
+end    
+
+@[hott]
+def ss_Image {A B : Set} (f : A -> B) (C : Subset A) : Subset B :=
+  Subset.mk (ss_image_Set f C) (ss_image_embedding f C) (ss_im_emb_is_inj f C)
 
 @[hott]
 def Image {A B : Set} (f : A -> B) : Subset B :=
-  Subset.mk (image_Set f) (image_embedding f) (im_emb_is_inj f)
+  ss_Image f (total_Subset A)
 
+/- A small lemma needed later on. -/
 @[hott]
 lemma ap_car_ap_sset_mk {A : Set.{u}} (carB : Set.{u}) (mapB : carB -> A) 
   {inj1 inj2 : is_set_injective mapB} : forall (inj_eq : inj1 = inj2), 
