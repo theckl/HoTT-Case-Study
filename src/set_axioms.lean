@@ -545,7 +545,15 @@ def LEM_Prop_Resize : ExcludedMiddle.{u+1} -> (trunctype.{u} -1 ≃ trunctype.{u
   equiv.trans (LEM_Prop_equiv_Two lem_u) 
               (equiv.trans (Two_equiv_lift.{u}) (equiv.symm (LEM_Prop_equiv_Two lem_u1)))
 
-@[hott, reducible]  
+@[hott, reducible, hsimp]  
 def prop_resize : trunctype.{u+1} -1 -> trunctype.{u} -1 := (LEM_Prop_Resize LEM)⁻¹ᶠ  
+
+@[hott]
+def prop_to_prop_resize (P : Prop) : P -> prop_resize P :=
+begin 
+  intro p, hsimp, 
+  have eq : (LEM_Prop_equiv_Two LEM).to_fun P = Two.one, from sorry,
+  rwr eq, hsimp, exact true.intro 
+end
 
 end hott
