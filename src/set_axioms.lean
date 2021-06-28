@@ -549,11 +549,26 @@ def LEM_Prop_Resize : ExcludedMiddle.{u+1} -> (trunctype.{u} -1 ≃ trunctype.{u
 def prop_resize : trunctype.{u+1} -1 -> trunctype.{u} -1 := (LEM_Prop_Resize LEM)⁻¹ᶠ  
 
 @[hott]
-def prop_to_prop_resize (P : Prop) : P -> prop_resize P :=
+def prop_to_prop_resize {P : Prop} : P -> prop_resize P :=
 begin 
   intro p, hsimp, 
-  have eq : (LEM_Prop_equiv_Two LEM).to_fun P = Two.one, from sorry,
+  have eq : (LEM_Prop_equiv_Two LEM).to_fun P = Two.one, from 
+    begin 
+      change LEM_Prop_Two LEM P = Two.one, hsimp, hinduction LEM P with lem q nq, 
+      { hsimp }, 
+      { hinduction nq p }
+    end,
   rwr eq, hsimp, exact true.intro 
 end
+
+@[hott]
+def prop_resize_to_prop {P : Prop} : prop_resize P -> P :=
+begin
+  hsimp, intro p, hinduction LEM P with lem q nq,
+  { exact q },
+  { have neq : (LEM_Prop_equiv_Two LEM).to_fun P = Two.zero, by   
+      change LEM_Prop_Two LEM P = Two.zero; hsimp; rwr lem,
+    rwr neq at p, have p' : false, from p, hinduction p' }
+end  
 
 end hott
