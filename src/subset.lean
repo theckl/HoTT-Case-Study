@@ -712,6 +712,18 @@ have imp2 : (B ⊆ C) × (C ⊆ B) -> B = C, from
   sset_pred_inj B C pred_eq, 
 prod.mk imp1 imp2
 
+/- A lemma to exploit the image of a subset under a map. -/
+@[hott]
+def ss_image_preimage {A B : Set} (f : A -> B) (C : Subset A) : 
+  ∀ b : B, b ∈ ss_Image f C -> image f b :=
+begin 
+  intros b el, hinduction el with fa,   
+  have eq : fa.1.1 = b, from fa.2,
+  have im2 : ↥(image (f ∘ C.map) fa.1.1), from fa.1.2, 
+  hinduction im2 with fCa, rwr eq at fCa,
+  exact tr ⟨C.map fCa.1, fCa.2⟩ 
+end 
+
 end subset
 
 end hott
