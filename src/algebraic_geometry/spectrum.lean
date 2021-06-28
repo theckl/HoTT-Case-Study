@@ -61,4 +61,14 @@ begin
   exact ⟨IU.1 ∩ IV.1, union_inter⟩
 end    
 
+@[hott]
+def inter_Zariski_closed (R : CommRing) : ∀ (I : Set) (f : I -> 𝒫 ↥(prime_spectrum R)), 
+                        (∀ i : I, is_Zariski_closed (f i)) -> is_Zariski_closed (⋂ᵢ f) :=
+begin 
+  intros I f clfI, 
+  have ideal_fi : ∀ i : I, fiber (zero_locus_pred R) (sset_to_pred (f i)), from 
+    begin intro i,  sorry end,
+  apply tr, sorry
+end                          
+
 end hott
