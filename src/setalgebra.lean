@@ -77,6 +77,19 @@ def sInter (S : Subset (𝒫 A)) : Subset A :=
 
 hott_theory_cmd "local prefix `⋂₀`:110 := hott.subset.sInter"
 
+@[hott]
+def sInter_sset {A : Set.{u}} (S : Subset (𝒫 A)) : 
+  ∀ B : 𝒫 A, B ∈ S -> ⋂₀ S ⊆ B :=
+assume B elB a ela, prop_resize_to_prop ((pred_elem a).1 ela) B elB 
+
+@[hott]
+def sset_sInter {A : Set.{u}} (S : Subset (𝒫 A)) (B : 𝒫 A) : 
+  (∀ C : 𝒫 A, C ∈ S -> B ⊆ C) -> B ⊆ ⋂₀ S :=
+begin  
+  intros allBC a ela, apply (pred_elem a).2, apply prop_to_prop_resize,
+  intros C elC, exact allBC C elC a ela
+end    
+
 @[hott, reducible]
 def iInter {A : Set.{u}} {I : Set.{u}} (f : I -> 𝒫 A) : Subset A :=
   {t ∈ A | to_Prop (∀ i : I, t ∈ f i) }
