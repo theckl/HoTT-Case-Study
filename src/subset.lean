@@ -640,7 +640,7 @@ def elem_obj {A : Set.{u}} {B : Subset A} (a : A) (H : a ∈ B) : ↥B :=
   (@untrunc_of_is_trunc _ -1 Hp H).1   
 
 @[hott]
-def elem_obj_eq {A : Set} {B : Subset A} (a : A) (H : a ∈ B) : ↑(elem_obj a H) = a :=
+def elem_obj_eq {A : Set} {B : Subset A} (a : A) (H : a ∈ B) : B.map (elem_obj a H) = a :=
   have Hp : is_prop (fiber.{u u} B.map a), from set_inj_implies_unique_fib _ B.inj a,
   (@untrunc_of_is_trunc _ -1 Hp H).2
 
@@ -712,17 +712,36 @@ have imp2 : (B ⊆ C) × (C ⊆ B) -> B = C, from
   sset_pred_inj B C pred_eq, 
 prod.mk imp1 imp2
 
-/- A lemma to exploit the image of a subset under a map. -/
+/- Some lemmas to exploit the image of a subset under a map. -/
 @[hott]
 def ss_image_preimage {A B : Set} (f : A -> B) (C : Subset A) : 
-  ∀ b : B, b ∈ ss_Image f C -> image f b :=
+  ∀ b : B, b ∈ ss_Image f C -> image (f ∘ C.map) b :=
+begin intros b el, hinduction el with fa, rwr <- fa.2, exact fa.1.2 end 
+
+@[hott]
+def ss_image_el {A B : Set} (f : A -> B) (C : Subset A) : 
+  ∀ (a : A), a ∈ C -> f a ∈ ss_Image f C :=
 begin 
-  intros b el, hinduction el with fa,   
-  have eq : fa.1.1 = b, from fa.2,
-  have im2 : ↥(image (f ∘ C.map) fa.1.1), from fa.1.2, 
-  hinduction im2 with fCa, rwr eq at fCa,
-  exact tr ⟨C.map fCa.1, fCa.2⟩ 
-end 
+  intros a ela,
+  apply tr, fapply fiber.mk, 
+    { fapply dpair, 
+      { exact f a },
+      { apply tr, fapply fiber.mk, 
+        { exact elem_obj a ela },
+        { change f (C.map (elem_obj a ela)) = f a, 
+          rwr elem_obj_eq a ela } } },
+    { exact idp } 
+  end
+
+@[hott]
+def ss_im_preim_el {A B : Set} (f : A -> B) (C : Subset A) (b : B) :
+  b ∈ ss_Image f C -> ∥Σ a : A, (a ∈ C) × (f a = b)∥ :=
+begin 
+  intro elb,
+  have imb : ↥(image (f ∘ C.map) b), from ss_image_preimage f C b elb,
+  hinduction imb with fibb,
+  exact tr ⟨C.map fibb.1, ⟨obj_elem fibb.1, fibb.2⟩⟩
+end  
 
 end subset
 
