@@ -272,10 +272,10 @@ begin
   fapply functor.mk, 
   { intro b, exact elem_obj ↑b (inc ↑b (obj_elem b)) }, 
   { intros b b' f, 
-    change ↥(↑(elem_obj ↑b (inc ↑b (obj_elem b))) ⟶ ↑(elem_obj ↑b' (inc ↑b' (obj_elem b')))), 
+    change ↥(C.map (elem_obj ↑b (inc ↑b (obj_elem b))) ⟶ C.map (elem_obj ↑b' (inc ↑b' (obj_elem b')))), 
     rwr elem_obj_eq, rwr elem_obj_eq, exact f },
   { intro b, 
-    change _ = 𝟙 (↑(elem_obj ↑b (inc ↑b (obj_elem b)))), 
+    change _ = 𝟙 (C.map (elem_obj ↑b (inc ↑b (obj_elem b)))), 
     apply inv_tr_eq_of_eq_tr, apply inv_tr_eq_of_eq_tr, rwr tr_tr_cat_id },
   { intros b₁ b₂ b₃ f g, apply inv_tr_eq_of_eq_tr, apply inv_tr_eq_of_eq_tr, 
     exact (tr_tr_cat_comp (elem_obj_eq ↑b₁ (inc ↑b₁ (obj_elem b₁))) 
