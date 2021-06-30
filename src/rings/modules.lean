@@ -11,7 +11,7 @@ open hott.algebra hott.subset is_trunc trunc
 
 namespace algebra
 
-set_option pp.universes true
+set_option pp.universes false
 
 @[hott]
 structure module_str (R : CommRing) (M : Set) extends ab_group M renaming 
@@ -175,6 +175,11 @@ instance Submodule_to_Subset {R : CommRing} (M : Module R) :
 ⟨λ N, N.carrier⟩
 
 @[hott]
+def Submodule_Set_to_Subsets {R : CommRing} (M : Module R) :
+  Submodule_Set M -> 𝒫 M.carrier :=
+assume N, Submodule.to_Subset N   
+
+@[hott]
 def module_as_submodule {R : CommRing} (M : Module R) : Submodule R M :=
 begin  
   fapply Submodule.mk,
@@ -226,10 +231,10 @@ begin
                                                                submodule_str M B, from
       begin 
         intros B B_im, 
-        have ex_B_str : ↥(image (@Submodule.to_Subset R M) B), from 
+        have ex_B_str : ↥(image ((@Submodule.to_Subset R M) ∘ S.map) B), from 
           @ss_image_preimage.{u+1 u+1} (Submodule_Set M) (𝒫 M.carrier) 
                                                      (@Submodule.to_Subset R M) S B B_im,
-        hinduction ex_B_str with fB, rwr <- fB.2, exact fB.1.str 
+        hinduction ex_B_str with fB, rwr <- fB.2, exact (S.map fB.1).str 
         end,                                                             
     fapply submodule_str.mk,
     { intros n₁ n₂ el1 el2, 
@@ -243,6 +248,12 @@ begin
       have el_B : ↥(n ∈ B), from prop_resize_to_prop ((pred_elem n).1 el) B B_im,
       exact (B_str B B_im).smul_closed r n el_B } }
 end  
+
+@[hott]
+def submod_sInter_inc {R : CommRing.{u}} {M : Module.{u u} R} (S : Subset (Submodule_Set M)) :
+  ∀ N : Submodule_Set M, N ∈ S -> (submodule_sInter S).carrier ⊆ N.carrier :=
+assume N elN, sInter_sset (@ss_Image.{u+1 u+1} (Submodule_Set M) (𝒫 M.carrier) 
+                              (@Submodule.to_Subset R M) S) N.carrier (ss_image_el _ _ N elN)
 
 @[hott]
 def submodule_span {R : CommRing.{u}} {M : Module.{u u} R} (S : Subset M.carrier) : 
