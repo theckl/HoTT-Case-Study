@@ -62,33 +62,38 @@ def zero_pred_vanish {R : CommRing.{u}} (I : Ideal R) (U : Subset ↥(prime_spec
   (zero_locus_pred R I = sset_to_pred U) -> I.carrier ⊆ vanish_ideal R U :=
 begin  
   intro pred_eq, apply sset_sInter, intros C elC,
-  have PUI : ∀ (P : (prime_spectrum R).carrier), P ∈ U -> I.carrier ⊆ P.1.carrier, from 
-    sorry,
-  have imC : ↥(image (Submodule.to_Subset ∘ (@ss_Image.{u+1 u+1} (PrimeIdeal_Set R).carrier 
-                                      (Ideal_Set R) (PrimeIdeal_Set R).map U).map) C), from 
-    sorry,   
-  hinduction imC with fibC, 
-  have PC : ↥↥(ss_Image.{u+1 u+1} (PrimeIdeal_Set R).map U), from fibC.1,
-  sorry
+  rwr @ss_im_comp.{u+1 u+1 u+1} (PrimeIdeal_Set R).carrier (Ideal_Set R) 
+      (𝒫 (ring_as_module R).carrier) (PrimeIdeal_Set R).map Submodule.to_Subset U at elC,
+  let imP := ss_im_preim_el.{u+1 u+1} _ U C elC,
+  hinduction imP with H, let P := H.1, rwr <- H.2.2, 
+  change ↥(I.carrier⊆P.1.carrier), 
+  have elP : ↥(P ∈ zero_locus I), by rwr zero_pred_zero I U pred_eq; exact H.2.1,
+  exact prop_ulift_inv _ ((pred_elem P).1 elP)   
 end    
 
 @[hott]
-def ZVZcl_eq_Zcl {R : CommRing} (U : Subset ↥(prime_spectrum R)) : 
+def Zcl_to_ZV_eq {R : CommRing} (U : Subset ↥(prime_spectrum R)) : 
   is_Zariski_closed U -> (zero_locus (vanish_ideal R U) = U) :=
 begin
-  intro ZclU, hinduction ZclU with IU, 
-  have IV : ↥(IU.point.carrier ⊆ (vanish_ideal R U).carrier), from sorry,
+  intro ZclU, hinduction ZclU with fibU, let I := fibU.1,
   apply (sset_eq_iff_inclusion _ _).2, fapply pair, 
-  { intro P, 
-    change sset_to_pred (pred_to_sset (zero_locus_pred R (vanish_ideal R U))) P -> (P∈U),
-    rwr sset_pred_rinv, intro ZVP,
-    have lVP : ↥(prop_ulift ((vanish_ideal R U).carrier ⊆ P.1.carrier)), from ZVP,
-    have VP : ↥((vanish_ideal R U).carrier ⊆ P.1.carrier), from prop_ulift_inv _ lVP,
-    clear ZVP lVP, change ↥(sset_to_pred U P), rwr <- homotopy_of_eq IU.2 P,
-    change (prop_ulift (IU.point.carrier ⊆ P.1.carrier)).carrier, apply ulift.up,
-    exact sset_trans IV VP },
-  { sorry }
+  { rwr <- zero_pred_zero I U fibU.2, 
+    apply ideal_inc_to_zero_inc, rwr zero_pred_zero I U fibU.2,
+    exact zero_pred_vanish I U fibU.2 },
+  { intros P elP, apply (pred_elem P).2, 
+    exact ulift.up (prime_vanish_inc P elP) }
 end     
+
+@[hott]
+def ZV_eq_to_Zcl {R : CommRing} (U : Subset ↥(prime_spectrum R)) : 
+  (zero_locus (vanish_ideal R U) = U) -> is_Zariski_closed U :=
+begin  
+  intro ZVU, apply tr, fapply fiber.mk, 
+  { exact vanish_ideal R U },
+  { apply eq_of_homotopy, intro P, apply prop_iff_eq _ _, 
+    { sorry },
+    { intro elP, exact ulift.up (prime_vanish_inc P elP) } }
+end    
 
 /- Now we show the properties needed to construct the Zariski topology from Zariski-closed 
    sets. -/
@@ -129,13 +134,14 @@ begin
 end    
 
 @[hott]
-def inter_Zariski_closed (R : CommRing) : ∀ (I : Set) (f : I -> 𝒫 ↥(prime_spectrum R)), 
+def inter_Zariski_closed (R : CommRing.{u}) : ∀ (I : Set) (f : I -> 𝒫 ↥(prime_spectrum R)), 
                         (∀ i : I, is_Zariski_closed (f i)) -> is_Zariski_closed (⋂ᵢ f) :=
 begin 
   intros I f clfI, 
-  have ideal_fi : ∀ i : I, fiber (zero_locus_pred R) (sset_to_pred (f i)), from 
-    begin intro i, sorry end,
-  apply tr, sorry
+  have fI : I -> Ideal_Set R, from λ i, vanish_ideal R (f i),
+  apply tr, fapply fiber.mk,  
+  { exact ideal_ssum (Image.{u+1 u} fI) },
+  { sorry }
 end                          
 
 end algebraic_geometry
