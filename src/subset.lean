@@ -743,6 +743,27 @@ begin
   exact tr ⟨C.map fibb.1, ⟨obj_elem fibb.1, fibb.2⟩⟩
 end  
 
+@[hott]
+def ss_im_comp {A B C : Set} (f : A -> B) (g : B -> C) (D : Subset A) :
+  ss_Image g (ss_Image f D) = ss_Image (g ∘ f) D :=
+begin 
+  apply (sset_eq_iff_inclusion _ _).2, apply pair,
+  { intros c elc, 
+    let imc := ss_image_preimage g (ss_Image f D) c elc,
+    hinduction imc with fibc,
+    let b := (ss_Image f D).map fibc.1,
+    have elb : ↥(b ∈ ss_Image f D), from tr ⟨fibc.1, idp⟩,
+    let ima := ss_im_preim_el f D b elb,
+    hinduction ima with H, let a := H.1,
+    have p : c = g (f a), by rwr H.2.2; rwr <- fibc.2, 
+    rwr p, exact ss_image_el (g ∘ f) D a H.2.1 },
+  { intros c elc, 
+    let ima := ss_im_preim_el (g ∘ f) D c elc,
+    hinduction ima with H, let a := H.1, let b := f a,
+    rwr <- H.2.2, change ↥((g b)∈ss_Image g (ss_Image f D)),
+    exact ss_image_el g (ss_Image f D) b (ss_image_el f D a H.2.1) }
+end    
+
 end subset
 
 end hott
