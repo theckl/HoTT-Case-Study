@@ -149,6 +149,14 @@ def sset_iUnion {A : Set.{u}} {I : Set.{u}} (f : I -> 𝒫 A) (i : I) :
 assume a el, (pred_elem a).2 (@trunc.tr -1 (Σ i : I, a ∈ f i) ⟨i, el⟩) 
 
 @[hott]
+def iUnion_sset {A : Set.{u}} {I : Set.{u}} (f : I -> 𝒫 A) (B : Subset A) :
+  (∀ i : I, f i ⊆ B) -> ⋃ᵢ f ⊆ B :=
+begin
+  intros Iss a ela, let exi := (pred_elem a).1 ela, hinduction exi with elai,
+  exact Iss elai.1 a elai.2
+end    
+
+@[hott]
 def complement (U : Subset A) : Subset A :=
   {x ∈ A | x ∉ U}
 
