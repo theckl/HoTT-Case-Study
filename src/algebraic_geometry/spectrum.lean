@@ -1,4 +1,4 @@
-import rings.modules
+import rings.modules topology.basic
 
 universes u u' v w
 hott_theory
@@ -7,11 +7,11 @@ set_option old_structure_cmd true
 
 namespace hott
 
-open hott.algebra hott.subset hott.trunc
+open hott.algebra hott.set hott.subset hott.trunc
 
 namespace algebraic_geometry
 
-set_option pp.universes false
+set_option pp.universes true
 
 /- The prime spectrum of a ring `R` is the set of prime ideals of `R`. -/
 @[hott]
@@ -37,6 +37,26 @@ def zero_pred_zero {R : CommRing} (I : Ideal R) (U : Subset ↥(prime_spectrum R
 assume H, (ap pred_to_sset H) ⬝ (sset_pred_linv U)
 
 @[hott]
+def inc_prime_el_zero {R : CommRing} (I : Ideal R) (P : (prime_spectrum R).carrier) :
+  I.carrier ⊆ P.1.carrier -> P ∈ zero_locus I :=
+begin 
+  intro ss_IP, 
+  change ↥(sset_to_pred (pred_to_sset (zero_locus_pred R I)) P),
+  rwr sset_pred_rinv, 
+  exact ulift.up ss_IP
+end    
+
+@[hott]
+def el_zero_inc_prime {R : CommRing} (I : Ideal R) (P : (prime_spectrum R).carrier) :
+  P ∈ zero_locus I -> I.carrier ⊆ P.1.carrier :=
+begin 
+  intro elP, 
+  let elP' : ↥(sset_to_pred (pred_to_sset (zero_locus_pred R I)) P) := elP,
+  rwr sset_pred_rinv at elP', 
+  exact ulift.down elP'
+end
+
+@[hott]
 def ideal_inc_to_zero_inc {R : CommRing} (I J : Ideal R) :
   I.carrier ⊆ J.carrier -> zero_locus J ⊆ zero_locus I :=
 begin  
@@ -47,6 +67,21 @@ begin
   change prop_ulift (J.carrier ⊆ P.1.carrier) -> prop_ulift (I.carrier ⊆ P.1.carrier),
   intro H, hinduction H with JP, apply ulift.up, exact sset_trans IJ JP
 end    
+
+@[hott]
+def zero_ideal_ssum {R : CommRing.{u}} {I : Set.{u}} (f : I -> Ideal_Set R) :
+  zero_locus (ideal_isum I f) = 
+    @iInter ↥(prime_spectrum R) (trunctype_ulift.{u u+1} I) (zero_locus ∘ f ∘ ulift.down) :=
+begin
+  apply (sset_eq_iff_inclusion _ _).2, fapply pair, 
+  { intros P elP, let incP := el_zero_inc_prime (ideal_isum I f) P elP, 
+    apply (pred_elem P).2, intro i, apply (pred_elem P).2, apply ulift.up, 
+    exact sset_trans (ideal_inc_isum f (ulift.down i)) incP },
+  { intros P elP, apply (pred_elem P).2, apply ulift.up,
+    let ssP := (pred_elem P).1 elP, apply ideal_isum_inc, intro i,
+    apply el_zero_inc_prime, rwr <- down_up_eq i,
+    exact ssP (ulift.up i) }   
+end
 
 @[hott]
 def vanish_ideal (R : CommRing.{u}) : Subset ↥(prime_spectrum R) -> Ideal_Set R :=
@@ -91,7 +126,9 @@ begin
   intro ZVU, apply tr, fapply fiber.mk, 
   { exact vanish_ideal R U },
   { apply eq_of_homotopy, intro P, apply prop_iff_eq _ _, 
-    { sorry },
+    { change (prop_ulift ((vanish_ideal R U).carrier ⊆ P.1.carrier)) → (sset_to_pred U P), 
+      intro l_ss_VP, rwr <- ZVU, 
+      exact inc_prime_el_zero (vanish_ideal R U) P (prop_ulift_inv _ l_ss_VP) },
     { intro elP, exact ulift.up (prime_vanish_inc P elP) } }
 end    
 
@@ -134,15 +171,21 @@ begin
 end    
 
 @[hott]
-def inter_Zariski_closed (R : CommRing.{u}) : ∀ (I : Set) (f : I -> 𝒫 ↥(prime_spectrum R)), 
-                        (∀ i : I, is_Zariski_closed (f i)) -> is_Zariski_closed (⋂ᵢ f) :=
+def inter_Zariski_closed (R : CommRing.{u}) : 
+  ∀ (I : Set) (f : I -> 𝒫 ↥(prime_spectrum R)), 
+          (∀ i : I, is_Zariski_closed (f i)) -> is_Zariski_closed (⋂ᵢ f) :=
 begin 
   intros I f clfI, 
-  have fI : I -> Ideal_Set R, from λ i, vanish_ideal R (f i),
   apply tr, fapply fiber.mk,  
-  { exact ideal_ssum (Image.{u+1 u} fI) },
+  { sorry },
   { sorry }
 end                          
+
+@[hott]
+def Zariski_topology (R : CommRing) : topological_space ↥(prime_spectrum R) :=
+  topological_space.of_closed ↥(prime_spectrum R) 
+          (@is_Zariski_closed R) (empty_Zariski_closed R)
+          (union_Zariski_closed R) (inter_Zariski_closed R)
 
 end algebraic_geometry
 
