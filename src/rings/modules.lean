@@ -261,10 +261,48 @@ def submodule_span {R : CommRing.{u}} {M : Module.{u u} R} (S : Subset M.carrier
 submodule_sInter {N ∈ Submodule_Set M | prop_ulift (S ⊆ (@Submodule.to_Subset R M N)) } 
 
 @[hott]
+def submod_gen_inc_span {R : CommRing.{u}} {M : Module.{u u} R} (S : Subset M.carrier) : 
+  S ⊆ submodule_span S :=
+begin
+  apply sset_sInter,
+  intros C elC, let el_imC := ss_im_preim_el _ _ _ elC, hinduction el_imC with el_imC',
+  let N := el_imC'.1, rwr <- el_imC'.2.2,
+  exact ulift.down ((pred_elem N).1 el_imC'.2.1)
+end    
+
+@[hott]
+def submod_gen_span_inc {R : CommRing.{u}} {M : Module.{u u} R} (S : Subset M.carrier) 
+  (N : Submodule_Set M) : S ⊆ N.carrier -> (submodule_span S).carrier ⊆ N.carrier :=
+begin
+  let Sss := {N ∈ Submodule_Set M | prop_ulift (S ⊆ (@Submodule.to_Subset R M N)) },
+  intro ss_SN, exact submod_sInter_inc Sss N ((pred_elem N).2 (ulift.up ss_SN))
+end  
+
+@[hott]
 def submodule_ssum {R : CommRing.{u}} {M : Module.{u u} R} (S : Subset (Submodule_Set M)) :
   Submodule R M :=
 submodule_span ⋃₀ (@ss_Image.{u+1 u+1} (Submodule_Set M) (𝒫 M.carrier) 
                                                              (@Submodule.to_Subset R M) S)  
+
+@[hott]
+def submodule_isum {R : CommRing.{u}} {M : Module.{u u} R} {I : Set.{u}} 
+  (f : I -> Submodule_Set M) : Submodule R M :=
+submodule_span ⋃ᵢ ((@Submodule.to_Subset R M) ∘ f)  
+
+@[hott]
+def submodule_inc_isum {R : CommRing.{u}} {M : Module.{u u} R} {I : Set.{u}} 
+  (f : I -> Submodule_Set M) : ∀ i : I, (f i).carrier ⊆ submodule_isum f :=
+λ i, sset_trans (sset_iUnion ((@Submodule.to_Subset R M) ∘ f) i) 
+                                (submod_gen_inc_span ⋃ᵢ ((@Submodule.to_Subset R M) ∘ f))
+
+@[hott]
+def submodule_isum_inc {R : CommRing.{u}} {M : Module.{u u} R} {I : Set.{u}} 
+  (f : I -> Submodule_Set M) (N : Submodule R M) : 
+  (∀ i : I, (f i).carrier ⊆ N.carrier) -> (submodule_isum f).carrier ⊆ N.carrier :=
+begin 
+  intro Iss, apply submod_gen_span_inc, 
+  exact iUnion_sset (Submodule.to_Subset ∘ f) N.carrier Iss 
+end    
 
 /- Ideals are defined as submodules of the ring as a module over itself. -/
 @[hott]
@@ -308,6 +346,21 @@ def ideal_span {R : CommRing} (S : Subset (ring_as_module R).carrier) : Ideal R 
 @[hott]
 def ideal_ssum {R : CommRing} (S : Subset (Ideal_Set R)) : Ideal R :=
   submodule_ssum S
+
+@[hott]
+def ideal_isum {R : CommRing.{u}} (I : Set.{u}) (f : I -> Ideal_Set R) : Ideal R :=
+  submodule_isum f  
+
+@[hott]
+def ideal_inc_isum {R : CommRing.{u}} {I : Set.{u}} 
+  (f : I -> Ideal_Set R) : ∀ i : I, (f i).carrier ⊆ (ideal_isum I f).carrier := 
+λ i, submodule_inc_isum f i 
+
+@[hott]
+def ideal_isum_inc {R : CommRing.{u}} {I : Set.{u}} 
+  (f : I -> Ideal_Set R) (N : Ideal R) : 
+  (∀ i : I, (f i).carrier ⊆ N.carrier) -> (ideal_isum I f).carrier ⊆ N.carrier :=
+λ Iss, submodule_isum_inc f N Iss  
 
 @[hott, reducible]
 protected def ideal.inter {R : CommRing} (I J : Ideal R) : Ideal R :=
