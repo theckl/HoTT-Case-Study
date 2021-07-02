@@ -8,6 +8,8 @@ open hott.set hott.is_trunc hott.is_equiv hott.eq hott.trunc hott.sigma
 
 namespace subset
 
+set_option pp.universes true
+
 /- We define subsets of sets [A] as a set [B] together with an injective map [i: B -> A],
    implemented as a bundled structure.  -/
 
@@ -302,7 +304,7 @@ calc bij_to_sset_eq (sset_identity B) = sset_comp_eq_to_sset_eq car_eq map_eq :
      ... = idpath B : idp_comp_to_sset_id B
 
 @[hott]
-def sset_bij_eq_set_bij {A : Set.{u}} (B C : Subset A) : forall e : B = C, 
+def sset_bij_eq_set_bij {A : Set} (B C : Subset A) : forall e : B = C, 
   (sset_eq_to_bij e).1 = set_eq_to_bij (ap Subset.carrier e) := 
 begin
   intro e,
@@ -325,7 +327,7 @@ lemma bij_sset_eq_bij_set {A : Set} : forall (B C : Subset A)
   begin rwr eq1, rwr eq2 end
 
 @[hott]
-def sset_eq_equiv_bij {A : Set.{u}} (B C : Subset A) : 
+def sset_eq_equiv_bij {A : Set} (B C : Subset A) : 
   B = C ≃ sset_bijection B C := 
 have rinv : forall (fc : sset_bijection B C), 
               sset_eq_to_bij (bij_to_sset_eq fc) = fc, from 
