@@ -45,6 +45,7 @@ topological_space.is_open_iUnion t I f h
 
 /- A constructor for topologies by specifying the closed sets, and showing 
    that they satisfy the appropriate conditions. -/
+@[hott]   
 def topological_space.of_closed 
   (is_closed : Subset T -> Prop) 
   (is_closed_empty : is_closed (empty_Subset T)) 
