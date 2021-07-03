@@ -11,7 +11,7 @@ open hott.algebra hott.subset is_trunc trunc
 
 namespace algebra
 
-set_option pp.universes false
+set_option pp.universes true
 
 @[hott]
 structure module_str (R : CommRing) (M : Set) extends ab_group M renaming 
