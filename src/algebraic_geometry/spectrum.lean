@@ -177,7 +177,7 @@ def inter_Zariski_closed (R : CommRing.{u}) :
 begin 
   intros I f clfI, 
   apply tr, fapply fiber.mk,  
-  { sorry },
+  { exact ideal_isum I ((vanish_ideal R) ∘ f) },
   { sorry }
 end                          
 
