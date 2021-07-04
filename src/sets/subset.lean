@@ -94,7 +94,7 @@ def Image {A B : Set} (f : A -> B) : Subset B :=
 
 /- A small lemma needed later on. -/
 @[hott]
-lemma ap_car_ap_sset_mk {A : Set.{u}} (carB : Set.{u}) (mapB : carB -> A) 
+lemma ap_car_ap_sset_mk {A : Set} (carB : Set) (mapB : carB -> A) 
   {inj1 inj2 : is_set_injective mapB} : forall (inj_eq : inj1 = inj2), 
   ap Subset.carrier (ap (Subset.mk carB mapB) inj_eq) = idpath carB :=
 begin 
@@ -110,12 +110,12 @@ end
    between the underlying sets, but the compatibility makes the bijection unique. -/
 @[hott, reducible]
 def sset_bijection {A : Set} (B C : Subset A) :=
-  Σ (f : bijection.{u u} ↥B ↥C), (Subset.map C) ∘ (bijection.map f) = (Subset.map B) 
+  Σ (f : bijection ↥B ↥C), (Subset.map C) ∘ (bijection.map f) = (Subset.map B) 
 
 @[hott, reducible]
 def sset_identity {A : Set} : Π (B : Subset A), sset_bijection B B 
 | (Subset.mk carB mapB injB) :=
-  have bij_comp : mapB ∘ (bijection.map.{u u} (identity carB)) = mapB, from 
+  have bij_comp : mapB ∘ (bijection.map (identity carB)) = mapB, from 
     calc mapB ∘ (bijection.map (identity carB)) = mapB ∘ (id_map carB) : 
          by rwr identity_to_id_map carB
          ... = mapB : id_map_is_right_neutral mapB,
@@ -152,7 +152,7 @@ by reflexivity
 
 @[hott]
 /- Should be in [init.path] with [A], [B], [C] types, but the elaborator can't handle it. -/
-lemma tr_fun_ext {A B : Set.{u}} {C : Set} (p : A = B) : 
+lemma tr_fun_ext {A B : Set} {C : Set} (p : A = B) : 
   forall (h : B -> C) (a : A), (p⁻¹ ▸ h) a = h (p ▸ a) :=
 begin 
   hinduction p,
@@ -179,7 +179,7 @@ def bij_to_sset_map_eq {A : Set} : Π {B C : Subset A} (ss_bij : sset_bijection 
   pathover_of_eq_tr (comp⁻¹ ⬝ (eq_of_homotopy comp_hom)⁻¹)
 
 @[hott]
-def sset_comp_eq {A : Set} (car1 car2 : Set.{u}) (map1 : car1 -> A) (map2 : car2 -> A) :=
+def sset_comp_eq {A : Set} (car1 car2 : Set) (map1 : car1 -> A) (map2 : car2 -> A) :=
   Σ (car_eq : car1 = car2), map1 =[car_eq; λ (B : Set), B -> A] map2
 
 /- This is a subtle point: The equality of maps induced by the equality of subsets is
@@ -323,7 +323,7 @@ lemma bij_sset_eq_bij_set {A : Set} : forall (B C : Subset A)
       sset_comp_eq := @sset_comp_eq_to_mk_eq _ _ _ car_eq _ _ map_eq injB injC in
   have eq1 : bij_to_sset_eq sset_bij = sset_comp_eq, by refl,
   have eq2 : ap Subset.carrier sset_comp_eq = car_eq, from 
-    @ap_sset_comp_to_car _ _ _ car_eq _ _ map_eq injB injC,
+    @ap_sset_comp_to_car A _ _ car_eq _ _ map_eq injB injC,
   begin rwr eq1, rwr eq2 end
 
 @[hott]
@@ -336,7 +336,7 @@ have rinv : forall (fc : sset_bijection B C),
   have bijmap_hom : bijection.map FGf ~ bijection.map f, from 
     assume b, 
     calc bijection.map FGf b = bijection.map (set_eq_to_bij (ap Subset.carrier (G fc))) b : 
-         apd10 (ap bijection.map (sset_bij_eq_set_bij.{u} B C (G fc))) b
+         apd10 (ap bijection.map (sset_bij_eq_set_bij B C (G fc))) b
          ... = (ap Subset.carrier (G fc)) ▸ b : 
          hom_eq_tr_eq (ap Subset.carrier (G fc)) b
          ... = (bij_to_set_eq f) ▸ b : bij_sset_eq_bij_set _ _ fc b
@@ -355,7 +355,7 @@ have linv : forall e : B = C, bij_to_sset_eq (sset_eq_to_bij e) = e,
 equiv.mk sset_eq_to_bij (adjointify sset_eq_to_bij bij_to_sset_eq rinv linv)
 
 @[hott, instance]
-def Powerset_is_set {A : Set.{u}} : is_set (Subset A) := 
+def Powerset_is_set {A : Set} : is_set (Subset A) := 
 have H_eq : forall B C : Subset A, is_prop (B = C), from 
   assume B C,
   let mapB := Subset.map B, mapC := Subset.map C in
@@ -391,7 +391,7 @@ hott_theory_cmd "local prefix `𝒫`:100 := hott.subset.Powerset"
    TODO: Introduce the standard notation {x : A | P a} for subsets given by predicates
          overwriting the notation for subtypes. -/
 @[hott, reducible]
-def Setpred (A : Set.{u}) := A -> trunctype.{u} -1
+def Setpred (A : Set) := A -> trunctype -1
 
 @[hott]
 def Setpred_of {A : Set} (P : A -> Prop) : Setpred A :=
@@ -418,7 +418,7 @@ def is_set_pred {A : Set} : Π (pred : Setpred A), is_set (Σ (a : A), ↥(pred 
     assume a, 
     have is_prop (pred a), from trunctype.struct (pred a),
     is_trunc_succ (pred a) -1, 
-  is_trunc_sigma.{u u} (λ a : A, ↥(pred a)) 0  
+  is_trunc_sigma (λ a : A, ↥(pred a)) 0  
 
 /- Should be in one of the library files on the sigma type.
    [subtype_eq] is the subtype-version in [types.sigma]. -/
@@ -446,7 +446,7 @@ let carr := pred_to_sset_car pred in
 
 @[hott, reducible]
 def pred_to_sset_inj {A : Set} (pred : Setpred A) :
-  is_set_injective.{u u} (pred_to_sset_map pred) := 
+  is_set_injective (pred_to_sset_map pred) := 
 assume b1 b2 map_eq, 
 sigma_prop_pr1_inj b1 b2 map_eq
 
@@ -457,7 +457,7 @@ Subset.mk (pred_to_sset_car pred) (pred_to_sset_map pred) (pred_to_sset_inj pred
 
 @[hott]
 def pred_to_im {A : Set} (pred : Setpred A) (a : A) : 
-  pred a -> image.{u u} (Subset.map (pred_to_sset pred)) a :=
+  pred a -> image (Subset.map (pred_to_sset pred)) a :=
 let B := pred_to_sset pred,
     mapB := Subset.map B in
 assume p, let apr := dpair a p in /- an element in [predset] -/
@@ -467,7 +467,7 @@ tr fib_a
 
 @[hott]
 def im_to_pred {A : Set} (pred : Setpred A) (a : A) :
-  image.{u u} (Subset.map (pred_to_sset pred)) a -> pred a :=
+  image (Subset.map (pred_to_sset pred)) a -> pred a :=
 let B := pred_to_sset pred,
     mapB := Subset.map B,
     injB := Subset.inj B in
@@ -484,7 +484,7 @@ let mapB := Subset.map B,
     injB := Subset.inj B in
 assume b_pred, 
 let a := b_pred.1 in
-have H : is_prop (fiber.{u u} mapB a), from set_inj_implies_unique_fib mapB injB a,
+have H : is_prop (fiber mapB a), from set_inj_implies_unique_fib mapB injB a,
 have fib_a : fiber mapB a, from @untrunc_of_is_trunc _ _ H b_pred.2,
 fiber.point fib_a 
 
@@ -511,7 +511,7 @@ dpair a (tr (fiber.mk b idp))
 
 @[hott]
 def inv_pred_sset {A : Set} (B : Subset A) : 
-  is_set_inverse_of.{u u} (map_pred_sset B) (map_sset_pred B) :=
+  is_set_inverse_of (map_pred_sset B) (map_sset_pred B) :=
 let f := map_pred_sset B, g := map_sset_pred B in
 let mapB := Subset.map B,
     injB := Subset.inj B in
@@ -541,7 +541,7 @@ have comp_hom : (Subset.map B) ∘ (bijection.map f) ~
       map_map_pred_sset B b_pred
        ... = Subset.map (pred_to_sset (sset_to_pred B)) b_pred : by refl,
 have comp_eq : (Subset.map B) ∘ (bijection.map f) = Subset.map (pred_to_sset (sset_to_pred B)), from
-  eq_of_homotopy.{u u} comp_hom,
+  eq_of_homotopy comp_hom,
 dpair f comp_eq
 
 @[hott]
@@ -637,13 +637,13 @@ def obj_elem {A : Set} {B : Subset A} (b : B.carrier) : ↑b ∈ B :=
   have p : B.map b = ↑b, from rfl, tr ⟨b, p⟩
 
 @[hott]
-def elem_obj {A : Set.{u}} {B : Subset A} (a : A) (H : a ∈ B) : ↥B :=
+def elem_obj {A : Set} {B : Subset A} (a : A) (H : a ∈ B) : ↥B :=
   have Hp : is_prop (fiber B.map a), from set_inj_implies_unique_fib _ B.inj a,
   (@untrunc_of_is_trunc _ -1 Hp H).1   
 
 @[hott]
 def elem_obj_eq {A : Set} {B : Subset A} (a : A) (H : a ∈ B) : B.map (elem_obj a H) = a :=
-  have Hp : is_prop (fiber.{u u} B.map a), from set_inj_implies_unique_fib _ B.inj a,
+  have Hp : is_prop (fiber B.map a), from set_inj_implies_unique_fib _ B.inj a,
   (@untrunc_of_is_trunc _ -1 Hp H).2
 
 @[hott]
@@ -653,7 +653,7 @@ def is_subset_of {A : Set} (B C : Subset A) :=
 @[hott, instance]
 def is_prop_subset {A : Set} (B C : Subset A) : is_prop (is_subset_of B C) :=
   have Pss : ∀ a : A, is_prop (a ∈ B -> a ∈ C), from 
-    assume a, is_prop_map.{u u} ((a ∈ C).struct),
+    assume a, is_prop_map ((a ∈ C).struct),
   is_prop_dprod Pss
 
 @[hott]
@@ -667,7 +667,7 @@ def sset_trans {A : Set} {B C D : Subset A} : B ⊆ C -> C ⊆ D -> B ⊆ D :=
 begin intros BC CD b bB, exact CD b (BC b bB) end  
 
 @[hott]   
-inductive construct_elem {A : Set.{u}} (P : A → trunctype.{u} -1) 
+inductive construct_elem {A : Set} (P : A → trunctype -1) 
 | intro (w : A) (h : P w) : construct_elem
 
 attribute [intro] construct_elem.intro
