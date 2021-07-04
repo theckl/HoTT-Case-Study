@@ -36,8 +36,8 @@ begin
 end 
 
 @[hott] 
-def Not (P : trunctype.{u} -1) : Prop :=
-  to_Prop (P -> False.{u})
+def Not (P : trunctype -1) : Prop :=
+  to_Prop (P -> False)
 
 /- Double negation -/
 @[hott]
