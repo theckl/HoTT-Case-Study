@@ -6,6 +6,8 @@ hott_theory
 namespace hott
 open is_trunc trunc equiv hott.is_equiv hott.prod 
 
+set_option pp.universes true
+
 /- [and], [or] and [iff] produce propositions from propositions. -/
 @[hott]
 protected def and (P Q : Prop) : Prop :=
@@ -35,9 +37,13 @@ begin
   { apply tr, exact sum.inl q }
 end 
 
+/- We define `Not P` as a map from `P` to `False` in the same universe. 
+   Otherwise, `Not` introduces universe levels that cannot easily be controlled. -/
 @[hott] 
-def Not (P : trunctype -1) : Prop :=
-  to_Prop (P -> False)
+def Not (P : trunctype.{u} -1) : Prop :=
+  have empty_is_prop : is_prop empty, from 
+    begin apply is_prop.mk, intro x, hinduction x end ,
+  to_Prop ¬P
 
 /- Double negation -/
 @[hott]
@@ -53,7 +59,7 @@ end
 
 /- De Morgan's Laws which are partially non-constructive. -/
 @[hott]
-def not_and (P Q : trunctype.{u} -1) : Not (P and Q) <-> (Not P) or (Not Q) :=
+def not_and (P Q : trunctype -1) : Not (P and Q) <-> (Not P) or (Not Q) :=
 begin
   apply pair,
   { intro na, apply tr, hinduction LEM P, --this is non-constructive
@@ -67,7 +73,7 @@ begin
 end 
 
 @[hott]
-def not_or (P Q : trunctype.{u} -1) : Not (P or Q) <-> (Not P) and (Not Q) :=
+def not_or (P Q : trunctype -1) : Not (P or Q) <-> (Not P) and (Not Q) :=
 begin
   apply pair,
   { intro no, 
@@ -81,7 +87,7 @@ end
 
 /- Contraposition -/
 @[hott]
-def contrapos (P Q : trunctype.{u} -1) : (P -> Q) <-> (Not Q -> Not P) :=
+def contrapos (P Q : trunctype -1) : (P -> Q) <-> (Not Q -> Not P) :=
 begin
   apply pair,
   { intros imp nQ p, exact nQ (imp p) },
