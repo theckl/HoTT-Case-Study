@@ -354,10 +354,8 @@ have linv : forall e : B = C, bij_to_sset_eq (sset_eq_to_bij e) = e,
   end,  
 equiv.mk sset_eq_to_bij (adjointify sset_eq_to_bij bij_to_sset_eq rinv linv)
 
-@[hott, instance]
-def Powerset_is_set {A : Set} : is_set (Subset A) := 
-have H_eq : forall B C : Subset A, is_prop (B = C), from 
-  assume B C,
+@[hott]
+def ss_eq_is_prop {A : Set} (B C : Subset A) : is_prop (B = C) :=
   let mapB := Subset.map B, mapC := Subset.map C in
   have bij_eq_is_prop : is_prop (sset_bijection B C), from 
     have H_bij_eq : forall (beq1 beq2 : sset_bijection B C), beq1 = beq2, 
@@ -376,7 +374,12 @@ have H_eq : forall B C : Subset A, is_prop (B = C), from
       sigma_eq p q, 
     is_prop.mk H_bij_eq, 
   let F := equiv.to_fun (sset_eq_equiv_bij B C) in  
-  @is_trunc_is_equiv_closed _ _ -1 F⁻¹ᶠ (is_equiv_inv F) bij_eq_is_prop,
+  @is_trunc_is_equiv_closed _ _ -1 F⁻¹ᶠ (is_equiv_inv F) bij_eq_is_prop 
+
+@[hott, instance]
+def Powerset_is_set {A : Set.{u}} : is_set (Subset A) := 
+have H_eq : forall B C : Subset A, is_prop (B = C), from 
+  assume B C, ss_eq_is_prop.{u v v} B C,
 @is_trunc_succ_intro (Subset A) -1 H_eq 
 
 @[hott, reducible]
