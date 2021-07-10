@@ -141,12 +141,14 @@ def iUnion {A : Set} {I : Set} (f : I -> 𝒫 A) : Subset A :=
 
 hott_theory_cmd "local prefix `⋃ᵢ`:110 := hott.subset.iUnion"  
 
-#print hott.subset.Powerset
-
 @[hott]
-def sset_iUnion {A : Set.{u}} {I : Set.{v}} (f : I -> 𝒫 A) (i : I) : 
+def sset_iUnion {A : Set.{u}} {I : Set.{v}} (f : I -> Powerset.{u w} A) (i : I) : 
   (f i) ⊆ (⋃ᵢ f) :=
-begin intros a el, exact (pred_elem a).2 (@trunc.tr -1 (Σ i : I, a ∈ f i) ⟨i, el⟩) end
+begin 
+  intros a el, change ↥(a ∈ {t ∈ A | ∥ Σ i : I, t ∈ f i ∥}), 
+  apply (pred_elem.{u (max v w u)} a).2, 
+  exact @trunc.tr -1 (Σ i : I, a ∈ f i) ⟨i, el⟩ 
+end
 
 @[hott]
 def iUnion_sset {A : Set} {I : Set} (f : I -> 𝒫 A) (B : Subset A) :
@@ -163,11 +165,11 @@ def complement (U : Subset A) : Subset A :=
 notation `C(`U`) ` := complement U  
 
 @[hott]
-def elem_comp_iff (U : Subset A) : Π a : A, a ∈ C(U) <-> a ∉ U :=
+def elem_comp_iff (U : Subset.{u v} A) : Π a : A, a ∈ C(U) <-> a ∉ U :=
 begin 
   intro a, apply pair, 
-  { intro el, exact (pred_elem a).1 el },
-  { intro not_el, exact (pred_elem a).2 not_el }
+  { intro el, exact (@pred_elem.{u v} A (λ a : A, a ∉ U) a).1 el },
+  { intro not_el, exact (pred_elem.{u v} a).2 not_el }
 end    
 
 @[hott]
@@ -177,17 +179,17 @@ def elem_comp_eq (U : Subset A) : Π a : A, a ∈ C(U) = a ∉ U :=
 @[hott]
 def compl_total_empty : C(total_Subset A) = empty_Subset A :=
 begin
-  apply (sset_eq_iff_inclusion _ _).2, apply pair,
+  apply (sset_eq_iff_inclusion.{u u} _ _).2, apply pair,
   { intros a el, rwr elem_comp_eq _ a at el, 
     hinduction (el (all_elem a)) },
   { intros a el, hinduction empty_not_elem a el }
 end   
 
 @[hott]
-def compl_inter (U V : Subset A) : C(U ∩ V) = C(U) ∪ C(V) :=
+def compl_inter (U : Subset.{u v} A) (V : Subset.{u w} A): C(U ∩ V) = C(U) ∪ C(V) :=
 begin
   apply (sset_eq_iff_inclusion _ _).2, apply pair,
-  { intros x el, apply (pred_elem x).2, 
+  { intros x el, apply (pred_elem.{u (max v w) } x).2, 
     have not_el_inter : ↥(x ∉ (U ∩ V)), from (pred_elem x).1 el,
     rwr elem_comp_eq, rwr elem_comp_eq, 
     apply (not_and (x∈U) (x∈V)).1, rwr <- elem_inter_eq, assumption },
