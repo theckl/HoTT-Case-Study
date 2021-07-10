@@ -6,6 +6,8 @@ hott_theory
 namespace hott
 open is_trunc trunc equiv hott.is_equiv hott.prod
 
+set_option pp.universes true
+
 /- Nicer name for construction of `Prop` from `is_prop`. -/
 @[hott]
 def to_Prop (A : Type u) [pA : is_prop A] : trunctype -1 :=
@@ -14,7 +16,7 @@ def to_Prop (A : Type u) [pA : is_prop A] : trunctype -1 :=
 /- We define [True] and [False] as (bundled) propositions. -/
 @[hott]
 inductive true : Type u
-| intro : true
+| intro : true 
 
 @[hott]
 def eq_true : forall t₁ t₂ : true, t₁ = t₂ :=
@@ -115,12 +117,12 @@ adjointify f₁ g₁ rinv₁ linv₁ =[Hf] adjointify f₂ g₂ rinv₂ linv₂ 
 begin hinduction Hf, hinduction Hg, hinduction Hr, hinduction Hl, refl end  
 
 @[hott]
-def inv_is_prop {A B : Type u} [is_prop A] (f : A -> B) (g : B -> A) : 
+def inv_is_prop {A B : Type _} [is_prop A] (f : A -> B) (g : B -> A) : 
   is_prop (∀ a : A, g (f a) = a) :=
 is_prop_dprod (λ a : A, @is_trunc_succ _ -2 (is_trunc_eq -2 _ _))
 
 @[hott]
-def is_equiv_mk_adj {A B : Type u} [is_prop A] [is_prop B] (f : A -> B) (g : B -> A) 
+def is_equiv_mk_adj {A B : Type _} [is_prop A] [is_prop B] (f : A -> B) (g : B -> A) 
   (rinv : ∀ b : B, f (g b) = b) (linv : ∀ a : A, g (f a) = a) 
   (adj : Π a, rinv (f a) = ap f (linv a)) :
 is_equiv.mk' g rinv linv adj = adjointify f g rinv linv :=
@@ -138,7 +140,7 @@ is_equiv.mk' g rinv linv adj = adjointify f g rinv linv :=
        ... = adjointify f g rinv linv : rfl
 
 @[hott]
-def prop_is_equiv_is_prop {A B : Type u} [pA : is_prop A] [pB : is_prop B] 
+def prop_is_equiv_is_prop {A B : Type _} [pA : is_prop A] [pB : is_prop B] 
   (f₁ f₂ : A -> B) (ef : f₁ = f₂) : 
 Π (is_eqv₁ : is_equiv f₁) (is_eqv₂ : is_equiv f₂), is_eqv₁ =[ef] is_eqv₂ 
 | (is_equiv.mk' g₁ rinv₁ linv₁ adj₁) (is_equiv.mk' g₂ rinv₂ linv₂ adj₂) :=
@@ -154,7 +156,7 @@ eq_concato (is_equiv_mk_adj f₁ g₁ rinv₁ linv₁ adj₁)
            (is_equiv_mk_adj f₂ g₂ rinv₂ linv₂ adj₂)⁻¹)
 
 @[hott, instance]
-def prop_equiv_is_prop (A B : Type u) [pA : is_prop A] [pB : is_prop B] : is_prop (A ≃ B) :=
+def prop_equiv_is_prop (A B : Type _) [pA : is_prop A] [pB : is_prop B] : is_prop (A ≃ B) :=
 have eq_equiv : ∀ eqv₁ eqv₂ : A ≃ B, eqv₁ = eqv₂, from assume eqv₁ eqv₂,    
   have eqv_eq : eqv₁.to_fun = eqv₂.to_fun, from 
     have pAB : is_prop (A -> B), from is_prop_map pB,
@@ -184,7 +186,7 @@ have linv : Π a : A, BA (AB a) = a, from assume a, @is_prop.elim A pA _ _,
 equiv.mk AB (adjointify AB BA rinv linv)
 
 @[hott]
-lemma prop_iff_eq : Π {A B : trunctype.{u} -1} (imp1 : A -> B) (imp2 : B -> A), 
+lemma prop_iff_eq : Π {A B : trunctype -1} (imp1 : A -> B) (imp2 : B -> A), 
   A = B 
 | (trunctype.mk carA structA) (trunctype.mk carB structB) :=
   assume imp1 imp2, 
@@ -199,7 +201,7 @@ lemma prop_iff_eq : Π {A B : trunctype.{u} -1} (imp1 : A -> B) (imp2 : B -> A),
 
 @[hott]
 def prop_iff_eqv_equiv :
-  Π (A B : Type u) [is_prop A] [is_prop B], (A ↔ B) ≃ (A ≃ B) :=
+  Π (A B : Type _) [is_prop A] [is_prop B], (A ↔ B) ≃ (A ≃ B) :=
 assume A B pA pB,
 let f := @prop_iff_equiv A B pA pB in
 let g := λ eqv : A ≃ B, (eqv.to_fun, eqv⁻¹ᶠ) in
@@ -211,7 +213,7 @@ equiv.mk f (adjointify f g rinv linv)
 
 @[hott]
 def prop_iff_eqv_eq :
-  Π (A B : Type u) [is_prop A] [is_prop B], (A ↔ B) ≃ (A = B) :=
+  Π (A B : Type _) [is_prop A] [is_prop B], (A ↔ B) ≃ (A = B) :=
 assume A B pA pB,
 equiv.trans (@prop_iff_eqv_equiv A B pA pB) (equiv.symm (eq_equiv_equiv A B))   
 
@@ -228,12 +230,12 @@ def to_Prop_eq (P : Prop) : to_Prop ↥P = P :=
 
 /- Equality of proposition is a mere proposition. -/
 @[hott, instance]
-def eq_prop_is_prop (P Q : Type u) [is_prop P] [is_prop Q] : is_prop (P = Q) :=
+def eq_prop_is_prop (P Q : Type _) [is_prop P] [is_prop Q] : is_prop (P = Q) :=
   is_trunc_is_equiv_closed -1 (@prop_iff_eqv_eq P Q _ _) (@iff_is_prop P Q _ _) 
 
 /- Inhabited and unhabited mere propositions are equal. -/
 @[hott]
-def inhabited_Prop_eq (A B : trunctype.{u} -1) (a : A) (b : B) : 
+def inhabited_Prop_eq (A B : trunctype -1) (a : A) (b : B) : 
   A = B :=
 have A_imp_B : A -> B, from 
   assume a', b,
@@ -242,7 +244,7 @@ have B_imp_A : B -> A, from
 prop_iff_eq A_imp_B B_imp_A
 
 @[hott]
-def inhabited_prop_eq (A B : Type u) [pA : is_prop A] [pB : is_prop B] (a : A) (b : B) : 
+def inhabited_prop_eq (A B : Type _) [pA : is_prop A] [pB : is_prop B] (a : A) (b : B) : 
   A = B :=
 let Prop_A := trunctype.mk A pA,
     Prop_B := trunctype.mk B pB in
@@ -250,7 +252,7 @@ have Prop_eq : Prop_A = Prop_B, from inhabited_Prop_eq Prop_A Prop_B a b,
 ap trunctype.carrier Prop_eq 
 
 @[hott]
-def uninhabited_Prop_eq (A B : trunctype.{u} -1) (na : ¬ A) (nb : ¬ B) : 
+def uninhabited_Prop_eq (A B : trunctype -1) (na : ¬ A) (nb : ¬ B) : 
   A = B :=
 have A_imp_B : A -> B, from 
   assume a, by hinduction (na a),
@@ -261,7 +263,7 @@ prop_iff_eq A_imp_B B_imp_A
 /- Inhabited mere propositions in a type family over equal base points are
    pathover-equal. -/
 @[hott]
-def inhabited_prop_po {A : Type _} (P Q : Type u) {a b : A} (eq : a = b) 
+def inhabited_prop_po {A : Type _} (P Q : Type _) {a b : A} (eq : a = b) 
   [is_prop P] [is_prop Q] (p : P) (q : Q) : 
   P =[eq; λ a : A, Type _] Q :=
 have prop_eq : P = Q, from inhabited_prop_eq P Q p q, 
@@ -277,7 +279,7 @@ end
 
 /- Pathover equalities of propositions are propositions. -/
 @[hott, instance]
-def po_is_prop {A : Type _} {P Q : Type u} {a b : A} (eq : a = b) 
+def po_is_prop {A : Type _} {P Q : Type _} {a b : A} (eq : a = b) 
   [is_prop P] [is_prop Q] : is_prop (P =[eq; λ a : A, Type _] Q) :=
 have tr_prop : is_prop (eq ▸ P = Q), from 
   @eq_prop_is_prop (eq ▸ P) Q (tr_prop_prop eq P) _,
