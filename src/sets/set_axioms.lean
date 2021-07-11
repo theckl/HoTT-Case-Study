@@ -6,6 +6,8 @@ hott_theory
 namespace hott
 open hott.is_trunc hott.trunc hott.equiv hott.is_equiv hott.sigma hott.susp hott.sum ulift
 
+set_option pp.universes true
+
 /- Looks like a HoTT-ism but is a way to construct sets - which can be interpreted
    as subsets. Therefore it is also contained as [is_set_pred] in [subset.lean]. 
    But we want to avoid dependencies.  -/
@@ -121,8 +123,8 @@ have rel_equiv_id : ∀ x y, R x y ≃ x = y, from
 
 /- We define the relation on [⅀ A × ⅀ A] using double induction. -/
 @[hott]
-def susp_of_prop_rel (A : Type _) [is_prop A] : ⅀ A -> ⅀ A -> Type _ :=
-let P := λ x y : ⅀ A, Type.{u} in
+def susp_of_prop_rel (A : Type _) [HA : is_prop A] : ⅀ A -> ⅀ A -> Type _ :=
+let P := λ x y : ⅀ A, Type _ in
 begin
   intros x y,
   hinduction x using susp.rec with a,
@@ -135,12 +137,12 @@ begin
       exact One,
       exact inhabited_prop_po A One (merid a) a One.star, 
     hinduction y using susp.rec with b,
-      change One =[merid a; λ (x' : ↥(⅀ A)), Type u] A,
+      change One =[merid a; λ (x' : ↥(⅀ A)), Type _] A,
         exact inhabited_prop_po One A (merid a) One.star a,
-      change A =[merid a; λ (x' : ↥(⅀ A)), Type u] One, 
+      change A =[merid a; λ (x' : ↥(⅀ A)), Type _] One, 
         exact inhabited_prop_po A One (merid a) a One.star, 
       have is_prop_P_Sm : ∀ a : A, is_prop (A =[merid a; λ x : ⅀ A, P x south] One), from 
-        assume a, po_is_prop (merid a),  
+        begin intro a', exact po_is_prop (merid a') end, --assume a, po_is_prop (merid a),  
       exact @po_proofs _ _ _ (merid b) (λ y : ⅀ A, 
               @susp.rec _ (P north) One A (λ a : A, inhabited_prop_po One A (merid a) One.star a) y 
                   =[merid a; λ (x : ⅀ A), P x y] 
@@ -150,7 +152,7 @@ end
 
 /- The relation on [⅀ A × ⅀ A] is a mere relation. -/
 @[hott]
-def susp_of_prop_rel_is_mere_rel (A : Type u) [is_prop A] : 
+def susp_of_prop_rel_is_mere_rel (A : Type _) [is_prop A] : 
   ∀ x y : ⅀ A, is_prop (susp_of_prop_rel A x y) :=
 have NN_eq : susp_of_prop_rel A north north = One, from rfl,
 have NS_eq : susp_of_prop_rel A north south = A, from rfl,
@@ -172,7 +174,7 @@ end
 
 /- The relation on [⅀ A × ⅀ A] is a reflexive. -/
 @[hott]
-def susp_of_prop_rel_is_refl (A : Type u) [is_prop A] :
+def susp_of_prop_rel_is_refl (A : Type _) [is_prop A] :
   Π x : ⅀ A, susp_of_prop_rel A x x :=
 begin
   have NN_eq : susp_of_prop_rel A north north = One, from rfl,
@@ -206,7 +208,7 @@ end
 
 /- Construction of identies from relations of north and of south. -/
 @[hott, hsimp]
-def PN_ {A : Type u} [pA : is_prop A] : 
+def PN_ {A : Type _} [pA : is_prop A] : 
   ∀ y : ⅀ A, susp_of_prop_rel A north y -> north = y :=
 begin 
   intro y,
@@ -219,7 +221,7 @@ begin
 end
 
 @[hott, hsimp]
-def PS_ {A : Type u} [pA : is_prop A] : 
+def PS_ {A : Type _} [pA : is_prop A] : 
   ∀ y : ⅀ A, susp_of_prop_rel A south y -> south = y :=
 begin
   intro y,
@@ -235,7 +237,7 @@ end
   equality of these paths. This works easily if we construct the second path as a transport of the 
   first path via a meridian, and meridians are equal. -/
 @[hott]
-def Q_N {A : Type u} [pA : is_prop A] (a : A) : 
+def Q_N {A : Type _} [pA : is_prop A] (a : A) : 
   PN_ north =[merid a; λ (x' : ↥(⅀ A)), susp_of_prop_rel A x' north → x' = north] PS_ north :=
 begin
   apply pathover_of_tr_eq, apply eq_of_homotopy, intro a', rwr fn_pathover_eval,
@@ -244,13 +246,13 @@ begin
 end   
 
 @[hott]
-def Q_S {A : Type u} [pA : is_prop A] (a : A) : 
+def Q_S {A : Type _} [pA : is_prop A] (a : A) : 
   PN_ south =[merid a; λ (x' : ↥(⅀ A)), susp_of_prop_rel A x' south → x' = south] PS_ south :=
 merid a▸[λ {a_1 : ↥(⅀ A)},
         PN_ a_1 =[merid a; λ (x' : ↥(⅀ A)), susp_of_prop_rel A x' a_1 → x' = a_1] PS_ a_1]Q_N a  
 
 @[hott]
-def susp_of_prop_rel_id (A : Type u) [pA : is_prop A] :
+def susp_of_prop_rel_id (A : Type _) [pA : is_prop A] :
   ∀ x y : ⅀ A, susp_of_prop_rel A x y -> x = y :=
 let R := λ x y : ⅀ A, susp_of_prop_rel A x y in 
 begin
@@ -267,13 +269,13 @@ begin
 end  
 
 @[hott]
-def susp_of_prop_is_set (A : Type u) [is_prop A] : is_set (⅀ A) := 
+def susp_of_prop_is_set (A : Type _) [is_prop A] : is_set (⅀ A) := 
   (refl_rel_set (susp_of_prop_rel A) (susp_of_prop_rel_is_mere_rel A)
    (susp_of_prop_rel_is_refl A) (susp_of_prop_rel_id A)).1
 
 /- Using the second part of Thm.7.2.2 = [refl_rel_set] we can show a corollary: -/
 @[hott]
-def merid_equiv_A (A : Type u) [is_prop A] : (@north A = south) ≃ A :=
+def merid_equiv_A (A : Type _) [is_prop A] : (@north A = south) ≃ A :=
   have A_equiv_merid : A ≃ (@north A = south), from 
     (refl_rel_set (susp_of_prop_rel A) (susp_of_prop_rel_is_mere_rel A)
                    (susp_of_prop_rel_is_refl A) (susp_of_prop_rel_id A)).2 north south,
@@ -302,7 +304,7 @@ def AC_implies_LEM : Choice_nonempty.{u} -> ExcludedMiddle.{u} :=
     have Pm : Π a : A, PN =[merid a; λ x : susp A, @image Two (⅀ A) f x] PS, from 
       assume a, pathover_prop_eq _ (merid a) PN PS,
     assume x, susp.rec PN PS Pm x,
-  let X := Set.mk (⅀ A) (susp_of_prop_is_set A),
+  let X := Set.mk (⅀ A) (susp_of_prop_is_set.{u u} A),
       Y := λ x : X, Set.mk (@fiber Two (⅀ A) f x) (@fib_set_map_is_set Two_Set X f x) in 
   have mere_g : ∥ Π x : X, @fiber Two (⅀ A) f x ∥, from AC X Y f_is_surj, 
   have g_inv_f : (Π x : X, @fiber Two (⅀ A) f x) -> 
@@ -330,7 +332,7 @@ def AC_implies_LEM : Choice_nonempty.{u} -> ExcludedMiddle.{u} :=
     have NS_eq_dec : (@north A = south) ⊎ ¬ (@north A = south), from
       begin rwr zn⁻¹, rwr zs⁻¹, exact f_dec sect_f end,
     have NS_eq_iff_A : (@north A = south) ↔ A, from 
-      ⟨merid_equiv_A A, (merid_equiv_A A)⁻¹ᶠ⟩,
+      ⟨merid_equiv_A.{u u} A, (merid_equiv_A.{u u} A)⁻¹ᶠ⟩,
     iff_LEM_LEM NS_eq_iff_A NS_eq_dec,                                                                                
   have trunc_LEM : ∥ A ⊎ ¬ A ∥, from trunc_functor -1 A_dec mere_g,
   @untrunc_of_is_trunc _ _ is_prop_LEM trunc_LEM
