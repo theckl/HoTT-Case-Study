@@ -601,7 +601,7 @@ end
 
 @[hott]
 def empty_not_elem {A : Set} (a : A) : a ∉ empty_Subset A :=
-  begin intro ne, rwr empty_pred a at ne, assumption end
+  begin intro ne, rwr empty_pred a at ne, apply False_uninhabited, assumption end
 
 @[hott, instance]
 def is_prop_elem {A : Set} (a : A) (S : Subset A) : is_prop (a ∈ S) :=
