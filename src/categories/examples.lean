@@ -1,4 +1,4 @@
-import setalgebra pathover2 set_axioms categories.basic
+import sets.setalgebra init2 sets.set_axioms categories.basic
 
 universes v v' u u' w 
 hott_theory
@@ -25,10 +25,10 @@ namespace opposite
 
 /-- The canonical map `C → Cᵒᵖ`. -/
 @[hott]
-def op : C → Cᵒᵖ := hott.set.id
+def op : C → Cᵒᵖ := id
 /-- The canonical map `Cᵒᵖ → C`. -/
 @[hott]
-def unop : Cᵒᵖ → C := hott.set.id
+def unop : Cᵒᵖ → C := id
 
 @[hott, hsimp]
 def op_inj_iff (x y : C) : op x = op y ↔ x = y := iff.rfl
