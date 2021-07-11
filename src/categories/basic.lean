@@ -1,4 +1,4 @@
-import setalgebra pathover2 set_axioms
+import sets.setalgebra init2 sets.set_axioms
 
 universes v v' v'' u u' u'' w 
 hott_theory
@@ -137,9 +137,9 @@ have inv_eq : i.inv = j.inv, from
        ...   = j.inv : by hsimp,
 let R := λ (f : a ⟶ b) (g : b ⟶ a), g ≫ f = 𝟙 b,
     L := λ (f : a ⟶ b) (g : b ⟶ a), f ≫ g = 𝟙 a in
-have r_inv_eq : i.r_inv =[ap011 R hom_eq inv_eq; set.id] j.r_inv, from 
+have r_inv_eq : i.r_inv =[ap011 R hom_eq inv_eq; id] j.r_inv, from 
   begin apply pathover_of_tr_eq, apply is_set.elim end,
-have l_inv_eq : i.l_inv =[ap011 L hom_eq inv_eq; set.id] j.l_inv, from 
+have l_inv_eq : i.l_inv =[ap011 L hom_eq inv_eq; id] j.l_inv, from 
   begin apply pathover_of_tr_eq, apply is_set.elim end, 
 calc   i = iso.mk i.hom i.inv i.r_inv i.l_inv : iso.eta i 
      ... = iso.mk j.hom j.inv j.r_inv j.l_inv : 
@@ -312,7 +312,7 @@ def std_str_is_set {C : Type u} [category.{v} C] (std_str : std_structure_on C) 
   ∀ a : C, is_set (std_str.P a) :=
 assume a, 
 have eq_eq : ∀ (α β : std_str.P a), is_prop (α = β), from 
-  assume α β, is_trunc_equiv_closed -1 (std_str.std α β) (and_is_prop _ _),
+  assume α β, is_trunc_equiv_closed -1 (std_str.std α β) (prod.is_trunc_prod _ _ -1),
 is_trunc_succ_intro eq_eq 
 
 @[hott, instance]
