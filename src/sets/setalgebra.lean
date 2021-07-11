@@ -189,28 +189,31 @@ end
 def compl_inter (U : Subset.{u v} A) (V : Subset.{u w} A): C(U ∩ V) = C(U) ∪ C(V) :=
 begin
   apply (sset_eq_iff_inclusion _ _).2, apply pair,
-  { intros x el, apply (pred_elem.{u (max v w) } x).2, 
+  { intros x el, 
+    change ↥(x∈pred_to_sset (λ (a : A), a∈C(U) or a∈C(V))),
+    apply (pred_elem.{u (max v w)} x).2, 
     have not_el_inter : ↥(x ∉ (U ∩ V)), from (pred_elem x).1 el,
     rwr elem_comp_eq, rwr elem_comp_eq, 
     apply (not_and (x∈U) (x∈V)).1, rwr <- elem_inter_eq, assumption },
   { intros x el, apply (elem_comp_iff (U ∩ V) x).2, 
     intro el', 
-    have not_el_or : ↥(x∈C(U) or x∈C(V)), from (pred_elem x).1 el,
+    have not_el_or : ↥(x∈C(U) or x∈C(V)), from (pred_elem.{u (max v w)} x).1 el,
     rwr elem_comp_eq at not_el_or, rwr elem_comp_eq at not_el_or, 
-    exact (not_and (x∈U) (x∈V)).2 not_el_or ((pred_elem x).1 el') }
+    exact (not_and (x∈U) (x∈V)).2 not_el_or ((pred_elem.{u (max v w)} x).1 el') }
 end 
 
 @[hott]
-def compl_iUnion {I : Set} (f : I -> 𝒫 A) : C(⋃ᵢ f) = ⋂ᵢ (λ i, C(f i)) :=
+def compl_iUnion {I : Set.{v}} (f : I -> Powerset.{u w} A) : C(⋃ᵢ f) = ⋂ᵢ (λ i, C(f i)) :=
 begin  
   apply (sset_eq_iff_inclusion _ _).2, apply pair,
-  { intros x el, apply (pred_elem x).2, 
+  { intros x el, 
+    apply (pred_elem.{u (max u v w)} x).2, 
     change Π (i : I), x∈C(f i), intro i, apply (elem_comp_iff (f i) x).2, 
     intro el_i, apply (elem_comp_iff (⋃ᵢ f) x).1 el,
-    apply (pred_elem x).2, exact tr ⟨i, el_i⟩ },
+    apply (pred_elem.{u (max u v w)} x).2, exact tr ⟨i, el_i⟩ },
   { intros x el, apply (pred_elem x).2, intro el_Ui, 
-    have i_el : Π i : I, x∈C(f i), from (pred_elem x).1 el,
-    hinduction (pred_elem x).1 el_Ui with el_i, 
+    have i_el : Π i : I, x∈C(f i), from (pred_elem.{u (max u v w)} x).1 el,
+    hinduction (pred_elem.{u (max u v w)} x).1 el_Ui with el_i, 
     exact (elem_comp_iff (f a.1) x).1 (i_el a.1) a.2 }
 end  
 
