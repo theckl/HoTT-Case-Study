@@ -1,4 +1,4 @@
-import setalgebra categories.examples categories.cat_limits
+import sets.setalgebra categories.examples categories.cat_limits sets.quotients
 
 universes v u v' u' w
 hott_theory
