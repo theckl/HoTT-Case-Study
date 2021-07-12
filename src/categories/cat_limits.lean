@@ -1,4 +1,4 @@
-import setalgebra categories.examples
+import sets.setalgebra categories.examples
 
 universes v v' u u' w
 hott_theory
