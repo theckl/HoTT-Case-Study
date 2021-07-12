@@ -91,15 +91,16 @@ begin
 end    
 
 @[hott, reducible]
-def iInter {A : Set} {I : Set} (f : I -> 𝒫 A) : Subset A :=
-  {t ∈ A | to_Prop (∀ i : I, t ∈ f i) }
+def iInter {A : Set.{u}} {I : Set.{v}} (f : I -> Powerset.{u (max u w)} A) : 
+  Subset.{u (max u w)} A :=
+{t ∈ A | prop_resize.{(max u w) (max u v)} (to_Prop (∀ i : I, t ∈ f i))}
 
 hott_theory_cmd "local prefix `⋂ᵢ`:110 := hott.subset.iInter"  
 
 @[hott]
 def sset_iInter {A : Set} {I : Set} (f : I -> 𝒫 A) (i : I) : 
   (⋂ᵢ f) ⊆ (f i):=
-begin intros a el, exact (pred_elem a).1 el i end  
+begin intros a el, exact prop_resize_to_prop ((pred_elem a).1 el) i end  
 
 @[hott, reducible]
 protected def union (S₁ S₂ : Subset A) : Subset A :=
@@ -136,25 +137,26 @@ def sUnion (S : Subset (𝒫 A)) : Subset A :=
 hott_theory_cmd "local prefix `⋃₀`:110 := hott.subset.sUnion"
 
 @[hott, reducible]
-def iUnion {A : Set} {I : Set} (f : I -> 𝒫 A) : Subset A :=
-  {t ∈ A | ∥ Σ i : I, t ∈ f i ∥}
+def iUnion {A : Set.{u}} {I : Set.{v}} (f : I -> Powerset.{u (max u w)} A) : Subset.{u (max u w)} A :=
+  {t ∈ A | prop_resize.{(max u w) (max u v)} (∥ Σ i : I, t ∈ f i ∥)}
 
 hott_theory_cmd "local prefix `⋃ᵢ`:110 := hott.subset.iUnion"  
 
 @[hott]
-def sset_iUnion {A : Set.{u}} {I : Set.{v}} (f : I -> Powerset.{u w} A) (i : I) : 
+def sset_iUnion {A : Set.{u}} {I : Set.{v}} (f : I -> Powerset.{u (max u w)} A) (i : I) : 
   (f i) ⊆ (⋃ᵢ f) :=
 begin 
-  intros a el, change ↥(a ∈ {t ∈ A | ∥ Σ i : I, t ∈ f i ∥}), 
-  apply (pred_elem.{u (max v w u)} a).2, 
-  exact @trunc.tr -1 (Σ i : I, a ∈ f i) ⟨i, el⟩ 
+  intros a el, change ↥(a ∈ {t ∈ A | prop_resize.{(max u w) (max u v)} (∥ Σ i : I, t ∈ f i ∥)}), 
+  apply (pred_elem.{u w} a).2, 
+  exact prop_to_prop_resize (@trunc.tr -1 (Σ i : I, a ∈ f i) ⟨i, el⟩) 
 end
 
 @[hott]
 def iUnion_sset {A : Set} {I : Set} (f : I -> 𝒫 A) (B : Subset A) :
   (∀ i : I, f i ⊆ B) -> ⋃ᵢ f ⊆ B :=
 begin
-  intros Iss a ela, let exi := (pred_elem a).1 ela, hinduction exi with elai,
+  intros Iss a ela, let exi := prop_resize_to_prop ((pred_elem a).1 ela), 
+  hinduction exi with elai,
   exact Iss elai.1 a elai.2
 end    
 
@@ -203,17 +205,17 @@ begin
 end 
 
 @[hott]
-def compl_iUnion {I : Set.{v}} (f : I -> Powerset.{u w} A) : C(⋃ᵢ f) = ⋂ᵢ (λ i, C(f i)) :=
+def compl_iUnion {I : Set.{v}} (f : I -> Powerset.{u (max u w)} A) : C(⋃ᵢ f) = ⋂ᵢ (λ i, C(f i)) :=
 begin  
   apply (sset_eq_iff_inclusion _ _).2, apply pair,
   { intros x el, 
-    apply (pred_elem.{u (max u v w)} x).2, 
+    apply (pred_elem x).2, apply prop_to_prop_resize,
     change Π (i : I), x∈C(f i), intro i, apply (elem_comp_iff (f i) x).2, 
     intro el_i, apply (elem_comp_iff (⋃ᵢ f) x).1 el,
-    apply (pred_elem.{u (max u v w)} x).2, exact tr ⟨i, el_i⟩ },
+    apply (pred_elem x).2, exact prop_to_prop_resize (tr ⟨i, el_i⟩) },
   { intros x el, apply (pred_elem x).2, intro el_Ui, 
-    have i_el : Π i : I, x∈C(f i), from (pred_elem.{u (max u v w)} x).1 el,
-    hinduction (pred_elem.{u (max u v w)} x).1 el_Ui with el_i, 
+    have i_el : Π i : I, x∈C(f i), from prop_resize_to_prop ((pred_elem x).1 el),
+    hinduction prop_resize_to_prop ((pred_elem.{u w} x).1 el_Ui) with el_i, 
     exact (elem_comp_iff (f a.1) x).1 (i_el a.1) a.2 }
 end  
 
