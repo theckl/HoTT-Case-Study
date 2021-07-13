@@ -7,6 +7,8 @@ namespace hott
 open hott.set hott.subset hott.categories category_theory.limits category_theory.colimits
   categories.opposite
 
+set_option pp.universes true  
+
 /- The category of topological spaces and continuous maps. -/
 @[hott]
 structure Top :=
@@ -23,24 +25,28 @@ instance topological_space_unbundled (X : Top) :
 
 namespace topology
 
-variables (X : Top.{w})
+variables (X : Top)
 
 /- The set of open sets in a topological space and its lattice structure. -/
 @[hott]
 def open_sets : Subset (𝒫 ↥X) := 
-  {U ∈ (𝒫 ↥X) | prop_ulift (is_open ↥X U)}
+  {U ∈ (𝒫 ↥X) | is_open ↥X U}
 
 @[hott]
 instance Subset_Set_to_Set : has_coe_to_sort (Subset (𝒫 ↥X)) :=
-  has_coe_to_sort.mk (Type (w+1)) (λ T, T.carrier)
+  has_coe_to_sort.mk (Type _) (λ T, T.carrier)
+
+@[hott]
+instance : has_coe ↥(open_sets X) (Subset ↥X) :=
+  ⟨λ Y : ↥(open_sets X), (open_sets X).map Y⟩
 
 @[hott]
 protected def open_sets.inter (U V : open_sets X) : open_sets X :=
-have U_is_open : is_open ↥X U, from ulift.down U.2, 
-have V_is_open : is_open ↥X V, from ulift.down V.2,
-have inter_is_open : prop_ulift (is_open ↥X (↑U ∩ ↑V)), from 
-  ulift.up (is_open_inter ↥X U_is_open V_is_open),
-elem_pred.{w+1} (↑U ∩ ↑V) inter_is_open  
+have U_is_open : is_open ↥X U, from U.2, 
+have V_is_open : is_open ↥X V, from V.2,
+have inter_is_open : is_open ↥X (((open_sets X).map U) ∩ ((open_sets X).map V)), from 
+  is_open_inter ↥X U_is_open V_is_open,
+elem_pred (((open_sets X).map U) ∩ ((open_sets X).map V)) inter_is_open  
 
 @[hott, instance]
 def open_sets_inter : has_inter (open_sets X) :=
@@ -49,27 +55,31 @@ def open_sets_inter : has_inter (open_sets X) :=
 @[hott]
 def open_sets.iUnion {I : Set} (f : I -> open_sets X) : (open_sets X) :=
 have U_i_is_open : ∀ i : I, is_open ↥X (f i), from 
-  assume i, ulift.down (f i).2, 
+  assume i, (f i).2, 
 have open_union : is_open ↥X (⋃ᵢ ↑f), from
   is_open_iUnion ↥X U_i_is_open,  
-elem_pred.{w+1} (⋃ᵢ ↑f) (ulift.up open_union)    
+elem_pred (⋃ᵢ ↑f) (open_union)    
 
 @[hott]
-def open_sets_incl_to_hom {U V : open_sets X} (i : @is_subset_of ↥X ↑U ↑V) : 
+def open_sets_incl_to_hom {U V : open_sets X} (i : ((open_sets X).map U) ⊆ ((open_sets X).map V)) : 
   U ⟶ V := i 
 
 @[hott]
-def opens.inf_le_l (U V : open_sets X) : U ∩ V ⟶ U :=
+def opens.inf_le_l (U V : open_sets X) : open_sets.inter X U V ⟶ U :=
   inter_sset_l U V 
 
 @[hott]
-def opens.inf_le_r (U V : open_sets X) : U ∩ V ⟶ V :=
+def opens.inf_le_r (U V : open_sets X) : open_sets.inter X U V ⟶ V :=
   inter_sset_r U V 
 
 @[hott]
 def opens.le_union {I : Set} (f : I -> open_sets X) :
-  Π i : I, f i ⟶ open_sets.iUnion X f :=
-assume i, sset_iUnion ↑f i       
+  Π i : I, f i ⟶ open_sets.iUnion X f :=   
+begin 
+  intro i, apply open_sets_incl_to_hom, 
+  change ↥(↑(f i) ⊆ ↑(open_sets.iUnion X f)), 
+  exact sset_iUnion (λ i, ↑(f i)) i
+end       
 
 @[hott]
 def opens.hom_eq {U V : open_sets X} (f g : U ⟶ V) : f = g :=
@@ -77,7 +87,7 @@ def opens.hom_eq {U V : open_sets X} (f g : U ⟶ V) : f = g :=
 
 @[hott] 
 def nbhds (x : X.carrier) : Subset (𝒫 ↥X) := 
-  {U ∈ (𝒫 ↥X) | prop_ulift (is_open ↥X U) and prop_ulift (x ∈ U)} 
+  {U ∈ (𝒫 ↥X) | (is_open ↥X U) and (x ∈ U)} 
 
 @[hott]
 def nbhds_opens_inc (x : X.carrier) : nbhds X x ⊆ open_sets X :=
@@ -110,7 +120,7 @@ def pi_opens {C : Type u} [category.{v} C] [has_products.{v u w'} C]
 @[hott]
 def pi_inters {C : Type u} [category.{v} C] [has_products.{v u w'} C]
   {I : Set.{w'}} (U : I -> open_sets X) (F : presheaf X C) : C :=  
-∏ (λ p : ↥(I × I), F.obj (op (U p.1 ∩ U p.2)))
+∏ (λ p : ↥(I × I), F.obj (op (open_sets.inter X (U p.1) (U p.2))))
 
 @[hott, reducible]
 def left_res {C : Type u} [category.{v} C] [has_products.{v u w'} C]
