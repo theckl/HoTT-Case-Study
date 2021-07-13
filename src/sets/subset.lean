@@ -28,13 +28,29 @@ instance {A : Set} (B : Subset A) : has_coe ↥B ↥A :=
   ⟨λ b, B.map b⟩
 
 @[hott]
-def total_Subset (A : Set) : Subset A := 
+def Subset_ulift {A : Set.{u}} : (Subset.{u v} A) -> (Subset.{u (max v w)} A) :=
+  assume B,
+  let B_ulift := trunctype_ulift.{v (max v w)} B.carrier,
+      car_down : B_ulift -> B.carrier := λ b, b.down,
+      id_ulift := B.map ∘ car_down in
+  have car_down_is_inj : is_set_injective car_down, from 
+    assume b₁ b₂ d_eq, 
+    have bd_eq : b₁.down = b₂.down, from d_eq,
+    calc b₁ = ulift.up b₁.down : (up_down_eq b₁)⁻¹
+         ... = ulift.up b₂.down : by rwr bd_eq
+         ... = b₂ : up_down_eq b₂, 
+  have id_ulift_is_inj : is_set_injective id_ulift, from 
+    @comp_inj_inj _ _ _ car_down B.map car_down_is_inj B.inj,    
+  Subset.mk B_ulift id_ulift id_ulift_is_inj
+
+@[hott]
+def total_Subset (A : Set.{u}) : Subset.{u (max u w)} A := 
   have id_is_inj : is_set_injective (id_map A), 
     from assume a1 a2 f_eq, 
     calc a1 = (id_map A) a1 : by reflexivity
          ... = (id_map A) a2 : by rwr f_eq
          ... = a2 : by reflexivity,
-  Subset.mk A (id_map A) id_is_inj 
+  Subset_ulift.{u u w} (Subset.mk A (id_map A) id_is_inj) 
 
 /- The empty set is a subset of every set [A], an elegant consequence of the construction 
    of subsets. -/
@@ -405,8 +421,8 @@ def sset_to_pred {A : Set} : Π (B : Subset A), Setpred A :=
   assume B, λ (a : A), image (Subset.map B) a
 
 @[hott]
-def total_pred {A : Set} (a : A) : sset_to_pred (total_Subset A) a = True :=
-  inhabited_Prop_eq _ _ (tr ⟨a, idp⟩) true.intro
+def total_pred {A : Set.{u}} (a : A) : sset_to_pred (total_Subset.{u w} A) a = True :=
+  inhabited_Prop_eq _ _ (tr ⟨ulift.up a, idp⟩) true.intro
 
 @[hott]
 def empty_pred {A : Set} (a : A) : sset_to_pred (empty_Subset A) a = False :=
