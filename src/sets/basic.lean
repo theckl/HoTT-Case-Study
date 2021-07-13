@@ -7,13 +7,9 @@ hott_theory
 namespace hott
 open is_trunc trunc equiv is_equiv hott.prod hott.quotient hott.sigma hott.relation
 
-/- Should be in [init.function]. -/
-@[inline, reducible] def function.comp {α β φ : Type _} (f : β → φ) (g : α → β) : α → φ :=
-λ x, f (g x)
-
-hott_theory_cmd "local infixr  ` ∘ `:80      := hott.function.comp"
-
 namespace set
+
+set_option pp.universes.true
 
 /- `Prop`s are `Set`s. -/
 @[hott]
@@ -46,7 +42,14 @@ by hsimp
 @[hott, class]
 def is_set_injective {A : Set} {B : Set} (f : B -> A) := 
   forall b1 b2 : B, f b1 = f b2 -> b1 = b2
-  
+
+@[hott, instance]
+def comp_inj_inj {A B C : Set} (f : A -> B) (g : B -> C) [f_inj : is_set_injective f] 
+  [g_inj : is_set_injective g] : is_set_injective (g ∘ f) :=
+assume a₁ a₂ gf_eq,
+have f_eq : f a₁ = f a₂, from g_inj (f a₁) (f a₂) gf_eq,
+f_inj a₁ a₂ f_eq
+
 /- Maps between two given sets are sets. 
    Looks like a HoTT-ism, but is actually a rule to construct sets from known sets. -/
 @[hott, instance]
