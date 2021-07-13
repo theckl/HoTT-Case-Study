@@ -179,9 +179,9 @@ def elem_comp_eq (U : Subset A) : Π a : A, a ∈ C(U) = a ∉ U :=
   λ a, prop_iff_eq (elem_comp_iff U a).1 (elem_comp_iff U a).2
 
 @[hott]
-def compl_total_empty : C(total_Subset A) = empty_Subset A :=
+def compl_total_empty : C(total_Subset.{u w} A) = empty_Subset A :=
 begin
-  apply (sset_eq_iff_inclusion.{u u} _ _).2, apply pair,
+  apply (sset_eq_iff_inclusion.{u w} _ _).2, apply pair,
   { intros a el, rwr elem_comp_eq _ a at el, 
     hinduction (el (all_elem a)) },
   { intros a el, hinduction empty_not_elem a el }
