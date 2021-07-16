@@ -1,4 +1,4 @@
-import hott.algebra.ring set_theory categories.examples pathover2
+import hott.algebra.ring sets.basic categories.examples init2
        hott.types.prod hott.algebra.relation categories.cat_colimits rings.basic 
 
 universes v v' u u' w
