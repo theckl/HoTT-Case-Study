@@ -564,4 +564,10 @@ begin
     rwr neq at p, have p' : false, from p, hinduction p' }
 end  
 
+@[hott]
+def prop_to_prop_ulift {P : Prop} : P -> prop_ulift P :=
+begin
+  intro p, exact ulift.up p
+end    
+
 end hott
