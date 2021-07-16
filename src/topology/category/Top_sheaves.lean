@@ -16,8 +16,8 @@ structure Top :=
 (top_str : topological_space carrier)
 
 @[hott]
-instance Top_to_Set : has_coe_to_sort Top.{u} :=
-  has_coe_to_sort.mk Set.{u} (λ T : Top, T.carrier)
+instance Top_to_Set : has_coe_to_sort Top :=
+  has_coe_to_sort.mk Set (λ T : Top, T.carrier)
 
 @[hott]
 instance topological_space_unbundled (X : Top) : 
@@ -30,7 +30,7 @@ variables (X : Top)
 /- The set of open sets in a topological space and its lattice structure. -/
 @[hott]
 def open_sets : Subset (𝒫 ↥X) := 
-  {U ∈ (𝒫 ↥X) | prop_ulift (is_open ↥X U)}
+  {U ∈ (𝒫 ↥X) | is_open ↥X U}
 
 @[hott]
 instance Subset_Set_to_Set : has_coe_to_sort (Subset (𝒫 ↥X)) :=
@@ -42,23 +42,21 @@ instance : has_coe ↥(open_sets X) (Subset ↥X) :=
 
 @[hott]
 protected def open_sets.inter (U V : open_sets X) : open_sets X :=
-have U_is_open : is_open ↥X U, from U.2.down, 
-have V_is_open : is_open ↥X V, from V.2.down,
+have U_is_open : is_open ↥X U, from U.2, 
+have V_is_open : is_open ↥X V, from V.2,
 have inter_is_open : is_open ↥X (((open_sets X).map U) ∩ ((open_sets X).map V)), from 
   is_open_inter ↥X U_is_open V_is_open,
-elem_pred (((open_sets X).map U) ∩ ((open_sets X).map V)) (ulift.up inter_is_open)  
+elem_pred (((open_sets X).map U) ∩ ((open_sets X).map V)) inter_is_open  
 
 @[hott, instance]
 def open_sets_inter : has_inter (open_sets X) :=
 ⟨open_sets.inter X⟩    
 
 @[hott]
-def open_sets.iUnion {I : Set} (f : I -> open_sets X) : (open_sets X) :=
-have U_i_is_open : ∀ i : I, is_open ↥X (f i), from 
-  assume i, (f i).2.down, 
-have open_union : is_open ↥X (⋃ᵢ ↑f), from
-  is_open_iUnion ↥X U_i_is_open,  
-elem_pred (⋃ᵢ ↑f) (ulift.up open_union)    
+def open_sets.iUnion {I : Set} (f : I -> open_sets X) : ↥(open_sets X) :=
+have U_i_is_open : ∀ i : I, is_open ↥X (f i), from assume i, (f i).2, 
+have open_union : is_open ↥X (⋃ᵢ (λ i, (f i).1)), from is_open_iUnion ↥X U_i_is_open,  
+elem_pred (⋃ᵢ (λ i, (f i).1)) open_union    
 
 @[hott]
 def open_sets_incl_to_hom {U V : open_sets X} (i : ((open_sets X).map U) ⊆ ((open_sets X).map V)) : 
@@ -87,19 +85,21 @@ def opens.hom_eq {U V : open_sets X} (f g : U ⟶ V) : f = g :=
 
 @[hott, reducible] 
 def nbhds (x : X.carrier) : Subset (𝒫 ↥X) := 
-  {U ∈ (𝒫 ↥X) | prop_ulift (is_open ↥X U) and prop_ulift (x ∈ U)} 
+  {U ∈ (𝒫 ↥X) | is_open ↥X U and x ∈ U} 
 
 @[hott]
 def nbhds_opens_inc (x : X.carrier) : nbhds X x ⊆ open_sets X :=
 begin 
-  intros U el, 
-  have el' : ↥(U∈pred_to_sset (λ (a : ↥𝒫↥X), prop_ulift (is_open ↥X a) and prop_ulift (x∈a))), 
+  intros U el,   
+  have el' : ↥(U∈pred_to_sset (λ (a : ↥𝒫↥X), is_open ↥X a and x∈a)), 
     from el,
-  exact (pred_elem.{(max u_1 ((max u_1 u_3)+1)) ((max u_4 u_1 u_3)+1)} U).2 
-        (((@pred_elem.{(max u_1 ((max u_1 u_3)+1)) ((max u_4 u_1 u_3)+1)} (𝒫↥X) 
-        (λ (a : ↥𝒫↥X), prop_ulift.{u_4 ((max u_4 u_1 u_3)+1)} (is_open ↥X a) and 
-                       prop_ulift.{(max u_1 u_3) u_4+1} (x∈a)) U).1 el').1) 
+  have H : ↥(is_open ↥X U and x∈U), from (elem_to_pred U) el', 
+  exact (pred_to_elem U) H.1 
 end
+
+@[hott, instance]
+def nbhds_precat (x : X.carrier) : precategory (nbhds X x) :=
+  subset_precat_precat (nbhds X x)
 
 @[hott]
 def nbhds_opens_inc_functor (x : X.carrier) : (nbhds X x)ᵒᵖ ⥤ (open_sets X)ᵒᵖ :=
@@ -151,8 +151,8 @@ def res {C : Type u} [category.{v} C] [has_products C]
 pi.lift C (λ i : I, F.map (hom_op (opens.le_union X U i))) 
 
 @[hott]
-def w_res {C : Type u} [category.{v} C] [has_products.{v u w} C]
-  {I : Set.{w}} (U : I -> open_sets X) (F : presheaf X C) :
+def w_res {C : Type u} [category.{v} C] [has_products.{v u u_4} C]
+  {I : Set} (U : I -> open_sets X) (F : presheaf X C) :
   (res X U F) ≫ (left_res X U F) = (res X U F) ≫ (right_res X U F) :=  
 have left_eq : Π p : ↥(I × I), ((res X U F) ≫ (left_res X U F)) ≫ pi.π _ p =
   F.map (hom_op (opens.inf_le_l X (U p.1) (U p.2) ≫ opens.le_union X U p.1)), from
@@ -170,7 +170,7 @@ have left_eq : Π p : ↥(I × I), ((res X U F) ≫ (left_res X U F)) ≫ pi.π 
                                              hom_op (opens.inf_le_l X (U p.1) (U p.2))) : 
              (functor.map_comp F _ _)⁻¹
        ... = F.map (hom_op (opens.inf_le_l X (U p.1) (U p.2) ≫ opens.le_union X U p.1)) : 
-             by rwr <- hom_op_funct _ _,
+             by rwr <- hom_op_funct (opens.inf_le_l X (U p.1) (U p.2)) _,
 have right_eq : Π p : ↥(I × I), ((res X U F) ≫ (right_res X U F)) ≫ pi.π _ p =
   F.map (hom_op (opens.inf_le_r X (U p.1) (U p.2) ≫ opens.le_union X U p.2)), from
   assume p,
@@ -187,7 +187,7 @@ have right_eq : Π p : ↥(I × I), ((res X U F) ≫ (right_res X U F)) ≫ pi.�
                                              hom_op (opens.inf_le_r X (U p.1) (U p.2))) : 
              (functor.map_comp F _ _)⁻¹
        ... = F.map (hom_op (opens.inf_le_r X (U p.1) (U p.2) ≫ opens.le_union X U p.2)) : 
-             by rwr <- hom_op_funct _ _,
+             by rwr <- hom_op_funct (opens.inf_le_r X (U p.1) (U p.2)) _,
 have incl_eq : Π p : ↥I × I, (opens.inf_le_l X (U p.1) (U p.2) ≫ opens.le_union X U p.1) =
                       (opens.inf_le_r X (U p.1) (U p.2) ≫ opens.le_union X U p.2), from
   assume p, opens.hom_eq X _ _,                      
@@ -222,11 +222,11 @@ def sheaf_condition_equalizer_products.fork {C : Type u} [category.{v} C]
 fork.of_i _ _ (res X U F) (w_res X U F)
 
 @[hott]
-def sheaf_condition {C : Type u} [category.{v} C] [has_products.{v u w} C] (F : presheaf X C) := Π {I : Set} (U : I -> open_sets X), 
+def sheaf_condition {C : Type u} [category.{v} C] [has_products.{v u u_4} C] (F : presheaf X C) := Π {I : Set} (U : I -> open_sets X), 
   is_limit (sheaf_condition_equalizer_products.fork X U F)
 
 @[hott]
-structure sheaf (C : Type u) [category.{v} C] [has_products.{v u w} C] :=
+structure sheaf (C : Type u) [category.{v} C] [has_products.{v u u_4} C] :=
 (presheaf : presheaf X C)
 (sheaf_condition : sheaf_condition X presheaf)
 
