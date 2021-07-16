@@ -628,14 +628,18 @@ notation `{ ` binder ` ∈ ` B ` | ` P:scoped  ` }` := @pred_to_sset B P
 @[hott, reducible]
 def pred_elem {A : Set} {P : Setpred A} (a : A) : a ∈ { a ∈ A | P a } <-> P a :=
   have imp₁ : a ∈ { a ∈ A | P a } -> P a, from
-    assume elem_a_P, by rwr <- sset_pred_rinv P; assumption,
+    begin intro elem_a_P, apply im_to_pred, assumption end,
   have imp₂ : P a -> a ∈ { a ∈ A | P a }, from
-    assume pred_a, 
-    begin
-      change ↥(sset_to_pred (pred_to_sset P) a),
-      rwr sset_pred_rinv; assumption,
-    end,  
+    begin intro pred_a, apply pred_to_im; assumption end,  
   ⟨imp₁, imp₂⟩ 
+
+@[hott]
+def elem_to_pred {A : Set} {P : Setpred A} (a : A) : a ∈ { a ∈ A | P a } -> P a :=
+begin intro elem_a_P, apply im_to_pred, assumption end
+
+@[hott]
+def pred_to_elem {A : Set} {P : Setpred A} (a : A) : P a -> a ∈ { a ∈ A | P a } :=
+begin intro pred_a, apply pred_to_im; assumption end  
 
 @[hott, reducible]
 def elem_pred {A : Set} {P : Setpred A} (a : A) (pred_a : P a) :
