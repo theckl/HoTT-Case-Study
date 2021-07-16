@@ -1,4 +1,4 @@
-import rings.basic pathover2
+import rings.basic 
 
 universes u u' v w
 hott_theory
