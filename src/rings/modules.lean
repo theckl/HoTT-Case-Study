@@ -198,7 +198,7 @@ protected def submodule.inter {R : CommRing} {M : Module R}
   (N₁ N₂ : Submodule R M) : Submodule R M :=
 begin
   fapply Submodule.mk,
-  { exact N₁ ∩ N₂ },
+  { exact (Submodule.to_Subset N₁) ∩ (Submodule.to_Subset N₂) },
   { fapply submodule_str.mk,
     { intros n₁ n₂ el₁ el₂, 
       apply (pred_elem (n₁ + n₂)).2, apply pair,  
@@ -220,19 +220,19 @@ def submodule_inter {R : CommRing} {M : Module R} :
 ⟨submodule.inter⟩
 
 @[hott]
-def submodule_sInter {R : CommRing.{u}} {M : Module.{u u} R} (S : Subset (Submodule_Set M)) :
+def submodule_sInter {R : CommRing} {M : Module R} (S : Subset (Submodule_Set M)) :
   Submodule R M :=
 begin
   fapply Submodule.mk,
-  { exact ⋂₀ (@ss_Image.{u+1 u+1} (Submodule_Set M) (𝒫 M.carrier) 
+  { exact ⋂₀ (@ss_Image (Submodule_Set M) (𝒫 M.carrier) 
                                    (@Submodule.to_Subset R M) S) },
   { have B_str : Π B : 𝒫 M.carrier, 
-      (B∈@ss_Image.{u+1 u+1} (Submodule_Set M) (𝒫 M.carrier) (@Submodule.to_Subset R M) S) -> 
+      (B∈@ss_Image (Submodule_Set M) (𝒫 M.carrier) (@Submodule.to_Subset R M) S) -> 
                                                                submodule_str M B, from
       begin 
         intros B B_im, 
         have ex_B_str : ↥(image ((@Submodule.to_Subset R M) ∘ S.map) B), from 
-          @ss_image_preimage.{u+1 u+1} (Submodule_Set M) (𝒫 M.carrier) 
+          @ss_image_preimage (Submodule_Set M) (𝒫 M.carrier) 
                                                      (@Submodule.to_Subset R M) S B B_im,
         hinduction ex_B_str with fB, rwr <- fB.2, exact (S.map fB.1).str 
         end,                                                             
@@ -250,53 +250,57 @@ begin
 end  
 
 @[hott]
-def submod_sInter_inc {R : CommRing.{u}} {M : Module.{u u} R} (S : Subset (Submodule_Set M)) :
+def submod_sInter_inc {R : CommRing} {M : Module R} (S : Subset (Submodule_Set M)) :
   ∀ N : Submodule_Set M, N ∈ S -> (submodule_sInter S).carrier ⊆ N.carrier :=
-assume N elN, sInter_sset (@ss_Image.{u+1 u+1} (Submodule_Set M) (𝒫 M.carrier) 
+assume N elN, sInter_sset (@ss_Image (Submodule_Set M) (𝒫 M.carrier) 
                               (@Submodule.to_Subset R M) S) N.carrier (ss_image_el _ _ N elN)
 
 @[hott]
-def submodule_span {R : CommRing.{u}} {M : Module.{u u} R} (S : Subset M.carrier) : 
+def submodule_span {R : CommRing} {M : Module R} (S : Subset M.carrier) : 
   Submodule R M :=
-submodule_sInter {N ∈ Submodule_Set M | prop_ulift (S ⊆ (@Submodule.to_Subset R M N)) } 
+submodule_sInter {N ∈ Submodule_Set M | S ⊆ (@Submodule.to_Subset R M N) } 
 
 @[hott]
-def submod_gen_inc_span {R : CommRing.{u}} {M : Module.{u u} R} (S : Subset M.carrier) : 
-  S ⊆ submodule_span S :=
+def submod_gen_inc_span {R : CommRing} {M : Module R} (S : Subset M.carrier) : 
+  S ⊆ (submodule_span S).carrier :=
 begin
   apply sset_sInter,
   intros C elC, let el_imC := ss_im_preim_el _ _ _ elC, hinduction el_imC with el_imC',
   let N := el_imC'.1, rwr <- el_imC'.2.2,
-  exact ulift.down ((pred_elem N).1 el_imC'.2.1)
+  exact (pred_elem N).1 el_imC'.2.1
 end    
 
 @[hott]
-def submod_gen_span_inc {R : CommRing.{u}} {M : Module.{u u} R} (S : Subset M.carrier) 
+def submod_gen_span_inc {R : CommRing} {M : Module R} (S : Subset M.carrier) 
   (N : Submodule_Set M) : S ⊆ N.carrier -> (submodule_span S).carrier ⊆ N.carrier :=
 begin
-  let Sss := {N ∈ Submodule_Set M | prop_ulift (S ⊆ (@Submodule.to_Subset R M N)) },
-  intro ss_SN, exact submod_sInter_inc Sss N ((pred_elem N).2 (ulift.up ss_SN))
+  let Sss := {N ∈ Submodule_Set M | S ⊆ (@Submodule.to_Subset R M N) },
+  intro ss_SN, exact submod_sInter_inc Sss N ((pred_elem N).2 ss_SN)
 end  
 
 @[hott]
-def submodule_ssum {R : CommRing.{u}} {M : Module.{u u} R} (S : Subset (Submodule_Set M)) :
+def submodule_ssum {R : CommRing} {M : Module R} (S : Subset (Submodule_Set M)) :
   Submodule R M :=
-submodule_span ⋃₀ (@ss_Image.{u+1 u+1} (Submodule_Set M) (𝒫 M.carrier) 
-                                                             (@Submodule.to_Subset R M) S)  
+submodule_span ⋃₀ (@ss_Image (Submodule_Set M) (𝒫 M.carrier) 
+                                                          (@Submodule.to_Subset R M) S)  
 
 @[hott]
-def submodule_isum {R : CommRing.{u}} {M : Module.{u u} R} {I : Set.{u}} 
+def submodule_isum {R : CommRing} {M : Module R} {I : Set} 
   (f : I -> Submodule_Set M) : Submodule R M :=
 submodule_span ⋃ᵢ ((@Submodule.to_Subset R M) ∘ f)  
 
 @[hott]
-def submodule_inc_isum {R : CommRing.{u}} {M : Module.{u u} R} {I : Set.{u}} 
-  (f : I -> Submodule_Set M) : ∀ i : I, (f i).carrier ⊆ submodule_isum f :=
-λ i, sset_trans (sset_iUnion ((@Submodule.to_Subset R M) ∘ f) i) 
-                                (submod_gen_inc_span ⋃ᵢ ((@Submodule.to_Subset R M) ∘ f))
+def submodule_inc_isum {R : CommRing} {M : Module R} {I : Set} 
+  (f : I -> Submodule_Set M) : ∀ i : I, (f i).carrier ⊆ (submodule_isum f).carrier :=
+begin 
+  intro i, 
+  fapply @sset_trans M.carrier _ (⋃ᵢ ((@Submodule.to_Subset R M) ∘ f)) _, 
+  { exact sset_iUnion ((@Submodule.to_Subset R M) ∘ f) i }, 
+  { exact submod_gen_inc_span ⋃ᵢ ((@Submodule.to_Subset R M) ∘ f) } 
+end  
 
 @[hott]
-def submodule_isum_inc {R : CommRing.{u}} {M : Module.{u u} R} {I : Set.{u}} 
+def submodule_isum_inc {R : CommRing} {M : Module R} {I : Set} 
   (f : I -> Submodule_Set M) (N : Submodule R M) : 
   (∀ i : I, (f i).carrier ⊆ N.carrier) -> (submodule_isum f).carrier ⊆ N.carrier :=
 begin 
@@ -348,16 +352,16 @@ def ideal_ssum {R : CommRing} (S : Subset (Ideal_Set R)) : Ideal R :=
   submodule_ssum S
 
 @[hott]
-def ideal_isum {R : CommRing.{u}} (I : Set.{u}) (f : I -> Ideal_Set R) : Ideal R :=
+def ideal_isum {R : CommRing} (I : Set) (f : I -> Ideal_Set R) : Ideal R :=
   submodule_isum f  
 
 @[hott]
-def ideal_inc_isum {R : CommRing.{u}} {I : Set.{u}} 
+def ideal_inc_isum {R : CommRing} {I : Set} 
   (f : I -> Ideal_Set R) : ∀ i : I, (f i).carrier ⊆ (ideal_isum I f).carrier := 
 λ i, submodule_inc_isum f i 
 
 @[hott]
-def ideal_isum_inc {R : CommRing.{u}} {I : Set.{u}} 
+def ideal_isum_inc {R : CommRing} {I : Set} 
   (f : I -> Ideal_Set R) (N : Ideal R) : 
   (∀ i : I, (f i).carrier ⊆ N.carrier) -> (ideal_isum I f).carrier ⊆ N.carrier :=
 λ Iss, submodule_isum_inc f N Iss  
@@ -386,31 +390,32 @@ end
 
 @[hott]
 def is_prime_pred {R : CommRing} : Setpred (Ideal_Set R) :=
-  λ I, prop_ulift (Prop.mk (is_prime I) (is_prime_is_prop I))
+  λ I, Prop.mk (is_prime I) (is_prime_is_prop I)
 
 @[hott]
 def prime_pred_prime {R : CommRing} (P : Ideal_Set R) : 
   is_prime_pred P -> is_prime P :=
-assume H, prop_ulift_inv (Prop.mk (is_prime P) (is_prime_is_prop P)) H
+assume H, H
 
 @[hott]
 def PrimeIdeal_Set (R : CommRing) :=
   {P ∈ (Ideal_Set R) | is_prime_pred P}  
 
 @[hott]
-def proper_prime_ideal {R : CommRing} (P : (PrimeIdeal_Set R).carrier) : 
-  Not ((R•1).carrier ⊆ ↑P) :=
+def proper_prime_ideal {R : CommRing} (P : Ideal_Set R) : 
+  @is_prime R P -> Not ((R•1).carrier ⊆ P.carrier) :=
 begin
-  have prime_P: is_prime ↑P, from 
-    prime_pred_prime _ ((pred_elem ↑P).1 (obj_elem P)),
+  intro prime_P,
   have one_el : ↥((1:R)∈((R•1).carrier)), from all_elem 1,
   intro el, apply empty.elim, 
   apply prime_P.ne_all, exact el _ one_el
 end     
 
 @[hott]
-def inter_prime {R : CommRing} (P : (PrimeIdeal_Set R).carrier) (I J : Ideal_Set R) :
-  (I ∩ J).carrier ⊆ ↑P <-> I.carrier ⊆ ↑P or J.carrier ⊆ ↑P :=
+def inter_prime {R : CommRing} (P : Ideal_Set R) (I J : Ideal_Set R) 
+  (prime_P : is_prime P) :
+  (I.carrier ∩ J.carrier) ⊆ P.carrier <-> 
+                                      I.carrier ⊆ P.carrier or J.carrier ⊆ P.carrier :=
 begin  
   apply pair, 
   { apply (contrapos _ _).2, intro nor, 
@@ -427,15 +432,13 @@ begin
       by rwr R.str.mul_comm; rwr rm_mul_smul r s; rwr rm_mr_inv,
     have eJ : ring_to_mod (comm_ring.mul r s) = r • r₂, 
       by change ring_to_mod (r * s) = r•r₂; rwr rm_mul_smul r s; rwr rm_mr_inv,
-    have el : ↥(rs ∈ (I ∩ J).carrier), from 
+    have el : ↥(rs ∈ (I.carrier ∩ J.carrier)), from 
       begin  
         apply (pred_elem (ring_to_mod (comm_ring.mul r s))).2, apply pair, 
         { rwr eI, apply I.str.smul_closed, exact Pr1.1 },
         { rwr eJ, apply J.str.smul_closed, exact Pr2.1 }
-      end, 
-    have prime_P: is_prime ↑P, from 
-      prime_pred_prime _ ((pred_elem ↑P).1 (obj_elem P)),  
-    have nel : ↥(Not (rs ∈ (Subset.map _ P).carrier)), from 
+      end,   
+    have nel : ↥(Not (rs ∈ P.carrier)), from 
       begin  
         intro el_rs, hinduction prime_P.mem_or_mem r s el_rs with tr_or r_or_s, 
         clear tr_or, hinduction r_or_s with elr els, 
