@@ -75,6 +75,8 @@ def inter_sset_r (U V : Subset A) : is_Subset_of (U ∩ V) V :=
 def sInter (S : Subset (𝒫 A)) : Subset A := 
   {t ∈ A | prop_resize (to_Prop (∀ B : 𝒫 A, B ∈ S -> t ∈ B))}
 
+#print sInter
+
 hott_theory_cmd "local prefix `⋂₀`:110 := hott.subset.sInter"
 
 @[hott]
