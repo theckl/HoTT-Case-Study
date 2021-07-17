@@ -25,8 +25,6 @@ structure topological_space :=
     It is also more convenient when dealing with covers which are also defined
     as maps. -/ 
 
-#check topological_space
-
 attribute [class] topological_space
 
 @[hott]
