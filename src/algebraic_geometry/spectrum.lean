@@ -31,9 +31,6 @@ def zero_locus {R : CommRing} : Ideal_Set R -> Subset ↥(prime_spectrum R) :=
 def is_Zariski_closed {R : CommRing} : Subset ↥(prime_spectrum R) -> Prop :=
   λ Z, image (zero_locus_pred R) (sset_to_pred Z)
 
-#check zero_locus_pred
-#check is_Zariski_closed
-
 @[hott]
 def zero_pred_zero {R : CommRing} (I : Ideal R) (U : Subset ↥(prime_spectrum R)) :
   zero_locus_pred R I = sset_to_pred U -> zero_locus I = U :=
@@ -104,13 +101,13 @@ def zero_pred_vanish {R : CommRing} (I : Ideal_Set R) (U : Subset ↥(prime_spec
   (zero_locus_pred R I = sset_to_pred U) -> (I.carrier ⊆ (vanish_ideal R U).carrier) :=
 begin  
   intro pred_eq, apply sset_sInter, intros C elC,
-  rwr @ss_im_comp (PrimeIdeal_Set R).carrier (Ideal_Set R) 
-      (𝒫 (ring_as_module R).carrier) (PrimeIdeal_Set R).map Submodule.to_Subset U at elC,
-  let imP := ss_im_preim_el _ U C elC,
+  let elC' := (@ss_im_comp (PrimeIdeal_Set R).carrier (Ideal_Set R) 
+    (𝒫 (ring_as_module R).carrier) (PrimeIdeal_Set R).map Submodule.to_Subset U C).1 elC,
+  let imP := ss_im_preim_el _ U C elC',
   hinduction imP with H, let P := H.1, rwr <- H.2.2, 
   change ↥(I.carrier⊆P.1.carrier), 
   have elP : ↥(P ∈ zero_locus I), by rwr zero_pred_zero I U pred_eq; exact H.2.1,
-  exact (pred_elem P).1 elP   
+  exact prop_resize_to_prop ((pred_elem P).1 elP)   
 end    
 
 @[hott]
@@ -133,11 +130,13 @@ begin
   intro ZVU, apply tr, fapply fiber.mk, 
   { exact vanish_ideal R U },
   { apply eq_of_homotopy, intro P, apply prop_iff_eq _ _, 
-    { change ((vanish_ideal R U).carrier ⊆ P.1.carrier) → (sset_to_pred U P), 
-      intro l_ss_VP, rwr <- ZVU, 
-      exact inc_prime_el_zero (vanish_ideal R U) P l_ss_VP },
-    { intro elP, exact prime_vanish_inc P elP } }
+    { intro l_ss_VP, change ↥(P ∈ U), rwr <- ZVU, 
+      apply pred_to_elem P l_ss_VP },
+    { intro elP, have elP' : ↥(P ∈ U), from elP, rwr <- ZVU at elP',
+      exact elem_to_pred P elP' } }
 end    
+
+#check is_Zariski_closed
 
 /- Now we show the properties needed to construct the Zariski topology from Zariski-closed 
    sets. -/
@@ -178,7 +177,7 @@ begin
 end    
 
 @[hott]
-def inter_Zariski_closed (R : CommRing.{u}) : 
+def inter_Zariski_closed (R : CommRing) : 
   ∀ (I : Set) (f : I -> 𝒫 ↥(prime_spectrum R)), 
           (∀ i : I, is_Zariski_closed (f i)) -> is_Zariski_closed (⋂ᵢ f) :=
 begin 
