@@ -399,7 +399,9 @@ assume H, H
 
 @[hott]
 def PrimeIdeal_Set (R : CommRing) :=
-  {P ∈ (Ideal_Set R) | is_prime_pred P}  
+  {P ∈ (Ideal_Set R) | prop_resize (is_prime_pred P) }  
+
+#check PrimeIdeal_Set
 
 @[hott]
 def proper_prime_ideal {R : CommRing} (P : Ideal_Set R) : 
