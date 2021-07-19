@@ -14,8 +14,8 @@ set_option pp.universes true
    implemented as a bundled structure.  -/
 
 @[hott]
-structure Subset (A : Set) :=
-   (carrier : Set) (map : carrier -> A)  (inj : is_set_injective map) 
+structure Subset (A : Set.{u}) :=
+   (carrier : Set.{u}) (map : carrier -> A)  (inj : is_set_injective map) 
 
 @[hott]
 instance (A : Set) : has_coe_to_sort (Subset A) := 
@@ -27,6 +27,7 @@ attribute [instance] Subset.inj
 instance {A : Set} (B : Subset A) : has_coe ↥B ↥A :=
   ⟨λ b, B.map b⟩
 
+/-
 @[hott]
 def Subset_ulift {A : Set.{u}} : (Subset.{u v} A) -> (Subset.{u (max v w)} A) :=
   assume B,
@@ -42,15 +43,16 @@ def Subset_ulift {A : Set.{u}} : (Subset.{u v} A) -> (Subset.{u (max v w)} A) :=
   have id_ulift_is_inj : is_set_injective id_ulift, from 
     @comp_inj_inj _ _ _ car_down B.map car_down_is_inj B.inj,    
   Subset.mk B_ulift id_ulift id_ulift_is_inj
+-/
 
 @[hott]
-def total_Subset (A : Set.{u}) : Subset.{u (max u w)} A := 
+def total_Subset (A : Set) : Subset A := 
   have id_is_inj : is_set_injective (id_map A), 
     from assume a1 a2 f_eq, 
     calc a1 = (id_map A) a1 : by reflexivity
          ... = (id_map A) a2 : by rwr f_eq
          ... = a2 : by reflexivity,
-  Subset_ulift.{u u w} (Subset.mk A (id_map A) id_is_inj) 
+  Subset.mk A (id_map A) id_is_inj
 
 /- The empty set is a subset of every set [A], an elegant consequence of the construction 
    of subsets. -/
@@ -70,11 +72,12 @@ def empty_Subset (A : Set) : Subset A :=
    * Now we have all the ingredients to construct the image of a subset as a subset of the 
      codomain. -/  
 @[hott]
-def ss_image {A B : Set} (f : A -> B) (C : Subset A) : Type _ := 
-  Σ (b : B), image (f ∘ C.map) b
+def ss_image {A : Set.{u}} {B : Set.{v}} (f : A -> B) (C : Subset A) : Type v := 
+  Σ (b : B), prop_resize.{v u} (image (f ∘ C.map) b)
 
 @[hott, instance]
-def ss_image_is_set {A B : Set} (f : A -> B) (C : Subset A) : is_set (ss_image f C) :=
+def ss_image_is_set {A : Set.{u}} {B : Set.{v}} (f : A -> B) (C : Subset A) : 
+  is_trunc.{v} 0 (ss_image f C) :=
 begin 
   fapply is_set.mk, intros c₁ c₂ p q, 
   fapply sigma_eq2, 
@@ -83,7 +86,7 @@ begin
 end   
 
 @[hott]
-def ss_image_Set {A B : Set} (f : A -> B) (C : Subset A) := 
+def ss_image_Set {A B : Set} (f : A -> B) (C : Subset A) : Set := 
   Set.mk (ss_image f C) (ss_image_is_set f C)
 
 @[hott]
@@ -91,8 +94,8 @@ def ss_image_embedding {A B : Set} (f : A -> B) (C : Subset A) : (ss_image_Set f
   λ (bf : ss_image f C), bf.1
 
 @[hott]
-def ss_im_emb_is_inj {A B : Set} (f : A -> B) (C : Subset A) : 
-  is_set_injective (ss_image_embedding f C) :=
+def ss_im_emb_is_inj {A : Set.{u}} {B : Set.{v}} (f : A -> B) (C : Subset A) : 
+  is_set_injective.{v v} (ss_image_embedding f C) :=
 begin
   intros bf₁ bf₂ im_emb_eq, hinduction bf₁ with b₁ im₁, hinduction bf₂ with b₂ im₂,
   fapply sigma_eq,
@@ -239,7 +242,7 @@ def sset_comp_eq_to_sset_eq {A : Set} : Π {B C : Subset A}
   @sset_comp_eq_to_mk_eq _ _ _ car_eq _ _ map_eq injB injC
 
 @[hott, reducible]
-def ap_sset_comp_to_car {A : Set} {car1 car2 : Set} :
+def ap_sset_comp_to_car {A : Set.{u}} {car1 car2 : Set.{u}} :
   Π (car_eq : car1 = car2) 
   {map1 : car1 -> A} {map2 : car2 -> A} 
   (map_eq : map1 =[car_eq; λ (B : Set), B -> A] map2) 
@@ -377,7 +380,7 @@ def ss_eq_is_prop {A : Set} (B C : Subset A) : is_prop (B = C) :=
     have H_bij_eq : forall (beq1 beq2 : sset_bijection B C), beq1 = beq2, 
       from assume beq1 beq2,
       let f := beq1.1, g := beq2.1 in  
-      have p_map : (bijection.map f) = (bijection.map g), from 
+      have p_map : (bijection.map.{u u} f) = (bijection.map g), from 
         have i_comp_eq : mapC ∘ f = mapC ∘ g, from 
           calc mapC ∘ f = mapB : by exact beq1.2
                ... = mapC ∘ g : by exact (beq2.2)⁻¹, 
@@ -389,13 +392,13 @@ def ss_eq_is_prop {A : Set} (B C : Subset A) : is_prop (B = C) :=
       have q : beq1.2 =[p;P] beq2.2, from pathover_of_tr_eq tr_eq,  
       sigma_eq p q, 
     is_prop.mk H_bij_eq, 
-  let F := equiv.to_fun (sset_eq_equiv_bij B C) in  
+  let F := equiv.to_fun (sset_eq_equiv_bij.{u u} B C) in  
   @is_trunc_is_equiv_closed _ _ -1 F⁻¹ᶠ (is_equiv_inv F) bij_eq_is_prop 
 
 @[hott, instance]
-def Powerset_is_set {A : Set.{u}} : is_set (Subset A) := 
+def Powerset_is_set {A : Set} : is_set (Subset A) := 
 have H_eq : forall B C : Subset A, is_prop (B = C), from 
-  assume B C, ss_eq_is_prop.{u v v} B C,
+  assume B C, ss_eq_is_prop B C,
 @is_trunc_succ_intro (Subset A) -1 H_eq 
 
 @[hott, reducible]
@@ -410,24 +413,24 @@ hott_theory_cmd "local prefix `𝒫`:100 := hott.subset.Powerset"
    TODO: Introduce the standard notation {x : A | P a} for subsets given by predicates
          overwriting the notation for subtypes. -/
 @[hott, reducible]
-def Setpred (A : Set) := A -> trunctype -1
+def Setpred (A : Set) := A -> trunctype.{0} -1
 
 @[hott]
 def Setpred_of {A : Set} (P : A -> Prop) : Setpred A :=
   P
 
 @[hott]
-def sset_to_pred {A : Set} : Π (B : Subset A), Setpred A :=
-  assume B, λ (a : A), image (Subset.map B) a
+def sset_to_pred {A : Set.{u}} : Π (B : Subset A), Setpred A :=
+  assume B, λ (a : A), prop_resize (image (Subset.map B) a)
 
 @[hott]
-def total_pred {A : Set.{u}} (a : A) : sset_to_pred (total_Subset.{u w} A) a = True :=
-  inhabited_Prop_eq _ _ (tr ⟨ulift.up a, idp⟩) true.intro
+def total_pred {A : Set} (a : A) : sset_to_pred (total_Subset A) a = True :=
+  inhabited_Prop_eq _ _ (prop_to_prop_resize (tr ⟨a, idp⟩)) true.intro
 
 @[hott]
 def empty_pred {A : Set} (a : A) : sset_to_pred (empty_Subset A) a = False :=
   have ne : ¬(sset_to_pred (empty_Subset A) a), from 
-    begin intro p, hinduction p with e, hinduction e.1 end,
+    begin intro p, hinduction (prop_resize_to_prop p) with e fib_a, hinduction fib_a.1 end,
   uninhabited_Prop_eq _ _ ne False_uninhabited  
 
 @[hott]
@@ -497,15 +500,18 @@ have eq_a : fib_a.point.1 = a, from fiber.point_eq fib_a,
 eq_a ▸[λ a : A, pred a] (fiber.point fib_a).2
 
 @[hott, reducible]
-def map_pred_sset {A : Set} (B : Subset A) :
+def map_pred_sset {A : Set.{u}} (B : Subset A) :
   Subset.carrier (pred_to_sset (sset_to_pred B)) -> Subset.carrier B :=
 let mapB := Subset.map B,
     injB := Subset.inj B in
-assume b_pred, 
-let a := b_pred.1 in
-have H : is_prop (fiber mapB a), from set_inj_implies_unique_fib mapB injB a,
-have fib_a : fiber mapB a, from @untrunc_of_is_trunc _ _ H b_pred.2,
-fiber.point fib_a 
+begin    
+  intro b_pred, 
+  let a := b_pred.1,
+  let im_a := b_pred.2,
+  have H : is_prop (fiber mapB a), from set_inj_implies_unique_fib.{u u} mapB injB a,
+  let fib_a : fiber mapB a := @untrunc_of_is_trunc _ _ H (prop_resize_to_prop im_a),
+  exact fiber.point fib_a 
+end
 
 @[hott]
 lemma map_map_pred_sset {A : Set} (B : Subset A) : 
@@ -516,26 +522,36 @@ let mapB := Subset.map B,
 assume b_pred, 
 let a := b_pred.1, im_a := b_pred.2 in
 let H_prop := set_inj_implies_unique_fib mapB injB a in
-let fib_a := @untrunc_of_is_trunc (fiber mapB a) -1 H_prop im_a in
+let fib_a := @untrunc_of_is_trunc (fiber mapB a) -1 H_prop (prop_resize_to_prop im_a) in
 calc mapB (map_pred_sset B b_pred) = mapB fib_a.point : by refl
      ... = a : fib_a.point_eq
 
-@[hott]
+@[hott, reducible]
 def map_sset_pred {A : Set} (B : Subset A) : 
   Subset.carrier B -> Subset.carrier (pred_to_sset (sset_to_pred B)) :=
 let mapB := Subset.map B in
 assume b, 
 let a := mapB b in
-dpair a (tr (fiber.mk b idp))
+dpair a (prop_to_prop_resize (tr (fiber.mk b idp)))
 
 @[hott]
-def inv_pred_sset {A : Set} (B : Subset A) : 
+def inv_pred_sset {A : Set.{u}} (B : Subset A) : 
   is_set_inverse_of (map_pred_sset B) (map_sset_pred B) :=
 let f := map_pred_sset B, g := map_sset_pred B in
 let mapB := Subset.map B,
     injB := Subset.inj B in
-have rinv : is_set_right_inverse_of f g, from 
-  assume b, by refl,
+have rinv : is_set_right_inverse_of (map_pred_sset B) (map_sset_pred B), from  
+  assume b, 
+  let H := set_inj_implies_unique_fib.{u u} mapB injB (mapB b) in 
+  have p : (map_sset_pred B) b = ⟨mapB b, prop_to_prop_resize (tr (fiber.mk b idp))⟩, from rfl,
+  begin 
+    change (@untrunc_of_is_trunc _ _ H (prop_resize_to_prop ((map_sset_pred B) b).2)).1 = b, 
+    rwr p,
+    sorry 
+  end,
+/-  calc f (g b) = f (⟨mapB b, prop_to_prop_resize (tr (fiber.mk b idp))⟩) : by refl
+           ... = (@untrunc_of_is_trunc _ _ H (prop_resize_to_prop (g b).2)).1 : by refl
+           ... = b : by refl, -/
 have linv : is_set_left_inverse_of f g, from 
   assume b_pred, 
   have pr1_eq : (g (f b_pred)).1 = b_pred.1, from
