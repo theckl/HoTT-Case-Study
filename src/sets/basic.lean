@@ -9,7 +9,7 @@ open is_trunc trunc equiv is_equiv hott.prod hott.quotient hott.sigma hott.relat
 
 namespace set
 
-set_option pp.universes.true
+set_option pp.universes true
 
 /- `Prop`s are `Set`s. -/
 @[hott]
