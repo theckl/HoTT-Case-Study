@@ -488,13 +488,13 @@ have fib_a : fiber mapB a, from fiber.mk apr im_a,
 tr fib_a
 
 @[hott]
-def im_to_pred {A : Set} (pred : Setpred A) (a : A) :
+def im_to_pred {A : Set.{u}} (pred : Setpred A) (a : A) :
   image (Subset.map (pred_to_sset pred)) a -> pred a :=
 let B := pred_to_sset pred,
     mapB := Subset.map B,
     injB := Subset.inj B in
 assume im, 
-have H : is_prop (fiber mapB a), from set_inj_implies_unique_fib mapB injB a,
+have H : is_prop (fiber mapB a), from set_inj_implies_unique_fib.{u u} mapB injB a,
 have fib_a : fiber mapB a, from @untrunc_of_is_trunc _ _ H im,
 have eq_a : fib_a.point.1 = a, from fiber.point_eq fib_a,
 eq_a ▸[λ a : A, pred a] (fiber.point fib_a).2
@@ -540,18 +540,14 @@ def inv_pred_sset {A : Set.{u}} (B : Subset A) :
 let f := map_pred_sset B, g := map_sset_pred B in
 let mapB := Subset.map B,
     injB := Subset.inj B in
-have rinv : is_set_right_inverse_of (map_pred_sset B) (map_sset_pred B), from  
+have rinv : is_set_right_inverse_of f g, from  
   assume b, 
   let H := set_inj_implies_unique_fib.{u u} mapB injB (mapB b) in 
-  have p : (map_sset_pred B) b = ⟨mapB b, prop_to_prop_resize (tr (fiber.mk b idp))⟩, from rfl,
+  have p : (g b).2 = prop_to_prop_resize (tr (fiber.mk b idp)), from rfl,
   begin 
-    change (@untrunc_of_is_trunc _ _ H (prop_resize_to_prop ((map_sset_pred B) b).2)).1 = b, 
-    rwr p,
-    sorry 
+    change (@untrunc_of_is_trunc _ _ H (prop_resize_to_prop (g b).2)).1 = b, 
+    rwr p, rwr prp_rinv _ 
   end,
-/-  calc f (g b) = f (⟨mapB b, prop_to_prop_resize (tr (fiber.mk b idp))⟩) : by refl
-           ... = (@untrunc_of_is_trunc _ _ H (prop_resize_to_prop (g b).2)).1 : by refl
-           ... = b : by refl, -/
 have linv : is_set_left_inverse_of f g, from 
   assume b_pred, 
   have pr1_eq : (g (f b_pred)).1 = b_pred.1, from
@@ -566,7 +562,7 @@ def bij_pred_sset {A : Set} (B : Subset A) :
 has_inverse_to_bijection (map_pred_sset B) (map_sset_pred B) (inv_pred_sset B)
 
 @[hott]
-def sset_bij_pred_sset  {A : Set} (B : Subset A) :
+def sset_bij_pred_sset  {A : Set.{u}} (B : Subset A) :
   sset_bijection (pred_to_sset (sset_to_pred B)) B :=
 let f := bij_pred_sset B in
 have comp_hom : (Subset.map B) ∘ (bijection.map f) ~ 
@@ -589,9 +585,10 @@ def sset_pred_rinv {A : Set} (pred : Setpred A) :
 have hom : sset_to_pred (pred_to_sset pred) ~ pred, from 
   assume a, 
   calc sset_to_pred (pred_to_sset pred) a = 
-                 image (Subset.map (pred_to_sset pred)) a : by refl
-       ... = pred a : prop_iff_eq (im_to_pred pred a) (pred_to_im pred a),
-    eq_of_homotopy hom  
+                 prop_resize (image (Subset.map (pred_to_sset pred)) a) : by refl
+       ... = prop_resize (pred a) : by rwr prop_iff_eq (im_to_pred pred a) (pred_to_im pred a)
+       ... = pred a : prop_resize_trivial (pred a),
+eq_of_homotopy hom  
 
 @[hott]
 def Subset_equiv_Setpred (A : Set) : Subset A ≃ Setpred A :=
@@ -644,18 +641,18 @@ notation `{ ` binder ` ∈ ` B ` | ` P:scoped  ` }` := @pred_to_sset B P
 @[hott, reducible]
 def pred_elem {A : Set} {P : Setpred A} (a : A) : a ∈ { a ∈ A | P a } <-> P a :=
   have imp₁ : a ∈ { a ∈ A | P a } -> P a, from
-    begin intro elem_a_P, apply im_to_pred, assumption end,
+    begin intro elem_a_P, apply im_to_pred, exact prop_resize_to_prop elem_a_P end,
   have imp₂ : P a -> a ∈ { a ∈ A | P a }, from
-    begin intro pred_a, apply pred_to_im; assumption end,  
+    begin intro pred_a, apply prop_to_prop_resize, apply pred_to_im; assumption end,  
   ⟨imp₁, imp₂⟩ 
 
 @[hott]
 def elem_to_pred {A : Set} {P : Setpred A} (a : A) : a ∈ { a ∈ A | P a } -> P a :=
-begin intro elem_a_P, apply im_to_pred, assumption end
+begin intro elem_a_P, apply im_to_pred, exact prop_resize_to_prop elem_a_P end
 
 @[hott]
 def pred_to_elem {A : Set} {P : Setpred A} (a : A) : P a -> a ∈ { a ∈ A | P a } :=
-begin intro pred_a, apply pred_to_im; assumption end  
+begin intro pred_a, apply prop_to_prop_resize, apply pred_to_im; assumption end  
 
 @[hott, reducible]
 def elem_pred {A : Set} {P : Setpred A} (a : A) (pred_a : P a) :
@@ -673,17 +670,18 @@ def sset_elem_pred {A : Set} {P : Setpred A} (b : (↥(pred_to_sset P) : Set)) :
 
 @[hott]
 def obj_elem {A : Set} {B : Subset A} (b : B.carrier) : ↑b ∈ B :=
-  have p : B.map b = ↑b, from rfl, tr ⟨b, p⟩
+  have p : B.map b = ↑b, from rfl, 
+  prop_to_prop_resize (tr ⟨b, p⟩)
 
 @[hott]
 def elem_obj {A : Set} {B : Subset A} (a : A) (H : a ∈ B) : ↥B :=
-  have Hp : is_prop (fiber B.map a), from set_inj_implies_unique_fib _ B.inj a,
-  (@untrunc_of_is_trunc _ -1 Hp H).1   
+  have Hp : is_prop (fiber B.map a), from set_inj_implies_unique_fib.{u u} _ B.inj a,
+  (@untrunc_of_is_trunc _ -1 Hp (prop_resize_to_prop H)).1   
 
 @[hott]
 def elem_obj_eq {A : Set} {B : Subset A} (a : A) (H : a ∈ B) : B.map (elem_obj a H) = a :=
-  have Hp : is_prop (fiber B.map a), from set_inj_implies_unique_fib _ B.inj a,
-  (@untrunc_of_is_trunc _ -1 Hp H).2
+  have Hp : is_prop (fiber B.map a), from set_inj_implies_unique_fib.{u u} _ B.inj a,
+  (@untrunc_of_is_trunc _ -1 Hp (prop_resize_to_prop H)).2
 
 @[hott]
 def is_subset_of {A : Set} (B C : Subset A) :=
@@ -757,17 +755,19 @@ prod.mk imp1 imp2
 @[hott]
 def ss_image_preimage {A B : Set} (f : A -> B) (C : Subset A) : 
   ∀ b : B, b ∈ ss_Image f C -> image (f ∘ C.map) b :=
-begin intros b el, hinduction el with fa, rwr <- fa.2, exact fa.1.2 end 
+begin 
+  intros b el, hinduction (prop_resize_to_prop el) with eq fa, 
+  rwr <- fa.2, exact prop_resize_to_prop fa.1.2 end 
 
 @[hott]
 def ss_image_el {A B : Set} (f : A -> B) (C : Subset A) : 
   ∀ (a : A), a ∈ C -> f a ∈ ss_Image f C :=
 begin 
-  intros a ela,
+  intros a ela, apply prop_to_prop_resize,
   apply tr, fapply fiber.mk, 
     { fapply dpair, 
       { exact f a },
-      { apply tr, fapply fiber.mk, 
+      { apply prop_to_prop_resize, apply tr, fapply fiber.mk, 
         { exact elem_obj a ela },
         { change f (C.map (elem_obj a ela)) = f a, 
           rwr elem_obj_eq a ela } } },
@@ -793,7 +793,7 @@ begin
     let imc := ss_image_preimage g (ss_Image f D) c elc,
     hinduction imc with fibc,
     let b := (ss_Image f D).map fibc.1,
-    have elb : ↥(b ∈ ss_Image f D), from tr ⟨fibc.1, idp⟩,
+    have elb : ↥(b ∈ ss_Image f D), from prop_to_prop_resize (tr ⟨fibc.1, idp⟩),
     let ima := ss_im_preim_el f D b elb,
     hinduction ima with H, let a := H.1,
     have p : c = g (f a), by rwr H.2.2; rwr <- fibc.2, 
