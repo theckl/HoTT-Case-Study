@@ -75,8 +75,6 @@ def inter_sset_r (U V : Subset A) : is_Subset_of (U ∩ V) V :=
 def sInter (S : Subset (𝒫 A)) : Subset A := 
   {t ∈ A | prop_resize (to_Prop (∀ B : 𝒫 A, B ∈ S -> t ∈ B))}
 
-#print sInter
-
 hott_theory_cmd "local prefix `⋂₀`:110 := hott.subset.sInter"
 
 @[hott]
@@ -93,9 +91,9 @@ begin
 end    
 
 @[hott, reducible]
-def iInter {A : Set.{u}} {I : Set.{v}} (f : I -> Powerset.{u w} A) : 
+def iInter {A : Set.{u}} {I : Set.{v}} (f : I -> Powerset A) : 
   Subset A :=
-{t ∈ A | prop_resize.{w (max u v)} (to_Prop (∀ i : I, t ∈ f i))}
+{t ∈ A | prop_resize (to_Prop (∀ i : I, t ∈ f i))}
 
 hott_theory_cmd "local prefix `⋂ᵢ`:110 := hott.subset.iInter"  
 
@@ -139,17 +137,16 @@ def sUnion (S : Subset (𝒫 A)) : Subset A :=
 hott_theory_cmd "local prefix `⋃₀`:110 := hott.subset.sUnion"
 
 @[hott, reducible]
-def iUnion {A : Set.{u}} {I : Set.{v}} (f : I -> Powerset.{u w} A) : 
-  Subset.{u (max u w)} A :=
-  {t ∈ A | prop_resize.{(max u w) (max u v)} (∥ Σ i : I, t ∈ f i ∥)}
+def iUnion {A : Set} {I : Set} (f : I -> Powerset A) : Subset A :=
+  {t ∈ A | prop_resize (∥ Σ i : I, t ∈ f i ∥)}
 
 hott_theory_cmd "local prefix `⋃ᵢ`:110 := hott.subset.iUnion"  
 
 @[hott]
-def sset_iUnion {A : Set.{u}} {I : Set.{v}} (f : I -> Powerset.{u w} A) (i : I) : 
+def sset_iUnion {A : Set} {I : Set} (f : I -> Powerset A) (i : I) : 
   (f i) ⊆ (⋃ᵢ f) :=
 begin 
-  intros a el, change ↥(a ∈ {t ∈ A | prop_resize.{(max u w) (max u v)} (∥ Σ i : I, t ∈ f i ∥)}), 
+  intros a el, change ↥(a ∈ {t ∈ A | prop_resize (∥ Σ i : I, t ∈ f i ∥)}), 
   apply (pred_elem a).2, 
   exact prop_to_prop_resize (@trunc.tr -1 (Σ i : I, a ∈ f i) ⟨i, el⟩) 
 end
@@ -208,7 +205,7 @@ begin
 end 
 
 @[hott]
-def compl_iUnion {I : Set.{v}} (f : I -> Powerset.{u (max u w)} A) : C(⋃ᵢ f) = ⋂ᵢ (λ i, C(f i)) :=
+def compl_iUnion {I : Set} (f : I -> Powerset A) : C(⋃ᵢ f) = ⋂ᵢ (λ i, C(f i)) :=
 begin  
   apply (sset_eq_iff_inclusion _ _).2, apply pair,
   { intros x el, 
