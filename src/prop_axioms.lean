@@ -542,6 +542,20 @@ def LEM_Prop_Resize : ExcludedMiddle.{max u v} -> (trunctype.{u} -1 ≃ trunctyp
 def prop_resize : trunctype.{max u v} -1 -> trunctype.{u} -1 := (LEM_Prop_Resize LEM)⁻¹ᶠ  
 
 @[hott]
+def prop_resize_trivial : ∀ (P : trunctype.{u} -1), prop_resize.{u u} P = P :=
+begin 
+  intro P, hsimp, hinduction LEM P with lem q nq, 
+  { have eq : (LEM_Prop_equiv_Two LEM).to_fun P = Two.one, from
+      begin change LEM_Prop_Two LEM P = Two.one, hsimp, rwr lem end,
+    rwr eq, hsimp, change True = P, apply inhabited_Prop_eq, exact true.intro, exact q },
+  { have eq : (LEM_Prop_equiv_Two LEM).to_fun P = Two.zero, from
+      begin change LEM_Prop_Two LEM P = Two.zero, hsimp, rwr lem end,
+    rwr eq, hsimp, change False = P, apply uninhabited_Prop_eq, 
+    { intro F, hinduction F }, 
+    { exact nq } } 
+end
+
+@[hott, reducible, hsimp]
 def prop_to_prop_resize {P : Prop} : P -> prop_resize P :=
 begin 
   intro p, hsimp, 
@@ -554,7 +568,7 @@ begin
   rwr eq, hsimp, exact true.intro 
 end
 
-@[hott]
+@[hott, reducible, hsimp]
 def prop_resize_to_prop {P : Prop} : prop_resize P -> P :=
 begin
   hsimp, intro p, hinduction LEM P with lem q nq,
@@ -564,6 +578,10 @@ begin
     rwr neq at p, have p' : false, from p, hinduction p' }
 end  
 
+@[hott, reducible]
+def prp_rinv {P : Prop} : ∀ p : P, prop_resize_to_prop (prop_to_prop_resize p) = p :=
+  assume p, is_prop.elim _ p
+ 
 @[hott]
 def prop_to_prop_ulift {P : Prop} : P -> prop_ulift P :=
 begin
