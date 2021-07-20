@@ -346,26 +346,27 @@ begin intro p, hinduction p, hinduction x, refl end
 def std_str_has_hom {C : Type u} [category.{v} C] (std_str : std_structure_on C) :
   has_hom (std_structure std_str) := 
 has_hom.mk (λ (x y : std_structure std_str), 
-            ↥{ f ∈ (x.carrier ⟶ y) | std_str.H (x.str) (y.str) f })
+            ↥{ f ∈ (x.carrier ⟶ y) | prop_resize (std_str.H (x.str) (y.str) f) })
 
 @[hott]
 instance hom_std_C {C : Type u} [category.{v} C] {std_str : std_structure_on C}
   {x y : std_structure std_str} : has_coe ↥(x ⟶ y) ↥(x.carrier ⟶ y.carrier) :=
-⟨λ f, { f ∈ (x.carrier ⟶ y) | std_str.H (x.str) (y.str) f }.map f⟩  
+⟨λ f, { f ∈ (x.carrier ⟶ y) | prop_resize (std_str.H (x.str) (y.str) f) }.map f⟩  
 
 @[hott]
 def hom_H {C : Type u} [category.{v} C] {std_str : std_structure_on C} 
   {x y : std_structure std_str} :
-  Π f : x ⟶ y, std_str.H x.str y.str (↑f) :=
-assume f, f.2              
+  Π f : x ⟶ y, prop_resize.{0 v} (std_str.H x.str y.str (↑f)) :=
+begin intro f, exact f.2 end              
 
 @[hott]
 def hom_eq_C_std {C : Type u} [category.{v} C] {std_str : std_structure_on C} 
   {x y : std_structure std_str} (f g : x ⟶ y) : 
   (f.1 = (g.1 : x.carrier ⟶ y.carrier)) -> (f = g) :=
 assume (hom_eq_C : f.1 = g.1), 
-have H_eq : f.2 =[hom_eq_C; λ f : x.carrier ⟶ y, std_str.H x.str y.str f] g.2, from 
-  pathover_prop_eq (λ f : x.carrier ⟶ y, std_str.H x.str y.str f) hom_eq_C (hom_H f) (hom_H g),
+have H_eq : f.2 =[hom_eq_C; λ f : x.carrier ⟶ y, prop_resize.{0 v} (std_str.H x.str y.str f)] g.2, from 
+  pathover_prop_eq (λ f : x.carrier ⟶ y, prop_resize (std_str.H x.str y.str f)) hom_eq_C 
+                                                                               (hom_H f) (hom_H g),
 calc f = ⟨f.1, f.2⟩ : (sigma.eta f)⁻¹ 
    ... = ⟨g.1, g.2⟩ : dpair_eq_dpair hom_eq_C H_eq
    ... = g : sigma.eta g 
@@ -373,9 +374,11 @@ calc f = ⟨f.1, f.2⟩ : (sigma.eta f)⁻¹
 @[hott, instance]
 def std_str_cat_struct {C : Type u} [category.{v} C] (std_str : std_structure_on C) :
   category_struct (std_structure std_str) :=
-category_struct.mk (λ x : std_structure std_str, elem_pred (𝟙 ↑x) (std_str.id_H x.str)) 
+category_struct.mk (λ x : std_structure std_str, elem_pred (𝟙 ↑x) 
+                                                     (prop_to_prop_resize (std_str.id_H x.str))) 
   (λ (x y z : std_structure std_str) (f : x ⟶ y) (g : y ⟶ z), 
-   elem_pred (↑f ≫ ↑g) (std_str.comp_H x.str y.str z.str ↑f ↑g (hom_H f) (hom_H g))) 
+   elem_pred (↑f ≫ ↑g) (prop_to_prop_resize (std_str.comp_H x.str y.str z.str ↑f ↑g 
+     (prop_resize_to_prop (hom_H f)) (prop_resize_to_prop (hom_H g))))) 
 
 @[hott]
 def idhom_std_C {C : Type u} [category.{v} C] {std_str : std_structure_on C} 
@@ -504,8 +507,8 @@ begin
   /- We define `F : (Σ (f : a ≅ b), std_str.H α β f.hom and std_str.H β α f.inv) -> (x ≅ y)`. -/
   { intro iso_H, 
     fapply iso.mk,
-    { exact elem_pred (iso_H.1.hom) (iso_H.2.1) },
-    { exact elem_pred (iso_H.1.inv) (iso_H.2.2) },
+    { exact elem_pred (iso_H.1.hom) (prop_to_prop_resize (iso_H.2.1)) },
+    { exact elem_pred (iso_H.1.inv) (prop_to_prop_resize (iso_H.2.2)) },
     { apply hom_eq_C_std _ _, repeat { rwr comp_hom_std_C }, hsimp, rwr iso_H.1.r_inv },
     { apply hom_eq_C_std _ _, repeat { rwr comp_hom_std_C }, hsimp, rwr iso_H.1.l_inv } },
   { fapply adjointify,
@@ -513,7 +516,7 @@ begin
     { intro f, 
       fapply sigma.mk,
       { exact iso_std_C f },
-      { exact (f.hom.2, f.inv.2) } },
+      { exact (prop_resize_to_prop f.hom.2, prop_resize_to_prop f.inv.2) } },
     /- `r_inv : ∀ f : x ≅ y, F (G f) = f` -/  
     { intro f,
       apply hom_eq_to_iso_eq, apply hom_eq_C_std _ _, 
