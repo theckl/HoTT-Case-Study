@@ -8,6 +8,8 @@ open hott.eq hott.set hott.subset hott.is_trunc hott.is_equiv hott.equiv hott.ca
 
 namespace categories
 
+set_option pp.universes true
+
 /- To construct the opposite category, we use the mathlib-trick in [data.opposite]
    that allows the elaborator to do most of the work. -/  
 variables {C : Type u} {D : Type u'}  
