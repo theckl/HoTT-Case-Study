@@ -14,7 +14,7 @@ open hott.eq hott.is_trunc hott.trunc hott.set hott.subset
 
 namespace category_theory.limits
 
-set_option pp.universes true
+set_option pp.universes false
 
 structure cone {J : Set.{u'}} [precategory.{v'} J] {C : Type u} 
   [precategory.{v} C] (F : J ⥤ C) :=
@@ -334,7 +334,7 @@ cone.mk c π
 @[hott]
 def set_limit_pred {J : Set.{u'}} [precategory.{v'} J] (F : J ⥤ Set.{u}) : 
   Setpred (trunctype_ulift.{(max u u') v'} (Sections F.obj)) :=
-λ s, to_Prop (∀ (j k : J) (f : j ⟶ k), F.map f (s.down j) = s.down k)  
+λ s, prop_resize (to_Prop (∀ (j k : J) (f : j ⟶ k), F.map f (s.down j) = s.down k)) 
 
 @[hott, reducible]
 def set_cone {J : Set} [precategory J] (F : J ⥤ Set) : cone F :=
@@ -348,7 +348,7 @@ begin
     /- compatibility of the leg maps -/
     { intros j k f, hsimp, 
       fapply eq_of_homotopy, intro u, hsimp, 
-      change u.1.down k = F.map f (u.1.down j), rwr u.2 } }
+      change u.1.down k = F.map f (u.1.down j), rwr prop_resize_to_prop u.2 } }
 end  
 
 @[hott, reducible]
@@ -359,7 +359,7 @@ begin
   /- the lift from the limit cone to another cone-/ 
   { intro s, intro x, fapply sigma.mk, 
     { apply ulift.up, intro j, exact s.π.app j x },
-    { intros j k f, hsimp,  
+    { hsimp, apply prop_to_prop_resize, intros j k f, 
       exact (homotopy_of_eq (s.π.naturality f) x)⁻¹ } },
   /- factorising the lift with limit cone legs -/    
   { intros s j, hsimp, apply eq_of_homotopy, 
