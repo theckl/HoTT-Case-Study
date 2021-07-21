@@ -367,9 +367,8 @@ begin
   /- uniqueness of lift -/  
   { intros s m lift_m, hsimp, apply eq_of_homotopy,
     intro x, hsimp, fapply sigma.sigma_eq, 
-    { hsimp, apply down_eq_up, apply eq_of_homotopy, intro j, hsimp, rwr <- lift_m j },
-    { apply pathover_of_tr_eq, apply eq_of_homotopy3, intros j k f, 
-        apply is_set.elim } }  
+    { exact down_eq_up _ _ (eq_of_homotopy (λ j, @homotopy_of_eq s.X _ _ _ (lift_m j) x)) },
+    { hsimp, apply pathover_of_tr_eq, apply is_prop.elim } }  
 end
 
 @[hott, reducible]
@@ -425,12 +424,12 @@ begin
     { exact std_structure.mk lc.cone.X lcd.lc_str },
     { fapply nat_trans.mk, 
       { intro j, 
-        exact ⟨lc.cone.π.app j, lcd.lc_legs_H j⟩ },
+        exact ⟨lc.cone.π.app j, prop_to_prop_resize (lcd.lc_legs_H j)⟩ },
       { intros j k f, apply hom_eq_C_std, rwr comp_hom_std_C,  
         exact lc.cone.π.naturality f } } },
   { fapply is_limit.mk, -- the limit cone is a limit
     { intro s, 
-      exact ⟨lc.is_limit.lift (str_cone_to_cone s), lcd.lift_H s⟩ },
+      exact ⟨lc.is_limit.lift (str_cone_to_cone s), prop_to_prop_resize (lcd.lift_H s)⟩ },
     { intros s j, apply hom_eq_C_std, rwr comp_hom_std_C, hsimp, 
       exact lc.is_limit.fac (str_cone_to_cone s) j },
     { intros s m fac_m, apply hom_eq_C_std, hsimp, 
