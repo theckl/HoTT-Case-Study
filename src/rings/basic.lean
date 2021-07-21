@@ -469,15 +469,19 @@ begin
   { exact CommRing_ulift },
   { intros R S f, fapply dpair, 
     { intro r, exact ulift.up (f.1 r.down) },
-    { hsimp, fapply is_ring_hom.mk, 
-      { apply hott.eq.inverse, apply down_eq_up, apply (f.2.map_one)⁻¹ }, 
-      { intros r s, apply ap ulift.up, apply (f.2.map_mul) }, 
-      { apply hott.eq.inverse, apply down_eq_up, apply (f.2.map_zero)⁻¹ }, 
-      { intros r s, apply ap ulift.up, apply (f.2.map_add) } } },
-  { hsimp, intro R, apply hom_eq_C_std, hsimp, apply eq_of_homotopy, 
-    intro r, hsimp, apply hott.eq.inverse, apply down_eq_up, refl },
-  { hsimp, intros R S T f g, apply hom_eq_C_std, hsimp, apply eq_of_homotopy,
-    intro r, hsimp, apply hott.eq.inverse, apply down_eq_up, refl }
+    { apply prop_to_prop_resize, fapply is_ring_hom.mk, 
+      { apply hott.eq.inverse, apply down_eq_up, 
+        apply ((prop_resize_to_prop f.2).map_one)⁻¹ }, 
+      { intros r s, apply ap ulift.up, 
+        apply ((prop_resize_to_prop f.2).map_mul) }, 
+      { apply hott.eq.inverse, apply down_eq_up, 
+        apply ((prop_resize_to_prop f.2).map_zero)⁻¹ }, 
+      { intros r s, apply ap ulift.up, 
+        apply ((prop_resize_to_prop f.2).map_add) } } },
+  { intro R, apply hom_eq_C_std, apply eq_of_homotopy, 
+    intro r, apply hott.eq.inverse, apply down_eq_up, refl }, 
+  { intros R S T f g, apply hom_eq_C_std, apply eq_of_homotopy, 
+    intro r, apply hott.eq.inverse, apply down_eq_up, refl } 
 end  
 
 end algebra
