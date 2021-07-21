@@ -145,13 +145,13 @@ pi.lift C (λ p : ↥I × I, pi.π _ p.2 ≫
                        F.map (hom_op (opens.inf_le_r X (U p.1) (U p.2))))
 
 @[hott, reducible]
-def res {C : Type u} [category.{v} C] [has_products C]
-  {I : Set} (U : I -> open_sets X) (F : presheaf X C) :
+def res {C : Type u} [category.{v} C] [has_products.{v u u_2} C]
+  {I : Set.{u_2}} (U : I -> open_sets X) (F : presheaf X C) :
   (F.obj (op (open_sets.iUnion X U))) ⟶ (pi_opens X U F) :=  
 pi.lift C (λ i : I, F.map (hom_op (opens.le_union X U i))) 
 
 @[hott]
-def w_res {C : Type u} [category.{v} C] [has_products.{v u u_4} C]
+def w_res {C : Type u} [category.{v} C] [has_products.{v u u_2} C]
   {I : Set} (U : I -> open_sets X) (F : presheaf X C) :
   (res X U F) ≫ (left_res X U F) = (res X U F) ≫ (right_res X U F) :=  
 have left_eq : Π p : ↥(I × I), ((res X U F) ≫ (left_res X U F)) ≫ pi.π _ p =
@@ -222,11 +222,12 @@ def sheaf_condition_equalizer_products.fork {C : Type u} [category.{v} C]
 fork.of_i _ _ (res X U F) (w_res X U F)
 
 @[hott]
-def sheaf_condition {C : Type u} [category.{v} C] [has_products.{v u u_4} C] (F : presheaf X C) := Π {I : Set} (U : I -> open_sets X), 
+def sheaf_condition {C : Type u} [category.{v} C] [has_products.{v u u_2} C] 
+  (F : presheaf X C) := Π {I : Set} (U : I -> open_sets X), 
   is_limit (sheaf_condition_equalizer_products.fork X U F)
 
 @[hott]
-structure sheaf (C : Type u) [category.{v} C] [has_products.{v u u_4} C] :=
+structure sheaf (C : Type u) [category.{v} C] [has_products.{v u u_2} C] :=
 (presheaf : presheaf X C)
 (sheaf_condition : sheaf_condition X presheaf)
 
