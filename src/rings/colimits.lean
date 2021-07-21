@@ -325,7 +325,8 @@ begin
     /- the leg homomorphisms of the limit cocone -/
     { intro j, fapply elem_pred, -- ring homomorphisms consist of a set map satisfying laws
       { intro r, exact set_class_of mR (expr.x_ j r) },
-      { change is_ring_hom _ _ (λ r, set_class_of mR (expr.x_ j r)), fapply is_ring_hom.mk, 
+      { apply prop_to_prop_resize, change is_ring_hom _ _ (λ r, set_class_of mR (expr.x_ j r)), 
+        fapply is_ring_hom.mk, 
         { apply quot_rel_to_setquot_eq mR, exact tr (ring_colim_rel.one F j) },
         { intros a b, apply quot_rel_to_setquot_eq mR, exact tr (ring_colim_rel.mul j a b) },
         { apply quot_rel_to_setquot_eq mR, exact tr (ring_colim_rel.zero F j) },
@@ -353,11 +354,11 @@ begin
       { intros x y, apply trunc.rec, intro H, hinduction H, --well-definedness
         { refl }, { rwr ih }, { rwr ih_h, rwr <- ih_k }, 
         { hsimp, exact homotopy_of_eq ((ap sigma.fst (S.π.naturality f))) r }, 
-        { hsimp, exact (S.π.app j).2.map_zero },
-        { hsimp, exact (S.π.app j).2.map_one }, 
-        { hsimp, exact comm_ring_hom.map_neg (S.π.app j).2 x }, 
-        { hsimp, exact (S.π.app j).2.map_add x y }, 
-        { hsimp, exact (S.π.app j).2.map_mul x y }, 
+        { hsimp, exact (prop_resize_to_prop (S.π.app j).2).map_zero },
+        { hsimp, exact (prop_resize_to_prop (S.π.app j).2).map_one }, 
+        { hsimp, exact comm_ring_hom.map_neg (prop_resize_to_prop (S.π.app j).2) x }, 
+        { hsimp, exact (prop_resize_to_prop (S.π.app j).2).map_add x y }, 
+        { hsimp, exact (prop_resize_to_prop (S.π.app j).2).map_mul x y }, 
         any_goals { hsimp at ih, hsimp, rwr ih }, 
         { hsimp, exact @comm_ring.zero_add S.X S.X.str _ }, 
         { hsimp, exact @comm_ring.add_zero S.X S.X.str _ }, 
@@ -370,7 +371,7 @@ begin
         { hsimp, exact @comm_ring.mul_assoc S.X S.X.str _ _ _ },
         { hsimp, exact @comm_ring.left_distrib S.X S.X.str _ _ _ }, 
         { hsimp, exact @comm_ring.right_distrib S.X S.X.str _ _ _ } } },
-    { fapply is_ring_hom.mk, any_goals { refl }, 
+    { apply prop_to_prop_resize, fapply is_ring_hom.mk, any_goals { refl }, 
       { apply set_quotient.prec2, intros x y, hsimp, refl }, 
       { apply set_quotient.prec2, intros x y, hsimp, refl } }  
 end       
