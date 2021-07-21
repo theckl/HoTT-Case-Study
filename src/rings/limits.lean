@@ -78,24 +78,28 @@ def ring_pred_is_closed {J : Set} [precategory J] (F : J ⥤ CommRing) :
   ring_pred_closed (ring_limit_pred F) :=
 begin
   fapply ring_pred_closed.mk, 
-  { intros r s Hr Hs j k f, change (F.map f).1 (r.down j + s.down j) = (r.down k + s.down k : 
-                                                                                      F.obj k),
-    rwr (F.map f).2.map_add (r.down j) (s.down j), 
-    have pr : (F.map f).1 (r.down j) = r.down k, from Hr j k f, 
-    have ps : (F.map f).1 (s.down j) = s.down k, from Hs j k f,
+  { intros r s Hr Hs, apply prop_to_prop_resize, intros j k f,
+    change (F.map f).1 (r.down j + s.down j) = (r.down k + s.down k : F.obj k),
+    rwr (prop_resize_to_prop (F.map f).2).map_add (r.down j) (s.down j), 
+    have pr : (F.map f).1 (r.down j) = r.down k, from (prop_resize_to_prop Hr) j k f, 
+    have ps : (F.map f).1 (s.down j) = s.down k, from (prop_resize_to_prop Hs) j k f,
     rwr pr, rwr ps }, --closed_add
-  { intros j k f, change (F.map f).1 0 = (0 : F.obj k), rwr (F.map f).2.map_zero }, 
+  { apply prop_to_prop_resize, intros j k f, change (F.map f).1 0 = (0 : F.obj k), 
+    rwr (prop_resize_to_prop (F.map f).2).map_zero }, 
       --closed_zero
-  { intros r Hr j k f, change (F.map f).1 (-(r.down j)) = (-(r.down k) : F.obj k),
-    rwr comm_ring_hom.map_neg (F.map f).2 (r.down j), 
-    have pr : (F.map f).1 (r.down j) = r.down k, from Hr j k f, rwr pr }, --closed_neg
-  { intros r s Hr Hs j k f, change (F.map f).1 (r.down j * s.down j) = (r.down k * s.down k : 
-                                                                                      F.obj k),
-    rwr (F.map f).2.map_mul (r.down j) (s.down j), 
-    have pr : (F.map f).1 (r.down j) = r.down k, from Hr j k f, 
-    have ps : (F.map f).1 (s.down j) = s.down k, from Hs j k f,
+  { intros r Hr, apply prop_to_prop_resize, intros j k f, 
+    change (F.map f).1 (-(r.down j)) = (-(r.down k) : F.obj k),
+    rwr comm_ring_hom.map_neg (prop_resize_to_prop (F.map f).2) (r.down j), 
+    have pr : (F.map f).1 (r.down j) = r.down k, from (prop_resize_to_prop Hr) j k f, 
+    rwr pr }, --closed_neg
+  { intros r s Hr Hs, apply prop_to_prop_resize, intros j k f, 
+    change (F.map f).1 (r.down j * s.down j) = (r.down k * s.down k : F.obj k),
+    rwr (prop_resize_to_prop (F.map f).2).map_mul (r.down j) (s.down j), 
+    have pr : (F.map f).1 (r.down j) = r.down k, from (prop_resize_to_prop Hr) j k f, 
+    have ps : (F.map f).1 (s.down j) = s.down k, from (prop_resize_to_prop Hs) j k f,
     rwr pr, rwr ps }, --closed_mul
-  { intros j k f, change (F.map f).1 1 = (1 : F.obj k), rwr (F.map f).2.map_one }, 
+  { apply prop_to_prop_resize, intros j k f, 
+    change (F.map f).1 1 = (1 : F.obj k), rwr (prop_resize_to_prop (F.map f).2).map_one }, 
       --closed_one
     end  
 
@@ -128,22 +132,25 @@ begin
   { intro s, fapply is_ring_hom.mk, 
     { fapply sigma_eq,
       { apply ap ulift.up,
-        apply eq_of_homotopy, intro j, hsimp, exact (s.π.app j).2.map_one }, 
+        apply eq_of_homotopy, intro j, hsimp, exact (prop_resize_to_prop (s.π.app j).2).map_one }, 
       { apply pathover_of_tr_eq, apply is_prop.elim } },
     { intros t₁ t₂, fapply sigma_eq, 
       { apply ap ulift.up, change (λ j, (s.π.app j).1 (t₁ * t₂)) = 
                               (λ j, (((s.π.app j).1 t₁) * ((s.π.app j).1 t₂) : F.obj j)),
-        apply eq_of_homotopy, intro j, hsimp, exact (s.π.app j).2.map_mul t₁ t₂ },
+        apply eq_of_homotopy, intro j, hsimp, 
+        exact (prop_resize_to_prop (s.π.app j).2).map_mul t₁ t₂ },
       { apply pathover_of_tr_eq, apply is_prop.elim } },  
     { fapply sigma_eq,
       { apply ap ulift.up, 
         change (λ j, (s.π.app j).1 (0 : s.X.carrier)) = (λ j, (0 : F.obj j)),
-        apply eq_of_homotopy, intro j, hsimp, exact (s.π.app j).2.map_zero }, 
+        apply eq_of_homotopy, intro j, hsimp, 
+        exact (prop_resize_to_prop (s.π.app j).2).map_zero }, 
       { apply pathover_of_tr_eq, apply is_prop.elim } },    
     { intros t₁ t₂, fapply sigma_eq, 
       { apply ap ulift.up, change (λ j, (s.π.app j).1 (t₁ + t₂)) = 
                               (λ j, (((s.π.app j).1 t₁) + ((s.π.app j).1 t₂) : F.obj j)),
-        apply eq_of_homotopy, intro j, hsimp, exact (s.π.app j).2.map_add t₁ t₂ },
+        apply eq_of_homotopy, intro j, hsimp, 
+        exact (prop_resize_to_prop (s.π.app j).2).map_add t₁ t₂ },
       { apply pathover_of_tr_eq, apply is_prop.elim } } } --lift_H
 end   
 
