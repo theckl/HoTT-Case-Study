@@ -252,30 +252,33 @@ end
 @[hott]
 def submod_sInter_inc {R : CommRing} {M : Module R} (S : Subset (Submodule_Set M)) :
   ∀ N : Submodule_Set M, N ∈ S -> (submodule_sInter S).carrier ⊆ N.carrier :=
-assume N elN, sInter_sset (@ss_Image (Submodule_Set M) (𝒫 M.carrier) 
-                              (@Submodule.to_Subset R M) S) N.carrier (ss_image_el _ _ N elN)
+begin 
+  intros N elN, apply sInter_sset, 
+  exact ss_image_el (@Submodule.to_Subset R M) S N elN
+end
 
 @[hott]
 def submodule_span {R : CommRing} {M : Module R} (S : Subset M.carrier) : 
   Submodule R M :=
-submodule_sInter {N ∈ Submodule_Set M | S ⊆ (@Submodule.to_Subset R M N) } 
+submodule_sInter {N ∈ Submodule_Set M | prop_resize (S ⊆ (@Submodule.to_Subset R M N)) } 
 
 @[hott]
 def submod_gen_inc_span {R : CommRing} {M : Module R} (S : Subset M.carrier) : 
   S ⊆ (submodule_span S).carrier :=
 begin
-  apply sset_sInter,
-  intros C elC, let el_imC := ss_im_preim_el _ _ _ elC, hinduction el_imC with el_imC',
-  let N := el_imC'.1, rwr <- el_imC'.2.2,
-  exact (pred_elem N).1 el_imC'.2.1
+  apply sset_sInter, 
+  intros C elC, let el_imC := ss_im_preim_el _ _ _ elC, 
+  hinduction el_imC with el_imC', 
+  let N := el_imC'.1, rwr <- el_imC'.2.2, 
+  exact prop_resize_to_prop ((elem_to_pred N) el_imC'.2.1)
 end    
 
 @[hott]
 def submod_gen_span_inc {R : CommRing} {M : Module R} (S : Subset M.carrier) 
   (N : Submodule_Set M) : S ⊆ N.carrier -> (submodule_span S).carrier ⊆ N.carrier :=
 begin
-  let Sss := {N ∈ Submodule_Set M | S ⊆ (@Submodule.to_Subset R M N) },
-  intro ss_SN, exact submod_sInter_inc Sss N ((pred_elem N).2 ss_SN)
+  let Sss := {N ∈ Submodule_Set M | prop_resize (S ⊆ (@Submodule.to_Subset R M N)) },
+  intro ss_SN, exact submod_sInter_inc Sss N ((pred_elem N).2 (prop_to_prop_resize ss_SN))
 end  
 
 @[hott]
@@ -390,18 +393,16 @@ end
 
 @[hott]
 def is_prime_pred {R : CommRing} : Setpred (Ideal_Set R) :=
-  λ I, Prop.mk (is_prime I) (is_prime_is_prop I)
+  λ I : Ideal_Set R, prop_resize (Prop.mk (is_prime I) (is_prime_is_prop I))
 
 @[hott]
 def prime_pred_prime {R : CommRing} (P : Ideal_Set R) : 
   is_prime_pred P -> is_prime P :=
-assume H, H
+assume H, prop_resize_to_prop H
 
 @[hott]
 def PrimeIdeal_Set (R : CommRing) :=
   {P ∈ (Ideal_Set R) | prop_resize (is_prime_pred P) }  
-
-#check PrimeIdeal_Set
 
 @[hott]
 def proper_prime_ideal {R : CommRing} (P : Ideal_Set R) : 
