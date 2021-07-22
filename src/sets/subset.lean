@@ -760,7 +760,7 @@ begin
   rwr <- fa.2, exact prop_resize_to_prop fa.1.2 end 
 
 @[hott]
-def ss_image_el {A B : Set} (f : A -> B) (C : Subset A) : 
+def ss_image_el {A : Set.{u}} {B : Set.{v}} (f : A -> B) (C : Subset A) : 
   ∀ (a : A), a ∈ C -> f a ∈ ss_Image f C :=
 begin 
   intros a ela, apply prop_to_prop_resize,
