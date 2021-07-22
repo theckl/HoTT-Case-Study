@@ -553,7 +553,7 @@ begin
     rwr eq, hsimp, change False = P, apply uninhabited_Prop_eq, 
     { intro F, hinduction F }, 
     { exact nq } } 
-end
+end 
 
 @[hott, reducible, hsimp]
 def prop_to_prop_resize {P : Prop} : P -> prop_resize P :=
@@ -587,5 +587,32 @@ def prop_to_prop_ulift {P : Prop} : P -> prop_ulift P :=
 begin
   intro p, exact ulift.up p
 end    
+
+@[hott]
+def prop_ulift_to_prop {P : Prop} : prop_ulift P -> P:=
+begin
+  intro p, exact ulift.down p
+end    
+
+@[hott]
+def pr_rinv : ∀ (P : trunctype.{u} -1), prop_resize.{u v} (prop_ulift.{u v} P) = P :=
+begin
+  intro P, hinduction LEM P with lem p np,
+  { apply inhabited_Prop_eq, 
+    { exact prop_to_prop_resize (prop_to_prop_ulift p) },
+    { exact p } },
+  { apply uninhabited_Prop_eq, 
+    { intro p, apply np, apply prop_ulift_to_prop.{u v}, apply prop_resize_to_prop.{u v}, 
+      exact p },
+    { exact np } }
+end 
+
+@[hott]
+def False_ulift_eq : prop_ulift.{u v} False = False :=
+begin 
+  apply uninhabited_Prop_eq, 
+  { sorry },
+  { sorry } 
+end
 
 end hott
