@@ -56,9 +56,8 @@ end
 def el_zero_inc_prime {R : CommRing} (I : Ideal R) (P : (prime_spectrum R).carrier) :
   P ∈ zero_locus I -> I.carrier ⊆ P.1.carrier :=
 begin 
-  intro elP, apply prop_resize_to_prop _,
-  change ↥(zero_locus_pred R I P),
-  exact elem_to_pred P elP
+  intro elP, 
+  exact prop_resize_to_prop (elem_to_pred P elP)
 end
 
 @[hott]
@@ -136,8 +135,6 @@ begin
       exact elem_to_pred P elP' } }
 end    
 
-#check is_Zariski_closed
-
 /- Now we show the properties needed to construct the Zariski topology from Zariski-closed 
    sets. -/
 @[hott]
@@ -149,10 +146,12 @@ begin
                    (sset_to_pred (empty_Subset ↥(prime_spectrum R))), from 
     begin 
       apply eq_of_homotopy, intro P, 
-      change prop_ulift ((R•1).carrier ⊆ P) =
-                          (sset_to_pred (empty_Subset ↥(prime_spectrum R)) P),
-      rwr Not_eq_False (proper_prime_ideal P), 
-      rwr Not_eq_False (empty_not_elem P), exact ulift_False
+      change prop_resize ((R•1).carrier ⊆ P) =
+                          (sset_to_pred (empty_Subset ↥(prime_spectrum R)) P), 
+      --have P_prime : is_prime ↑P, from sorry,                    
+      --rwr (Not_eq_False (@proper_prime_ideal R ↑P _)), 
+      rwr Not_eq_False (empty_not_elem P), rwr <- pr_rinv False, 
+      apply ap prop_resize, sorry --exact ulift_False
     end,
   exact ⟨R•1, all_empty⟩
 end 
