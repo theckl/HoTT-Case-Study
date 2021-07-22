@@ -10,6 +10,8 @@ open hott.is_trunc hott.is_equiv hott.algebra hott.set subset categories hott.tr
 
 namespace algebra
 
+set_option pp.universes true
+
 /- We now show that the category of commutative rings has all colimits. 
    
    To construct colimits of diagrams of rings we follow the strategy in 
@@ -315,7 +317,7 @@ begin
 end  
 
 @[hott, reducible]
-def ring_cocone {J : Set} [precategory J] (F : J ⥤ CommRing) : cocone F :=
+def ring_cocone {J : Set.{u'}} [precategory.{v' u'} J] (F : J ⥤ CommRing) : cocone F :=
 begin
   let mR := ring_colim_mere_rel F,
   fapply cocone.mk,
@@ -339,7 +341,7 @@ end
    diagram we need a variant of the left-adjointness of the free ring construction to the 
    forgetful functor. -/
 @[hott, reducible]
-def ring_cocone_desc {J : Set} [precategory J] {F : J ⥤ CommRing} (S : cocone F) :
+def ring_cocone_desc {J : Set.{u'}} [precategory.{v' u'} J] {F : J ⥤ CommRing} (S : cocone F) :
   (ring_cocone F).X ⟶ S.X :=
 begin
   fapply elem_pred, 
@@ -353,31 +355,31 @@ begin
         { exact @comm_ring.mul S.X S.X.str ih_a ih_a_1 } },
       { intros x y, apply trunc.rec, intro H, hinduction H, --well-definedness
         { refl }, { rwr ih }, { rwr ih_h, rwr <- ih_k }, 
-        { hsimp, exact homotopy_of_eq ((ap sigma.fst (S.π.naturality f))) r }, 
-        { hsimp, exact (prop_resize_to_prop (S.π.app j).2).map_zero },
-        { hsimp, exact (prop_resize_to_prop (S.π.app j).2).map_one }, 
-        { hsimp, exact comm_ring_hom.map_neg (prop_resize_to_prop (S.π.app j).2) x }, 
-        { hsimp, exact (prop_resize_to_prop (S.π.app j).2).map_add x y }, 
-        { hsimp, exact (prop_resize_to_prop (S.π.app j).2).map_mul x y }, 
+        { exact homotopy_of_eq ((ap sigma.fst (S.π.naturality f))) r }, 
+        { exact (prop_resize_to_prop (S.π.app j).2).map_zero },
+        { exact (prop_resize_to_prop (S.π.app j).2).map_one }, 
+        { exact comm_ring_hom.map_neg (prop_resize_to_prop (S.π.app j).2) x }, 
+        { exact (prop_resize_to_prop (S.π.app j).2).map_add x y }, 
+        { exact (prop_resize_to_prop (S.π.app j).2).map_mul x y }, 
         any_goals { hsimp at ih, hsimp, rwr ih }, 
-        { hsimp, exact @comm_ring.zero_add S.X S.X.str _ }, 
-        { hsimp, exact @comm_ring.add_zero S.X S.X.str _ }, 
-        { hsimp, exact @comm_ring.one_mul S.X S.X.str _ }, 
-        { hsimp, exact @comm_ring.mul_one S.X S.X.str _ },
-        { hsimp, exact @comm_ring.add_left_inv S.X S.X.str _ }, 
-        { hsimp, exact @comm_ring.add_comm S.X S.X.str _ _ }, 
-        { hsimp, exact @comm_ring.mul_comm S.X S.X.str _ _ }, 
-        { hsimp, exact @comm_ring.add_assoc S.X S.X.str _ _ _ }, 
-        { hsimp, exact @comm_ring.mul_assoc S.X S.X.str _ _ _ },
-        { hsimp, exact @comm_ring.left_distrib S.X S.X.str _ _ _ }, 
-        { hsimp, exact @comm_ring.right_distrib S.X S.X.str _ _ _ } } },
+        { exact @comm_ring.zero_add S.X S.X.str _ }, 
+        { exact @comm_ring.add_zero S.X S.X.str _ }, 
+        { exact @comm_ring.one_mul S.X S.X.str _ }, 
+        { exact @comm_ring.mul_one S.X S.X.str _ },
+        { exact @comm_ring.add_left_inv S.X S.X.str _ }, 
+        { exact @comm_ring.add_comm S.X S.X.str _ _ }, 
+        { exact @comm_ring.mul_comm S.X S.X.str _ _ }, 
+        { exact @comm_ring.add_assoc S.X S.X.str _ _ _ }, 
+        { exact @comm_ring.mul_assoc S.X S.X.str _ _ _ },
+        { exact @comm_ring.left_distrib S.X S.X.str _ _ _ }, 
+        { exact @comm_ring.right_distrib S.X S.X.str _ _ _ } } },
     { apply prop_to_prop_resize, fapply is_ring_hom.mk, any_goals { refl }, 
-      { apply set_quotient.prec2, intros x y, hsimp, refl }, 
-      { apply set_quotient.prec2, intros x y, hsimp, refl } }  
+      { apply set_quotient.prec2, intros x y, refl }, 
+      { apply set_quotient.prec2, intros x y, refl } }  
 end       
 
 @[hott, reducible]
-def ring_cocone_is_colimit {J : Set} [precategory J] (F : J ⥤ CommRing) : 
+def ring_cocone_is_colimit {J : Set.{u'}} [precategory.{v' u'} J] (F : J ⥤ CommRing) : 
   is_colimit (ring_cocone F) :=
 begin 
   fapply is_colimit.mk, 
@@ -398,31 +400,33 @@ begin
     { change d.1 (((ring_cocone F).π.app j).1 r) = (ring_cocone_desc S).1 
                                    (set_class_of (ring_colim_mere_rel F) (expr.x_ j r)),
       rwr Hr j r },
-    { change d.1 0 = (ring_cocone_desc S).1 0, rwr d.2.map_zero },
-    { change d.1 1 = (ring_cocone_desc S).1 1, rwr d.2.map_one },
+    { change d.1 0 = (ring_cocone_desc S).1 0, rwr (prop_resize_to_prop d.2).map_zero },
+    { change d.1 1 = (ring_cocone_desc S).1 1, rwr (prop_resize_to_prop d.2).map_one },
     { change d.1 (-(set_class_of mrel a)) = (ring_cocone_desc S).1 (-(set_class_of mrel a)), 
-      rwr comm_ring_hom.map_neg d.2, rwr comm_ring_hom.map_neg (ring_cocone_desc S).2, 
-      rwr ih },
+      rwr comm_ring_hom.map_neg (prop_resize_to_prop d.2), 
+      rwr comm_ring_hom.map_neg (prop_resize_to_prop (ring_cocone_desc S).2), rwr ih },
     { change d.1 ((set_class_of mrel a) + (set_class_of mrel a_1)) =
              (ring_cocone_desc S).1 ((set_class_of mrel a) + (set_class_of mrel a_1)), 
-      rwr d.2.map_add, rwr (ring_cocone_desc S).2.map_add, rwr ih_a, rwr ih_a_1 },
+      rwr (prop_resize_to_prop d.2).map_add, 
+      rwr (prop_resize_to_prop (ring_cocone_desc S).2).map_add, rwr ih_a, rwr ih_a_1 },
     { change d.1 ((set_class_of mrel a) * (set_class_of mrel a_1)) =
              (ring_cocone_desc S).1 ((set_class_of mrel a) * (set_class_of mrel a_1)), 
-      rwr d.2.map_mul, rwr (ring_cocone_desc S).2.map_mul, rwr ih_a, rwr ih_a_1 } }
+      rwr (prop_resize_to_prop d.2).map_mul, 
+      rwr (prop_resize_to_prop (ring_cocone_desc S).2).map_mul, rwr ih_a, rwr ih_a_1 } }
 end 
 
 @[hott, reducible]
-def ring_colimit_cocone {J : Set} [precategory J] (F : J ⥤ CommRing) : 
+def ring_colimit_cocone {J : Set.{u'}} [precategory.{v' u'} J] (F : J ⥤ CommRing) : 
   colimit_cocone F :=
 colimit_cocone.mk (ring_cocone F) (ring_cocone_is_colimit F)
 
 @[hott, instance]
-def ring_has_colimit {J : Set} [precategory J] (F : J ⥤ CommRing) : 
+def ring_has_colimit {J : Set.{u'}} [precategory.{v' u'} J] (F : J ⥤ CommRing) : 
   has_colimit F :=
 has_colimit.mk (ring_colimit_cocone F)
 
 @[hott, instance]
-def ring_has_colimits_of_shape (J : Set) [precategory J] : 
+def ring_has_colimits_of_shape (J : Set.{u'}) [precategory.{v' u'} J] : 
   has_colimits_of_shape J CommRing :=
 has_colimits_of_shape.mk (λ F, ring_has_colimit F) 
 
