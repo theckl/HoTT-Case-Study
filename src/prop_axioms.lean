@@ -611,8 +611,8 @@ end
 def False_ulift_eq : prop_ulift.{u v} False = False :=
 begin 
   apply uninhabited_Prop_eq, 
-  { sorry },
-  { sorry } 
+  { intro F, hinduction prop_ulift_to_prop F },
+  { intro F, hinduction F } 
 end
 
 end hott
