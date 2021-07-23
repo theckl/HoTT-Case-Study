@@ -217,7 +217,7 @@ end
 @[hott, instance]
 def submodule_inter {R : CommRing} {M : Module R} : 
   has_inter (Submodule R M) :=
-⟨submodule.inter⟩
+⟨@submodule.inter R M⟩
 
 @[hott]
 def submodule_sInter {R : CommRing} {M : Module R} (S : Subset (Submodule_Set M)) :
@@ -375,7 +375,7 @@ protected def ideal.inter {R : CommRing} (I J : Ideal R) : Ideal R :=
 
 @[hott, instance]
 def ideal_inter {R : CommRing} : has_inter (Ideal_Set R) :=
-  ⟨ideal.inter⟩
+  ⟨@ideal.inter R⟩
 
 @[hott]
 structure is_prime {R : CommRing} (P : Ideal R) :=
@@ -403,6 +403,15 @@ assume H, prop_resize_to_prop H
 @[hott]
 def PrimeIdeal_Set (R : CommRing) :=
   {P ∈ (Ideal_Set R) | prop_resize (is_prime_pred P) }  
+
+@[hott]
+def prime_is_prime {R : CommRing} (P : (PrimeIdeal_Set R).carrier) :
+  is_prime ((PrimeIdeal_Set R).map P) :=
+begin 
+  have elP : ↥(((PrimeIdeal_Set R).map P) ∈ (PrimeIdeal_Set R)), from obj_elem P,
+  apply prime_pred_prime, 
+  exact prop_resize_to_prop (elem_to_pred _ elP)
+end  
 
 @[hott]
 def proper_prime_ideal {R : CommRing} (P : Ideal_Set R) : 
