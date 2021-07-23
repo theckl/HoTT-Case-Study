@@ -121,7 +121,7 @@ begin
   { intro f, induction f }
 end  
 
-/- The universe lift of propositions commutes with logical operators. -/
+/- The universe lift and resize of propositions commutes with logical operators. -/
 @[hott]
 def prop_ulift_or (P Q : Prop) : 
   prop_ulift (P or Q) = (prop_ulift P or prop_ulift Q) :=
@@ -143,6 +143,22 @@ begin
   { intro f, hinduction ulift_equiv.to_fun f },
   { intro f, hinduction f } 
 end
+
+@[hott]
+def prop_resize_or (P : trunctype.{max w u} -1) (Q : trunctype.{max w v} -1) : 
+  prop_resize.{w (max u v)} (P or Q) = (prop_resize.{w u} P or prop_resize.{w v} Q) :=
+begin 
+  apply prop_iff_eq, 
+  { intro resize_or, 
+    have PorQ : ↥(P or Q), from prop_resize_to_prop resize_or,
+    hinduction PorQ with sum_PorQ, hinduction sum_PorQ with p q, 
+    { exact tr (sum.inl (prop_to_prop_resize p)) },
+    { exact tr (sum.inr (prop_to_prop_resize q)) } },
+  { intro or_resize, hinduction or_resize with sum_resize, 
+    hinduction sum_resize with p q, 
+    { exact prop_to_prop_resize (tr (sum.inl (prop_resize_to_prop p))) },
+    { exact prop_to_prop_resize (tr (sum.inr (prop_resize_to_prop q))) } }
+end  
 
 /- We need some statements from first-order logic. -/
 @[hott]
