@@ -23,9 +23,9 @@ instance Top_to_Set : has_coe_to_sort Top :=
 instance topological_space_unbundled (X : Top) : 
   topological_space ↥X := X.top_str
 
-namespace topology
-
 variables (X : Top)
+
+namespace topology
 
 /- The set of open sets in a topological space and its lattice structure. -/
 @[hott]
@@ -242,5 +242,17 @@ structure PresheafedSpace (C : Type u) [category.{v} C] :=
 structure SheafedSpace (C : Type u) [category.{v} C] [has_products C] extends 
   PresheafedSpace C := 
   (sheaf_condition : topology.sheaf_condition carrier presheaf)   
+
+/- We construct (pre-)sheaves of functions with values in a given category and satisfying a
+   (pre-)local predicate. -/
+namespace topology
+
+@[hott]
+structure prelocal_predicate (C : Type u) [category.{v} C] [has_products C] :=
+(pred : Π {U : open_sets X}, (Π x : X.carrier, x ∈ U -> C) → trunctype.{0} -1)
+(res : ∀ {U V : open_sets X} (i : U ⟶ V) (f : Π x : X.carrier, x ∈ V -> C) (h : pred f), 
+                                                 pred (λ x (elx : x ∈ U), f x (i x elx)))
+
+end topology
 
 end hott
