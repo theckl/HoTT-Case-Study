@@ -18,7 +18,7 @@ set_option pp.universes true
 def prime_spectrum (R : CommRing) := PrimeIdeal_Set R
 
 /- We introduce the zero locus and the vanishing ideal and show some relations. -/
-@[hott]
+@[hott, reducible]
 def zero_locus_pred (R : CommRing) : 
   Ideal_Set R -> Setpred ↥(prime_spectrum R) :=
 λ I P, prop_resize (I.carrier ⊆ P.1.carrier)
@@ -28,8 +28,8 @@ def zero_locus {R : CommRing} : Ideal_Set R -> Subset ↥(prime_spectrum R) :=
   λ I, pred_to_sset (zero_locus_pred R I)
 
 @[hott]
-def is_Zariski_closed {R : CommRing} : Subset ↥(prime_spectrum R) -> Prop :=
-  λ Z, image (zero_locus_pred R) (sset_to_pred Z)
+def is_Zariski_closed {R : CommRing.{u}} : Subset ↥(prime_spectrum R) -> Prop :=
+  λ Z, prop_resize.{0 u+1} (image (zero_locus_pred R) (sset_to_pred Z))
 
 @[hott]
 def zero_pred_zero {R : CommRing} (I : Ideal R) (U : Subset ↥(prime_spectrum R)) :
@@ -113,7 +113,7 @@ end
 def Zcl_to_ZV_eq {R : CommRing} (U : Subset ↥(prime_spectrum R)) : 
   is_Zariski_closed U -> (zero_locus (vanish_ideal R U) = U) :=
 begin
-  intro ZclU, hinduction ZclU with fibU, let I := fibU.1,
+  intro ZclU, hinduction (prop_resize_to_prop ZclU) with eq fibU, let I := fibU.1,
   apply (sset_eq_iff_inclusion (zero_locus (vanish_ideal R U)) U).2, fapply pair, 
   { rwr <- zero_pred_zero I U fibU.2, 
     apply ideal_inc_to_zero_inc, rwr zero_pred_zero I U fibU.2,
@@ -126,7 +126,7 @@ end
 def ZV_eq_to_Zcl {R : CommRing} (U : Subset ↥(prime_spectrum R)) : 
   (zero_locus (vanish_ideal R U) = U) -> is_Zariski_closed U :=
 begin  
-  intro ZVU, apply tr, fapply fiber.mk, 
+  intro ZVU, apply prop_to_prop_resize, apply tr, fapply fiber.mk, 
   { exact vanish_ideal R U },
   { apply eq_of_homotopy, intro P, apply prop_iff_eq _ _, 
     { intro l_ss_VP, change ↥(P ∈ U), rwr <- ZVU, 
@@ -141,7 +141,7 @@ end
 def empty_Zariski_closed (R : CommRing) : 
   is_Zariski_closed (empty_Subset (prime_spectrum R).carrier) :=
 begin 
-  apply tr, 
+  apply prop_to_prop_resize, apply tr, 
   have all_empty : zero_locus_pred R (R•1) = 
                    (sset_to_pred (empty_Subset ↥(prime_spectrum R))), from 
     begin 
@@ -159,7 +159,8 @@ end
 def union_Zariski_closed (R : CommRing.{u}) : Π U V : Subset ↥(prime_spectrum R), 
   is_Zariski_closed U -> is_Zariski_closed V -> is_Zariski_closed (U ∪ V) :=
 begin  
-  intros U V clU clV, hinduction clU with IU, hinduction clV with IV, apply tr,
+  intros U V clU clV, hinduction (prop_resize_to_prop clU) with eqU IU, 
+  hinduction (prop_resize_to_prop clV) with eqV IV, apply prop_to_prop_resize, apply tr,
   have union_inter : zero_locus_pred R (ideal.inter IU.1 IV.1) = (sset_to_pred (U ∪ V)), from
     begin
       apply eq_of_homotopy, intro P, 
@@ -182,24 +183,45 @@ def inter_Zariski_closed (R : CommRing) :
   ∀ (I : Set) (f : I -> 𝒫 ↥(prime_spectrum R)), 
           (∀ i : I, is_Zariski_closed (f i)) -> is_Zariski_closed (⋂ᵢ f) :=
 begin 
-  intros I f clfI, 
+  intros I f clfI, apply prop_to_prop_resize, 
   apply tr, fapply fiber.mk,  
   { exact ideal_isum I ((vanish_ideal R) ∘ f) },
   { apply eq_of_homotopy, intro P, 
     change zero_locus_pred R (ideal_isum I (vanish_ideal R ∘ f)) P = P ∈ (⋂ᵢ f),
     have imp1 : P ∈ (⋂ᵢ f) -> to_Prop (∀ i, P ∈ f i), from 
-      assume elP, prop_resize_to_prop (elem_to_pred P elP),
+      begin intro elP, exact prop_resize_to_prop (elem_to_pred P elP) end,
     have imp2 : to_Prop (∀ i, P ∈ f i) -> P ∈ (⋂ᵢ f), from 
-      assume elPi, pred_to_elem P (prop_to_prop_resize elPi),
-    rwr prop_iff_eq imp1 imp2, clear imp1 imp2,
-    have imp3 : to_Prop (∀ i, P ∈ f i) -> to_Prop (∀ i, (vanish_ideal R (f i)).carrier ⊆
-                                                ((PrimeIdeal_Set R).map P).carrier), from 
-      sorry,
-    have imp4 : (∀ i, (vanish_ideal R (f i)).carrier ⊆ ((PrimeIdeal_Set R).map P).carrier)
-         -> (∀ i, P ∈ f i), from 
-      sorry,
-    rwr prop_iff_eq imp3 imp4, clear imp3 imp4,  
-    sorry }
+      begin intro elPi, exact pred_to_elem P (prop_to_prop_resize elPi) end,
+    have imp3 : to_Prop (∀ i, P ∈ f i) -> 
+                  to_Prop (∀ i, (vanish_ideal R (f i)).carrier ⊆ P.1.carrier), from 
+      begin 
+        intros elPI i, apply el_zero_inc_prime, rwr Zcl_to_ZV_eq (f i) (clfI i), 
+        exact elPI i 
+      end,
+    have imp4 : (∀ i, (vanish_ideal R (f i)).carrier ⊆ P.1.carrier)
+                   -> (∀ i, P ∈ f i), from 
+      begin 
+        intros ssPI i, rwr <- Zcl_to_ZV_eq (f i) (clfI i), apply inc_prime_el_zero, 
+        exact ssPI i 
+      end,
+    have imp5 : (∀ i, (vanish_ideal R (f i)).carrier ⊆ P.1.carrier) -> 
+                (zero_locus_pred R (ideal_isum I (vanish_ideal R ∘ f)) P), from 
+      begin 
+        intro IssVIP,       
+        change ↥(prop_resize ((ideal_isum I (vanish_ideal R ∘ f)).carrier ⊆ P.1.carrier)), 
+        apply prop_to_prop_resize, apply ideal_isum_inc, assumption 
+      end,
+    have imp6 : (zero_locus_pred R (ideal_isum I (vanish_ideal R ∘ f)) P) ->
+                (∀ i, (vanish_ideal R (f i)).carrier ⊆ P.1.carrier), from 
+      begin
+        intros IssP i, 
+        apply subset_trans _ (ideal_isum I (vanish_ideal R ∘ f)).carrier _, 
+        { apply ideal_inc_isum (vanish_ideal R ∘ f) i },
+        { exact prop_resize_to_prop IssP }
+      end,  
+    apply prop_iff_eq,  
+    { intro H, apply imp2, apply imp4, exact imp6 H },
+    { intro H, apply imp5, apply imp3, exact imp1 H } }
 end                          
 
 @[hott]
