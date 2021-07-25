@@ -63,6 +63,10 @@ def open_sets_incl_to_hom {U V : open_sets X} (i : ((open_sets X).map U) ⊆ ((o
   U ⟶ V := i 
 
 @[hott]
+def open_sets_hom_to_emb {U V : open_sets X} (i : U ⟶ V) : U.1.carrier -> V.1.carrier :=
+  assume x, elem_obj ↑x (i ↑x (obj_elem x))
+
+@[hott]
 def opens.inf_le_l (U V : open_sets X) : open_sets.inter X U V ⟶ U :=
   inter_sset_l U V 
 
@@ -248,10 +252,10 @@ structure SheafedSpace (C : Type u) [category.{v} C] [has_products C] extends
 namespace topology
 
 @[hott]
-structure prelocal_predicate (C : Type u) [category.{v} C] [has_products C] :=
-(pred : Π {U : open_sets X}, (Π x : X.carrier, x ∈ U -> C) → trunctype.{0} -1)
-(res : ∀ {U V : open_sets X} (i : U ⟶ V) (f : Π x : X.carrier, x ∈ V -> C) (h : pred f), 
-                                                 pred (λ x (elx : x ∈ U), f x (i x elx)))
+structure prelocal_predicate (T : X.carrier -> Type _) :=
+  (pred : Π {U : open_sets X}, (Π x : X.carrier, x ∈ U -> T x) → trunctype.{0} -1)
+  (res : ∀ {U V : open_sets X} (i : U ⟶ V) (f : Π x : X.carrier, x ∈ V -> T x) 
+           (h : pred f), pred (λ (x : X.carrier) (elx : x ∈ U), f x (i x elx)))
 
 end topology
 
