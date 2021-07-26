@@ -247,16 +247,23 @@ structure SheafedSpace (C : Type u) [category.{v} C] [has_products C] extends
   PresheafedSpace C := 
   (sheaf_condition : topology.sheaf_condition carrier presheaf)   
 
-/- We construct (pre-)sheaves of functions with values in a given category and satisfying a
-   (pre-)local predicate. -/
-namespace topology
+/- We construct (pre-)sheaves of sections to a dependent type over open subsets of a 
+   topological space that satisfy a (pre-)local predicate. -/
+open topology
+
+@[hott]
+def ss_section (U : open_sets X) (T : X.carrier -> Type _) := 
+  Π x : X.carrier, x ∈ U -> T x 
+
+@[hott]
+def res_ss_section {U V : open_sets X} (i : U ⟶ V) {T : X.carrier -> Type _} :
+  ss_section X V T -> ss_section X U T :=
+assume f x elx, f x (i x elx)    
 
 @[hott]
 structure prelocal_predicate (T : X.carrier -> Type _) :=
-  (pred : Π {U : open_sets X}, (Π x : X.carrier, x ∈ U -> T x) → trunctype.{0} -1)
-  (res : ∀ {U V : open_sets X} (i : U ⟶ V) (f : Π x : X.carrier, x ∈ V -> T x) 
-           (h : pred f), pred (λ (x : X.carrier) (elx : x ∈ U), f x (i x elx)))
-
-end topology
+  (pred : Π {U : open_sets X}, ss_section X U T → trunctype.{0} -1)
+  (res : ∀ {U V : open_sets X} (i : U ⟶ V) (f : ss_section X V T) 
+           (h : pred f), pred (res_ss_section X i f))
 
 end hott
