@@ -247,23 +247,51 @@ structure SheafedSpace (C : Type u) [category.{v} C] [has_products C] extends
   PresheafedSpace C := 
   (sheaf_condition : topology.sheaf_condition carrier presheaf)   
 
-/- We construct (pre-)sheaves of sections to a dependent type over open subsets of a 
-   topological space that satisfy a (pre-)local predicate. -/
+/- We construct (pre-)sheaves of sections to a family of sets over open subsets of a 
+   topological space that satisfy a (pre-)local predicate. 
+   
+   We need to take functions with values in sets because otherwise the homomorphisms in 
+   the presheaf category will not be sets. Therefore, the presheaf category also will be
+   `Set`. -/
 open topology
 
 @[hott]
-def ss_section (U : open_sets X) (T : X.carrier -> Type _) := 
-  Π x : X.carrier, x ∈ U -> T x 
+def ss_section (U : open_sets X) (T : X.carrier -> Set) := 
+  Π x : U.1.carrier, T ↑x 
 
 @[hott]
-def res_ss_section {U V : open_sets X} (i : U ⟶ V) {T : X.carrier -> Type _} :
-  ss_section X V T -> ss_section X U T :=
-assume f x elx, f x (i x elx)    
+def ss_section_Set (U : open_sets X) (T : X.carrier -> Set) : Set := 
+  have is_set_ss_section : is_set (ss_section X U T), from is_set_dmap,
+  Set.mk (ss_section X U T) is_set_ss_section
+
+@[hott, reducible]
+def res_ss_section {U V : open_sets X} (i : U ⟶ V) {T : X.carrier -> Set} :
+  ss_section X V T -> ss_section X U T := 
+have UV_eq : Π x : U.1.carrier, ↑x = (V.1.map (ss_sset_emb i x)), from 
+  assume x, ss_emb_eq i x, 
+begin intros f x, rwr UV_eq x, exact f (ss_sset_emb i x) end    
 
 @[hott]
-structure prelocal_predicate (T : X.carrier -> Type _) :=
+structure prelocal_predicate (T : X.carrier -> Set) :=
   (pred : Π {U : open_sets X}, ss_section X U T → trunctype.{0} -1)
   (res : ∀ {U V : open_sets X} (i : U ⟶ V) (f : ss_section X V T) 
            (h : pred f), pred (res_ss_section X i f))
+
+@[hott]
+def subpresheaf_of_sections {T : X.carrier -> Set} (P : prelocal_predicate X T) :
+  presheaf X Set :=
+begin  
+  fapply categories.functor.mk, 
+  { intro U, exact ss_section_Set X (unop U) T },
+  { intros U V i, exact res_ss_section X (hom_unop i) },
+  { intro U, 
+    change res_ss_section X (hom_unop ((𝟙 U))) = 𝟙 (ss_section_Set X (unop U) T),
+    apply eq_of_homotopy, intro f, 
+    change res_ss_section X (hom_unop (hom_op (𝟙 (unop U)))) f = f, rwr hom_unop_op, 
+    apply eq_of_homotopy, intro x, rwr unop_op at x, 
+    --change (ss_emb_eq (𝟙 (unop U)) x)⁻¹ ▸[λ y : X.carrier, T y] (f (ss_sset_emb (𝟙 (unop U)) x)) = f x, 
+    sorry },
+  { sorry }
+end  
 
 end hott
