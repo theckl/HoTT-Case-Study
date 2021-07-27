@@ -700,8 +700,17 @@ def is_Subset_of {A : Set} (B C : Subset A) : trunctype -1 :=
 hott_theory_cmd "local infix `⊆`:50 := hott.subset.is_Subset_of"
 
 @[hott]
-def sset_trans {A : Set} {B C D : Subset A} : B ⊆ C -> C ⊆ D -> B ⊆ D :=
-begin intros BC CD b bB, exact CD b (BC b bB) end  
+def ss_sset_emb {A : Set} {B C : Subset A} (ss : B ⊆ C) : B.carrier -> C.carrier :=
+  assume b, elem_obj ↑b (ss ↑b (obj_elem b))
+
+@[hott]
+def ss_emb_eq  {A : Set} {B C : Subset A} (ss : B ⊆ C) : 
+  Π b : B.carrier, ↑b = (C.map (ss_sset_emb ss b)) :=
+begin 
+  intro b, 
+  change ↑b = (C.map (elem_obj ↑b (ss ↑b (obj_elem b)))),
+  rwr (elem_obj_eq ↑b (ss ↑b (obj_elem b))) 
+end     
 
 @[hott]   
 inductive construct_elem {A : Set} (P : A → trunctype -1) 
