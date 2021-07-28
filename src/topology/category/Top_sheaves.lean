@@ -5,9 +5,9 @@ hott_theory
 
 namespace hott
 open hott.set hott.subset hott.categories category_theory.limits category_theory.colimits
-  categories.opposite
+  categories.opposite hott.sigma hott.is_trunc
 
-set_option pp.universes true  
+set_option pp.universes false  
 
 /- The category of topological spaces and continuous maps. -/
 @[hott]
@@ -266,10 +266,15 @@ def ss_section_Set (U : open_sets X) (T : X.carrier -> Set) : Set :=
 
 @[hott, reducible]
 def res_ss_section {U V : open_sets X} (i : U ⟶ V) {T : X.carrier -> Set} :
-  ss_section X V T -> ss_section X U T := 
+  ss_section_Set X V T -> ss_section_Set X U T := 
 have UV_eq : Π x : U.1.carrier, ↑x = (V.1.map (ss_sset_emb i x)), from 
   assume x, ss_emb_eq i x, 
 begin intros f x, rwr UV_eq x, exact f (ss_sset_emb i x) end    
+
+@[hott]
+def id_res_section {U : open_sets X} {T : X.carrier -> Set} :
+  Π f : ss_section_Set X U T, res_ss_section X (𝟙 U) f = f :=
+sorry  
 
 @[hott]
 structure prelocal_predicate (T : X.carrier -> Set) :=
@@ -282,16 +287,18 @@ def subpresheaf_of_sections {T : X.carrier -> Set} (P : prelocal_predicate X T) 
   presheaf X Set :=
 begin  
   fapply categories.functor.mk, 
-  { intro U, exact ss_section_Set X (unop U) T },
-  { intros U V i, exact res_ss_section X (hom_unop i) },
-  { intro U, 
-    change res_ss_section X (hom_unop ((𝟙 U))) = 𝟙 (ss_section_Set X (unop U) T),
-    apply eq_of_homotopy, intro f, 
-    change res_ss_section X (hom_unop (hom_op (𝟙 (unop U)))) f = f, rwr hom_unop_op, 
-    apply eq_of_homotopy, intro x, rwr unop_op at x, 
-    --change (ss_emb_eq (𝟙 (unop U)) x)⁻¹ ▸[λ y : X.carrier, T y] (f (ss_sset_emb (𝟙 (unop U)) x)) = f x, 
-    sorry },
-  { sorry }
+  { intro U, exact ↥{f ∈ ss_section_Set X (unop U) T | P.pred f} },
+  { intros U V i f, fapply sigma.mk,  
+    { exact res_ss_section X (hom_unop i) f.1 },
+    { exact P.res (hom_unop i) f.1 f.2 } },
+  { intro U, apply eq_of_homotopy, intro f, 
+    fapply sigma_eq, 
+    { exact id_res_section X f },
+    { apply pathover_of_tr_eq, apply is_prop.elim } },
+  { intros U V W i j, hsimp, apply eq_of_homotopy, intro f, 
+    fapply sigma_eq, 
+    { sorry },
+    { apply pathover_of_tr_eq, apply is_prop.elim } }
 end  
 
 end hott
