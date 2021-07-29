@@ -267,14 +267,23 @@ def ss_section_Set (U : open_sets X) (T : X.carrier -> Set) : Set :=
 @[hott, reducible]
 def res_ss_section {U V : open_sets X} (i : U ⟶ V) {T : X.carrier -> Set} :
   ss_section_Set X V T -> ss_section_Set X U T := 
-have UV_eq : Π x : U.1.carrier, ↑x = (V.1.map (ss_sset_emb i x)), from 
-  assume x, ss_emb_eq i x, 
-begin intros f x, rwr UV_eq x, exact f (ss_sset_emb i x) end    
+begin intros f x, exact (ss_emb_eq i x)⁻¹ ▸[λ x, ↥(T x)] (f (ss_sset_emb i x)) end    
 
 @[hott]
 def id_res_section {U : open_sets X} {T : X.carrier -> Set} :
-  Π f : ss_section_Set X U T, res_ss_section X (𝟙 U) f = f :=
-sorry  
+  Π f : ss_section_Set X U T, res_ss_section X (𝟙 U) f = f :=  
+begin 
+  intro f, apply eq_of_homotopy, intro u, 
+  have H : ss_sset_emb (𝟙 U) u = u, from sorry,
+  change (ss_emb_eq (𝟙 U) u)⁻¹ ▸[λ x, ↥(T x)] (f (ss_sset_emb (𝟙 U) u)) = f u,
+  rwr H, sorry 
+end  
+
+@[hott]
+def comp_res_section {U V W : open_sets X} {T : X.carrier -> Set} 
+  (i : U ⟶ V) (j : V ⟶ W) : Π (f : ss_section_Set X W T), 
+    res_ss_section X (i ≫ j) f = (res_ss_section X i) (res_ss_section X j f) :=
+sorry 
 
 @[hott]
 structure prelocal_predicate (T : X.carrier -> Set) :=
@@ -295,9 +304,9 @@ begin
     fapply sigma_eq, 
     { exact id_res_section X f },
     { apply pathover_of_tr_eq, apply is_prop.elim } },
-  { intros U V W i j, hsimp, apply eq_of_homotopy, intro f, 
+  { intros U V W i j, apply eq_of_homotopy, intro f, 
     fapply sigma_eq, 
-    { sorry },
+    { exact comp_res_section X (hom_unop j) (hom_unop i) f.1 },
     { apply pathover_of_tr_eq, apply is_prop.elim } }
 end  
 
