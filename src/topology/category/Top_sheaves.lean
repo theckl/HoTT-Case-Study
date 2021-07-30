@@ -269,21 +269,39 @@ def res_ss_section {U V : open_sets X} (i : U ⟶ V) {T : X.carrier -> Set} :
   ss_section_Set X V T -> ss_section_Set X U T := 
 begin intros f x, exact (ss_emb_eq i x)⁻¹ ▸[λ x, ↥(T x)] (f (ss_sset_emb i x)) end    
 
+/- The two following lemmas are a case study how complicated proof obligations for 
+   equalities creep in a HoTT-development; here in particular from the
+   implementation of subsets. -/
 @[hott]
 def id_res_section {U : open_sets X} {T : X.carrier -> Set} :
   Π f : ss_section_Set X U T, res_ss_section X (𝟙 U) f = f :=  
 begin 
   intro f, apply eq_of_homotopy, intro u, 
-  have H : ss_sset_emb (𝟙 U) u = u, from sorry,
+  have H : ss_sset_emb (𝟙 U) u = u, from U.1.inj _ _ (ss_emb_eq (𝟙 U) u)⁻¹,
+  have H' : ap U.1.map H = (ss_emb_eq (𝟙 U) u)⁻¹, by apply is_set.elim,
   change (ss_emb_eq (𝟙 U) u)⁻¹ ▸[λ x, ↥(T x)] (f (ss_sset_emb (𝟙 U) u)) = f u,
-  rwr H, sorry 
+  rwr <- H', apply tr_eq_of_pathover, apply pathover_ap, apply apd 
 end  
 
 @[hott]
 def comp_res_section {U V W : open_sets X} {T : X.carrier -> Set} 
   (i : U ⟶ V) (j : V ⟶ W) : Π (f : ss_section_Set X W T), 
     res_ss_section X (i ≫ j) f = (res_ss_section X i) (res_ss_section X j f) :=
-sorry 
+begin
+  intro f, apply eq_of_homotopy, intro u,
+  change (ss_emb_eq (i ≫ j) u)⁻¹ ▸[λ x, ↥(T x)] (f (ss_sset_emb (i ≫ j) u)) = _,
+  have H0 : W.1.map (ss_sset_emb (i ≫ j) u) = ss_sset_emb j (ss_sset_emb i u), from 
+    calc W.1.map (ss_sset_emb (i ≫ j) u) = ↑u : (ss_emb_eq (i ≫ j) u)⁻¹
+         ... = ↑(ss_sset_emb i u) : ss_emb_eq i u
+         ... = ss_sset_emb j (ss_sset_emb i u) : ss_emb_eq j (ss_sset_emb i u),
+  have H : ss_sset_emb (i ≫ j) u = ss_sset_emb j (ss_sset_emb i u), from W.1.inj _ _ H0,
+  have H': (ss_emb_eq (i ≫ j) u)⁻¹ = (ap W.1.map H) ⬝ ((ss_emb_eq i u) ⬝ 
+                       (ss_emb_eq j (ss_sset_emb i u)))⁻¹, by apply is_set.elim, 
+  have H'': ap W.fst.map H ▸[λ x, ↥(T x)] f (ss_sset_emb (i ≫ j) u) = 
+                                   f (ss_sset_emb j (ss_sset_emb i u)), from 
+    begin apply tr_eq_of_pathover, apply pathover_ap, apply apd end,                        
+  rwr H', rwr con_tr, rwr H'', rwr con_inv, rwr con_tr
+end   
 
 @[hott]
 structure prelocal_predicate (T : X.carrier -> Set) :=
