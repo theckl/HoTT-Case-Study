@@ -235,6 +235,33 @@ structure sheaf (C : Type u) [category.{v} C] [has_products.{v u u_2} C] :=
 (presheaf : presheaf X C)
 (sheaf_condition : sheaf_condition X presheaf)
 
+/- Gluing provides an alternative description of the sheaf condition on set-valued presheafs. -/
+@[hott]
+def is_gluing (F : presheaf X Set) {I : Set} (U : I -> open_sets X) 
+  (sf : Π i : I, F.obj (op (U i))) (s : F.obj (op (open_sets.iUnion X U))) : trunctype.{0} -1 :=
+prop_resize (∥ ∀ i : I, F.map (hom_op (opens.le_union X U i)) s = sf i ∥)
+
+@[hott]
+def is_compatible {F : presheaf X Set} {I : Set} {U : I -> open_sets X} 
+  (sf : Π i : I, F.obj (op (U i))) := ∀ (i j : I), 
+    F.map (hom_op (opens.inf_le_l X (U i) (U j))) (sf i) = 
+                                         F.map (hom_op (opens.inf_le_r X (U i) (U j))) (sf j)
+
+@[hott]
+def sheaf_condition_unique_gluing (F : presheaf X Set) := ∀ {I : Set} (U : I -> open_sets X) 
+  (sf : Π i : I, F.obj (op (U i))), is_compatible X sf -> unique_elem (is_gluing X F U sf) 
+
+@[hott] 
+def sheaf_condition_of_unique_gluing (F : presheaf X Set) : 
+  sheaf_condition_unique_gluing X F -> @sheaf_condition X _ _ set_has_products F :=
+begin 
+  intros sc_ug I U, fapply is_limit.mk,
+  { intros S Sf, change ↥(F.obj (op (open_sets.iUnion X U))),
+    sorry },
+  { sorry },
+  { sorry }
+end    
+
 end topology
 
 @[hott]
@@ -327,5 +354,21 @@ begin
     { exact comp_res_section X (hom_unop j) (hom_unop i) f.1 },
     { apply pathover_of_tr_eq, apply is_prop.elim } }
 end  
+
+@[hott]
+structure local_predicate (T : X.carrier -> Set) extends prelocal_predicate X T :=
+  (locality : ∀ {U : open_sets X} (f : ss_section X U T) (w : ∀ x : U.1.carrier, 
+     ∥ Σ (V : open_sets X) (m : ↑x ∈ V.1) (i : V ⟶ U), pred (res_ss_section X i f) ∥),
+     pred f)
+
+/- Universe levels are not determined automatically. -/
+@[hott]
+def subsheaf_of_sections {T : X.carrier -> Set.{max u_1 u_2 w}} (P : local_predicate X T) :
+  @sheaf X Set.{max u_1 u_2 w} Set_category set_has_products.{u_2 (max u_1 u_2 w) w'} :=
+begin 
+  fapply sheaf.mk,
+  { exact subpresheaf_of_sections X P.to_prelocal_predicate },
+  { sorry  }
+end   
 
 end hott
