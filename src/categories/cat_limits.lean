@@ -383,6 +383,10 @@ def set_has_limit {J : Set} [precategory J] (F : J ⥤ Set) : has_limit F :=
 def set_has_limits_of_shape {J : Set} [precategory J] : has_limits_of_shape J Set :=
   has_limits_of_shape.mk (λ F, set_has_limit F)     
 
+@[hott, instance]
+def set_has_products : has_products Set :=
+  ⟨λ J : Set, @set_has_limits_of_shape (discrete J) _⟩
+
 /- A criterion for a category of standard structures over a category with limits to have limits:
    - The limit cone of the underlying functor of a shape carries a structure.
    - The leg morphisms of this limit cone respect the structures.
