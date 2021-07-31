@@ -718,10 +718,14 @@ inductive construct_elem {A : Set} (P : A → trunctype -1)
 
 attribute [intro] construct_elem.intro
 
+@[hott]
 def exists_elem {A : Set} (P : A → Prop) : Prop :=
   ∥ construct_elem P ∥ 
 
 notation `∃` binder `∈` B `,` P:scoped := @exists_elem B P 
+
+@[hott]
+def unique_elem {A : Set} (P : A → Prop) := (Σ a : A, P a) × is_prop (Σ a : A, P a)
 
 /- A criterion for not being a subset -/
 @[hott]
