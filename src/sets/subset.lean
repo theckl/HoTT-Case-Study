@@ -727,6 +727,9 @@ notation `∃` binder `∈` B `,` P:scoped := @exists_elem B P
 @[hott]
 def unique_elem {A : Set} (P : A → Prop) := (Σ a : A, P a) × is_prop (Σ a : A, P a)
 
+@[hott]
+def unique_to_elem {A : Set} (P : A → Prop) (ue : unique_elem P) : A := ue.1.1
+
 /- A criterion for not being a subset -/
 @[hott]
 def not_ss_elem {A : Set} (B₁ B₂ : Subset A) : 
