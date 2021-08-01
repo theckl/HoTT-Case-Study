@@ -257,7 +257,8 @@ def sheaf_condition_of_unique_gluing (F : presheaf X Set) :
 begin 
   intros sc_ug I U, fapply is_limit.mk,
   { intros S Sf, change ↥(F.obj (op (open_sets.iUnion X U))),
-    sorry },
+    let sf : ↥(@pi_opens X _ _ set_has_products _ U F) := S.π.app wp_pair.up Sf, 
+    apply unique_to_elem (is_gluing X F U sf), sorry },
   { sorry },
   { sorry }
 end    
