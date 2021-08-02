@@ -333,22 +333,22 @@ cone.mk c π
    are empty because they cannot factorize through the empty set. -/
 @[hott]
 def set_limit_pred {J : Set.{u'}} [precategory.{v'} J] (F : J ⥤ Set.{u}) : 
-  Setpred (trunctype_ulift.{(max u u') v'} (Sections F.obj)) :=
-λ s, prop_resize (to_Prop (∀ (j k : J) (f : j ⟶ k), F.map f (s.down j) = s.down k)) 
+  Setpred (Sections F.obj) :=
+λ s, prop_resize (to_Prop (∀ (j k : J) (f : j ⟶ k), F.map f (s j) = s k)) 
 
 @[hott, reducible]
 def set_cone {J : Set} [precategory J] (F : J ⥤ Set) : cone F :=
 begin
   fapply cone.mk,
   /- The limit cone vertex set -/
-  { exact ↥{ s ∈ trunctype_ulift (Sections F.obj) | set_limit_pred F s } },
+  { exact ↥{ s ∈ Sections F.obj | set_limit_pred F s } },
   { fapply nat_trans.mk, 
     /- the leg maps of the limit cone -/
-    { intro j, exact λ u, u.1.down j },
+    { intro j, exact λ u, u.1 j },
     /- compatibility of the leg maps -/
     { intros j k f, hsimp, 
       fapply eq_of_homotopy, intro u, hsimp, 
-      change u.1.down k = F.map f (u.1.down j), rwr prop_resize_to_prop u.2 } }
+      change u.1 k = F.map f (u.1 j), rwr prop_resize_to_prop u.2 } }
 end  
 
 @[hott, reducible]
@@ -358,7 +358,7 @@ begin
   fapply is_limit.mk,
   /- the lift from the limit cone to another cone-/ 
   { intro s, intro x, fapply sigma.mk, 
-    { apply ulift.up, intro j, exact s.π.app j x },
+    { intro j, exact s.π.app j x },
     { hsimp, apply prop_to_prop_resize, intros j k f, 
       exact (homotopy_of_eq (s.π.naturality f) x)⁻¹ } },
   /- factorising the lift with limit cone legs -/    
@@ -367,7 +367,7 @@ begin
   /- uniqueness of lift -/  
   { intros s m lift_m, hsimp, apply eq_of_homotopy,
     intro x, hsimp, fapply sigma.sigma_eq, 
-    { exact down_eq_up _ _ (eq_of_homotopy (λ j, @homotopy_of_eq s.X _ _ _ (lift_m j) x)) },
+    { exact eq_of_homotopy (λ j, @homotopy_of_eq s.X _ _ _ (lift_m j) x) },
     { hsimp, apply pathover_of_tr_eq, apply is_prop.elim } }  
 end
 
@@ -387,9 +387,22 @@ def set_has_limits_of_shape {J : Set} [precategory J] : has_limits_of_shape J Se
 def set_has_products : has_products Set :=
   ⟨λ J : Set, @set_has_limits_of_shape (discrete J) _⟩
 
+@[hott, instance]
+def set_has_product {J : Set} (f : J -> Set) : has_product f :=
+  set_has_limit (discrete.functor f)
+
 @[hott]
-def Set_prod_sections {I : Set} {U : I -> Set} (f : Π i : I, U i) : (∏ f) = Sections U :=
-  sorry 
+def Set_prod_sections {I : Set} {U : I -> Set} : (∏ U) = Sections U :=
+begin
+  change ↥{s ∈ Sections U | set_limit_pred (discrete.functor U) s} = Sections U, 
+  have pred_eq : (λ s : Sections U, set_limit_pred (discrete.functor U) s) = (λ s, True), from
+    begin 
+      apply eq_of_homotopy, intro s, hsimp, apply prop_iff_eq, 
+      { intro p, exact true.intro },
+      { intro t, apply prop_to_prop_resize, intros j k f, sorry } 
+    end,
+  rwr pred_eq, rwr <- total_sset_by_pred
+end 
 
 /- A criterion for a category of standard structures over a category with limits to have limits:
    - The limit cone of the underlying functor of a shape carries a structure.
