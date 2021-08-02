@@ -608,6 +608,14 @@ calc B = pred_to_sset (sset_to_pred B) : (sset_pred_linv B)⁻¹
      ... = pred_to_sset (sset_to_pred C) : sset_pred_eq
      ... = C : sset_pred_linv C 
 
+/- The total subset, described by the always true predicate -/
+@[hott]
+def total_sset_by_pred {A : Set} : total_Subset A = pred_to_sset (λ a : A, True) :=
+  have p : sset_to_pred (total_Subset A) = λ a : A, True, from
+    begin apply eq_of_homotopy, intro a, exact total_pred a end,
+  calc total_Subset A = pred_to_sset (sset_to_pred (total_Subset A)) : by rwr sset_pred_linv
+       ... = pred_to_sset (λ a : A, True) : by rwr p   
+
 /- On subsets we can introduce the standard notations of set theory and prove some 
    facts of (naive) set theory. -/
 @[hott]
