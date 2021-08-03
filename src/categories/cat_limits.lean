@@ -399,7 +399,9 @@ begin
     begin 
       apply eq_of_homotopy, intro s, hsimp, apply prop_iff_eq, 
       { intro p, exact true.intro },
-      { intro t, apply prop_to_prop_resize, intros j k f, sorry } 
+      { intro t, apply prop_to_prop_resize, intros j k f, 
+        change (f ▸[λ k : discrete I, U j ⟶ U k] 𝟙 (U j)) (s j) = s k, 
+        hinduction f, rwr idp_tr } 
     end,
   rwr pred_eq, rwr <- total_sset_by_pred
 end 
