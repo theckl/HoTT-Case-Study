@@ -251,8 +251,6 @@ def is_compatible {F : presheaf X Set} {I : Set} {U : I -> open_sets X}
 def sheaf_condition_unique_gluing (F : presheaf X Set) := ∀ {I : Set} (U : I -> open_sets X) 
   (sf : Π i : I, F.obj (op (U i))), is_compatible X sf -> unique_elem (is_gluing X F U sf) 
 
-set_option trace.class_instances true
-
 @[hott] 
 def sheaf_condition_of_unique_gluing (F : presheaf X Set) : 
   sheaf_condition_unique_gluing X F -> @sheaf_condition X _ _ set_has_products F :=
@@ -260,7 +258,8 @@ begin
   intros sc_ug I U, fapply is_limit.mk,
   { intros S Sf, change ↥(F.obj (op (open_sets.iUnion X U))),
     let sf : ↥(@pi_opens X _ _ set_has_products _ U F) := S.π.app wp_pair.up Sf, 
-    apply unique_to_elem (is_gluing X F U sf), sorry },
+    apply unique_to_elem (is_gluing X F U (Set_prod_sections ▸ sf)), apply sc_ug, 
+    intros i j, sorry },
   { sorry },
   { sorry }
 end    
