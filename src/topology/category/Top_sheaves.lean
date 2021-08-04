@@ -1,4 +1,4 @@
-import topology.basic categories.cat_limits categories.cat_colimits
+import topology.basic categories.cat_limits categories.cat_colimits types2
 
 universes v v' u u' w w'
 hott_theory
@@ -258,8 +258,19 @@ begin
   intros sc_ug I U, fapply is_limit.mk,
   { intros S Sf, change ↥(F.obj (op (open_sets.iUnion X U))),
     let sf : ↥(@pi_opens X _ _ set_has_products _ U F) := S.π.app wp_pair.up Sf, 
-    apply unique_to_elem (is_gluing X F U (Set_prod_sections ▸ sf)), apply sc_ug, 
-    intros i j, sorry },
+    apply unique_to_elem (is_gluing X F U sf.1), apply sc_ug, apply all_prod_all, intro p, 
+    calc (pi.π (λ (i : ↥I), F.obj (op (U i))) p.fst ≫ 
+                      F.map (hom_op (opens.inf_le_l X (U p.fst) (U p.snd)))) sf =
+                            (@left_res X _ _ (set_has_products) _ U F ≫ pi.π _ p) sf : sorry
+    --        (pi.lift_π_eq _ (λ p : ↥(I × I), pi.π (λ i : I, F.obj (op (U i))) p.1 ≫ 
+    --                               F.map (hom_op (opens.inf_le_l X (U p.1) (U p.2)))) p)⁻¹
+         ... = (@right_res X _ _ (set_has_products) _ U F ≫ pi.π _ p) sf : sorry
+    --        exact inverse (S.π.naturality Two.zero) ⬝ (S.π.naturality Two.one),
+         ... = (pi.π (λ (i : ↥I), F.obj (op (U i))) p.snd ≫ 
+                            F.map (hom_op (opens.inf_le_r X (U p.fst) (U p.snd)))) sf : sorry
+    --        pi.lift_π_eq _ (λ p : ↥(I × I), pi.π (λ i : I, F.obj (op (U i))) p.2 ≫ 
+    --                               F.map (hom_op (opens.inf_le_r X (U p.1) (U p.2)))) p,                                      
+     },
   { sorry },
   { sorry }
 end    
