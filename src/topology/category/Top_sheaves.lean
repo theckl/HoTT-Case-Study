@@ -258,19 +258,43 @@ begin
   intros sc_ug I U, fapply is_limit.mk,
   { intros S Sf, change ↥(F.obj (op (open_sets.iUnion X U))),
     let sf : ↥(@pi_opens X _ _ set_has_products _ U F) := S.π.app wp_pair.up Sf, 
-    apply unique_to_elem (is_gluing X F U sf.1), apply sc_ug, apply all_prod_all, intro p, 
+    apply unique_to_elem (is_gluing X F U sf.1), apply sc_ug, apply all_prod_all, intro p,
+    have H1 : (pi.π (λ (i : ↥I), F.obj (op (U i))) p.fst ≫ 
+                      F.map (hom_op (opens.inf_le_l X (U p.fst) (U p.snd)))) =
+                            (@left_res X _ _ (set_has_products) _ U F ≫ pi.π _ p), from 
+      inverse (pi.lift_π_eq _ _ p), 
+    have H2 : (@right_res X _ _ (set_has_products) _ U F ≫ pi.π _ p) =
+              (pi.π (λ (i : ↥I), F.obj (op (U i))) p.snd ≫ 
+                            F.map (hom_op (opens.inf_le_r X (U p.fst) (U p.snd)))), from
+      pi.lift_π_eq _ _ p,                   
+    let hl : ↥(@has_hom.hom _ walking_parallel_pair_has_hom wp_pair.up wp_pair.down) :=
+      wp_pair_hom.left,
+    have H3 : (S.π.app wp_pair.up) ≫ (@left_res X _ _ (set_has_products) _ U F) =
+                 (𝟙 S.X) ≫ (S.π.app wp_pair.down), from 
+      inverse (S.π.naturality hl),
+    let hr : ↥(@has_hom.hom _ walking_parallel_pair_has_hom wp_pair.up wp_pair.down) :=
+      wp_pair_hom.right,
+    have H4 : (S.π.app wp_pair.up) ≫ (@right_res X _ _ (set_has_products) _ U F) =
+                 (𝟙 S.X) ≫ (S.π.app wp_pair.down), from 
+      inverse (S.π.naturality hr),       
     calc (pi.π (λ (i : ↥I), F.obj (op (U i))) p.fst ≫ 
-                      F.map (hom_op (opens.inf_le_l X (U p.fst) (U p.snd)))) sf =
-                            (@left_res X _ _ (set_has_products) _ U F ≫ pi.π _ p) sf : sorry
-    --        (pi.lift_π_eq _ (λ p : ↥(I × I), pi.π (λ i : I, F.obj (op (U i))) p.1 ≫ 
-    --                               F.map (hom_op (opens.inf_le_l X (U p.1) (U p.2)))) p)⁻¹
-         ... = (@right_res X _ _ (set_has_products) _ U F ≫ pi.π _ p) sf : sorry
-    --        exact inverse (S.π.naturality Two.zero) ⬝ (S.π.naturality Two.one),
+                F.map (hom_op (opens.inf_le_l X (U p.fst) (U p.snd)))) sf =
+                      (@left_res X _ _ (set_has_products) _ U F ≫ pi.π _ p) sf : by rwr H1
+         ... = ((S.π.app wp_pair.up) ≫ (@left_res X _ _ (set_has_products) _ U F ≫ 
+                                                                      pi.π _ p)) Sf : rfl
+         ... = (((S.π.app wp_pair.up) ≫ (@left_res X _ _ (set_has_products) _ U F)) ≫ 
+                                                                      pi.π _ p) Sf : 
+               by rwr precategory.assoc _ _ _
+         ... = (((𝟙 S.X) ≫ (S.π.app wp_pair.down)) ≫ pi.π _ p) Sf : by rwr H3 
+         ... = ((S.π.app wp_pair.up) ≫ (@right_res X _ _ (set_has_products) _ U F) ≫ 
+                                                                      pi.π _ p) Sf : 
+               by rwr inverse H4           
+         ... = ((S.π.app wp_pair.up) ≫ (@right_res X _ _ (set_has_products) _ U F) ≫ 
+                                                                      pi.π _ p) Sf : 
+               by rwr inverse (precategory.assoc _ _ _)                                                                                                                                                  
+         ... = (@right_res X _ _ (set_has_products) _ U F ≫ pi.π _ p) sf : rfl
          ... = (pi.π (λ (i : ↥I), F.obj (op (U i))) p.snd ≫ 
-                            F.map (hom_op (opens.inf_le_r X (U p.fst) (U p.snd)))) sf : sorry
-    --        pi.lift_π_eq _ (λ p : ↥(I × I), pi.π (λ i : I, F.obj (op (U i))) p.2 ≫ 
-    --                               F.map (hom_op (opens.inf_le_r X (U p.1) (U p.2)))) p,                                      
-     },
+                      F.map (hom_op (opens.inf_le_r X (U p.fst) (U p.snd)))) sf : by rwr H2},
   { sorry },
   { sorry }
 end    
