@@ -355,7 +355,12 @@ inductive wp_pair : Type u
 | up
 | down
 
-/- `wp_pair` is a set because it is equivalent to `Two`. -/
+@[hott]
+inductive wp_pair_hom : Type u
+| left
+| right
+
+/- `wp_pair` and `wp_pair_hom` are sets because they are equivalent to `Two`. -/
 @[hott, hsimp]
 def wpp_Two : wp_pair.{u} -> Two.{u} :=
   λ s, match s with
@@ -364,10 +369,24 @@ def wpp_Two : wp_pair.{u} -> Two.{u} :=
        end
 
 @[hott, hsimp]
+def wpph_Two : wp_pair_hom.{u} -> Two.{u} :=
+  λ s, match s with
+       | wp_pair_hom.left := Two.zero
+       | wp_pair_hom.right := Two.one
+       end
+
+@[hott, hsimp]
 def Two_wpp : Two.{u} -> wp_pair.{u} :=
   λ t, match t with
        | Two.zero := wp_pair.up
        | Two.one := wp_pair.down
+       end
+
+@[hott, hsimp]
+def Two_wpph : Two.{u} -> wp_pair_hom.{u} :=
+  λ t, match t with
+       | Two.zero := wp_pair_hom.left
+       | Two.one := wp_pair_hom.right
        end
 
 @[hott, instance]
@@ -380,23 +399,37 @@ def wpp_is_set : is_set wp_pair.{u} :=
     adjointify wpp_Two Two_wpp r_inv l_inv,
   @is_trunc_is_equiv_closed_rev.{u u} _ _ 0 wpp_Two wpp_eqv_Two Two_is_set
 
+@[hott, instance]
+def wpph_is_set : is_set wp_pair_hom.{u} :=
+  have r_inv : ∀ t : Two, wpph_Two (Two_wpph t) = t, by  
+    intro t; hinduction t; hsimp; hsimp,  
+  have l_inv : ∀ s : wp_pair_hom, Two_wpph (wpph_Two s) = s, by
+    intro s; hinduction s; hsimp; hsimp,
+  have wpph_eqv_Two: is_equiv wpph_Two, from
+    adjointify wpph_Two Two_wpph r_inv l_inv,
+  @is_trunc_is_equiv_closed_rev.{u u} _ _ 0 wpph_Two wpph_eqv_Two Two_is_set
+
 @[hott]
 def walking_parallel_pair : Set :=
 Set.mk wp_pair.{u} wpp_is_set.{u u}
+
+@[hott]
+def wpph_Set : Set :=
+Set.mk wp_pair_hom.{u} wpph_is_set.{u u}
 
 /- Now we construct the precategory structure on `walking_parallel_pair`. -/
 @[hott, hsimp]
 def walking_parallel_pair_hom : Π s t : walking_parallel_pair.{u}, Set.{u} :=
 λ s t, match s, t with
        | wp_pair.up, wp_pair.up := One_Set
-       | wp_pair.up, wp_pair.down := Two_Set
+       | wp_pair.up, wp_pair.down := wpph_Set
        | wp_pair.down, wp_pair.up := Zero_Set
        | wp_pair.down, wp_pair.down := One_Set
        end 
 
 @[hott, instance]
 def walking_parallel_pair_has_hom : has_hom walking_parallel_pair := 
-  ⟨walking_parallel_pair_hom.{u u}⟩
+  ⟨walking_parallel_pair_hom⟩
 
 @[hott]
 def walking_parallel_pair.id : Π (s : walking_parallel_pair), s ⟶ s :=
