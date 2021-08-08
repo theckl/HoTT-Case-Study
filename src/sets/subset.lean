@@ -738,6 +738,14 @@ def unique_elem {A : Set} (P : A → Prop) := (Σ a : A, P a) × is_prop (Σ a :
 @[hott]
 def unique_to_elem {A : Set} (P : A → Prop) (ue : unique_elem P) : A := ue.1.1
 
+@[hott]
+def unique_to_pred {A : Set} (P : A → Prop) (ue : unique_elem P) : Prop := 
+  P (unique_to_elem P ue)
+
+@[hott]
+def unique_to_uniq {A : Set} (P : A → Prop) (ue : unique_elem P) : is_prop (Σ a : A, P a) :=
+  ue.2
+
 /- A criterion for not being a subset -/
 @[hott]
 def not_ss_elem {A : Set} (B₁ B₂ : Subset A) : 
