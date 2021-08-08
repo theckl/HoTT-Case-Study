@@ -242,10 +242,66 @@ def is_gluing (F : presheaf X Set) {I : Set} (U : I -> open_sets X)
 prop_resize (∥ ∀ i : I, F.map (hom_op (opens.le_union X U i)) s = sf i ∥)
 
 @[hott]
+def is_gluing_to_cond (F : presheaf X Set) {I : Set} (U : I -> open_sets X) 
+  (sf : Π i : I, F.obj (op (U i))) (s : F.obj (op (open_sets.iUnion X U))) :
+  is_gluing X F U sf s -> ∀ i : I, F.map (hom_op (opens.le_union X U i)) s = sf i :=
+begin 
+  have P : is_prop (∀ i : I, F.map (hom_op (opens.le_union X U i)) s = sf i), from sorry,
+  intro ig, sorry
+end    
+
+@[hott]
 def is_compatible {F : presheaf X Set} {I : Set} {U : I -> open_sets X} 
   (sf : Π i : I, F.obj (op (U i))) := ∀ (i j : I), 
     F.map (hom_op (opens.inf_le_l X (U i) (U j))) (sf i) = 
                                          F.map (hom_op (opens.inf_le_r X (U i) (U j))) (sf j)
+
+@[hott]
+def cone_res_is_compatible {F : presheaf X Set} {I : Set} {U : I -> open_sets X} 
+  {S : cone (parallel_pair (@left_res X _ _ set_has_products _ U F) 
+                             (@right_res X _ _ set_has_products _ U F))} :
+  ∀ Sf : S.X, @is_compatible X F I U (S.π.app wp_pair.up Sf).1 := 
+begin 
+  intro Sf, 
+  let sf : ↥(@pi_opens X _ _ set_has_products _ U F) := S.π.app wp_pair.up Sf,
+  apply all_prod_all, intro p, 
+  have H1 : (pi.π (λ (i : ↥I), F.obj (op (U i))) p.fst ≫ 
+                    F.map (hom_op (opens.inf_le_l X (U p.fst) (U p.snd)))) =
+                          (@left_res X _ _ (set_has_products) _ U F ≫ pi.π _ p), from 
+    inverse (pi.lift_π_eq _ _ p), 
+  have H2 : (@right_res X _ _ (set_has_products) _ U F ≫ pi.π _ p) =
+            (pi.π (λ (i : ↥I), F.obj (op (U i))) p.snd ≫ 
+                          F.map (hom_op (opens.inf_le_r X (U p.fst) (U p.snd)))), from
+    pi.lift_π_eq _ _ p,                   
+  let hl : ↥(@has_hom.hom _ walking_parallel_pair_has_hom wp_pair.up wp_pair.down) :=
+    wp_pair_hom.left,
+  have H3 : (S.π.app wp_pair.up) ≫ (@left_res X _ _ (set_has_products) _ U F) =
+                (𝟙 S.X) ≫ (S.π.app wp_pair.down), from 
+    inverse (S.π.naturality hl),
+  let hr : ↥(@has_hom.hom _ walking_parallel_pair_has_hom wp_pair.up wp_pair.down) :=
+    wp_pair_hom.right,
+  have H4 : (S.π.app wp_pair.up) ≫ (@right_res X _ _ (set_has_products) _ U F) =
+               (𝟙 S.X) ≫ (S.π.app wp_pair.down), from 
+    inverse (S.π.naturality hr), 
+  calc (pi.π (λ (i : ↥I), F.obj (op (U i))) p.fst ≫ 
+            F.map (hom_op (opens.inf_le_l X (U p.fst) (U p.snd)))) sf =
+                  (@left_res X _ _ (set_has_products) _ U F ≫ pi.π _ p) sf : by rwr H1
+       ... = ((S.π.app wp_pair.up) ≫ (@left_res X _ _ (set_has_products) _ U F ≫ 
+                                                                      pi.π _ p)) Sf : rfl
+       ... = (((S.π.app wp_pair.up) ≫ (@left_res X _ _ (set_has_products) _ U F)) ≫ 
+                                                                      pi.π _ p) Sf : 
+             by rwr precategory.assoc _ _ _
+       ... = (((𝟙 S.X) ≫ (S.π.app wp_pair.down)) ≫ pi.π _ p) Sf : by rwr H3 
+       ... = ((S.π.app wp_pair.up) ≫ (@right_res X _ _ (set_has_products) _ U F) ≫ 
+                                                                      pi.π _ p) Sf : 
+             by rwr inverse H4           
+       ... = ((S.π.app wp_pair.up) ≫ (@right_res X _ _ (set_has_products) _ U F) ≫ 
+                                                                      pi.π _ p) Sf : 
+             by rwr inverse (precategory.assoc _ _ _)                                                                                                                                                  
+       ... = (@right_res X _ _ (set_has_products) _ U F ≫ pi.π _ p) sf : rfl
+       ... = (pi.π (λ (i : ↥I), F.obj (op (U i))) p.snd ≫ 
+                      F.map (hom_op (opens.inf_le_r X (U p.fst) (U p.snd)))) sf : by rwr H2    
+end                               
 
 @[hott]
 def sheaf_condition_unique_gluing (F : presheaf X Set) {I : Set} (U : I -> open_sets X) :=
@@ -260,43 +316,8 @@ def lift_of_unique_gluing (F : presheaf X Set) {I : Set} (U : I -> open_sets X) 
 begin 
   intros sc_ug S Sf, 
   let sf : ↥(@pi_opens X _ _ set_has_products _ U F) := S.π.app wp_pair.up Sf, 
-  apply unique_to_elem (is_gluing X F U sf.1), apply sc_ug, apply all_prod_all, intro p,
-  have H1 : (pi.π (λ (i : ↥I), F.obj (op (U i))) p.fst ≫ 
-                      F.map (hom_op (opens.inf_le_l X (U p.fst) (U p.snd)))) =
-                            (@left_res X _ _ (set_has_products) _ U F ≫ pi.π _ p), from 
-      inverse (pi.lift_π_eq _ _ p), 
-    have H2 : (@right_res X _ _ (set_has_products) _ U F ≫ pi.π _ p) =
-              (pi.π (λ (i : ↥I), F.obj (op (U i))) p.snd ≫ 
-                            F.map (hom_op (opens.inf_le_r X (U p.fst) (U p.snd)))), from
-      pi.lift_π_eq _ _ p,                   
-    let hl : ↥(@has_hom.hom _ walking_parallel_pair_has_hom wp_pair.up wp_pair.down) :=
-      wp_pair_hom.left,
-    have H3 : (S.π.app wp_pair.up) ≫ (@left_res X _ _ (set_has_products) _ U F) =
-                 (𝟙 S.X) ≫ (S.π.app wp_pair.down), from 
-      inverse (S.π.naturality hl),
-    let hr : ↥(@has_hom.hom _ walking_parallel_pair_has_hom wp_pair.up wp_pair.down) :=
-      wp_pair_hom.right,
-    have H4 : (S.π.app wp_pair.up) ≫ (@right_res X _ _ (set_has_products) _ U F) =
-                 (𝟙 S.X) ≫ (S.π.app wp_pair.down), from 
-      inverse (S.π.naturality hr),       
-    calc (pi.π (λ (i : ↥I), F.obj (op (U i))) p.fst ≫ 
-                F.map (hom_op (opens.inf_le_l X (U p.fst) (U p.snd)))) sf =
-                      (@left_res X _ _ (set_has_products) _ U F ≫ pi.π _ p) sf : by rwr H1
-         ... = ((S.π.app wp_pair.up) ≫ (@left_res X _ _ (set_has_products) _ U F ≫ 
-                                                                      pi.π _ p)) Sf : rfl
-         ... = (((S.π.app wp_pair.up) ≫ (@left_res X _ _ (set_has_products) _ U F)) ≫ 
-                                                                      pi.π _ p) Sf : 
-               by rwr precategory.assoc _ _ _
-         ... = (((𝟙 S.X) ≫ (S.π.app wp_pair.down)) ≫ pi.π _ p) Sf : by rwr H3 
-         ... = ((S.π.app wp_pair.up) ≫ (@right_res X _ _ (set_has_products) _ U F) ≫ 
-                                                                      pi.π _ p) Sf : 
-               by rwr inverse H4           
-         ... = ((S.π.app wp_pair.up) ≫ (@right_res X _ _ (set_has_products) _ U F) ≫ 
-                                                                      pi.π _ p) Sf : 
-               by rwr inverse (precategory.assoc _ _ _)                                                                                                                                                  
-         ... = (@right_res X _ _ (set_has_products) _ U F ≫ pi.π _ p) sf : rfl
-         ... = (pi.π (λ (i : ↥I), F.obj (op (U i))) p.snd ≫ 
-                      F.map (hom_op (opens.inf_le_r X (U p.fst) (U p.snd)))) sf : by rwr H2    
+  apply unique_to_elem (is_gluing X F U sf.1), apply sc_ug, 
+  exact cone_res_is_compatible X Sf   
 end  
 
 @[hott] 
@@ -307,10 +328,19 @@ begin
   intros sc_ug I U, 
   fapply is_limit.mk,
   { apply lift_of_unique_gluing X F U, exact sc_ug U },
-  { intros S j, 
-    have fac_up : (lift_of_unique_gluing X F U (sc_ug U) S) ≫ (res X U F) = S.π.app wp_pair.up, 
-      from sorry,
-    hinduction j, 
+  { intro S, 
+    have fac_up : (lift_of_unique_gluing X F U (sc_ug U) S) ≫ (res X U F) = S.π.app wp_pair.up, from 
+      begin 
+        apply eq_of_homotopy, intro Sf,
+        let sf : ↥(@pi_opens X _ _ set_has_products _ U F) := S.π.app wp_pair.up Sf, 
+        fapply sigma_eq,
+        { apply eq_of_homotopy, intro i, 
+          let lift_Sf := lift_of_unique_gluing X F U (sc_ug U) S Sf,
+          change F.map (hom_op (opens.le_union X U i)) lift_Sf = sf.1 i,
+          sorry },
+        { apply pathover_of_tr_eq, exact is_prop.elim _ _ }
+      end,
+    intro j, hinduction j, 
     { exact fac_up },
     { let hl : ↥(@has_hom.hom _ walking_parallel_pair_has_hom wp_pair.up wp_pair.down) :=
         wp_pair_hom.left,
