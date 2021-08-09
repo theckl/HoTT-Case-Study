@@ -5,7 +5,7 @@ hott_theory
 
 namespace hott
 open hott.set hott.subset hott.categories category_theory.limits category_theory.colimits
-  categories.opposite hott.sigma hott.is_trunc
+  categories.opposite hott.sigma hott.is_trunc hott.trunc
 
 set_option pp.universes false  
 
@@ -246,8 +246,11 @@ def is_gluing_to_cond (F : presheaf X Set) {I : Set} (U : I -> open_sets X)
   (sf : Π i : I, F.obj (op (U i))) (s : F.obj (op (open_sets.iUnion X U))) :
   is_gluing X F U sf s -> ∀ i : I, F.map (hom_op (opens.le_union X U i)) s = sf i :=
 begin 
-  have P : is_prop (∀ i : I, F.map (hom_op (opens.le_union X U i)) s = sf i), from sorry,
-  intro ig, sorry
+  have P : is_prop (∀ i : I, F.map (hom_op (opens.le_union X U i)) s = sf i), from 
+    begin apply is_prop_dprod, intro i, apply is_prop.mk, intros p q, exact is_set.elim _ _ end,
+  intros ig, 
+  apply @untrunc_of_is_trunc (∀ i : I, F.map (hom_op (opens.le_union X U i)) s = sf i) -1 P, 
+  exact prop_resize_to_prop ig
 end    
 
 @[hott]
@@ -337,7 +340,9 @@ begin
         { apply eq_of_homotopy, intro i, 
           let lift_Sf := lift_of_unique_gluing X F U (sc_ug U) S Sf,
           change F.map (hom_op (opens.le_union X U i)) lift_Sf = sf.1 i,
-          sorry },
+          have gc : ↥(is_gluing X F U sf.1 lift_Sf), from 
+            unique_to_pred (is_gluing X F U sf.1) (sc_ug U sf.1 (cone_res_is_compatible X Sf)),
+          exact is_gluing_to_cond X F U sf.1 lift_Sf gc i },
         { apply pathover_of_tr_eq, exact is_prop.elim _ _ }
       end,
     intro j, hinduction j, 
@@ -354,7 +359,7 @@ begin
            ... = S.π.app wp_pair.up ≫ @left_res X _ _ (set_has_products) _ U F : by rwr fac_up
            ... = (𝟙 S.X) ≫ (S.π.app wp_pair.down) : by rwr H      
            ... = S.π.app wp_pair.down : precategory.id_comp _ } },
-  { sorry }
+  { intros S m m_lift, apply eq_of_homotopy, intro Sf, sorry }
 end    
 
 end topology
