@@ -739,8 +739,8 @@ def unique_elem {A : Set} (P : A → Prop) := (Σ a : A, P a) × is_prop (Σ a :
 def unique_to_elem {A : Set} (P : A → Prop) (ue : unique_elem P) : A := ue.1.1
 
 @[hott]
-def unique_to_pred {A : Set} (P : A → Prop) (ue : unique_elem P) : Prop := 
-  P (unique_to_elem P ue)
+def unique_to_pred {A : Set} (P : A → Prop) (ue : unique_elem P) : P (unique_to_elem P ue) :=
+  ue.1.2
 
 @[hott]
 def unique_to_uniq {A : Set} (P : A → Prop) (ue : unique_elem P) : is_prop (Σ a : A, P a) :=
