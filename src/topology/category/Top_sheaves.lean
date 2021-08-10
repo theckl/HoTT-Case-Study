@@ -359,7 +359,18 @@ begin
            ... = S.π.app wp_pair.up ≫ @left_res X _ _ (set_has_products) _ U F : by rwr fac_up
            ... = (𝟙 S.X) ≫ (S.π.app wp_pair.down) : by rwr H      
            ... = S.π.app wp_pair.down : precategory.id_comp _ } },
-  { intros S m m_lift, apply eq_of_homotopy, intro Sf, sorry }
+  { intros S m m_lift, apply eq_of_homotopy, intro Sf, 
+    let sf : ↥(@pi_opens X _ _ set_has_products _ U F) := S.π.app wp_pair.up Sf,
+    let lift := lift_of_unique_gluing X F U (sc_ug U) S,
+    have H : (sheaf_condition_equalizer_products.fork X U F).π.app wp_pair.up (m Sf) = sf, from 
+      homotopy_of_eq (m_lift wp_pair.up) Sf,
+    have m_Sf_ig : ↥(is_gluing X F U sf.1 (m Sf)), from 
+      prop_to_prop_resize (tr (λ i, homotopy_of_eq (ap sigma.fst H) i)),  
+    have lift_ig : ↥(is_gluing X F U sf.1 (lift Sf)), from 
+      unique_to_pred (is_gluing X F U sf.1) (sc_ug U sf.1 (cone_res_is_compatible X Sf)),  
+    let P := unique_to_uniq (is_gluing X F U sf.1) (sc_ug U sf.1 (cone_res_is_compatible X Sf)), 
+    exact ap sigma.fst (@is_prop.elim (Σ (a : ↥(F.obj (op (open_sets.iUnion X U)))), 
+                               ↥(is_gluing X F U sf.fst a)) P ⟨m Sf, m_Sf_ig⟩ ⟨lift Sf, lift_ig⟩) }
 end    
 
 end topology
@@ -463,12 +474,20 @@ structure local_predicate (T : X.carrier -> Set) extends prelocal_predicate X T 
 
 /- Universe levels are not determined automatically. -/
 @[hott]
-def subsheaf_of_sections {T : X.carrier -> Set.{max u_1 u_2 w}} (P : local_predicate X T) :
-  @sheaf X Set.{max u_1 u_2 w} Set_category set_has_products.{u_2 (max u_1 u_2 w) w'} :=
+def subsheaf_of_sections {T : X.carrier -> Set} (P : local_predicate X T) :
+  @sheaf X Set.{max u_1 u_2 u'} Set_category set_has_products.{u_2 (max u_1 u')} :=
 begin 
   fapply sheaf.mk,
   { exact subpresheaf_of_sections X P.to_prelocal_predicate },
-  { sorry  }
+  { apply sheaf_condition_of_unique_gluing.{u_1 u_2 (max u_1 u')} X 
+                                   ((subpresheaf_of_sections X P.to_prelocal_predicate)), 
+    intros I U sf is_comp, fapply prod.mk, 
+    { fapply sigma.mk, 
+      { fapply elem_obj, 
+        { intro x, sorry },
+        { sorry } },
+      { sorry } },
+    { apply is_prop.mk, intros s₁ s₂, sorry }  }
 end   
 
 end hott
