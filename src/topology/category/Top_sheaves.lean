@@ -483,8 +483,19 @@ begin
                                    ((subpresheaf_of_sections X P.to_prelocal_predicate)), 
     intros I U sf is_comp, fapply prod.mk, 
     { fapply sigma.mk, 
-      { fapply elem_obj, 
-        { intro x, sorry },
+      { fapply elem_obj, --construction of glued section
+        { intro x, let ind_x := Σ i : I, ↑x ∈ (U i).1,
+          have pix : ↥∥ind_x∥, from prop_resize_to_prop (elem_to_pred ↑x (obj_elem x)),
+          have H : ∀ (ix : ind_x), (U ix.fst).fst.map (elem_obj ↑x ix.2) = ↑x, by 
+            intro ix; exact elem_obj_eq ↑x ix.2,
+          let sf_ind_x : ind_x -> T ↑x := 
+                     λ ix, (H ix) ▸[λ x, (T x).carrier] ((sf ix.1).1 (elem_obj ↑x ix.2)),   
+          have P : is_prop (Σ sx : T ↑x, image' sf_ind_x sx), from sorry,
+          apply @sigma.fst _ (λ sx : T ↑x, image' sf_ind_x sx),
+          apply @untrunc_of_is_trunc (Σ sx : T ↑x, image' sf_ind_x sx) _ P, 
+          fapply @trunc_functor ind_x, 
+          { intro ix, exact sigma.mk (sf_ind_x ix) (tr (fiber.mk ix (@idp _ (sf_ind_x ix)))) },
+          { exact pix } },
         { sorry } },
       { sorry } },
     { apply is_prop.mk, intros s₁ s₂, sorry }  }
