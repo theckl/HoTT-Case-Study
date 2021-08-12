@@ -407,7 +407,7 @@ def res_ss_section {U V : open_sets X} (i : U ⟶ V) {T : X.carrier -> Set} :
   ss_section_Set X V T -> ss_section_Set X U T := 
 begin intros f x, exact (ss_emb_eq i x)⁻¹ ▸[λ x, ↥(T x)] (f (ss_sset_emb i x)) end    
 
-/- The two following lemmas are a case study how complicated proof obligations for 
+/- The two following lemmas are a case study of how complicated proof obligations for 
    equalities creep in a HoTT-development; here in particular from the
    implementation of subsets. -/
 @[hott]
@@ -467,6 +467,20 @@ begin
 end  
 
 @[hott]
+def compat_section {T : X.carrier -> Set} (P : prelocal_predicate X T) {I : Set} 
+  {U : I -> open_sets X} (sf : Π i : I, (subpresheaf_of_sections X P).obj (op (U i))) :
+  is_compatible X sf -> ∀ (i j : I) (x : X.carrier) (elx : x ∈ U i ∩ U j),
+  (elem_obj_eq x (inter_sset_l _ _ x elx)) ▸[λ x, (T x).carrier] 
+                          (sf i).1 (elem_obj x (inter_sset_l _ _ x elx)) = 
+    ((elem_obj_eq x (inter_sset_r _ _ x elx)) ▸[λ x, (T x).carrier]                       
+                          (sf j).1 (elem_obj x (inter_sset_r _ _ x elx))) :=
+begin 
+  intros is_comp i j x, 
+  have elxi : ↥(x ∈ U i), from sorry, 
+  sorry 
+end   
+
+@[hott]
 structure local_predicate (T : X.carrier -> Set) extends prelocal_predicate X T :=
   (locality : ∀ {U : open_sets X} (f : ss_section X U T) (w : ∀ x : U.1.carrier, 
      ∥ Σ (V : open_sets X) (m : ↑x ∈ V.1) (i : V ⟶ U), pred (res_ss_section X i f) ∥),
@@ -488,9 +502,14 @@ begin
           have pix : ↥∥ind_x∥, from prop_resize_to_prop (elem_to_pred ↑x (obj_elem x)),
           have H : ∀ (ix : ind_x), (U ix.fst).fst.map (elem_obj ↑x ix.2) = ↑x, by 
             intro ix; exact elem_obj_eq ↑x ix.2,
-          let sf_ind_x : ind_x -> T ↑x := 
-                     λ ix, (H ix) ▸[λ x, (T x).carrier] ((sf ix.1).1 (elem_obj ↑x ix.2)),   
-          have P : is_prop (Σ sx : T ↑x, image' sf_ind_x sx), from sorry,
+          let sf_ind_x : ind_x -> T ↑x := λ ix, (elem_obj_eq ↑x ix.2) ▸[λ x, (T x).carrier] 
+                                                             ((sf ix.1).1 (elem_obj ↑x ix.2)),   
+          have P : is_prop (Σ sx : T ↑x, image' sf_ind_x sx), from 
+            begin 
+              apply is_prop.mk, intros sx_im₁ sx_im₂, fapply sigma_eq, 
+              { sorry },
+              { apply pathover_of_tr_eq, exact is_prop.elim _ _ } 
+            end,
           apply @sigma.fst _ (λ sx : T ↑x, image' sf_ind_x sx),
           apply @untrunc_of_is_trunc (Σ sx : T ↑x, image' sf_ind_x sx) _ P, 
           fapply @trunc_functor ind_x, 
