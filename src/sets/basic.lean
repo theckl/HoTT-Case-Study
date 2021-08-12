@@ -154,7 +154,7 @@ have H : forall bij1 bij2 : is_set_bijective f, bij1 = bij2, from
   end,
 is_prop.mk H
 
-/- Bijective maps, bundled up and provided with a coercion. -/
+/- Bijective maps, bundled up and provided with a coercion and providing an instance. -/
 @[hott]
 structure bijection (A : Set) (B : Set) :=
   (map: A -> B) (bij : is_set_bijective map)
