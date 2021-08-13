@@ -8,7 +8,7 @@ open hott.set hott.is_trunc hott.is_equiv hott.eq hott.trunc hott.sigma
 
 namespace subset
 
-set_option pp.universes true
+set_option pp.universes false
 
 /- We define subsets of sets [A] by predicates on `A`, with a corecion to the set of all 
    elements of `A` satisfying the predicate, and a coercion of the objects of this set to
@@ -39,7 +39,78 @@ def pred_Set {A : Set} (B : Subset A) : Set :=
 instance {A : Set} (B : Subset A) : has_coe ↥B ↥A :=
   ⟨λ b, b.1⟩
 
-/- An equivalent, but less practical way to construct subsets. -/  
+/- An equivalent, but less useful way to define subsets. -/
+@[hott]
+structure inj_Subset (A : Set.{u}) :=
+   (carrier : Set.{u}) (map : carrier -> A)  (inj : is_set_injective map) 
+
+@[hott]
+def pred_to_inj_sset {A : Set} : Subset A -> inj_Subset A :=
+  assume B,
+  let pred_Set_map : pred_Set B -> A := λ b, b.1 in
+  have pred_Set_map_inj : is_set_injective pred_Set_map, from 
+    begin 
+      intros b₁ b₂ H, fapply sigma_eq, 
+      { exact H }, 
+      { apply pathover_of_tr_eq, exact is_prop.elim _ _ } 
+    end,
+  inj_Subset.mk (pred_Set B) pred_Set_map pred_Set_map_inj 
+
+@[hott]
+def inj_to_pred_sset {A : Set} : inj_Subset A -> Subset A :=
+  assume B_inj,
+  assume a, prop_resize (image B_inj.map a) 
+
+@[hott]
+def inj_car_eqv_pred_sset {A : Set.{u}} {B_car : Set.{u}} (map : B_car -> A) 
+  (inj : is_set_injective map) : (Σ a : A, prop_resize.{0 u} (image map a)) ≃ B_car :=
+let HP : (Σ a : A, prop_resize.{0 u} (image map a)) -> (Σ a : A, fiber map a) := 
+  λ a_im, 
+  ⟨a_im.1, @untrunc_of_is_trunc _ _ (set_inj_implies_unique_fib map inj a_im.1) 
+             (prop_resize_to_prop a_im.2)⟩ in
+have H : ∀ a_im : (Σ a : A, prop_resize.{0 u} (image map a)), map (HP a_im).2.1 = a_im.1, from
+  assume a_im, (HP a_im).2.2,             
+let f : (Σ a : A, prop_resize.{0 u} (image map a)) -> B_car := λ a_im, (HP a_im).2.1 in
+let g : B_car -> (Σ a : A, prop_resize.{0 u} (image map a)) := 
+                                 λ b, ⟨map b, prop_to_prop_resize (tr ⟨b, idp⟩)⟩ in  
+have rinv : ∀ b : B_car, f (g b) = b, from 
+  assume b,
+  calc f (g b) = (HP (g b)).2.1 : rfl
+       ... = b : ap fiber.point (@is_prop.elim _ (set_inj_implies_unique_fib map inj (map b))
+                                 (fiber.mk (HP (g b)).2.1 (H (g b))) (fiber.mk b idp)),
+have linv : ∀ (a_im : Σ a : A, prop_resize.{0 u} (image map a)), g (f a_im) = a_im, from 
+  begin 
+    intro a_im, fapply sigma_eq,
+    { calc (g (f a_im)).1 = map (f a_im) : rfl
+           ... = a_im.1 : H a_im },
+    { apply pathover_of_tr_eq, exact is_prop.elim _ _ }
+  end,
+equiv.mk f (adjointify f g rinv linv) 
+
+@[hott]
+def pred_sset_linv {A : Set} (B_inj : inj_Subset A) : 
+  pred_to_inj_sset (inj_to_pred_sset B_inj) = B_inj :=
+begin
+  hinduction B_inj,
+  change inj_Subset.mk (pred_Set (λ a : A, prop_resize (image map a))) (λ b, b.1) _ =
+         inj_Subset.mk carrier map inj,
+  fapply apd0111 inj_Subset.mk,
+  { apply car_eq_to_set_eq,
+    change (Σ a : A, prop_resize (image map a)) = carrier,
+    exact ua (inj_car_eqv_pred_sset map inj) },
+  { sorry },
+  { apply pathover_of_tr_eq, exact is_prop.elim _ _ }
+end            
+
+@[hott]
+def pred_sset_rinv {A : Set} (B : Subset A) :
+  inj_to_pred_sset (pred_to_inj_sset B) = B :=
+sorry
+
+@[hott]
+def pred_eqv_inj_sset {A : Set} : (Subset A) ≃ (inj_Subset A) :=
+  equiv.mk pred_to_inj_sset (adjointify pred_to_inj_sset inj_to_pred_sset
+                                        pred_sset_linv pred_sset_rinv) 
 
 /- Two subsets that always exist. -/
 @[hott]
