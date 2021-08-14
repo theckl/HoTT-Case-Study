@@ -98,7 +98,8 @@ begin
   { apply car_eq_to_set_eq,
     change (Σ a : A, prop_resize (image map a)) = carrier,
     exact ua (inj_car_eqv_pred_sset map inj) },
-  { sorry },
+  { apply pathover_of_tr_eq, apply eq_of_homotopy, intro b,
+    sorry },
   { apply pathover_of_tr_eq, exact is_prop.elim _ _ }
 end            
 
