@@ -6,6 +6,8 @@ hott_theory
 namespace hott
 open is_trunc trunc hott.is_equiv
 
+set_option pp.universes false
+
 /- Should be in [init.function]. -/
 @[inline, reducible] def function.comp {α β φ : Type _} (f : β → φ) (g : α → β) : α → φ :=
 λ x, f (g x)
@@ -179,6 +181,7 @@ begin
   intro a, exact eq_of_pathover_idp (htp a) 
 end  
 
+@[hott]
 def dep_set_eq_eq {A : Type _} {B : A -> Type _} {a a' : A} [is_set (B a')]
   (p : a = a') {b : B a} {b' : B a'} (f f' : b =[p] b') : f = f' :=
 have tr_eq : tr_eq_of_pathover f = tr_eq_of_pathover f', from is_set.elim _ _,
@@ -188,6 +191,28 @@ begin
   rwr <- is_equiv.left_inv F f,
   rwr <- is_equiv.left_inv F f',
   exact po_tr_eq
+end  
+
+/- Some facts involving equivalences -/
+@[hott]
+def dep_cast {A B : Type _} (e : A ≃ B) (P : B -> Type _) :
+  (∀ b : B, P b) -> ∀ a : A, P (e a) :=
+assume Pb a, Pb (e a)   
+
+@[hott]
+def dep_cast_inv {A : Type u} {B : Type v} (e : A ≃ B) (P : B -> Type w) :
+  (∀ a : A, P (e a)) -> ∀ b : B, P b :=
+begin intros Pa b, rwr <- is_equiv.right_inv e b, apply Pa end 
+
+@[hott]
+def ap_inv_po_fn {A : Type u} {B : Type v} {P : A -> Type w} {a₁ a₂ : A} (f : P a₁ -> B) 
+  (H : ∀ a₁ a₂ : A, is_equiv (@ap _ _ P a₁ a₂)) : ∀ (p : P a₁ = P a₂), 
+  ((@is_equiv.inv _ _ _ (H a₁ a₂) p) ▸[λ a : A, P a -> B] f) = (p ▸[λ C : Type w, C -> B] f) :=
+begin 
+  let e := equiv.mk (@ap _ _ P a₁ a₂) (H a₁ a₂),
+  fapply dep_cast_inv e, intro q, hinduction q, 
+  change e⁻¹ᶠ (e (refl a₁))▸[λ (a : A), P a → B]f = (ap P (refl a₁)▸[λ (C : Type w), C → B] f),
+  rwr is_equiv.left_inv e (refl a₁)
 end  
 
 /- Lift of trunctypes, in particular propositions and sets. -/
