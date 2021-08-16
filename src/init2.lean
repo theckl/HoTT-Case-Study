@@ -157,6 +157,11 @@ def tr_fn_tr_eval {A B : Type _} {C : A -> B -> Type _} {a₁ a₂ : A}
   (p ▸ f) b = p ▸ (f b) :=
 begin hinduction p, refl end   
 
+@[hott]
+def tr_fn_eval_tr {A B C : Type _} {f : A -> C} (p : A = B) (b : B) : 
+  (p ▸ f) b = f (p⁻¹ ▸ b) := 
+begin hinduction p, refl end  
+ 
 @[hott] 
 def tr_ap011 {A B C : Type _} {x₁ y₁ : A} {x₂ y₂ : B} {P : C → C -> Type _} (f : A -> B -> C) 
   (g : Π c : C, P c c) (p : x₁ = y₁) (q : x₂ = y₂) :
@@ -206,12 +211,14 @@ begin intros Pa b, rwr <- is_equiv.right_inv e b, apply Pa end
 
 @[hott]
 def ap_inv_po_fn {A : Type u} {B : Type v} {P : A -> Type w} {a₁ a₂ : A} (f : P a₁ -> B) 
-  (H : ∀ a₁ a₂ : A, is_equiv (@ap _ _ P a₁ a₂)) : ∀ (p : P a₁ = P a₂), 
-  ((@is_equiv.inv _ _ _ (H a₁ a₂) p) ▸[λ a : A, P a -> B] f) = (p ▸[λ C : Type w, C -> B] f) :=
+  (H : ∀ a₁ a₂ : A, is_equiv (@ap _ _ P a₁ a₂)) : ∀ (b : P a₂) (p : P a₁ = P a₂), 
+  ((@is_equiv.inv _ _ _ (H a₁ a₂) p) ▸[λ a : A, P a -> B] f) b = 
+              (p ▸[λ C : Type w, C -> B] f) b :=
 begin 
   let e := equiv.mk (@ap _ _ P a₁ a₂) (H a₁ a₂),
-  fapply dep_cast_inv e, intro q, hinduction q, 
-  change e⁻¹ᶠ (e (refl a₁))▸[λ (a : A), P a → B]f = (ap P (refl a₁)▸[λ (C : Type w), C → B] f),
+  assume b, fapply dep_cast_inv e, intro q, hinduction q, 
+  change (e⁻¹ᶠ (e (refl a₁))▸[λ (a : A), P a → B] f) b = 
+         (ap P (refl a₁)▸[λ (C : Type w), C → B] f) b,
   rwr is_equiv.left_inv e (refl a₁)
 end  
 
