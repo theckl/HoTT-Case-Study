@@ -63,7 +63,7 @@ def inj_to_pred_sset {A : Set} : inj_Subset A -> Subset A :=
 
 @[hott]
 def inj_car_eqv_pred_sset {A : Set.{u}} {B_car : Set.{u}} (map : B_car -> A) 
-  (inj : is_set_injective map) : (Σ a : A, prop_resize.{0 u} (image map a)) ≃ B_car :=
+  (inj : is_set_injective map) : pred_Set (λ a : A, prop_resize.{0 u} (image map a)) ≃ B_car :=
 let HP : (Σ a : A, prop_resize.{0 u} (image map a)) -> (Σ a : A, fiber map a) := 
   λ a_im, 
   ⟨a_im.1, @untrunc_of_is_trunc _ _ (set_inj_implies_unique_fib map inj a_im.1) 
@@ -96,10 +96,23 @@ begin
          inj_Subset.mk carrier map inj,
   fapply apd0111 inj_Subset.mk,
   { apply car_eq_to_set_eq,
-    change (Σ a : A, prop_resize (image map a)) = carrier,
     exact ua (inj_car_eqv_pred_sset map inj) },
   { apply pathover_of_tr_eq, apply eq_of_homotopy, intro b,
-    sorry },
+    have H : ∀ A₁ A₂ : Set, is_equiv (@ap _ _ trunctype.carrier A₁ A₂), from sorry,
+    have H' : @car_eq_to_set_eq (pred_Set (λ (a : ↥A), prop_resize (image map a))) carrier = 
+              @is_equiv.inv _ _ _ (H _ carrier), from sorry,
+    rwr H',          
+    calc _ = (ua (inj_car_eqv_pred_sset map inj) ▸[λ C : Type _, C -> A.carrier]
+                 (λ (b : ↥(pred_Set (λ (a : ↥A), prop_resize (image map a)))), b.fst)) b : 
+               ap_inv_po_fn (λ (b : (pred_Set (λ (a : ↥A), 
+                                prop_resize (image map a))).carrier), b.fst) H b
+                                (ua (inj_car_eqv_pred_sset map inj)) 
+         ... = (λ (b : (pred_Set (λ (a : ↥A), prop_resize (image map a))).carrier), b.fst)
+                 ((ua (inj_car_eqv_pred_sset map inj))⁻¹ ▸[λ C : Type _, C] b) : 
+               tr_fn_eval_tr _ b
+         ... = (cast (ua (inj_car_eqv_pred_sset map inj))⁻¹ b).fst : rfl
+         ... = ((inj_car_eqv_pred_sset map inj)⁻¹ᶠ b).fst : by rwr cast_ua_inv
+         ... = map b : rfl },
   { apply pathover_of_tr_eq, exact is_prop.elim _ _ }
 end            
 
