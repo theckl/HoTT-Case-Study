@@ -235,24 +235,25 @@ def power_set_precat {A : Set} : precategory (𝒫 A) :=
 @[hott, instance]
 def subset_precat_has_hom {A : Set.{u}} [hA : has_hom.{v} A] (B : Subset A) :
   has_hom ↥B :=
-has_hom.mk (λ x y : ↥↥B, @has_hom.hom _ hA x y)  
+has_hom.mk (λ x y : ↥B, @has_hom.hom _ hA x y)  
 
 @[hott, instance]
 def subset_precat_cat_struct {A : Set.{u}} [hA : category_struct.{v} A] 
   (B : Subset A) : category_struct ↥B :=
-category_struct.mk (λ b : ↥↥B, @category_struct.id _ hA ↑b)
-  (λ (b c d : ↥↥B) (f : b ⟶ c) (g : c ⟶ d), 
+category_struct.mk (λ b : ↥B, @category_struct.id _ hA ↑b)
+  (λ (b c d : ↥B) (f : b ⟶ c) (g : c ⟶ d), 
         @category_struct.comp _ hA ↑b ↑c ↑d f g)
 
 @[hott, instance]
 def subset_precat_precat {A : Set.{u}} [hA : precategory.{v} A] 
   (B : Subset A) : precategory ↥B :=
-precategory.mk (λ (b c : ↥↥B) (f : b ⟶ c), precategory.id_comp f) 
-               (λ (b c : ↥↥B) (f : b ⟶ c), precategory.comp_id f) 
-               (λ (b c d e: ↥↥B) (f : b ⟶ c) (g : c ⟶ d) (h : d ⟶ e), 
+precategory.mk (λ (b c : ↥B) (f : b ⟶ c), precategory.id_comp f) 
+               (λ (b c : ↥B) (f : b ⟶ c), precategory.comp_id f) 
+               (λ (b c d e: ↥B) (f : b ⟶ c) (g : c ⟶ d) (h : d ⟶ e), 
                   precategory.assoc f g h) 
 
-/- The inclusion of two subsets of a set that is a precategory defines a functor. 
+/- The inclusion of two subsets of a set that is a precategory defines a functor between the 
+   underlying sets. 
 
    We need two equalities easily shown by induction. -/ 
 @[hott]
@@ -268,21 +269,14 @@ def tr_tr_cat_comp {C : Type u} [precategory.{v} C] {c₁ c₁' c₂ c₂' c₃ 
 begin hinduction p, hinduction q, hinduction r, refl end
 
 @[hott]
-def functor_subsets_precat {A : Set.{u}} [hA : precategory.{v} A] {B C : Subset A} (inc : B ⊆ C) :
-  ↥B ⥤ ↥C :=
+def functor_subsets_precat {A : Set.{u}} [hA : precategory.{v} A] {B C : Subset A} 
+  (inc : B ⊆ C) : ↥B ⥤ ↥C :=
 begin 
   fapply functor.mk, 
-  { intro b, exact elem_obj ↑b (inc ↑b (obj_elem b)) }, 
-  { intros b b' f, 
-    change ↥(C.map (elem_obj ↑b (inc ↑b (obj_elem b))) ⟶ C.map (elem_obj ↑b' (inc ↑b' (obj_elem b')))), 
-    rwr elem_obj_eq, rwr elem_obj_eq, exact f },
-  { intro b, 
-    change _ = 𝟙 (C.map (elem_obj ↑b (inc ↑b (obj_elem b)))), 
-    apply inv_tr_eq_of_eq_tr, apply inv_tr_eq_of_eq_tr, rwr tr_tr_cat_id },
-  { intros b₁ b₂ b₃ f g, apply inv_tr_eq_of_eq_tr, apply inv_tr_eq_of_eq_tr, 
-    exact (tr_tr_cat_comp (elem_obj_eq ↑b₁ (inc ↑b₁ (obj_elem b₁))) 
-                       (elem_obj_eq ↑b₂ (inc ↑b₂ (obj_elem b₂))) 
-                       (elem_obj_eq ↑b₃ (inc ↑b₃ (obj_elem b₃))) f g)⁻¹ }
+  { intro b, exact ⟨b.1, inc b.1 b.2⟩ }, 
+  { intros b b' f, exact f },
+  { intro b, refl },
+  { intros b₁ b₂ b₃ f g, refl }
 end                     
 
 /- We define the discrete precategory structure on a set, whose morphisms are
