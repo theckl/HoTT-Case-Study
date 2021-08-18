@@ -346,12 +346,13 @@ begin intro p, hinduction p, hinduction x, refl end
 def std_str_has_hom {C : Type u} [category.{v} C] (std_str : std_structure_on C) :
   has_hom (std_structure std_str) := 
 has_hom.mk (λ (x y : std_structure std_str), 
-            ↥{ f ∈ (x.carrier ⟶ y) | prop_resize (std_str.H (x.str) (y.str) f) })
+            pred_Set {f ∈ (x.carrier ⟶ y) | prop_resize (std_str.H (x.str) (y.str) f)})
 
 @[hott]
 instance hom_std_C {C : Type u} [category.{v} C] {std_str : std_structure_on C}
   {x y : std_structure std_str} : has_coe ↥(x ⟶ y) ↥(x.carrier ⟶ y.carrier) :=
-⟨λ f, { f ∈ (x.carrier ⟶ y) | prop_resize (std_str.H (x.str) (y.str) f) }.map f⟩  
+⟨λ f : x ⟶ y, 
+   pred_Set_map {f ∈ (x.carrier ⟶ y) | prop_resize (std_str.H (x.str) (y.str) f)} f⟩  
 
 @[hott]
 def hom_H {C : Type u} [category.{v} C] {std_str : std_structure_on C} 
@@ -374,11 +375,11 @@ calc f = ⟨f.1, f.2⟩ : (sigma.eta f)⁻¹
 @[hott, instance]
 def std_str_cat_struct {C : Type u} [category.{v} C] (std_str : std_structure_on C) :
   category_struct (std_structure std_str) :=
-category_struct.mk (λ x : std_structure std_str, elem_pred (𝟙 ↑x) 
-                                                     (prop_to_prop_resize (std_str.id_H x.str))) 
+category_struct.mk (λ x : std_structure std_str, 
+                                         ⟨𝟙 ↑x, prop_to_prop_resize (std_str.id_H x.str)⟩) 
   (λ (x y z : std_structure std_str) (f : x ⟶ y) (g : y ⟶ z), 
-   elem_pred (↑f ≫ ↑g) (prop_to_prop_resize (std_str.comp_H x.str y.str z.str ↑f ↑g 
-     (prop_resize_to_prop (hom_H f)) (prop_resize_to_prop (hom_H g))))) 
+     ⟨↑f ≫ ↑g, prop_to_prop_resize (std_str.comp_H x.str y.str z.str ↑f ↑g 
+     (prop_resize_to_prop (hom_H f)) (prop_resize_to_prop (hom_H g)))⟩) 
 
 @[hott]
 def idhom_std_C {C : Type u} [category.{v} C] {std_str : std_structure_on C} 
@@ -507,8 +508,8 @@ begin
   /- We define `F : (Σ (f : a ≅ b), std_str.H α β f.hom and std_str.H β α f.inv) -> (x ≅ y)`. -/
   { intro iso_H, 
     fapply iso.mk,
-    { exact elem_pred (iso_H.1.hom) (prop_to_prop_resize (iso_H.2.1)) },
-    { exact elem_pred (iso_H.1.inv) (prop_to_prop_resize (iso_H.2.2)) },
+    { exact ⟨iso_H.1.hom, prop_to_prop_resize (iso_H.2.1)⟩ },
+    { exact ⟨iso_H.1.inv, prop_to_prop_resize (iso_H.2.2)⟩ },
     { apply hom_eq_C_std _ _, repeat { rwr comp_hom_std_C }, hsimp, rwr iso_H.1.r_inv },
     { apply hom_eq_C_std _ _, repeat { rwr comp_hom_std_C }, hsimp, rwr iso_H.1.l_inv } },
   { fapply adjointify,
