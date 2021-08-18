@@ -33,20 +33,16 @@ def open_sets : Subset (𝒫 ↥X) :=
   {U ∈ (𝒫 ↥X) | is_open ↥X U}
 
 @[hott]
-instance Subset_Set_to_Set : has_coe_to_sort (Subset (𝒫 ↥X)) :=
-  has_coe_to_sort.mk (Type _) (λ T, T.carrier)
-
-@[hott]
 instance : has_coe ↥(open_sets X) (Subset ↥X) :=
-  ⟨λ Y : ↥(open_sets X), (open_sets X).map Y⟩
+  ⟨λ Y : open_sets X, Y.1⟩
 
 @[hott]
 protected def open_sets.inter (U V : open_sets X) : open_sets X :=
 have U_is_open : is_open ↥X U, from U.2, 
 have V_is_open : is_open ↥X V, from V.2,
-have inter_is_open : is_open ↥X (((open_sets X).map U) ∩ ((open_sets X).map V)), from 
+have inter_is_open : is_open ↥X (U.1 ∩ V.1), from 
   is_open_inter ↥X U_is_open V_is_open,
-elem_pred (((open_sets X).map U) ∩ ((open_sets X).map V)) inter_is_open  
+⟨U.1 ∩ V.1, inter_is_open⟩  
 
 @[hott, instance]
 def open_sets_inter : has_inter (open_sets X) :=
@@ -56,15 +52,15 @@ def open_sets_inter : has_inter (open_sets X) :=
 def open_sets.iUnion {I : Set} (f : I -> open_sets X) : ↥(open_sets X) :=
 have U_i_is_open : ∀ i : I, is_open ↥X (f i), from assume i, (f i).2, 
 have open_union : is_open ↥X (⋃ᵢ (λ i, (f i).1)), from is_open_iUnion ↥X U_i_is_open,  
-elem_pred (⋃ᵢ (λ i, (f i).1)) open_union    
+⟨⋃ᵢ (λ i, (f i).1), open_union⟩    
 
 @[hott]
-def open_sets_incl_to_hom {U V : open_sets X} (i : ((open_sets X).map U) ⊆ ((open_sets X).map V)) : 
+def open_sets_incl_to_hom {U V : open_sets X} (i : U.1 ⊆ V.1) : 
   U ⟶ V := i 
 
 @[hott]
-def open_sets_hom_to_emb {U V : open_sets X} (i : U ⟶ V) : U.1.carrier -> V.1.carrier :=
-  assume x, elem_obj ↑x (i ↑x (obj_elem x))
+def open_sets_hom_to_emb {U V : open_sets X} (i : U ⟶ V) : U.1 -> V.1 :=
+  assume x, ⟨x, i x x.2⟩
 
 @[hott]
 def opens.inf_le_l (U V : open_sets X) : open_sets.inter X U V ⟶ U :=
@@ -93,13 +89,7 @@ def nbhds (x : X.carrier) : Subset (𝒫 ↥X) :=
 
 @[hott]
 def nbhds_opens_inc (x : X.carrier) : nbhds X x ⊆ open_sets X :=
-begin 
-  intros U el,   
-  have el' : ↥(U∈pred_to_sset (λ (a : ↥𝒫↥X), is_open ↥X a and x∈a)), 
-    from el,
-  have H : ↥(is_open ↥X U and x∈U), from (elem_to_pred U) el', 
-  exact (pred_to_elem U) H.1 
-end
+begin  intros U el, exact el.1  end
 
 @[hott, instance]
 def nbhds_precat (x : X.carrier) : precategory (nbhds X x) :=
@@ -119,7 +109,7 @@ def presheaf (C : Type u') [category.{v'} C] := (open_sets X)ᵒᵖ ⥤ C
 def stalk (C : Type u') [category.{v'} C] [H : has_colimits C] (F : presheaf X C) 
   (x : X.carrier) : C :=
 have G : (nbhds X x)ᵒᵖ ⥤ C, from nbhds_opens_inc_functor X x ⋙ F, 
-@colimit (op_Set (nbhds X x).carrier) _ _ _ G (@has_colimit_of_has_colimits C _ H _ _ _) 
+@colimit (op_Set (pred_Set (nbhds X x))) _ _ _ G (@has_colimit_of_has_colimits C _ H _ _ _) 
 
 /- The product of the sections of a presheaf over a family of open sets. -/
 @[hott]
@@ -395,7 +385,7 @@ open topology
 
 @[hott]
 def ss_section (U : open_sets X) (T : X.carrier -> Set) := 
-  Π x : U.1.carrier, T ↑x 
+  Π x : U.1, T x 
 
 @[hott]
 def ss_section_Set (U : open_sets X) (T : X.carrier -> Set) : Set := 
