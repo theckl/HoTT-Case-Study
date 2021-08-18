@@ -191,8 +191,8 @@ end
 def compl_inter (U V : Subset A) : C(U ∩ V) = C(U) ∪ C(V) :=
 begin
   apply (sset_eq_iff_inclusion _ _).2, apply pair,
-  { intros x el, 
-    change ↥(x∈pred_to_sset (λ (a : A), a∈C(U) or a∈C(V))),
+  { intros x el,
+    change ↥(x∈C(U) or x∈C(V)), 
     apply (pred_elem x).2, 
     have not_el_inter : ↥(x ∉ (U ∩ V)), from (pred_elem x).1 el,
     rwr elem_comp_eq, rwr elem_comp_eq, 
@@ -213,7 +213,7 @@ begin
     change Π (i : I), x∈C(f i), intro i, apply (elem_comp_iff (f i) x).2, 
     intro el_i, apply (elem_comp_iff (⋃ᵢ f) x).1 el,
     apply (pred_elem x).2, exact prop_to_prop_resize (tr ⟨i, el_i⟩) },
-  { intros x el, apply (pred_elem x).2, intro el_Ui, 
+  { intros x el, change ↥(x ∉ ⋃ᵢ f), intro el_Ui, 
     have i_el : Π i : I, x∈C(f i), from prop_resize_to_prop ((pred_elem x).1 el),
     hinduction prop_resize_to_prop ((pred_elem x).1 el_Ui) with el_i, 
     exact (elem_comp_iff (f a.1) x).1 (i_el a.1) a.2 }
