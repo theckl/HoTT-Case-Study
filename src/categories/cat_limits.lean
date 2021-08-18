@@ -333,7 +333,7 @@ cone.mk c π
    are empty because they cannot factorize through the empty set. -/
 @[hott]
 def set_limit_pred {J : Set.{u'}} [precategory.{v'} J] (F : J ⥤ Set.{u}) : 
-  Setpred (Sections F.obj) :=
+  Subset (Sections F.obj) :=
 λ s, prop_resize (to_Prop (∀ (j k : J) (f : j ⟶ k), F.map f (s j) = s k)) 
 
 @[hott, reducible]
@@ -341,7 +341,7 @@ def set_cone {J : Set} [precategory J] (F : J ⥤ Set) : cone F :=
 begin
   fapply cone.mk,
   /- The limit cone vertex set -/
-  { exact ↥{ s ∈ Sections F.obj | set_limit_pred F s } },
+  { exact pred_Set { s ∈ Sections F.obj | set_limit_pred F s } },
   { fapply nat_trans.mk, 
     /- the leg maps of the limit cone -/
     { intro j, exact λ u, u.1 j },
@@ -394,7 +394,7 @@ def set_has_product {J : Set} (f : J -> Set) : has_product f :=
 @[hott]
 def Set_prod_sections {I : Set} {U : I -> Set} : (∏ U) = Sections U :=
 begin
-  change ↥{s ∈ Sections U | set_limit_pred (discrete.functor U) s} = Sections U, 
+  change pred_Set {s ∈ Sections U | set_limit_pred (discrete.functor U) s} = Sections U, 
   have pred_eq : (λ s : Sections U, set_limit_pred (discrete.functor U) s) = (λ s, True), from
     begin 
       apply eq_of_homotopy, intro s, hsimp, apply prop_iff_eq, 
@@ -403,7 +403,8 @@ begin
         change (f ▸[λ k : discrete I, U j ⟶ U k] 𝟙 (U j)) (s j) = s k, 
         hinduction f, rwr idp_tr } 
     end,
-  rwr pred_eq, rwr <- total_sset_by_pred
+  rwr pred_eq, apply car_eq_to_set_eq, 
+  apply ap trunctype.carrier (total_pred_Set_eq_Set (Sections U))
 end 
 
 /- A criterion for a category of standard structures over a category with limits to have limits:
