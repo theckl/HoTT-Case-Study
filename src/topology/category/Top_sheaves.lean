@@ -383,32 +383,27 @@ structure SheafedSpace (C : Type u) [category.{v} C] [has_products C] extends
    `Set`. -/
 open topology
 
-@[hott]
+@[hott, reducible]
 def ss_section (U : open_sets X) (T : X.carrier -> Set) := 
-  Π x : U.1, T x 
+  Π x : U.1, (T x).carrier 
 
 @[hott]
 def ss_section_Set (U : open_sets X) (T : X.carrier -> Set) : Set := 
-  have is_set_ss_section : is_set (ss_section X U T), from is_set_dmap,
+  have is_set_ss_section : is_set (ss_section X U T), from 
+    @is_set_dmap (pred_Set U.1) (λ x, T x.1),
   Set.mk (ss_section X U T) is_set_ss_section
 
 @[hott, reducible]
 def res_ss_section {U V : open_sets X} (i : U ⟶ V) {T : X.carrier -> Set} :
   ss_section_Set X V T -> ss_section_Set X U T := 
-begin intros f x, exact (ss_emb_eq i x)⁻¹ ▸[λ x, ↥(T x)] (f (ss_sset_emb i x)) end    
+begin intros f x, let y : ↥V.1 := ⟨x.1, i x x.2⟩, exact f y end    
 
-/- The two following lemmas are a case study of how complicated proof obligations for 
-   equalities creep in a HoTT-development; here in particular from the
-   implementation of subsets. -/
 @[hott]
 def id_res_section {U : open_sets X} {T : X.carrier -> Set} :
   Π f : ss_section_Set X U T, res_ss_section X (𝟙 U) f = f :=  
 begin 
-  intro f, apply eq_of_homotopy, intro u, 
-  have H : ss_sset_emb (𝟙 U) u = u, from U.1.inj _ _ (ss_emb_eq (𝟙 U) u)⁻¹,
-  have H' : ap U.1.map H = (ss_emb_eq (𝟙 U) u)⁻¹, by apply is_set.elim,
-  change (ss_emb_eq (𝟙 U) u)⁻¹ ▸[λ x, ↥(T x)] (f (ss_sset_emb (𝟙 U) u)) = f u,
-  rwr <- H', apply tr_eq_of_pathover, apply pathover_ap, apply apd 
+  intro f, apply eq_of_homotopy, intro x, 
+  hinduction x with x' pred_x, refl
 end  
 
 @[hott]
@@ -416,19 +411,8 @@ def comp_res_section {U V W : open_sets X} {T : X.carrier -> Set}
   (i : U ⟶ V) (j : V ⟶ W) : Π (f : ss_section_Set X W T), 
     res_ss_section X (i ≫ j) f = (res_ss_section X i) (res_ss_section X j f) :=
 begin
-  intro f, apply eq_of_homotopy, intro u,
-  change (ss_emb_eq (i ≫ j) u)⁻¹ ▸[λ x, ↥(T x)] (f (ss_sset_emb (i ≫ j) u)) = _,
-  have H0 : W.1.map (ss_sset_emb (i ≫ j) u) = ss_sset_emb j (ss_sset_emb i u), from 
-    calc W.1.map (ss_sset_emb (i ≫ j) u) = ↑u : (ss_emb_eq (i ≫ j) u)⁻¹
-         ... = ↑(ss_sset_emb i u) : ss_emb_eq i u
-         ... = ss_sset_emb j (ss_sset_emb i u) : ss_emb_eq j (ss_sset_emb i u),
-  have H : ss_sset_emb (i ≫ j) u = ss_sset_emb j (ss_sset_emb i u), from W.1.inj _ _ H0,
-  have H': (ss_emb_eq (i ≫ j) u)⁻¹ = (ap W.1.map H) ⬝ ((ss_emb_eq i u) ⬝ 
-                       (ss_emb_eq j (ss_sset_emb i u)))⁻¹, by apply is_set.elim, 
-  have H'': ap W.fst.map H ▸[λ x, ↥(T x)] f (ss_sset_emb (i ≫ j) u) = 
-                                   f (ss_sset_emb j (ss_sset_emb i u)), from 
-    begin apply tr_eq_of_pathover, apply pathover_ap, apply apd end,                        
-  rwr H', rwr con_tr, rwr H'', rwr con_inv, rwr con_tr
+  intro f, apply eq_of_homotopy, intro x,
+  hinduction x with x' pred_x, refl
 end   
 
 @[hott]
@@ -442,13 +426,13 @@ def subpresheaf_of_sections {T : X.carrier -> Set} (P : prelocal_predicate X T) 
   presheaf X Set :=
 begin  
   fapply categories.functor.mk, 
-  { intro U, exact ↥{f ∈ ss_section_Set X (unop U) T | P.pred f} },
+  { intro U, exact pred_Set {f ∈ ss_section_Set X (unop U) T | P.pred f} },
   { intros U V i f, fapply sigma.mk,  
     { exact res_ss_section X (hom_unop i) f.1 },
     { exact P.res (hom_unop i) f.1 f.2 } },
   { intro U, apply eq_of_homotopy, intro f, 
     fapply sigma_eq, 
-    { exact id_res_section X f },
+    { exact id_res_section X f.1 },
     { apply pathover_of_tr_eq, apply is_prop.elim } },
   { intros U V W i j, apply eq_of_homotopy, intro f, 
     fapply sigma_eq, 
@@ -456,14 +440,15 @@ begin
     { apply pathover_of_tr_eq, apply is_prop.elim } }
 end  
 
+#check hom_op
+
 @[hott]
 def compat_section {T : X.carrier -> Set} (P : prelocal_predicate X T) {I : Set} 
   {U : I -> open_sets X} (sf : Π i : I, (subpresheaf_of_sections X P).obj (op (U i))) :
-  is_compatible X sf -> ∀ (i j : I) (x : X.carrier) (elx : x ∈ U i ∩ U j),
-  (elem_obj_eq x (inter_sset_l _ _ x elx)) ▸[λ x, (T x).carrier] 
-                          (sf i).1 (elem_obj x (inter_sset_l _ _ x elx)) = 
-    ((elem_obj_eq x (inter_sset_r _ _ x elx)) ▸[λ x, (T x).carrier]                       
-                          (sf j).1 (elem_obj x (inter_sset_r _ _ x elx))) :=
+  is_compatible X sf -> ∀ (i j : I),
+  (subpresheaf_of_sections X P).map (U i).1 ((U i).1 ∩ (U j).1)
+   (@hom_op _ _  ((U i).1 ∩ (U j).1) (U i).1 (@inc_hom _ ((U i).1 ∩ (U j).1) (U i).1 (inter_sset_l (U i).1 (U j).1))) (sf i)  = 
+    (subpresheaf_of_sections X P).map (inter_sset_r (U i).1 (U j).1) (sf j) :=
 begin 
   intros is_comp i j x, 
   have elxi : ↥(x ∈ U i), from sorry, 
