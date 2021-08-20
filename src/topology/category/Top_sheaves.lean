@@ -55,8 +55,8 @@ have open_union : is_open ↥X (⋃ᵢ (λ i, (f i).1)), from is_open_iUnion ↥
 ⟨⋃ᵢ (λ i, (f i).1), open_union⟩    
 
 @[hott]
-def open_sets_incl_to_hom {U V : open_sets X} (i : U.1 ⊆ V.1) : 
-  U ⟶ V := i 
+instance open_sets_incl_to_hom {U V : open_sets X} : has_coe ↥(U.1 ⊆ V.1) (U ⟶ V) := 
+  ⟨λ i : U.1 ⊆ V.1, i⟩ 
 
 @[hott]
 def open_sets_hom_to_emb {U V : open_sets X} (i : U ⟶ V) : U.1 -> V.1 :=
@@ -74,7 +74,7 @@ def opens.inf_le_r (U V : open_sets X) : open_sets.inter X U V ⟶ V :=
 def opens.le_union {I : Set} (f : I -> open_sets X) :
   Π i : I, f i ⟶ open_sets.iUnion X f :=   
 begin 
-  intro i, apply open_sets_incl_to_hom, 
+  intro i, 
   change ↥(↑(f i) ⊆ ↑(open_sets.iUnion X f)), 
   exact sset_iUnion (λ i, ↑(f i)) i
 end       
@@ -440,24 +440,21 @@ begin
     { apply pathover_of_tr_eq, apply is_prop.elim } }
 end  
 
-#check hom_op
-
 @[hott]
 def compat_section {T : X.carrier -> Set} (P : prelocal_predicate X T) {I : Set} 
   {U : I -> open_sets X} (sf : Π i : I, (subpresheaf_of_sections X P).obj (op (U i))) :
   is_compatible X sf -> ∀ (i j : I),
-  (subpresheaf_of_sections X P).map (U i).1 ((U i).1 ∩ (U j).1)
-   (@hom_op _ _  ((U i).1 ∩ (U j).1) (U i).1 (@inc_hom _ ((U i).1 ∩ (U j).1) (U i).1 (inter_sset_l (U i).1 (U j).1))) (sf i)  = 
-    (subpresheaf_of_sections X P).map (inter_sset_r (U i).1 (U j).1) (sf j) :=
+  (subpresheaf_of_sections X P).map (@hom_op (open_sets X) _ (open_sets.inter X (U i) (U j)) 
+                                                (U i) (inter_sset_l (U i).1 (U j).1)) (sf i) = 
+  (subpresheaf_of_sections X P).map (@hom_op (open_sets X) _ (open_sets.inter X (U i) (U j)) 
+                                              (U j) (inter_sset_r (U i).1 (U j).1)) (sf j) :=
 begin 
-  intros is_comp i j x, 
-  have elxi : ↥(x ∈ U i), from sorry, 
   sorry 
 end   
 
 @[hott]
 structure local_predicate (T : X.carrier -> Set) extends prelocal_predicate X T :=
-  (locality : ∀ {U : open_sets X} (f : ss_section X U T) (w : ∀ x : U.1.carrier, 
+  (locality : ∀ {U : open_sets X} (f : ss_section X U T) (w : ∀ x : U.1, 
      ∥ Σ (V : open_sets X) (m : ↑x ∈ V.1) (i : V ⟶ U), pred (res_ss_section X i f) ∥),
      pred f)
 
@@ -472,23 +469,23 @@ begin
                                    ((subpresheaf_of_sections X P.to_prelocal_predicate)), 
     intros I U sf is_comp, fapply prod.mk, 
     { fapply sigma.mk, 
-      { fapply elem_obj, --construction of glued section
-        { intro x, let ind_x := Σ i : I, ↑x ∈ (U i).1,
-          have pix : ↥∥ind_x∥, from prop_resize_to_prop (elem_to_pred ↑x (obj_elem x)),
-          have H : ∀ (ix : ind_x), (U ix.fst).fst.map (elem_obj ↑x ix.2) = ↑x, by 
-            intro ix; exact elem_obj_eq ↑x ix.2,
-          let sf_ind_x : ind_x -> T ↑x := λ ix, (elem_obj_eq ↑x ix.2) ▸[λ x, (T x).carrier] 
-                                                             ((sf ix.1).1 (elem_obj ↑x ix.2)),   
-          have P : is_prop (Σ sx : T ↑x, image' sf_ind_x sx), from 
+      { fapply sigma.mk, --construction of glued section
+        { intro x, let ind_x := Σ i : I, ↑x ∈ (U i).1, 
+          have pix : ↥∥ind_x∥, from prop_resize_to_prop x.2,
+          let sf_ind_x : ind_x -> T ↑x := λ ix, (sf ix.1).1 ⟨x.1, ix.2⟩,
+          have P : is_prop (Σ sx : T ↑x, image sf_ind_x sx), from 
             begin 
               apply is_prop.mk, intros sx_im₁ sx_im₂, fapply sigma_eq, 
-              { sorry },
+              { apply @trunc.elim2 _ (fiber sf_ind_x sx_im₁.1) (fiber sf_ind_x sx_im₂.1) 
+                                   (sx_im₁.1 = sx_im₂.1) (is_prop.mk (@is_set.elim _ _ _ _)), 
+                { intros fib₁ fib₂, sorry },
+                { exact sx_im₁.2 },
+                { exact sx_im₂.2 } },
               { apply pathover_of_tr_eq, exact is_prop.elim _ _ } 
             end,
-          apply @sigma.fst _ (λ sx : T ↑x, image' sf_ind_x sx),
-          apply @untrunc_of_is_trunc (Σ sx : T ↑x, image' sf_ind_x sx) _ P, 
-          fapply @trunc_functor ind_x, 
-          { intro ix, exact sigma.mk (sf_ind_x ix) (tr (fiber.mk ix (@idp _ (sf_ind_x ix)))) },
+          apply @sigma.fst _ (λ sx : T ↑x, image sf_ind_x sx), 
+          apply @trunc.elim _ ind_x _ P, 
+          { intro ix, exact ⟨sf_ind_x ix, tr (fiber.mk ix (@idp _ (sf_ind_x ix)))⟩ },
           { exact pix } },
         { sorry } },
       { sorry } },
