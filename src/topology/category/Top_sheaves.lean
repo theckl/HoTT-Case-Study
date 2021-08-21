@@ -443,14 +443,41 @@ end
 @[hott]
 def compat_section {T : X.carrier -> Set} (P : prelocal_predicate X T) {I : Set} 
   {U : I -> open_sets X} (sf : Π i : I, (subpresheaf_of_sections X P).obj (op (U i))) :
-  is_compatible X sf -> ∀ (i j : I),
-  (subpresheaf_of_sections X P).map (@hom_op (open_sets X) _ (open_sets.inter X (U i) (U j)) 
-                                                (U i) (inter_sset_l (U i).1 (U j).1)) (sf i) = 
-  (subpresheaf_of_sections X P).map (@hom_op (open_sets X) _ (open_sets.inter X (U i) (U j)) 
-                                              (U j) (inter_sset_r (U i).1 (U j).1)) (sf j) :=
+  is_compatible X sf -> ∀ (i j : I) (x : X.carrier) (eli : x ∈ (U i).1) (elj : x ∈ (U j).1),
+                          (sf i).1 ⟨x, eli⟩ = (sf j).1 ⟨x, elj⟩ :=
 begin 
-  sorry 
+  intros comp i j x eli elj, 
+  have el_ij : ↥(x ∈ (open_sets.inter X (U i) (U j))), from ⟨eli, elj⟩,
+  have Hi : eli = opens.inf_le_l X (U i) (U j) x el_ij, from is_prop.elim _ _,
+  have Hj : elj = opens.inf_le_r X (U i) (U j) x el_ij, from is_prop.elim _ _,
+  rwr Hi, rwr Hj, exact homotopy_of_eq (ap sigma.fst (comp i j)) ⟨x, el_ij⟩ 
 end   
+
+@[hott]
+def glued_section {T : X.carrier -> Set} (P : prelocal_predicate X T) {I : Set} 
+  {U : I -> open_sets X} (sf : Π i : I, (subpresheaf_of_sections X P).obj (op (U i))) :
+  is_compatible X sf -> (ss_section_Set X (unop (op (open_sets.iUnion X U))) T) :=
+begin
+  intro is_comp, 
+  intro x, let ind_x := Σ i : I, ↑x ∈ (U i).1, 
+  have pix : ↥∥ind_x∥, from prop_resize_to_prop x.2,
+  let sf_ind_x : ind_x -> T ↑x := λ ix, (sf ix.1).1 ⟨x.1, ix.2⟩,
+  have P : is_prop (Σ sx : T ↑x, image sf_ind_x sx), from 
+    begin 
+      apply is_prop.mk, intros sx_im₁ sx_im₂, fapply sigma_eq, 
+      { apply @trunc.elim2 _ (fiber sf_ind_x sx_im₁.1) (fiber sf_ind_x sx_im₂.1) 
+                        (sx_im₁.1 = sx_im₂.1) (is_prop.mk (@is_set.elim _ _ _ _)), 
+        { intros fib₁ fib₂, rwr <- fib₁.2, rwr <- fib₂.2,
+          exact compat_section X P sf is_comp fib₁.1.1 fib₂.1.1 x.1 fib₁.1.2 fib₂.1.2 },
+        { exact sx_im₁.2 },
+        { exact sx_im₂.2 } },
+      { apply pathover_of_tr_eq, exact is_prop.elim _ _ } 
+    end,
+  apply @sigma.fst _ (λ sx : T ↑x, image sf_ind_x sx), 
+  apply @trunc.elim _ ind_x _ P, 
+  { intro ix, exact ⟨sf_ind_x ix, tr (fiber.mk ix (@idp _ (sf_ind_x ix)))⟩ },
+  { exact pix } 
+end    
 
 @[hott]
 structure local_predicate (T : X.carrier -> Set) extends prelocal_predicate X T :=
@@ -470,24 +497,8 @@ begin
     intros I U sf is_comp, fapply prod.mk, 
     { fapply sigma.mk, 
       { fapply sigma.mk, --construction of glued section
-        { intro x, let ind_x := Σ i : I, ↑x ∈ (U i).1, 
-          have pix : ↥∥ind_x∥, from prop_resize_to_prop x.2,
-          let sf_ind_x : ind_x -> T ↑x := λ ix, (sf ix.1).1 ⟨x.1, ix.2⟩,
-          have P : is_prop (Σ sx : T ↑x, image sf_ind_x sx), from 
-            begin 
-              apply is_prop.mk, intros sx_im₁ sx_im₂, fapply sigma_eq, 
-              { apply @trunc.elim2 _ (fiber sf_ind_x sx_im₁.1) (fiber sf_ind_x sx_im₂.1) 
-                                   (sx_im₁.1 = sx_im₂.1) (is_prop.mk (@is_set.elim _ _ _ _)), 
-                { intros fib₁ fib₂, sorry },
-                { exact sx_im₁.2 },
-                { exact sx_im₂.2 } },
-              { apply pathover_of_tr_eq, exact is_prop.elim _ _ } 
-            end,
-          apply @sigma.fst _ (λ sx : T ↑x, image sf_ind_x sx), 
-          apply @trunc.elim _ ind_x _ P, 
-          { intro ix, exact ⟨sf_ind_x ix, tr (fiber.mk ix (@idp _ (sf_ind_x ix)))⟩ },
-          { exact pix } },
-        { sorry } },
+        { exact glued_section X P.to_prelocal_predicate sf is_comp },
+        { apply P.locality, intro x, sorry } },
       { sorry } },
     { apply is_prop.mk, intros s₁ s₂, sorry }  }
 end   
