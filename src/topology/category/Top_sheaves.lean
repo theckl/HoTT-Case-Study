@@ -456,7 +456,7 @@ end
 @[hott]
 def glued_section {T : X.carrier -> Set} (P : prelocal_predicate X T) {I : Set} 
   {U : I -> open_sets X} (sf : Π i : I, (subpresheaf_of_sections X P).obj (op (U i))) :
-  is_compatible X sf -> (ss_section_Set X (unop (op (open_sets.iUnion X U))) T) :=
+  is_compatible X sf -> (ss_section_Set X (open_sets.iUnion X U) T) :=
 begin
   intro is_comp, 
   intro x, let ind_x := Σ i : I, ↑x ∈ (U i).1, 
@@ -477,6 +477,18 @@ begin
   apply @trunc.elim _ ind_x _ P, 
   { intro ix, exact ⟨sf_ind_x ix, tr (fiber.mk ix (@idp _ (sf_ind_x ix)))⟩ },
   { exact pix } 
+end    
+
+@[hott]
+def res_glued_section {T : X.carrier -> Set} (P : prelocal_predicate X T) {I : Set} 
+  {U : I -> open_sets X} (sf : Π i : I, (subpresheaf_of_sections X P).obj (op (U i)))
+  (is_comp : is_compatible X sf) : ∀ i : I, 
+  res_ss_section X (opens.le_union X U i) (glued_section X P sf is_comp) = (sf i).1 :=
+begin 
+  intro i, apply eq_of_homotopy, intro x, 
+  let xU : ↥(open_sets.iUnion X U) := ⟨x.1, (opens.le_union X U i) x x.2⟩,
+  change (glued_section X P sf is_comp) xU = (sf i).fst x,
+  sorry
 end    
 
 @[hott]
