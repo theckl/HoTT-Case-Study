@@ -474,9 +474,11 @@ begin
       { apply pathover_of_tr_eq, exact is_prop.elim _ _ } 
     end,
   apply @sigma.fst _ (λ sx : T ↑x, image sf_ind_x sx), 
-  apply @trunc.elim _ ind_x _ P, 
-  { intro ix, exact ⟨sf_ind_x ix, tr (fiber.mk ix (@idp _ (sf_ind_x ix)))⟩ },
-  { exact pix } 
+  apply @untrunc_of_is_trunc _ _ P, 
+  apply @trunc_functor _ (Σ (sx : ↥(T ↑x)), ↥(image sf_ind_x sx)) -1 
+          (λ ix : ind_x, ⟨sf_ind_x ix, tr (fiber.mk ix (@idp _ (sf_ind_x ix)))⟩),
+  exact pix
+
 end    
 
 @[hott]
@@ -487,8 +489,40 @@ def res_glued_section {T : X.carrier -> Set} (P : prelocal_predicate X T) {I : S
 begin 
   intro i, apply eq_of_homotopy, intro x, 
   let xU : ↥(open_sets.iUnion X U) := ⟨x.1, (opens.le_union X U i) x x.2⟩,
-  change (glued_section X P sf is_comp) xU = (sf i).fst x,
-  sorry
+  let ind_x := (Σ i : I, ↑xU ∈ (U i).1), let ix : ind_x := ⟨i, x.2⟩,
+  let sf_ind_x : ind_x -> T ↑xU := λ ix, (sf ix.1).1 ⟨x.1, ix.2⟩,
+  have P : is_prop (Σ sx : T ↑x, image sf_ind_x sx), from --need it a second time
+    begin 
+      apply is_prop.mk, intros sx_im₁ sx_im₂, fapply sigma_eq, 
+      { apply @trunc.elim2 _ (fiber sf_ind_x sx_im₁.1) (fiber sf_ind_x sx_im₂.1) 
+                        (sx_im₁.1 = sx_im₂.1) (is_prop.mk (@is_set.elim _ _ _ _)), 
+        { intros fib₁ fib₂, rwr <- fib₁.2, rwr <- fib₂.2,
+          exact compat_section X P sf is_comp fib₁.1.1 fib₂.1.1 x.1 fib₁.1.2 fib₂.1.2 },
+        { exact sx_im₁.2 },
+        { exact sx_im₂.2 } },
+      { apply pathover_of_tr_eq, exact is_prop.elim _ _ } 
+    end,
+  change (@untrunc_of_is_trunc (Σ (sx : ↥(T ↑xU)), ↥(image sf_ind_x sx)) _ _ _).1 = 
+                                                                           (sf i).fst x,
+  rwr @is_prop.elim (Σ (sx : ↥(T ↑xU)), ↥(image sf_ind_x sx)) P (@untrunc_of_is_trunc _ _ _ _) 
+                   ⟨sf_ind_x ix, tr (fiber.mk ix (@idp _ (sf_ind_x ix)))⟩,
+  change ((sf i).1 ⟨x.1, x.2⟩ : T ↑(⟨x.1, x.2⟩ : Σ y : X.carrier, y ∈ (U i).1)) = 
+                                                            ((sf i).fst x : T x.1),
+  rwr <- sigma.eta x                                                          
+end    
+
+@[hott]
+def gluings_are_unique {T : X.carrier -> Set} (P : prelocal_predicate X T) {I : Set} 
+  {U : I -> open_sets X} (sf : Π i : I, (subpresheaf_of_sections X P).obj (op (U i)))
+  (is_comp : is_compatible X sf) : 
+  ∀ s₁ s₂ : (subpresheaf_of_sections X P).obj (op (open_sets.iUnion X U)),
+    (is_gluing X (subpresheaf_of_sections X P) U sf s₁) -> 
+      (is_gluing X (subpresheaf_of_sections X P) U sf s₂) -> s₁ = s₂ :=
+begin 
+  intros s₁ s₂ gs₁ gs₂, 
+  fapply sigma_eq, 
+  { apply eq_of_homotopy, intro x, sorry },
+  { apply pathover_of_tr_eq, exact is_prop.elim _ _ } 
 end    
 
 @[hott]
@@ -510,9 +544,23 @@ begin
     { fapply sigma.mk, 
       { fapply sigma.mk, --construction of glued section
         { exact glued_section X P.to_prelocal_predicate sf is_comp },
-        { apply P.locality, intro x, sorry } },
-      { sorry } },
-    { apply is_prop.mk, intros s₁ s₂, sorry }  }
+        { apply P.locality, intro x, --glued section satisfies predicate
+          let ind_x := Σ i : I, ↑x ∈ (U i).1, 
+          have pix : ↥∥ind_x∥, from prop_resize_to_prop x.2,
+          apply @trunc_functor ind_x _ -1, 
+          { intro ix, 
+            fapply sigma.mk, exact (U ix.1),
+            fapply sigma.mk, exact ix.2,
+            fapply sigma.mk, exact opens.le_union X U ix.1,
+            rwr res_glued_section, exact (sf ix.1).2 },
+          { exact pix } } },
+      { apply prop_to_prop_resize, apply tr, intro i, fapply sigma_eq, --glued section is gluing
+        { exact res_glued_section X P.to_prelocal_predicate sf is_comp i },
+        { apply pathover_of_tr_eq, exact is_prop.elim _ _ } } },  
+    { apply is_prop.mk,  --glued section is unique
+      intros s₁ s₂, fapply sigma_eq, 
+      { exact gluings_are_unique X P.to_prelocal_predicate sf is_comp s₁.1 s₂.1 s₁.2 s₂.2 },
+      { apply pathover_of_tr_eq, exact is_prop.elim _ _ } }  } 
 end   
 
 end hott
