@@ -10,7 +10,7 @@ open hott.is_trunc hott.is_equiv hott.algebra hott.set subset categories hott.tr
 
 namespace algebra
 
-set_option pp.universes true
+set_option pp.universes false
 
 /- We now show that the category of commutative rings has all colimits. 
    
@@ -325,7 +325,7 @@ begin
   { exact CommRing.mk (ring_colim_set F) (ring_colim_str F) },
   { fapply nat_trans.mk, 
     /- the leg homomorphisms of the limit cocone -/
-    { intro j, fapply elem_pred, -- ring homomorphisms consist of a set map satisfying laws
+    { intro j, fapply sigma.mk, -- ring homomorphisms consist of a set map satisfying laws
       { intro r, exact set_class_of mR (expr.x_ j r) },
       { apply prop_to_prop_resize, change is_ring_hom _ _ (λ r, set_class_of mR (expr.x_ j r)), 
         fapply is_ring_hom.mk, 
@@ -344,7 +344,7 @@ end
 def ring_cocone_desc {J : Set.{u'}} [precategory.{v' u'} J] {F : J ⥤ CommRing} (S : cocone F) :
   (ring_cocone F).X ⟶ S.X :=
 begin
-  fapply elem_pred, 
+  fapply sigma.mk, 
     { fapply set_quotient.elim, 
       { intro x, hinduction x, --the underlying set-map
         { exact (S.π.app j).1 r }, 
