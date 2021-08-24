@@ -11,7 +11,7 @@ open hott.algebra hott.subset is_trunc trunc
 
 namespace algebra
 
-set_option pp.universes true
+set_option pp.universes false
 
 @[hott]
 structure module_str (R : CommRing) (M : Set) extends ab_group M renaming 
@@ -185,12 +185,8 @@ begin
   fapply Submodule.mk,
   { exact total_Subset M },
   { fapply submodule_str.mk,
-    { intros n₁ n₂ el₁ el₂, 
-      change (sset_to_pred (total_Subset M.carrier) (n₁ + n₂)).carrier,
-      rwr total_pred (n₁+n₂), exact true.intro },
-    { intros r n el_n, 
-      change (sset_to_pred (total_Subset M.carrier) (r•n)).carrier,
-      rwr total_pred (r•n), exact true.intro } }
+    { intros n₁ n₂ el₁ el₂, exact true.intro },
+    { intros r n el_n, exact true.intro } }
 end  
 
 @[hott]
@@ -231,10 +227,10 @@ begin
                                                                submodule_str M B, from
       begin 
         intros B B_im, 
-        have ex_B_str : ↥(image ((@Submodule.to_Subset R M) ∘ S.map) B), from 
+        have ex_B_str : ↥(image ((@Submodule.to_Subset R M) ∘ (pred_Set_map S)) B), from 
           @ss_image_preimage (Submodule_Set M) (𝒫 M.carrier) 
                                                      (@Submodule.to_Subset R M) S B B_im,
-        hinduction ex_B_str with fB, rwr <- fB.2, exact (S.map fB.1).str 
+        hinduction ex_B_str with fB, rwr <- fB.2, exact ((pred_Set_map S) fB.1).str 
         end,                                                             
     fapply submodule_str.mk,
     { intros n₁ n₂ el1 el2, 
@@ -297,7 +293,7 @@ def submodule_inc_isum {R : CommRing} {M : Module R} {I : Set}
   (f : I -> Submodule_Set M) : ∀ i : I, (f i).carrier ⊆ (submodule_isum f).carrier :=
 begin 
   intro i, 
-  fapply @sset_trans M.carrier _ (⋃ᵢ ((@Submodule.to_Subset R M) ∘ f)) _, 
+  fapply @subset_trans M.carrier _ (⋃ᵢ ((@Submodule.to_Subset R M) ∘ f)) _, 
   { exact sset_iUnion ((@Submodule.to_Subset R M) ∘ f) i }, 
   { exact submod_gen_inc_span ⋃ᵢ ((@Submodule.to_Subset R M) ∘ f) } 
 end  
@@ -392,7 +388,7 @@ begin
 end
 
 @[hott]
-def is_prime_pred {R : CommRing} : Setpred (Ideal_Set R) :=
+def is_prime_pred {R : CommRing} : Subset (Ideal_Set R) :=
   λ I : Ideal_Set R, prop_resize (Prop.mk (is_prime I) (is_prime_is_prop I))
 
 @[hott]
@@ -405,13 +401,9 @@ def PrimeIdeal_Set (R : CommRing) :=
   {P ∈ (Ideal_Set R) | prop_resize (is_prime_pred P) }  
 
 @[hott]
-def prime_is_prime {R : CommRing} (P : (PrimeIdeal_Set R).carrier) :
-  is_prime ((PrimeIdeal_Set R).map P) :=
-begin 
-  have elP : ↥(((PrimeIdeal_Set R).map P) ∈ (PrimeIdeal_Set R)), from obj_elem P,
-  apply prime_pred_prime, 
-  exact prop_resize_to_prop (elem_to_pred _ elP)
-end  
+def prime_is_prime {R : CommRing} (P : pred_Set (PrimeIdeal_Set R)) :
+  is_prime P.1 :=
+begin apply prime_pred_prime, exact prop_resize_to_prop P.2 end  
 
 @[hott]
 def proper_prime_ideal {R : CommRing} (P : Ideal_Set R) : 
@@ -459,8 +451,8 @@ begin
       end,
     exact tr (construct_elem.intro rs ⟨el, nel⟩) },
   { intro I_or_J, hinduction I_or_J with tr_or, hinduction tr_or with Iss Jss, 
-    { exact sset_trans (inter_sset_l I.carrier J.carrier) Iss },
-    { exact sset_trans (inter_sset_r I.carrier J.carrier) Jss } }
+    { exact subset_trans _ _ _ (inter_sset_l I.carrier J.carrier) Iss },
+    { exact subset_trans _ _ _ (inter_sset_r I.carrier J.carrier) Jss } }
 end    
 
 end algebra
