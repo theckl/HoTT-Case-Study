@@ -1,4 +1,4 @@
-import hott.algebra.ring sets.basic categories.examples categories.cat_limits init2
+import hott.algebra.ring sets.basic categories.examples categories.cat_limits init2 types2
        hott.types.prod hott.algebra.relation categories.cat_colimits
 
 universes u u' v w
@@ -318,7 +318,7 @@ instance (R : CommRing) : comm_ring ↥R.carrier := R.str
 /- A criterion to decide whether a subset of a commutative ring given by a predicate is a
    commutative (sub)ring : The ring operation are closed under the predicate. -/ 
 @[hott]
-class ring_pred_closed {R : CommRing} (P : Setpred R.carrier) :=
+class ring_pred_closed {R : CommRing} (P : Subset R.carrier) :=
   (add : ∀ r s : R, P r -> P s -> P (r + s)) 
   (zero : P 0) 
   (neg : ∀ r : R, P r -> P (-r))
@@ -326,10 +326,10 @@ class ring_pred_closed {R : CommRing} (P : Setpred R.carrier) :=
   (one : P 1)
 
 @[hott]   
-def comm_subring {R : CommRing} (P : Setpred R.carrier) [ring_pred_closed P] : 
-  comm_ring ↥{r ∈ R.carrier | P r} :=
+def comm_subring {R : CommRing} (P : Subset R.carrier) [ring_pred_closed P] : 
+  comm_ring ↥P :=
 begin  
-  fapply comm_ring_mk,
+  fapply @comm_ring_mk (pred_Set P),
   { fapply comm_ring_ops.mk, 
     { intros r s, exact ⟨r.1 + s.1, ring_pred_closed.add r.1 s.1 r.2 s.2⟩ }, --add
     { exact ⟨0, ring_pred_closed.zero P⟩ }, --zero
@@ -337,37 +337,37 @@ begin
     { intros r s, exact ⟨r.1 * s.1, ring_pred_closed.mul r.1 s.1 r.2 s.2⟩ }, --mul
     { exact ⟨1, ring_pred_closed.one P⟩ } }, --one
   { fapply comm_ring_laws.mk, 
-    { intros r s t, hsimp, apply sigma_prop_pr1_inj, hsimp, 
+    { intros r s t, hsimp, apply sigma_Prop_eq, hsimp, 
       exact comm_ring.add_assoc r.1 s.1 t.1 }, --add_assoc 
-    { intro r, hsimp, apply sigma_prop_pr1_inj, hsimp, exact comm_ring.zero_add r.1 }, --zero_add
-    { intro r, hsimp, apply sigma_prop_pr1_inj, hsimp, exact comm_ring.add_zero r.1 }, --add_zero 
-    { intro r, hsimp, apply sigma_prop_pr1_inj, hsimp, exact comm_ring.add_left_inv r.1 }, --add_left_inv 
-    { intros r s, hsimp, apply sigma_prop_pr1_inj, hsimp, exact comm_ring.add_comm r.1 s.1 },  --add_comm 
-    { intros r s t, hsimp, apply sigma_prop_pr1_inj, hsimp, 
+    { intro r, hsimp, apply sigma_Prop_eq, hsimp, exact comm_ring.zero_add r.1 }, --zero_add
+    { intro r, hsimp, apply sigma_Prop_eq, hsimp, exact comm_ring.add_zero r.1 }, --add_zero 
+    { intro r, hsimp, apply sigma_Prop_eq, hsimp, exact comm_ring.add_left_inv r.1 }, --add_left_inv 
+    { intros r s, hsimp, apply sigma_Prop_eq, hsimp, exact comm_ring.add_comm r.1 s.1 },  --add_comm 
+    { intros r s t, hsimp, apply sigma_Prop_eq, hsimp, 
       exact comm_ring.mul_assoc r.1 s.1 t.1 }, --mul_assoc
-    { intro r, hsimp, apply sigma_prop_pr1_inj, hsimp, exact comm_ring.one_mul r.1 }, --one_mul 
-    { intro r, hsimp, apply sigma_prop_pr1_inj, hsimp, exact comm_ring.mul_one r.1 }, --mul_one 
-    { intros r s, hsimp, apply sigma_prop_pr1_inj, hsimp, exact comm_ring.mul_comm r.1 s.1 }, --mul_comm
-    { intros r s t, hsimp, apply sigma_prop_pr1_inj, hsimp, 
+    { intro r, hsimp, apply sigma_Prop_eq, hsimp, exact comm_ring.one_mul r.1 }, --one_mul 
+    { intro r, hsimp, apply sigma_Prop_eq, hsimp, exact comm_ring.mul_one r.1 }, --mul_one 
+    { intros r s, hsimp, apply sigma_Prop_eq, hsimp, exact comm_ring.mul_comm r.1 s.1 }, --mul_comm
+    { intros r s t, hsimp, apply sigma_Prop_eq, hsimp, 
       exact comm_ring.left_distrib r.1 s.1 t.1 }, --left_distrib 
-    { intros r s t, hsimp, apply sigma_prop_pr1_inj, hsimp, 
+    { intros r s t, hsimp, apply sigma_Prop_eq, hsimp, 
       exact comm_ring.right_distrib r.1 s.1 t.1 }, } --right_distrib
 end  
 
 @[hott]
-def CommSubring {R : CommRing} (P : Setpred R.carrier) [ring_pred_closed P] : CommRing :=
-  CommRing.mk ↥{r ∈ R.carrier | P r} (comm_subring P)
+def CommSubring {R : CommRing} (P : Subset R.carrier) [ring_pred_closed P] : CommRing :=
+  CommRing.mk (pred_Set P) (comm_subring P)
 
 @[hott]
-def CommSubring.to_Subset {R : CommRing} (P : Setpred R.carrier) [ring_pred_closed P] : 
+def CommSubring.to_Subset {R : CommRing} (P : Subset R.carrier) [ring_pred_closed P] : 
   Subset R.carrier :=
 {r ∈ R.carrier | P r}    
 
 /- The embedding of the underlying subset of a subring into the underlying set of the ring is a 
    ring homomorphism. -/
 @[hott]
-def comm_subring_embed_hom {R : CommRing} (P : Setpred R.carrier) [ring_pred_closed P]:
-  comm_ring_str.H (comm_subring P) R.str (CommSubring.to_Subset P).map :=
+def comm_subring_embed_hom {R : CommRing} (P : Subset R.carrier) [ring_pred_closed P]:
+  comm_ring_str.H (CommSubring P).str R.str (pred_Set_map (CommSubring.to_Subset P)) :=
 begin 
   fapply is_ring_hom.mk, 
   { refl },
