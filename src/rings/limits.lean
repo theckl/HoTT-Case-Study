@@ -10,7 +10,7 @@ open hott.is_trunc hott.is_equiv hott.algebra hott.set subset categories hott.tr
 
 namespace algebra
 
-set_option pp.universes true
+set_option pp.universes false
 
 /-  The category `CommRing` has all limits. 
 
@@ -70,7 +70,7 @@ end
 
 @[hott]
 def ring_limit_pred {J : Set} [precategory J] (F : J ⥤ CommRing) : 
-  Setpred (CommRing_ulift (CommRing_product F.obj)).carrier :=
+  Subset (CommRing_product F.obj).carrier :=
 set_limit_pred (forget F)   
 
 @[hott, instance]
@@ -79,24 +79,24 @@ def ring_pred_is_closed {J : Set} [precategory J] (F : J ⥤ CommRing) :
 begin
   fapply ring_pred_closed.mk, 
   { intros r s Hr Hs, apply prop_to_prop_resize, intros j k f,
-    change (F.map f).1 (r.down j + s.down j) = (r.down k + s.down k : F.obj k),
-    rwr (prop_resize_to_prop (F.map f).2).map_add (r.down j) (s.down j), 
-    have pr : (F.map f).1 (r.down j) = r.down k, from (prop_resize_to_prop Hr) j k f, 
-    have ps : (F.map f).1 (s.down j) = s.down k, from (prop_resize_to_prop Hs) j k f,
+    change (F.map f).1 (r j + s j) = (r k + s k : F.obj k),
+    rwr (prop_resize_to_prop (F.map f).2).map_add (r j) (s j), 
+    have pr : (F.map f).1 (r j) = r k, from (prop_resize_to_prop Hr) j k f, 
+    have ps : (F.map f).1 (s j) = s k, from (prop_resize_to_prop Hs) j k f,
     rwr pr, rwr ps }, --closed_add
   { apply prop_to_prop_resize, intros j k f, change (F.map f).1 0 = (0 : F.obj k), 
     rwr (prop_resize_to_prop (F.map f).2).map_zero }, 
       --closed_zero
   { intros r Hr, apply prop_to_prop_resize, intros j k f, 
-    change (F.map f).1 (-(r.down j)) = (-(r.down k) : F.obj k),
-    rwr comm_ring_hom.map_neg (prop_resize_to_prop (F.map f).2) (r.down j), 
-    have pr : (F.map f).1 (r.down j) = r.down k, from (prop_resize_to_prop Hr) j k f, 
+    change (F.map f).1 (-(r j)) = (-(r k) : F.obj k),
+    rwr comm_ring_hom.map_neg (prop_resize_to_prop (F.map f).2) (r j), 
+    have pr : (F.map f).1 (r j) = r k, from (prop_resize_to_prop Hr) j k f, 
     rwr pr }, --closed_neg
   { intros r s Hr Hs, apply prop_to_prop_resize, intros j k f, 
-    change (F.map f).1 (r.down j * s.down j) = (r.down k * s.down k : F.obj k),
-    rwr (prop_resize_to_prop (F.map f).2).map_mul (r.down j) (s.down j), 
-    have pr : (F.map f).1 (r.down j) = r.down k, from (prop_resize_to_prop Hr) j k f, 
-    have ps : (F.map f).1 (s.down j) = s.down k, from (prop_resize_to_prop Hs) j k f,
+    change (F.map f).1 (r j * s j) = (r k * s k : F.obj k),
+    rwr (prop_resize_to_prop (F.map f).2).map_mul (r j) (s j), 
+    have pr : (F.map f).1 (r j) = r k, from (prop_resize_to_prop Hr) j k f, 
+    have ps : (F.map f).1 (s j) = s k, from (prop_resize_to_prop Hs) j k f,
     rwr pr, rwr ps }, --closed_mul
   { apply prop_to_prop_resize, intros j k f, 
     change (F.map f).1 1 = (1 : F.obj k), rwr (prop_resize_to_prop (F.map f).2).map_one }, 
@@ -107,7 +107,7 @@ begin
 def limit_comm_ring {J : Set} [precategory J] (F : J ⥤ CommRing) :
   comm_ring_str.P (set_limit_cone (forget F)).cone.X :=
 begin    
-  exact @comm_subring (CommRing_ulift (CommRing_product F.obj)) (ring_limit_pred F) 
+  exact @comm_subring (CommRing_product F.obj) (ring_limit_pred F) 
                                                                 (ring_pred_is_closed F)
 end    
 
@@ -120,9 +120,9 @@ begin
   { exact limit_comm_ring F }, --lc_str
   { intro j, 
     change ↥(comm_ring_str.H (limit_comm_ring F) (F.obj j).str 
-             ((CommSubring.to_Subset (ring_limit_pred F)).map ≫ (λ s, s.down j))), 
+             (pred_Set_map ((CommSubring.to_Subset (ring_limit_pred F))) ≫ (λ s, s j))), 
     fapply comm_ring_str.comp_H, 
-    { exact (CommRing_ulift (CommRing_product F.obj)).str }, 
+    { exact (CommRing_product F.obj).str }, 
     { exact comm_subring_embed_hom (ring_limit_pred F) }, 
     { fapply is_ring_hom.mk, 
       { refl }, 
@@ -131,23 +131,21 @@ begin
       { intros r s, refl } } }, --lc_legs_H
   { intro s, fapply is_ring_hom.mk, 
     { fapply sigma_eq,
-      { apply ap ulift.up,
-        apply eq_of_homotopy, intro j, hsimp, exact (prop_resize_to_prop (s.π.app j).2).map_one }, 
+      { apply eq_of_homotopy, intro j, hsimp, exact (prop_resize_to_prop (s.π.app j).2).map_one }, 
       { apply pathover_of_tr_eq, apply is_prop.elim } },
     { intros t₁ t₂, fapply sigma_eq, 
-      { apply ap ulift.up, change (λ j, (s.π.app j).1 (t₁ * t₂)) = 
+      { change (λ j, (s.π.app j).1 (t₁ * t₂)) = 
                               (λ j, (((s.π.app j).1 t₁) * ((s.π.app j).1 t₂) : F.obj j)),
         apply eq_of_homotopy, intro j, hsimp, 
         exact (prop_resize_to_prop (s.π.app j).2).map_mul t₁ t₂ },
       { apply pathover_of_tr_eq, apply is_prop.elim } },  
     { fapply sigma_eq,
-      { apply ap ulift.up, 
-        change (λ j, (s.π.app j).1 (0 : s.X.carrier)) = (λ j, (0 : F.obj j)),
+      { change (λ j, (s.π.app j).1 (0 : s.X.carrier)) = (λ j, (0 : F.obj j)),
         apply eq_of_homotopy, intro j, hsimp, 
         exact (prop_resize_to_prop (s.π.app j).2).map_zero }, 
       { apply pathover_of_tr_eq, apply is_prop.elim } },    
     { intros t₁ t₂, fapply sigma_eq, 
-      { apply ap ulift.up, change (λ j, (s.π.app j).1 (t₁ + t₂)) = 
+      { change (λ j, (s.π.app j).1 (t₁ + t₂)) = 
                               (λ j, (((s.π.app j).1 t₁) + ((s.π.app j).1 t₂) : F.obj j)),
         apply eq_of_homotopy, intro j, hsimp, 
         exact (prop_resize_to_prop (s.π.app j).2).map_add t₁ t₂ },
