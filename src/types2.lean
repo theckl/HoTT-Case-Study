@@ -20,4 +20,12 @@ def trunc.elim2 {n : ℕ₋₂} {A : Type _} {B : Type _} {P : Type _} [Pt : is_
   (A → B -> P) → trunc n A → trunc n B -> P :=
 begin intros f tA tB, exact untrunc_of_is_trunc (trunc_functor2 f tA tB) end  
 
+@[hott]
+def sigma_Prop_eq {A : Type _} {B : Π a : A, Prop} (s₁ s₂ : Σ (a : A), B a) : 
+  s₁.1 = s₂.1 -> s₁ = s₂ :=
+begin 
+  intro p, fapply sigma.sigma_eq, 
+  exact p, apply pathover_of_tr_eq, exact is_prop.elim _ _ 
+end  
+
 end hott
