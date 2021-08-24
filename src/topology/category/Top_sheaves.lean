@@ -229,7 +229,7 @@ structure sheaf (C : Type u) [category.{v} C] [has_products.{v u u_2} C] :=
 @[hott]
 def is_gluing (F : presheaf X Set) {I : Set} (U : I -> open_sets X) 
   (sf : Π i : I, F.obj (op (U i))) (s : F.obj (op (open_sets.iUnion X U))) : trunctype.{0} -1 :=
-prop_resize (∥ ∀ i : I, F.map (hom_op (opens.le_union X U i)) s = sf i ∥)
+prop_resize (to_Prop (∀ i : I, F.map (hom_op (opens.le_union X U i)) s = sf i))
 
 @[hott]
 def is_gluing_to_cond (F : presheaf X Set) {I : Set} (U : I -> open_sets X) 
@@ -239,7 +239,6 @@ begin
   have P : is_prop (∀ i : I, F.map (hom_op (opens.le_union X U i)) s = sf i), from 
     begin apply is_prop_dprod, intro i, apply is_prop.mk, intros p q, exact is_set.elim _ _ end,
   intros ig, 
-  apply @untrunc_of_is_trunc (∀ i : I, F.map (hom_op (opens.le_union X U i)) s = sf i) -1 P, 
   exact prop_resize_to_prop ig
 end    
 
@@ -355,7 +354,7 @@ begin
     have H : (sheaf_condition_equalizer_products.fork X U F).π.app wp_pair.up (m Sf) = sf, from 
       homotopy_of_eq (m_lift wp_pair.up) Sf,
     have m_Sf_ig : ↥(is_gluing X F U sf.1 (m Sf)), from 
-      prop_to_prop_resize (tr (λ i, homotopy_of_eq (ap sigma.fst H) i)),  
+      prop_to_prop_resize (λ i, homotopy_of_eq (ap sigma.fst H) i),  
     have lift_ig : ↥(is_gluing X F U sf.1 (lift Sf)), from 
       unique_to_pred (is_gluing X F U sf.1) (sc_ug U sf.1 (cone_res_is_compatible X Sf)),  
     let P := unique_to_uniq (is_gluing X F U sf.1) (sc_ug U sf.1 (cone_res_is_compatible X Sf)), 
@@ -521,7 +520,22 @@ def gluings_are_unique {T : X.carrier -> Set} (P : prelocal_predicate X T) {I : 
 begin 
   intros s₁ s₂ gs₁ gs₂, 
   fapply sigma_eq, 
-  { apply eq_of_homotopy, intro x, sorry },
+  { apply eq_of_homotopy, intro x, 
+    let ind_x := Σ i : I, ↑x ∈ (U i).1, 
+    have pix : ↥∥ind_x∥, from prop_resize_to_prop x.2,
+    fapply @untrunc_of_is_trunc _ -1,
+    apply @trunc_functor ind_x _ -1,
+    { intro ix, 
+      have p : x = ⟨x.1, opens.le_union X U ix.1 (⟨x.1, ix.2⟩ : (U ix.1).1) ix.2⟩, from 
+        begin fapply sigma_eq, refl, apply pathover_of_tr_eq, exact is_prop.elim _ _ end,
+      rwr p,  
+      change ((subpresheaf_of_sections X P).map (hom_op (opens.le_union X U ix.fst)) s₁).fst 
+                                                                              ⟨x.fst, ix.snd⟩ =
+             ((subpresheaf_of_sections X P).map (hom_op (opens.le_union X U ix.fst)) s₂).fst 
+                                                                              ⟨x.fst, ix.snd⟩,      
+      rwr homotopy_of_eq (ap sigma.fst (prop_resize_to_prop gs₁ ix.1)) ⟨x.1, ix.2⟩, 
+      rwr homotopy_of_eq (ap sigma.fst (prop_resize_to_prop gs₂ ix.1)) ⟨x.1, ix.2⟩ },
+    { exact pix } },
   { apply pathover_of_tr_eq, exact is_prop.elim _ _ } 
 end    
 
@@ -554,7 +568,7 @@ begin
             fapply sigma.mk, exact opens.le_union X U ix.1,
             rwr res_glued_section, exact (sf ix.1).2 },
           { exact pix } } },
-      { apply prop_to_prop_resize, apply tr, intro i, fapply sigma_eq, --glued section is gluing
+      { apply prop_to_prop_resize, intro i, fapply sigma_eq, --glued section is gluing
         { exact res_glued_section X P.to_prelocal_predicate sf is_comp i },
         { apply pathover_of_tr_eq, exact is_prop.elim _ _ } } },  
     { apply is_prop.mk,  --glued section is unique
