@@ -49,7 +49,7 @@ topological_space.is_open_iUnion t I f h
    that they satisfy the appropriate conditions. -/
 @[hott]   
 def topological_space.of_closed 
-  (is_closed : Subset T -> Prop) 
+  (is_closed : Subset T -> trunctype.{0} -1) 
   (is_closed_empty : is_closed (empty_Subset T)) 
   (is_closed_union : ∀ U V : Subset T, is_closed U → is_closed V → 
                                                      is_closed (U ∪ V)) 
