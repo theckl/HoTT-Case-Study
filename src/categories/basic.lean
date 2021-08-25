@@ -238,6 +238,10 @@ infixr ` ⥤ ` :26 := functor
 attribute [hsimp] functor.map_id
 attribute [hsimp] functor.map_comp
 
+@[hott]
+def is_faithful_functor [precategory.{v} C] [precategory.{v'} D] (F : C ⥤ D) := 
+  Π {x y : C}, is_set_injective (@functor.map C D _ _ F x y) 
+
 @[hott, reducible]
 def constant_functor [precategory.{v} C] [precategory.{v'} D] (d : D) : 
   C ⥤ D := 
@@ -587,6 +591,12 @@ begin
   { intro x, exact idhom_std_C x },  -- preserves identity morphisms
   { intros x y z f g, exact comp_hom_std_C f g }  -- preserves compositions of morphisms 
 end 
+
+/- The forgetful functor is faithful. -/
+@[hott]
+def forget_is_faithful {C : Type u} [category.{v} C] (std_str : std_structure_on C) :
+  is_faithful_functor _ _ (forget_str std_str) :=
+begin intros x y, exact pred_Set_map_is_inj _ end  
 
 /- The forgetful functor composed with a functor to a category of standard structures -/
 @[hott]
