@@ -7,7 +7,7 @@ namespace hott
 open hott.set hott.subset hott.categories category_theory.limits category_theory.colimits
   categories.opposite hott.sigma hott.is_trunc hott.trunc
 
-set_option pp.universes false  
+set_option pp.universes true  
 
 /- The category of topological spaces and continuous maps. -/
 @[hott]
@@ -576,5 +576,27 @@ begin
       { exact gluings_are_unique X P.to_prelocal_predicate sf is_comp s₁.1 s₂.1 s₁.2 s₂.2 },
       { apply pathover_of_tr_eq, exact is_prop.elim _ _ } }  } 
 end   
+
+/- If a category `C` has a faithful functor to `Set` we can construct a sheaf of sections 
+   with values in the sets associated with the objects of `C`, as a sheaf with values in `C`
+   that uniquely factorizes the sheaf of sections with the faithful functor. 
+
+   We first construct the sheaf and then show the unique factorization. -/
+@[hott]
+def subsheaf_of_sections_in_catobj (C : Type u) [category.{v} C] [hp : has_products C] 
+  (F : C ⥤ Set) (H : is_faithful_functor _ _ F) (T : X.carrier -> C) 
+  (P : local_predicate X (F.obj ∘ T)) : @sheaf X C _ hp :=
+begin
+  fapply sheaf.mk,
+  { fapply categories.functor.mk, 
+    { intro U, exact @pi_obj _ _ _ (λ x : pred_Set (unop U).1, T x.1) 
+                      (@has_product_of_has_products _ _ hp _ _) },
+    { sorry },
+    { sorry },
+    { sorry } },
+  { sorry }
+end           
+
+/-   An example uses the forgetful functor on a category of structured sets. -/
 
 end hott
