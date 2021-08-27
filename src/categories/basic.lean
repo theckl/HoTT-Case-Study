@@ -290,7 +290,7 @@ end
 @[hott]
 structure std_structure_on (C : Type u) [category.{v} C] :=
   (P : C -> Type w)
-  (H : Π {x y : C} (α : P x) (β : P y) (f : x ⟶ y), trunctype.{v} -1)
+  (H : Π {x y : C} (α : P x) (β : P y) (f : x ⟶ y), trunctype.{0} -1)
   (id_H : ∀ {x : C} (α : P x), H α α (𝟙 x))
   (comp_H : ∀ {x y z : C} (α : P x) (β : P y) (γ : P z) (f : x ⟶ y) (g : y ⟶ z), 
               H α β f -> H β γ g -> H α γ (f ≫ g))
@@ -350,18 +350,18 @@ begin intro p, hinduction p, hinduction x, refl end
 def std_str_has_hom {C : Type u} [category.{v} C] (std_str : std_structure_on C) :
   has_hom (std_structure std_str) := 
 has_hom.mk (λ (x y : std_structure std_str), 
-            pred_Set {f ∈ (x.carrier ⟶ y) | prop_resize (std_str.H (x.str) (y.str) f)})
+            pred_Set {f ∈ (x.carrier ⟶ y) | std_str.H (x.str) (y.str) f})
 
 @[hott]
 instance hom_std_C {C : Type u} [category.{v} C] {std_str : std_structure_on C}
   {x y : std_structure std_str} : has_coe ↥(x ⟶ y) ↥(x.carrier ⟶ y.carrier) :=
 ⟨λ f : x ⟶ y, 
-   pred_Set_map {f ∈ (x.carrier ⟶ y) | prop_resize (std_str.H (x.str) (y.str) f)} f⟩  
+   pred_Set_map {f ∈ (x.carrier ⟶ y) | std_str.H (x.str) (y.str) f} f⟩  
 
 @[hott]
 def hom_H {C : Type u} [category.{v} C] {std_str : std_structure_on C} 
   {x y : std_structure std_str} :
-  Π f : x ⟶ y, prop_resize.{0 v} (std_str.H x.str y.str (↑f)) :=
+  Π f : x ⟶ y, std_str.H x.str y.str (↑f) :=
 begin intro f, exact f.2 end              
 
 @[hott]
@@ -369,9 +369,9 @@ def hom_eq_C_std {C : Type u} [category.{v} C] {std_str : std_structure_on C}
   {x y : std_structure std_str} (f g : x ⟶ y) : 
   (f.1 = (g.1 : x.carrier ⟶ y.carrier)) -> (f = g) :=
 assume (hom_eq_C : f.1 = g.1), 
-have H_eq : f.2 =[hom_eq_C; λ f : x.carrier ⟶ y, prop_resize.{0 v} (std_str.H x.str y.str f)] g.2, from 
-  pathover_prop_eq (λ f : x.carrier ⟶ y, prop_resize (std_str.H x.str y.str f)) hom_eq_C 
-                                                                               (hom_H f) (hom_H g),
+have H_eq : f.2 =[hom_eq_C; λ f : x.carrier ⟶ y, std_str.H x.str y.str f] g.2, from 
+  pathover_prop_eq (λ f : x.carrier ⟶ y, std_str.H x.str y.str f) hom_eq_C (hom_H f) 
+                                                                            (hom_H g),
 calc f = ⟨f.1, f.2⟩ : (sigma.eta f)⁻¹ 
    ... = ⟨g.1, g.2⟩ : dpair_eq_dpair hom_eq_C H_eq
    ... = g : sigma.eta g 
@@ -380,10 +380,9 @@ calc f = ⟨f.1, f.2⟩ : (sigma.eta f)⁻¹
 def std_str_cat_struct {C : Type u} [category.{v} C] (std_str : std_structure_on C) :
   category_struct (std_structure std_str) :=
 category_struct.mk (λ x : std_structure std_str, 
-                                         ⟨𝟙 ↑x, prop_to_prop_resize (std_str.id_H x.str)⟩) 
+                                         ⟨𝟙 ↑x, std_str.id_H x.str⟩) 
   (λ (x y z : std_structure std_str) (f : x ⟶ y) (g : y ⟶ z), 
-     ⟨↑f ≫ ↑g, prop_to_prop_resize (std_str.comp_H x.str y.str z.str ↑f ↑g 
-     (prop_resize_to_prop (hom_H f)) (prop_resize_to_prop (hom_H g)))⟩) 
+     ⟨↑f ≫ ↑g, std_str.comp_H x.str y.str z.str ↑f ↑g (hom_H f) (hom_H g)⟩) 
 
 @[hott]
 def idhom_std_C {C : Type u} [category.{v} C] {std_str : std_structure_on C} 
@@ -512,8 +511,8 @@ begin
   /- We define `F : (Σ (f : a ≅ b), std_str.H α β f.hom and std_str.H β α f.inv) -> (x ≅ y)`. -/
   { intro iso_H, 
     fapply iso.mk,
-    { exact ⟨iso_H.1.hom, prop_to_prop_resize (iso_H.2.1)⟩ },
-    { exact ⟨iso_H.1.inv, prop_to_prop_resize (iso_H.2.2)⟩ },
+    { exact ⟨iso_H.1.hom, iso_H.2.1⟩ },
+    { exact ⟨iso_H.1.inv, iso_H.2.2⟩ },
     { apply hom_eq_C_std _ _, repeat { rwr comp_hom_std_C }, hsimp, rwr iso_H.1.r_inv },
     { apply hom_eq_C_std _ _, repeat { rwr comp_hom_std_C }, hsimp, rwr iso_H.1.l_inv } },
   { fapply adjointify,
@@ -521,7 +520,7 @@ begin
     { intro f, 
       fapply sigma.mk,
       { exact iso_std_C f },
-      { exact (prop_resize_to_prop f.hom.2, prop_resize_to_prop f.inv.2) } },
+      { exact (f.hom.2, f.inv.2) } },
     /- `r_inv : ∀ f : x ≅ y, F (G f) = f` -/  
     { intro f,
       apply hom_eq_to_iso_eq, apply hom_eq_C_std _ _, 
@@ -603,6 +602,26 @@ begin intros x y, exact pred_Set_map_is_inj _ end
 def forget {J : Type.{u'}} [precategory.{v'} J] {C : Type u} [category.{v} C] 
   {std_str : std_structure_on C} (F : J ⥤ std_structure std_str) : J ⥤ C :=
 F ⋙ (forget_str std_str)  
+
+/- Categories in the algebraic hierarchy are categories of structured sets. The structures can
+   be charcaterized even more specifically: They are Ω-structures 
+   made up of functions and relations on the sets (see [HoTT-Book], Sec.9.8). Such structures 
+   allow the construction of subsheaves of sections, see [topology.category.Top_sheaves]. 
+   
+   First-order signatures prescribe the number and arity of functions and relations in an
+   Ω-structure. -/
+@[hott]
+structure fo_signature :=
+  ( ops : Set.{0} ) 
+  ( rels : Set.{0} )
+  ( ops_arity : Π (o : ops), Set.{0} )
+  ( rels_arity : Π (r : rels), Set.{0} )
+
+@[hott]  
+structure Ω_Structure (sign : fo_signature) :=
+  ( carrier : Set ) 
+  ( ops : ∀ o : sign.ops, ((sign.ops_arity o) -> carrier) -> carrier )
+  ( rels : ∀ r : sign.rels, ((sign.rels_arity r) -> carrier) -> trunctype.{0} -1 ) 
 
 end categories
 
