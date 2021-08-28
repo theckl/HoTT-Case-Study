@@ -603,26 +603,6 @@ def forget {J : Type.{u'}} [precategory.{v'} J] {C : Type u} [category.{v} C]
   {std_str : std_structure_on C} (F : J ⥤ std_structure std_str) : J ⥤ C :=
 F ⋙ (forget_str std_str)  
 
-/- Categories in the algebraic hierarchy are categories of structured sets. The structures can
-   be charcaterized even more specifically: They are Ω-structures 
-   made up of functions and relations on the sets (see [HoTT-Book], Sec.9.8). Such structures 
-   allow the construction of subsheaves of sections, see [topology.category.Top_sheaves]. 
-   
-   First-order signatures prescribe the number and arity of functions and relations in an
-   Ω-structure. -/
-@[hott]
-structure fo_signature :=
-  ( ops : Set.{0} ) 
-  ( rels : Set.{0} )
-  ( ops_arity : Π (o : ops), Set.{0} )
-  ( rels_arity : Π (r : rels), Set.{0} )
-
-@[hott]  
-structure Ω_Structure (sign : fo_signature) :=
-  ( carrier : Set ) 
-  ( ops : ∀ o : sign.ops, ((sign.ops_arity o) -> carrier) -> carrier )
-  ( rels : ∀ r : sign.rels, ((sign.rels_arity r) -> carrier) -> trunctype.{0} -1 ) 
-
 end categories
 
 end hott
