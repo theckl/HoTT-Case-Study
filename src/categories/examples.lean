@@ -8,7 +8,7 @@ open hott.eq hott.set hott.subset hott.is_trunc hott.is_equiv hott.equiv hott.ca
 
 namespace categories
 
-set_option pp.universes true
+set_option pp.universes false
 
 /- To construct the opposite category, we use the mathlib-trick in [data.opposite]
    that allows the elaborator to do most of the work. -/  
@@ -580,8 +580,6 @@ begin
   intro a, refl  
 end 
 
-set_option pp.notation false
-
 @[hott, hsimp]
 def Set_isotoid_eq_hom {A B : Set.{u}} (i : A ≅ B) : 
   ∀ a : A.carrier, (Set_isotoid i) ▸[λ A : Set.{u}, A.carrier] a = i.hom a :=
@@ -620,6 +618,73 @@ def Set_category : category Set.{u} :=
   have ideqviso : ∀ A B : Set.{u}, is_equiv (@idtoiso _ _ A B), from assume A B,
     adjointify idtoiso Set_isotoid Set_id_iso_rinv Set_id_iso_linv,
   category.mk ideqviso  
+
+/- Categories in the algebraic hierarchy are categories of structured sets. The structures can
+   be charcaterized even more specifically: They are Ω-structures 
+   made up of functions and relations on the sets (see [HoTT-Book], Sec.9.8). Such structures 
+   allow the construction of subsheaves of sections, see [topology.category.Top_sheaves]. 
+   
+   First-order signatures prescribe the number and arity of functions and relations in an
+   Ω-structure. -/
+@[hott]
+structure fo_signature :=
+  ( ops : Set.{0} ) 
+  ( rels : Set.{0} )
+  ( ops_arity : Π (o : ops), Set.{0} )
+  ( rels_arity : Π (r : rels), Set.{0} )
+
+@[hott]  
+structure Ω_structure_on (sign : fo_signature) (carrier : Set) :=
+  ( ops : ∀ o : sign.ops, ((sign.ops_arity o) -> carrier) -> carrier )
+  ( rels : ∀ r : sign.rels, ((sign.rels_arity r) -> carrier) -> trunctype.{0} -1 ) 
+
+@[hott]
+structure is_Ω_structure_hom {sign : fo_signature} {A B : Set.{u}} 
+  (Ω_A : Ω_structure_on sign A) (Ω_B : Ω_structure_on sign B) (h : A -> B) :=
+( ops_pres : ∀ (o : sign.ops) (x : (sign.ops_arity o) -> A), 
+                                                     h (Ω_A.ops o x) = Ω_B.ops o (h ∘ x) ) 
+( rels_pres : ∀ (r : sign.rels) (x : (sign.rels_arity r) -> A), 
+                                                     Ω_A.rels r x -> Ω_B.rels r (h ∘ x) )                                                       
+
+@[hott, instance]
+def is_prop_is_Ω_Structure_hom {sign : fo_signature} {A B : Set.{u}} 
+  (Ω_A : Ω_structure_on sign A) (Ω_B : Ω_structure_on sign B) (h : A -> B) : 
+  is_prop (is_Ω_structure_hom Ω_A Ω_B h) :=
+begin
+  apply is_prop.mk, intros strh₁ strh₂, 
+  hinduction strh₁ with ops_pres₁ rels_pres₁, hinduction strh₂ with ops_pres₂ rels_pres₂,
+  fapply ap011 is_Ω_structure_hom.mk,
+  { exact is_prop.elim _ _ },
+  { exact is_prop.elim _ _ }
+end    
+
+@[hott]
+def std_str_of_Ω_str (sign : fo_signature) : std_structure_on Set :=
+begin
+  fapply std_structure_on.mk,
+  { exact λ S : Set, Ω_structure_on sign S },
+  { intros S T Ω_Str_S Ω_Str_T h, 
+    exact prop_resize (to_Prop (@is_Ω_structure_hom sign _ _ Ω_Str_S Ω_Str_T h)) },
+  { intros A Ω_str_A, apply prop_to_prop_resize, fapply is_Ω_structure_hom.mk, 
+    { intros o x, refl },
+    { intros r x a, exact a } },
+  { intros A B C Ω_str_A Ω_str_B Ω_str_C f g p_Ω_hom_f p_Ω_hom_g, 
+    apply prop_to_prop_resize, fapply is_Ω_structure_hom.mk, 
+    { intros o x, change g (f (Ω_str_A.ops o x)) = Ω_str_C.ops o ((f ≫ g) ∘ x), 
+      rwr (prop_resize_to_prop p_Ω_hom_f).ops_pres o x,
+      rwr (prop_resize_to_prop p_Ω_hom_g).ops_pres o (f ∘ x) },
+    { intros r x a, change ↥(Ω_str_C.rels r (g ∘ (f ∘ x))), 
+      apply (prop_resize_to_prop p_Ω_hom_g).rels_pres r (f ∘ x), 
+      apply (prop_resize_to_prop p_Ω_hom_f).rels_pres r x, exact a } },
+  { intros A Ω_str_A₁ Ω_str_A₂, fapply equiv.mk, 
+    { intro Ω_str_homs, 
+      hinduction Ω_str_A₁ with ops₁ rels₁, hinduction Ω_str_A₂ with ops₂ rels₂, 
+      fapply ap011 Ω_structure_on.mk, 
+      { apply eq_of_homotopy, intro o, apply eq_of_homotopy, intro x, 
+        exact (prop_resize_to_prop Ω_str_homs.1).ops_pres o x },
+      { sorry } },
+    { sorry } }
+end  
 
 end categories
 
