@@ -638,6 +638,35 @@ structure Ω_structure_on (sign : fo_signature) (carrier : Set) :=
   ( ops : ∀ o : sign.ops, ((sign.ops_arity o) -> carrier) -> carrier )
   ( rels : ∀ r : sign.rels, ((sign.rels_arity r) -> carrier) -> trunctype.{0} -1 ) 
 
+/- The following three lemmas should be produced automatically. -/
+@[hott]
+def Ω_str_eq {sign : fo_signature} {carrier : Set} 
+  {Ω_str₁ Ω_str₂ : Ω_structure_on sign carrier} : 
+  (Ω_str₁.ops = Ω_str₂.ops) -> (Ω_str₁.rels = Ω_str₂.rels) -> (Ω_str₁ = Ω_str₂) :=
+begin
+  intros p_ops p_rels, 
+  hinduction Ω_str₁ with ops₁ rels₁, hinduction Ω_str₂ with ops₂ rels₂,
+  exact ap011 Ω_structure_on.mk p_ops p_rels
+end    
+
+@[hott]
+def Ω_str_eq_eta {sign : fo_signature} {carrier : Set} 
+  {Ω_str₁ Ω_str₂ : Ω_structure_on sign carrier} (p : Ω_str₁ = Ω_str₂) :
+  Ω_str_eq (ap Ω_structure_on.ops p) (ap Ω_structure_on.rels p) = p := 
+begin
+  hinduction p, hinduction Ω_str₁, reflexivity
+end    
+
+@[hott, instance]
+def is_set_Ω_structure_on (sign : fo_signature) (carrier : Set) : 
+  is_set (Ω_structure_on sign carrier) :=
+begin
+  fapply is_set.mk, intros Ω_str₁ Ω_str₂ p q, 
+  rwr <- Ω_str_eq_eta p, rwr <- Ω_str_eq_eta q,
+  apply ap011 Ω_str_eq,
+  apply is_set.elim, apply is_set.elim
+end    
+
 @[hott]
 structure is_Ω_structure_hom {sign : fo_signature} {A B : Set.{u}} 
   (Ω_A : Ω_structure_on sign A) (Ω_B : Ω_structure_on sign B) (h : A -> B) :=
@@ -682,9 +711,34 @@ begin
       fapply ap011 Ω_structure_on.mk, 
       { apply eq_of_homotopy, intro o, apply eq_of_homotopy, intro x, 
         exact (prop_resize_to_prop Ω_str_homs.1).ops_pres o x },
-      { sorry } },
-    { sorry } }
+      { apply eq_of_homotopy, intro r, apply eq_of_homotopy, intro x, 
+        apply prop_iff_eq, 
+        { intro rx₁, apply (prop_resize_to_prop Ω_str_homs.1).rels_pres r x, exact rx₁ },
+        { intro rx₂, apply (prop_resize_to_prop Ω_str_homs.2).rels_pres r x, exact rx₂ } } },
+    { fapply adjointify, 
+      { intro Ω_str_eq, rwr Ω_str_eq, 
+        have Ω_str_id : is_Ω_structure_hom Ω_str_A₂ Ω_str_A₂ (𝟙 A), from 
+        begin 
+          apply is_Ω_structure_hom.mk, 
+          { intros o x, refl },
+          { intros r x rx, exact rx }
+        end,
+        exact ⟨prop_to_prop_resize Ω_str_id, prop_to_prop_resize Ω_str_id⟩ },
+      { intro b, exact @is_set.elim _ _ Ω_str_A₁ Ω_str_A₂ _ b },
+      { intro a, exact is_prop.elim _ _ } } }
 end  
+
+@[hott, instance]
+def Ω_sign_str_precategory {sign : fo_signature} {carrier : Set} 
+  (Ω_str : Ω_structure_on sign carrier) : 
+  precategory (std_structure (std_str_of_Ω_str sign)) := 
+std_str_precategory (std_str_of_Ω_str sign)
+
+@[hott, instance]
+def Ω_sign_str_category {sign : fo_signature} {carrier : Set} 
+  (Ω_str : Ω_structure_on sign carrier) : 
+  category (std_structure (std_str_of_Ω_str sign)) := 
+structure_identity_principle (std_str_of_Ω_str sign)
 
 end categories
 
