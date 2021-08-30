@@ -728,17 +728,60 @@ begin
       { intro a, exact is_prop.elim _ _ } } }
 end  
 
+@[hott]
+def Ω_sign_str_objects (sign : fo_signature) :=
+  std_structure (std_str_of_Ω_str sign)
+
 @[hott, instance]
-def Ω_sign_str_precategory {sign : fo_signature} {carrier : Set} 
-  (Ω_str : Ω_structure_on sign carrier) : 
-  precategory (std_structure (std_str_of_Ω_str sign)) := 
+def Ω_sign_str_precategory (sign : fo_signature) : 
+  precategory (Ω_sign_str_objects sign) := 
 std_str_precategory (std_str_of_Ω_str sign)
 
 @[hott, instance]
-def Ω_sign_str_category {sign : fo_signature} {carrier : Set} 
-  (Ω_str : Ω_structure_on sign carrier) : 
-  category (std_structure (std_str_of_Ω_str sign)) := 
+def Ω_sign_str_category {sign : fo_signature} : 
+  category (Ω_sign_str_objects sign) := 
 structure_identity_principle (std_str_of_Ω_str sign)
+
+/- Subsets of the underlying sets of an object in a category of first-order signature 
+   category inherit the structure of the object if the operations are closed on the subset.
+   Furthermore, structures on the subset such that the mebedding is a homomorphism, are 
+   unique. -/
+@[hott]
+def ops_closed {sign : fo_signature} {S : Ω_sign_str_objects sign} (R : Subset S.carrier) :=
+  ∀ (o : sign.ops) (x : (sign.ops_arity o) -> S.carrier), 
+    (∀ i : sign.ops_arity o, x i ∈ R) -> S.str.ops o x ∈ R 
+
+@[hott]
+def str_subobject {sign : fo_signature} {S : Ω_sign_str_objects sign} {R : Subset S.carrier}
+  (oc : ops_closed R) : Ω_sign_str_objects sign :=
+begin
+  fapply std_structure.mk,
+  { exact pred_Set R },
+  { fapply Ω_structure_on.mk, 
+    { intros o x, exact ⟨S.str.ops o (sigma.fst ∘ x), oc o (sigma.fst ∘ x) (λ i, (x i).2)⟩ },
+    { intros r x, exact S.str.rels r (sigma.fst ∘ x) } }
+end    
+
+@[hott]
+def unique_str_on_subobj {sign : fo_signature} {S : Ω_sign_str_objects sign} 
+  {R : Subset S.carrier} (oc : ops_closed R) : 
+  ∃! R_str ∈ to_Set (Ω_structure_on sign (pred_Set R)), 
+                            (std_str_of_Ω_str sign).H R_str S.str (pred_Set_map R) :=
+begin
+  fapply prod.mk,
+  { fapply sigma.mk,
+    { exact (str_subobject oc).str },
+    { sorry } },
+  { apply is_prop.mk, intros R_str_comp₁ R_str_comp₂, 
+    hinduction R_str_comp₁ with R_str₁ str_comp₁, 
+    hinduction R_str_comp₂ with R_str₂ str_comp₂,
+    fapply sigma.sigma_eq,
+    { hinduction R_str₁ with ops₁ rels₁, hinduction R_str₂ with ops₂ rels₂, 
+      fapply ap011 Ω_structure_on.mk, 
+      { sorry },
+      { sorry } },
+    { apply pathover_of_tr_eq, apply is_prop.elim } }
+end                              
 
 end categories
 
