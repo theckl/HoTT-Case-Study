@@ -762,25 +762,33 @@ begin
     { intros r x, exact S.str.rels r (sigma.fst ∘ x) } }
 end    
 
+/- `str_subobject` is not the only structure on a subset `R` that is closed under the 
+   Ω-operations on a set `S` and is compatible with the subset embedding: There may be 
+   relations on elements in `R` in the Ω-structure on `S` that do not hold in the 
+   Ω-structure on `R`. But `str_subobject` is terminal among all those structures. -/
 @[hott]
-def unique_str_on_subobj {sign : fo_signature} {S : Ω_sign_str_objects sign} 
+def str_subobject_comp {sign : fo_signature} {S : Ω_sign_str_objects sign} 
   {R : Subset S.carrier} (oc : ops_closed R) : 
-  ∃! R_str ∈ to_Set (Ω_structure_on sign (pred_Set R)), 
-                            (std_str_of_Ω_str sign).H R_str S.str (pred_Set_map R) :=
+  (std_str_of_Ω_str sign).H (str_subobject oc).str S.str (pred_Set_map R) :=
 begin
-  fapply prod.mk,
-  { fapply sigma.mk,
-    { exact (str_subobject oc).str },
-    { sorry } },
-  { apply is_prop.mk, intros R_str_comp₁ R_str_comp₂, 
-    hinduction R_str_comp₁ with R_str₁ str_comp₁, 
-    hinduction R_str_comp₂ with R_str₂ str_comp₂,
-    fapply sigma.sigma_eq,
-    { hinduction R_str₁ with ops₁ rels₁, hinduction R_str₂ with ops₂ rels₂, 
-      fapply ap011 Ω_structure_on.mk, 
-      { sorry },
-      { sorry } },
-    { apply pathover_of_tr_eq, apply is_prop.elim } }
+  apply prop_to_prop_resize, apply is_Ω_structure_hom.mk,
+  { intros o x, refl },
+  { intros r x rx, exact rx }
+end    
+
+@[hott]
+def terminal_str_on_subobj {sign : fo_signature} {S : Ω_sign_str_objects sign} 
+  {R : Subset S.carrier} (oc : ops_closed R) : 
+  ∀ R_str : Ω_structure_on sign (pred_Set R), 
+    (std_str_of_Ω_str sign).H R_str S.str (pred_Set_map R) ->
+    (std_str_of_Ω_str sign).H R_str (str_subobject oc).str (𝟙 (pred_Set R)) :=
+begin
+ let substr := (str_subobject oc).str, 
+ intros R_str R_str_comp, apply prop_to_prop_resize, apply is_Ω_structure_hom.mk, 
+ { intros o x, change R_str.ops o x = substr.ops o x, apply pred_Set_map_is_inj, 
+   rwr (prop_resize_to_prop R_str_comp).ops_pres o x },
+ { intros r x rx, change ↥(substr.rels r x), 
+   exact (prop_resize_to_prop R_str_comp).rels_pres r x rx }
 end                              
 
 end categories
