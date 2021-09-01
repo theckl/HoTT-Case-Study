@@ -1,5 +1,5 @@
 import hott.init init2 hott.types.trunc prop_logic hott.types.prod hott.hit.quotient 
-       hott.algebra.relation 
+       hott.algebra.relation types2
 
 universes u u' v w
 hott_theory
@@ -550,7 +550,7 @@ begin
 end   
 
 /- The dependent product of sets is a set. -/
-@[hott]
+@[hott, instance]
 def dprod_of_Sets_is_set (A : Set) (B : A -> Set) : is_set (Σ (a : A), B a) :=
   have dpr_eq : ∀ (p₁ p₂ : Σ (a : A), B a) (q r : p₁ = p₂), q = r, from
     assume p₁ p₂ q r, 
@@ -567,6 +567,25 @@ def dprod_of_Sets_is_set (A : Set) (B : A -> Set) : is_set (Σ (a : A), B a) :=
 @[hott]
 def dprod_Set (A : Set) (B : A -> Set) : Set :=
   Set.mk (Σ (a : A), B a) (dprod_of_Sets_is_set A B)   
+
+/- The sum of sets is a set. This is contianed in the file [types.sum] of the HoTT3 library
+   which does ot compile. -/
+@[hott, instance]
+def sum_of_Sets_is_set (A B : Set) : is_set (A ⊎ B) :=
+begin
+  apply is_trunc_succ_intro, intros z z',
+  apply is_trunc_equiv_closed_rev, apply sum_eq_equiv,
+  hinduction z with a b; hinduction z' with a' b'; hsimp; apply_instance
+end  
+
+@[hott]
+def sum_Set (A B : Set) : Set :=
+  Set.mk (A ⊎ B) (sum_of_Sets_is_set A B)    
+
+/- We construct finite sets of arbitrary using the sum of sets in induction. -/
+@[hott]
+def fin_Set (n : ℕ) : Set.{0} :=
+begin hinduction n with n fin_n, exact Zero_Set, exact sum_Set fin_n One_Set end  
 
 end set
 
