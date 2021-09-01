@@ -293,7 +293,7 @@ end
 
 /- The category of commutative rings, as the category of `comm_ring`-structures on sets -/
 @[hott]
-def comm_ring_str : std_structure_on Set.{u} :=
+def comm_ring_str : std_structure_on Set :=
   std_structure_on.mk comm_ring_set @ring_hom_prop @id_ring_hom_set @comp_ring_hom_set 
                       @ring_hom_is_std_str                                          
 
@@ -309,8 +309,8 @@ instance CommRing_to_Set : has_coe CommRing Set :=
   ⟨λ R : CommRing, R.carrier⟩
 
 @[hott]
-instance CommRing_to_Type : has_coe_to_sort CommRing.{u} :=
-  has_coe_to_sort.mk (Type u) (λ R : CommRing.{u}, R.carrier)  
+instance CommRing_to_Type : has_coe_to_sort CommRing :=
+  has_coe_to_sort.mk (Type u) (λ R : CommRing, R.carrier)  
 
 @[hott]
 instance (R : CommRing) : comm_ring ↥R.carrier := R.str  
