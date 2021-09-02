@@ -363,6 +363,44 @@ def Powerset (A : Set) : Set :=
 
 hott_theory_cmd "local prefix `𝒫`:100 := hott.subset.Powerset"    
 
+/- A criterion for a type to be a set: it is mapped injectively to a set. 
+   The proof needs some facts that were already shown for sets in [sets.basic]. -/
+/- fibers of injective maps only contain one element. -/
+@[hott]
+def inj_implies_unique_fib {A : Set} {B : Type _} (f : B -> A) : 
+  (∀ b₁ b₂ : B, f b₁ = f b₂ -> b₁ = b₂) -> ∀ a : A, is_prop (fiber f a) :=
+assume f_inj a,
+have H : forall fb1 fb2 : fiber f a, fb1 = fb2, from
+  assume fb1 fb2,
+  match fb1, fb2 with fiber.mk b1 e1, fiber.mk b2 e2 :=    
+    have eqb : b1 = b2, from f_inj b1 b2 (e1 ⬝ e2⁻¹), 
+    have eqbeq : e1 =[eqb;(λ b : B, f b = a)] e2, from pathover_of_tr_eq (is_set.elim _ _),
+    apd011 fiber.mk eqb eqbeq 
+  end,  
+is_prop.mk H 
+
+@[hott]
+def inj_to_Set_is_set (A : Type _) {B : Set} {f : A -> B} 
+  (inj_f : ∀ a₁ a₂ : A, f a₁ = f a₂ -> a₁ = a₂) : is_set A :=
+begin
+  let Im_f := pred_Set (λ b : B, prop_resize (image f b)),
+  have A_eqv_Im_f : A ≃ Im_f, from 
+  begin
+    fapply equiv.MK, 
+    { intro a, fapply sigma.mk, exact f a, 
+      apply prop_to_prop_resize, apply tr, exact fiber.mk a idp },
+    { intro b_im, exact (@untrunc_of_is_trunc _ _ (inj_implies_unique_fib f inj_f b_im.1) 
+                                              (prop_resize_to_prop b_im.2)).1 },
+    { intro b_im, fapply sigma_eq,
+      { exact (@untrunc_of_is_trunc _ _ (inj_implies_unique_fib f inj_f b_im.1) 
+                                                        (prop_resize_to_prop b_im.2)).2 }, 
+      { apply pathover_of_tr_eq, exact is_prop.elim _ _ } },
+    { intro a, change _ = (@fiber.mk _ _ f (f a) a idp).point, apply ap fiber.point, 
+      exact @is_prop.elim _ (inj_implies_unique_fib f inj_f (f a)) _ _ }
+  end,
+  apply is_trunc_equiv_closed_rev, apply A_eqv_Im_f, apply_instance
+end  
+
 end subset
 
 end hott
