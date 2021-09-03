@@ -587,6 +587,12 @@ def sum_Set (A B : Set) : Set :=
 def fin_Set (n : ℕ) : Set.{0} :=
 begin hinduction n with n fin_n, exact Zero_Set, exact sum_Set fin_n One_Set end  
 
+/- To enmuerate the elements of a finite set, we construct a map from ℕ into the finite set;
+   the images of natural numbers bigger than the size of the finite set do not matter. -/
+@[hott] 
+def enum_fin_Set (n : ℕ) : ℕ -> fin_Set n :=
+  sorry
+
 end set
 
 end hott
