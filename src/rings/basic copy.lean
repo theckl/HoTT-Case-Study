@@ -25,23 +25,78 @@ inductive ring_ops : Type 0
 
 @[hott]
 def ring_ops_is_set : is_set ring_ops := 
-  have ring_ops_equiv : ring_ops ≃ fin_Set 5, from 
-  begin 
-    fapply equiv.MK,
-    { sorry },
-    { sorry },
-    { sorry },
-    { sorry }
-  end,
-  is_trunc_equiv_closed_rev 0 ring_ops_equiv (fin_Set 5).struct 
+begin
+  let f : ring_ops -> ℕ := 
+    begin intro o, hinduction o, exact 0, exact 1, exact 2, exact 3, exact 4 end,
+  have inj_f : ∀ o₁ o₂ : ring_ops, f o₁ = f o₂ -> o₁ = o₂, from 
+  begin
+    intros o₁ o₂, hinduction o₁; hinduction o₂; intro f_eq, 
+    any_goals { refl }, any_goals { hinduction (nat.encode f_eq) },
+  end,  
+  exact @inj_to_Set_is_set ring_ops (to_Set ℕ) f inj_f 
+end  
 
 @[hott]
 def ring_ops_Set : Set.{0} := Set.mk ring_ops ring_ops_is_set
 
 @[hott]
-def ring_signature : fo_signature :=
-  sorry   
+inductive ring_rels : Type 0 
+| add_assoc : ring_rels 
+| zero_add : ring_rels
+| add_zero : ring_rels
+| neg_add : ring_rels
+| add_comm : ring_rels
+| mul_assoc : ring_rels
+| one_mul : ring_rels 
+| mul_one : ring_rels
+| mul_comm : ring_rels
+| right_distrib : ring_rels
+| left_distrib : ring_rels
 
+@[hott]
+def ring_rels_is_set : is_set ring_rels := 
+begin
+  let f : ring_rels -> ℕ := 
+    begin 
+      intro r, hinduction r, exact 0, exact 1, exact 2, exact 3, exact 4,
+      exact 5, exact 6, exact 7, exact 8, exact 9, exact 10
+    end,
+  have inj_f : ∀ r₁ r₂ : ring_rels, f r₁ = f r₂ -> r₁ = r₂, from 
+  begin
+    intros r₁ r₂, hinduction r₁; hinduction r₂; intro f_eq, 
+    any_goals { refl }, any_goals { hinduction (nat.encode f_eq) },
+  end,  
+  exact @inj_to_Set_is_set ring_rels (to_Set ℕ) f inj_f 
+end  
+
+@[hott]
+def ring_rels_Set : Set.{0} := Set.mk ring_rels ring_rels_is_set
+
+@[hott]
+def ring_signature : fo_signature :=
+begin
+  fapply fo_signature.mk, 
+  { exact ring_ops_Set }, 
+  { exact ring_rels_Set },
+  { intro o, hinduction o, exact fin_Set 2,  exact fin_Set 0, exact fin_Set 1, 
+    exact fin_Set 2, exact fin_Set 0 },
+  { intro r, hinduction r, exact fin_Set 3,  exact fin_Set 1, exact fin_Set 1, 
+    exact fin_Set 1, exact fin_Set 2,  exact fin_Set 3,  exact fin_Set 1, exact fin_Set 1, 
+    exact fin_Set 2, exact fin_Set 3, exact fin_Set 3 } 
+end     
+
+@[hott]
+def ring_structure_on (R : Set) : Ω_structure_on ring_signature R :=
+  begin
+    fapply Ω_structure_on.mk,
+    { intros o x, hinduction o, 
+      { sorry },
+      { sorry },
+      { sorry },
+      { sorry },
+      { sorry } },
+    { sorry }
+  end
 /- `comm_ring R` is a standard structure on a set `R`:
 
    Homomorphisms are maps between sets with a `comm_ring` structure preserving addition and 
