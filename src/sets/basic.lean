@@ -587,11 +587,36 @@ def sum_Set (A B : Set) : Set :=
 def fin_Set (n : ℕ) : Set.{0} :=
 begin hinduction n with n fin_n, exact Zero_Set, exact sum_Set fin_n One_Set end  
 
-/- To enmuerate the elements of a finite set, we construct a map from ℕ into the finite set;
-   the images of natural numbers bigger than the size of the finite set do not matter. -/
-@[hott] 
-def enum_fin_Set (n : ℕ) : ℕ -> fin_Set n :=
-  sorry
+/- `fin_Set n` can be used to enumerate `n` elements of a set `R`, by exhibiting a map
+   `fin_Set n -> R`. Instead one can construct a list of elements of `R`, of length `n`. 
+   Then one can use the operations on lists to extract the elements, or work with the
+   empty list. -/
+@[hott, hsimp]
+def fin_Set_to_list {A : Set.{0}} {n : ℕ} : (fin_Set n -> A) -> list A :=
+begin
+  hinduction n, 
+  { intro f, exact [] },
+  { intros fS, exact (fS (sum.inr One.star)) :: (ih (fS ∘ sum.inl)) }
+end 
+
+@[hott, hsimp]
+def list_to_fin_Set {A : Set.{0}} : Π l : list A, (fin_Set (list.length l) -> A) :=
+begin
+  intro l, hinduction l,  
+  { intro fin_el, hinduction fin_el },
+  { intro finS_el, hinduction finS_el, 
+    { exact ih val },
+    { exact hd } }
+end  
+
+@[hott]
+def rinv_fin_Set_list (A : Set.{0}) : 
+  ∀ l : list A, fin_Set_to_list (list_to_fin_Set l) = l :=
+begin
+  intro l, hinduction l,
+  { refl },
+  { sorry } 
+end
 
 end set
 
