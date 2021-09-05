@@ -5,7 +5,7 @@ universes u u' v w
 hott_theory
 
 namespace hott
-open is_trunc trunc equiv is_equiv hott.prod hott.quotient hott.sigma hott.relation
+open is_trunc trunc equiv is_equiv hott.prod hott.quotient hott.sigma hott.relation nat
 
 namespace set
 
@@ -591,7 +591,7 @@ begin hinduction n with n fin_n, exact Zero_Set, exact sum_Set fin_n One_Set end
    `fin_Set n -> R`. Instead one can construct a list of elements of `R`, of length `n`. 
    Then one can use the operations on lists to extract the elements, or work with the
    empty list. -/
-@[hott, hsimp]
+@[hott, reducible, hsimp]
 def fin_Set_to_list {A : Set.{0}} {n : ℕ} : (fin_Set n -> A) -> list A :=
 begin
   hinduction n, 
@@ -599,7 +599,7 @@ begin
   { intros fS, exact (fS (sum.inr One.star)) :: (ih (fS ∘ sum.inl)) }
 end 
 
-@[hott, hsimp]
+@[hott, reducible, hsimp]
 def list_to_fin_Set {A : Set.{0}} : Π l : list A, (fin_Set (list.length l) -> A) :=
 begin
   intro l, hinduction l,  
@@ -615,7 +615,20 @@ def rinv_fin_Set_list (A : Set.{0}) :
 begin
   intro l, hinduction l,
   { refl },
-  { sorry } 
+  { have H : (list_to_fin_Set (hd :: tl)) =  
+               @sum.rec _ One (λ s, A) (list_to_fin_Set tl) (λ s, hd), from rfl,
+    have H' : @fin_Set_to_list A (list.length (hd::tl)) 
+                (@sum.rec _ One (λ s, A) (list_to_fin_Set tl) (λ s, hd)) =
+                  hd :: (fin_Set_to_list (list_to_fin_Set tl)), from rfl,
+    rwr H, rwr H', rwr ih } 
+end
+
+@[hott]
+def linv_fin_Set_list (A : Set.{0}) {n : ℕ}: 
+  ∀ f : fin_Set n -> A, list_to_fin_Set (fin_Set_to_list f) = f :=
+begin
+  intro f, hinduction f,
+  sorry
 end
 
 end set
