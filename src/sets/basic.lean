@@ -599,6 +599,19 @@ begin
   { intros fS, exact (fS (sum.inr One.star)) :: (ih (fS ∘ sum.inl)) }
 end 
 
+@[hott]
+def fin_Set_list.length {A : Set.{0}} {n : ℕ} (f : fin_Set n -> A) :
+  list.length (fin_Set_to_list f) = n :=
+begin
+  hinduction n, 
+  { refl },
+  { have H : fin_Set_to_list f = 
+                (f (sum.inr One.star)) :: (fin_Set_to_list (f ∘ sum.inl)), from rfl,
+    rwr H, 
+    change list.length (fin_Set_to_list (f ∘ sum.inl)) + 1 = succ n,
+    rwr ih (f ∘ sum.inl) }
+end    
+
 @[hott, reducible, hsimp]
 def list_to_fin_Set {A : Set.{0}} : Π l : list A, (fin_Set (list.length l) -> A) :=
 begin
@@ -625,10 +638,15 @@ end
 
 @[hott]
 def linv_fin_Set_list (A : Set.{0}) {n : ℕ}: 
-  ∀ f : fin_Set n -> A, list_to_fin_Set (fin_Set_to_list f) = f :=
+  ∀ f : fin_Set n -> A, list_to_fin_Set (fin_Set_to_list f) 
+                              =[fin_Set_list.length f; λ m, fin_Set m -> A] f :=
 begin
-  intro f, hinduction f,
-  sorry
+  intro f, apply pathover_of_tr_eq, apply eq_of_homotopy, intro s, hinduction n, 
+  { hinduction s },
+  { hinduction s with s s, 
+    { --rwr tr_fn_eval_tr (ap (trunctype.carrier ∘ fin_Set) (fin_Set_list.length f)⁻¹) _, 
+      sorry },
+    { sorry } } 
 end
 
 end set
