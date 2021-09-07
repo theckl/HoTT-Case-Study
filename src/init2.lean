@@ -161,7 +161,12 @@ begin hinduction p, refl end
 def tr_fn_eval_tr {A B C : Type _} {f : A -> C} (p : A = B) (b : B) : 
   (p ▸ f) b = f (p⁻¹ ▸ b) := 
 begin hinduction p, refl end  
- 
+
+@[hott]
+def tr_dep_fn_eval_tr {A C : Type _} {B : A -> Type _}  
+  {a₁ a₂ : A} {f : B a₁ -> C} (p : a₁ = a₂) (b : B a₂) : (p ▸ f) b = f (p⁻¹ ▸ b) :=
+begin hinduction p, refl end  
+
 @[hott] 
 def tr_ap011 {A B C : Type _} {x₁ y₁ : A} {x₂ y₂ : B} {P : C → C -> Type _} (f : A -> B -> C) 
   (g : Π c : C, P c c) (p : x₁ = y₁) (q : x₂ = y₂) :
