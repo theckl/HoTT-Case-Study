@@ -605,11 +605,7 @@ def fin_Set_list.length {A : Set.{0}} {n : ℕ} (f : fin_Set n -> A) :
 begin
   hinduction n, 
   { refl },
-  { have H : fin_Set_to_list f = 
-                (f (sum.inr One.star)) :: (fin_Set_to_list (f ∘ sum.inl)), from rfl,
-    rwr H, 
-    change list.length (fin_Set_to_list (f ∘ sum.inl)) + 1 = succ n,
-    rwr ih (f ∘ sum.inl) }
+  { exact ap succ (ih (f ∘ sum.inl)) }
 end    
 
 @[hott, reducible, hsimp]
@@ -644,8 +640,22 @@ begin
   intro f, apply pathover_of_tr_eq, apply eq_of_homotopy, intro s, hinduction n, 
   { hinduction s },
   { hinduction s with s s, 
-    { --rwr tr_fn_eval_tr (ap (trunctype.carrier ∘ fin_Set) (fin_Set_list.length f)⁻¹) _, 
-      sorry },
+    { rwr tr_dep_fn_eval_tr (fin_Set_list.length f) _,
+      have H : ((fin_Set_list.length f)⁻¹ ▸[λ m, ↥(fin_Set m)] sum.inl s) = 
+                           sum.inl ((fin_Set_list.length (f ∘ sum.inl))⁻¹ ▸ s), from 
+      begin 
+        change ((ap succ (fin_Set_list.length (f ∘ sum.inl)))⁻¹ ▸[λ m, ↥(fin_Set m)] 
+                                                                           sum.inl s) = _,
+        sorry
+      end, 
+      rwr H, 
+      calc (list_to_fin_Set (fin_Set_to_list (f ∘ sum.inl))) _ = 
+                 (fin_Set_list.length (f ∘ sum.inl) ▸[λ m, fin_Set m -> A.carrier] 
+                                  list_to_fin_Set (fin_Set_to_list (f ∘ sum.inl))) s : 
+                 (@tr_dep_fn_eval_tr ℕ ↥A (λ m, fin_Set m) _ _ 
+                      (list_to_fin_Set (fin_Set_to_list (f ∘ sum.inl)))
+                                           (fin_Set_list.length (f ∘ sum.inl)) s)⁻¹
+           ... = (f ∘ sum.inl) s : ih s (f ∘ sum.inl) },
     { sorry } } 
 end
 
