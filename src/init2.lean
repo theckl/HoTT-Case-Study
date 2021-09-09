@@ -182,6 +182,11 @@ def tr_tr_pair {A B : Type _} {P : A -> A -> Type _} (f : Π a : A, P a a)
 begin hinduction p, hinduction q, refl end   
 
 @[hott]
+def ap_tr_fn {A : Type _} {B : A -> Type _} (f : A -> A) (h : Π a : A, B a -> B (f a)) 
+  {a₁ a₂ : A} (p : a₁ = a₂) (b : B a₁) : (ap f p) ▸ (h a₁ b) = h a₂ (p ▸ b) :=
+begin hinduction p, refl end  
+
+@[hott]
 def dep_eq_of_homotopy {A : Type _} {P : A -> A -> Type _} {b b' : A} (p : b = b') 
   (f : Π a : A, P b a) (f' : Π a : A, P b' a) : 
   (Π a : A, f a =[p; λ b : A, P b a] f' a) -> f =[p; λ b : A, Π a : A, P b a] f' :=
