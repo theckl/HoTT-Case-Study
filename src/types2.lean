@@ -60,4 +60,11 @@ def sum_eq_equiv {A : Type.{u}} {B : Type.{v}} {z z' : A ⊎ B} : (z = z') ≃ s
     { intro p, induction p, induction z; refl  }
   end
 
+@[hott] def sum.mem_cases {A : Type.{u}} {B : Type.{v}} (z : A ⊎ B) : 
+  (Σ a, z = sum.inl a) ⊎ (Σ b, z = sum.inr b) :=
+begin
+  induction z with a b,
+  exact sum.inl ⟨a, idp⟩, exact sum.inr ⟨b, idp⟩
+end
+
 end hott
