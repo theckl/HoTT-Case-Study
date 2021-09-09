@@ -569,7 +569,7 @@ def dprod_Set (A : Set) (B : A -> Set) : Set :=
   Set.mk (Σ (a : A), B a) (dprod_of_Sets_is_set A B)   
 
 /- The sum of sets is a set. This is contianed in the file [types.sum] of the HoTT3 library
-   which does ot compile. -/
+   which does not compile. -/
 @[hott, instance]
 def sum_of_Sets_is_set (A B : Set) : is_set (A ⊎ B) :=
 begin
@@ -639,15 +639,16 @@ def linv_fin_Set_list (A : Set.{0}) {n : ℕ}:
 begin
   intro f, apply pathover_of_tr_eq, apply eq_of_homotopy, intro s, hinduction n, 
   { hinduction s },
-  { hinduction s with s s, 
-    { rwr tr_dep_fn_eval_tr (fin_Set_list.length f) _,
+  {  
+    hinduction s with s s, 
+    { rwr tr_dep_fn_eval_tr (fin_Set_list.length f) _, 
       have H : ((fin_Set_list.length f)⁻¹ ▸[λ m, ↥(fin_Set m)] sum.inl s) = 
                            sum.inl ((fin_Set_list.length (f ∘ sum.inl))⁻¹ ▸ s), from 
       begin 
         change ((ap succ (fin_Set_list.length (f ∘ sum.inl)))⁻¹ ▸[λ m, ↥(fin_Set m)] 
                                                                            sum.inl s) = _,
-        sorry
-      end, 
+        rwr <- ap_inv _ _, exact ap_tr_fn succ (λ (n : ℕ) (s : fin_Set n), sum.inl s) _ s
+      end,
       rwr H, 
       calc (list_to_fin_Set (fin_Set_to_list (f ∘ sum.inl))) _ = 
                  (fin_Set_list.length (f ∘ sum.inl) ▸[λ m, fin_Set m -> A.carrier] 
@@ -656,7 +657,26 @@ begin
                       (list_to_fin_Set (fin_Set_to_list (f ∘ sum.inl)))
                                            (fin_Set_list.length (f ∘ sum.inl)) s)⁻¹
            ... = (f ∘ sum.inl) s : ih s (f ∘ sum.inl) },
-    { sorry } } 
+    { rwr tr_dep_fn_eval_tr (fin_Set_list.length f) _, 
+      have H' : ((fin_Set_list.length f)⁻¹ ▸[λ m, ↥(fin_Set m)] sum.inr s) = sum.inr s, from
+      begin 
+        hinduction sum.mem_cases ((fin_Set_list.length f)⁻¹ ▸[λ m, ↥(fin_Set m)] sum.inr s), 
+        { have H'' : (fin_Set_list.length f) ▸[λ m, ↥(fin_Set m)] sum.inl val.1 = 
+            sum.inl ((fin_Set_list.length (f ∘ sum.inl)) ▸[λ m, ↥(fin_Set m)] val.1), from 
+          begin 
+            change (ap succ (fin_Set_list.length (f ∘ sum.inl))) ▸[λ m, ↥(fin_Set m)] 
+                                                                        sum.inl val.1 = _, 
+            exact ap_tr_fn succ (λ (n : ℕ) (s : fin_Set n), sum.inl s) _ val.1
+          end,
+          let p := val.2, let p' := eq_tr_of_inv_tr_eq p, rwr H'' at p', 
+          hinduction sum_encode p', hinduction down },
+        { let p := val.2, rwr p, exact ap sum.inr (@is_prop.elim _ One_is_prop _ _) } 
+      end,
+      calc list_to_fin_Set (fin_Set_to_list f) ((fin_Set_list.length f)⁻¹ 
+                                                  ▸[λ m, ↥(fin_Set m)] sum.inr s) = 
+                 list_to_fin_Set (fin_Set_to_list f) (sum.inr s) : by rwr H'
+           ... = f (sum.inr One.star) : rfl 
+           ... = f (sum.inr s) : by rwr is_prop.elim One.star s } }
 end
 
 end set
