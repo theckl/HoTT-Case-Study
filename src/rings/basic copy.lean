@@ -7,12 +7,12 @@ hott_theory
 namespace hott
 open hott.is_trunc hott.is_equiv hott.algebra hott.set subset categories hott.trunc
      hott.category_theory.limits hott.sigma hott.prod hott.relation 
-     hott.category_theory.colimits hott.ulift
+     hott.category_theory.colimits hott.ulift list
 
 namespace algebra
 
 /- We construct the category of rings as a first-order signature category of operations and 
-   laws governing them. 
+   laws governing them, extracted from a `comm_ring` structure. 
    
    We first need to define the first-order signature. -/
 @[hott]
@@ -78,25 +78,45 @@ begin
   fapply fo_signature.mk, 
   { exact ring_ops_Set }, 
   { exact ring_rels_Set },
-  { intro o, hinduction o, exact fin_Set 2,  exact fin_Set 0, exact fin_Set 1, 
+  { intro o, hinduction o, exact fin_Set 2, exact fin_Set 0, exact fin_Set 1, 
     exact fin_Set 2, exact fin_Set 0 },
-  { intro r, hinduction r, exact fin_Set 3,  exact fin_Set 1, exact fin_Set 1, 
-    exact fin_Set 1, exact fin_Set 2,  exact fin_Set 3,  exact fin_Set 1, exact fin_Set 1, 
+  { intro r, hinduction r, exact fin_Set 3, exact fin_Set 1, exact fin_Set 1, 
+    exact fin_Set 1, exact fin_Set 2, exact fin_Set 3, exact fin_Set 1, exact fin_Set 1, 
     exact fin_Set 2, exact fin_Set 3, exact fin_Set 3 } 
 end     
 
+/- We construct an Ω-structure on a ring signature from a `comm_ring` structure. 
+
+   Since the set structure underlying `comm_ring` is not bundled we need a variation of 
+   `comm_ring`. -/
 @[hott]
-def ring_structure_on (R : Set) : Ω_structure_on ring_signature R :=
+def comm_ring_set (X : Set) := comm_ring X
+
+@[hott]
+instance {X : Set} : has_coe (comm_ring_set X) (comm_ring X) :=
+  ⟨λ α : comm_ring_set X, α ⟩
+
+@[hott, instance]
+def ring_is_inhabited {R : Set} [α : comm_ring R] : inhabited ↥R :=
+  ⟨0⟩
+
+@[hott]
+def ring_structure_on {R : Set} (α : comm_ring R) : Ω_structure_on ring_signature R :=
   begin
     fapply Ω_structure_on.mk,
     { intros o x, hinduction o, 
-      { sorry },
-      { sorry },
-      { sorry },
-      { sorry },
-      { sorry } },
+      { let vals := @fin_Set_to_list _ 2 x, let r := head vals, let s := head (tail vals),
+        exact r + s },
+      { exact 0 },
+      { let val := @fin_Set_to_list _ 1 x, let r := head val, exact -r },
+      { let vals := @fin_Set_to_list _ 2 x, let r := head vals, let s := head (tail vals),
+        exact r * s },
+      { exact 1 } },
     { sorry }
   end
+
+#print fields comm_ring
+
 /- `comm_ring R` is a standard structure on a set `R`:
 
    Homomorphisms are maps between sets with a `comm_ring` structure preserving addition and 
@@ -106,13 +126,6 @@ def ring_structure_on (R : Set) : Ω_structure_on ring_signature R :=
    these cannot be instances. 
    
    Since the set structure underlying `comm_ring` is not bundled we need a variation of `comm_ring`. -/
-@[hott]
-def comm_ring_set (X : Set) := comm_ring X
-
-@[hott]
-instance {X : Set} : has_coe (comm_ring_set X) (comm_ring X) :=
-  ⟨λ α : comm_ring_set X, α ⟩
-
 @[hott]
 structure is_ring_hom {R S : Set.{u}} (α : comm_ring R) (β : comm_ring S) (f : R -> S) := 
   (map_one : f 1 = 1)
