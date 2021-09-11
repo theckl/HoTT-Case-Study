@@ -738,7 +738,7 @@ def Ω_sign_str_precategory (sign : fo_signature) :
 std_str_precategory (std_str_of_Ω_str sign)
 
 @[hott, instance]
-def Ω_sign_str_category {sign : fo_signature} : 
+def Ω_sign_str_category (sign : fo_signature) : 
   category (Ω_sign_str_objects sign) := 
 structure_identity_principle (std_str_of_Ω_str sign)
 
