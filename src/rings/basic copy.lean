@@ -112,10 +112,25 @@ def ring_structure_on {R : Set} (α : comm_ring R) : Ω_structure_on ring_signat
       { let vals := @fin_Set_to_list _ 2 x, let r := head vals, let s := head (tail vals),
         exact r * s },
       { exact 1 } },
-    { sorry }
+    { intros r x, hinduction r, 
+      { let vals := @fin_Set_to_list _ 3 x, let r := head vals, let s := head (tail vals),
+        let t := head (tail (tail vals)), exact to_Prop ((r + s) + t = r + (s + t)) },
+      { let vals := @fin_Set_to_list _ 1 x, let r := head vals, exact to_Prop (0 + r = r) },
+      { let vals := @fin_Set_to_list _ 1 x, let r := head vals, exact to_Prop (r + 0 = r) },
+      { let vals := @fin_Set_to_list _ 1 x, let r := head vals, exact to_Prop ((-r) + r = 0) },
+      { let vals := @fin_Set_to_list _ 2 x, let r := head vals, let s := head (tail vals),
+        exact to_Prop (r + s = s + r) },
+      { let vals := @fin_Set_to_list _ 3 x, let r := head vals, let s := head (tail vals),
+        let t := head (tail (tail vals)), exact to_Prop ((r * s) * t = r * (s * t)) },
+      { let vals := @fin_Set_to_list _ 1 x, let r := head vals, exact to_Prop (1 * r = r) },
+      { let vals := @fin_Set_to_list _ 1 x, let r := head vals, exact to_Prop (r * 1 = r) },
+      { let vals := @fin_Set_to_list _ 2 x, let r := head vals, let s := head (tail vals),
+        exact to_Prop (r * s = s * r) },
+      { let vals := @fin_Set_to_list _ 3 x, let r := head vals, let s := head (tail vals),
+        let t := head (tail (tail vals)), exact to_Prop ((r + s) * t = (r * t) + (s * t)) },
+      { let vals := @fin_Set_to_list _ 3 x, let r := head vals, let s := head (tail vals),
+        let t := head (tail (tail vals)), exact to_Prop (r * (s + t) = (r * s) + (r * t)) } }
   end
-
-#print fields comm_ring
 
 /- `comm_ring R` is a standard structure on a set `R`:
 
