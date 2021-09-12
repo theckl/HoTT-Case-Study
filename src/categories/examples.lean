@@ -742,6 +742,15 @@ def Ω_sign_str_category (sign : fo_signature) :
   category (Ω_sign_str_objects sign) := 
 structure_identity_principle (std_str_of_Ω_str sign)
 
+/- The category of Ω-structures on sets having a given signature is usually too large to
+   capture algebraic structures: These require relations involving the operations. By 
+   prescribing logical equivalences of the signature relations to such relations we can 
+   define a predicate on the objects of the Ω-structure category and then a 
+   full subcategory. In the following we construct this subcategory from a predicate. -/
+@[hott]
+def Ω_structure_pred (sign : fo_signature) (carrier : Set) := 
+  Ω_structure_on sign carrier -> trunctype.{0} -1 
+
 /- Subsets of the underlying sets of an object in a category of first-order signature 
    category inherit the structure of the object if the operations are closed on the subset.
    Furthermore, structures on the subset such that the mebedding is a homomorphism, are 
