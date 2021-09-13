@@ -603,6 +603,31 @@ def forget {J : Type.{u'}} [precategory.{v'} J] {C : Type u} [category.{v} C]
   {std_str : std_structure_on C} (F : J ⥤ std_structure std_str) : J ⥤ C :=
 F ⋙ (forget_str std_str)  
 
+/- The full subcategory of a subtype of a category. -/
+@[hott, instance]
+def subtype_has_hom {C : Type u} [category.{v} C] (P : C -> trunctype.{0} -1) :
+  has_hom (subtype (λ c : C, ↥(P c))) :=
+begin fapply has_hom.mk, intros sc₁ sc₂, exact sc₁.1 ⟶ sc₂.1 end
+
+@[hott, instance]
+def subtype_cat_struct {C : Type u} [category.{v} C] (P : C -> trunctype.{0} -1) :
+  category_struct (subtype (λ c : C, ↥(P c))) :=
+begin
+  fapply category_struct.mk,
+  { intro sc, exact 𝟙 sc.1 },
+  { intros sc₁ sc₂ sc₃ f g, exact f ≫ g }
+end    
+
+@[hott, instance]
+def full_subprecat_on_subtype {C : Type u} [category.{v} C] (P : C -> trunctype.{0} -1) :
+  precategory (subtype (λ c : C, ↥(P c))) :=
+begin  
+  fapply precategory.mk,
+  { intros sc₁ sc₂ f, hsimp },
+  { intros sc₁ sc₂ f, hsimp },
+  { intros sc₁ sc₂ sc₃ sc₄ f g h, hsimp, refl }
+end  
+
 end categories
 
 end hott
