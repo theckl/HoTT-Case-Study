@@ -153,7 +153,8 @@ def id_is_iso {C : Type u} [precategory.{v} C] (a : C) : a ≅ a :=
 
 @[hott, hsimp]
 def idtoiso {C : Type u} [precategory.{v} C] {a b : C} : (a = b) -> (a ≅ b) :=
-  begin intro eq, hinduction eq, exact id_is_iso a end
+  begin intro eq, exact eq ▸[λ c, a ≅ c] id_is_iso a end
+--begin intro eq, hinduction eq, exact id_is_iso a end  
 
 /- `idtoiso` is natural. -/
 @[hott, hsimp]
@@ -627,6 +628,35 @@ begin
   { intros sc₁ sc₂ f, hsimp },
   { intros sc₁ sc₂ sc₃ sc₄ f g h, hsimp, refl }
 end  
+
+@[hott]
+def hom_to_hom_sc {C : Type u} [category.{v} C] {P : C -> trunctype.{0} -1} :
+  Π {sc₁ sc₂ : subtype (λ c : C, ↥(P c))}, (sc₁ ⟶ sc₂) -> (sc₁.1 ⟶ sc₂.1) :=
+assume sc₁ sc₂ h, h  
+
+@[hott]
+def hom_eq_to_hom_sc_eq {C : Type u} [category.{v} C] (P : C -> trunctype.{0} -1) :
+  Π (sc₁ sc₂ : subtype (λ c : C, ↥(P c))) (g h : sc₁ ⟶ sc₂), 
+  (hom_to_hom_sc g = hom_to_hom_sc h) -> (g = h) :=
+sorry  
+
+@[hott, instance]
+def full_subcat_on_subtype {C : Type u} [category.{v} C] (P : C -> trunctype.{0} -1) :
+  category (subtype (λ c : C, ↥(P c))) :=
+begin
+  apply category.mk,
+  intros sc₁ sc₂, fapply adjointify,
+  { intro i, 
+    have iso_C : sc₁.1 ≅ sc₂.1, from iso.mk i.hom i.inv i.r_inv i.l_inv,
+    fapply sigma_eq, 
+    { apply category.isotoid iso_C },
+    { apply pathover_of_tr_eq, exact is_prop.elim _ _ } },
+  { intro i, apply hom_eq_to_iso_eq, 
+    change ((sigma_eq _ _) ▸[λ sc, sc₁ ≅ sc] (id_is_iso sc₁)).hom = i.hom,
+    apply hom_eq_to_hom_sc_eq, 
+    sorry },
+  { intro p, hinduction p, sorry }
+end    
 
 end categories
 
