@@ -630,15 +630,26 @@ begin
 end  
 
 @[hott]
-def hom_to_hom_sc {C : Type u} [category.{v} C] {P : C -> trunctype.{0} -1} :
+def hom_sc_to_hom {C : Type u} [category.{v} C] {P : C -> trunctype.{0} -1} :
   Π {sc₁ sc₂ : subtype (λ c : C, ↥(P c))}, (sc₁ ⟶ sc₂) -> (sc₁.1 ⟶ sc₂.1) :=
 assume sc₁ sc₂ h, h  
 
 @[hott]
 def hom_eq_to_hom_sc_eq {C : Type u} [category.{v} C] (P : C -> trunctype.{0} -1) :
   Π (sc₁ sc₂ : subtype (λ c : C, ↥(P c))) (g h : sc₁ ⟶ sc₂), 
-  (hom_to_hom_sc g = hom_to_hom_sc h) -> (g = h) :=
+  (hom_sc_to_hom g = hom_sc_to_hom h) -> (g = h) :=
 sorry  
+
+@[hott]
+def iso_sc_to_iso {C : Type u} [category.{v} C] {P : C -> trunctype.{0} -1} 
+  {sc₁ sc₂ : subtype (λ c : C, ↥(P c))} : (sc₁ ≅ sc₂) -> (sc₁.1 ≅ sc₂.1) :=
+assume i, iso.mk i.hom i.inv i.r_inv i.l_inv 
+
+@[hott]
+def iso_eq_to_iso_sc_eq {C : Type u} [category.{v} C] (P : C -> trunctype.{0} -1) :
+  Π {sc₁ sc₂ : subtype (λ c : C, ↥(P c))} (g h : sc₁ ≅ sc₂), 
+  (iso_sc_to_iso g = iso_sc_to_iso h) -> (g = h) :=
+sorry 
 
 @[hott, instance]
 def full_subcat_on_subtype {C : Type u} [category.{v} C] (P : C -> trunctype.{0} -1) :
@@ -646,15 +657,11 @@ def full_subcat_on_subtype {C : Type u} [category.{v} C] (P : C -> trunctype.{0}
 begin
   apply category.mk,
   intros sc₁ sc₂, fapply adjointify,
-  { intro i, 
-    have iso_C : sc₁.1 ≅ sc₂.1, from iso.mk i.hom i.inv i.r_inv i.l_inv,
-    fapply sigma_eq, 
-    { apply category.isotoid iso_C },
+  { intro i, fapply sigma_eq, 
+    { apply category.isotoid (iso_sc_to_iso i)  },
     { apply pathover_of_tr_eq, exact is_prop.elim _ _ } },
-  { intro i, apply hom_eq_to_iso_eq, 
-    change ((sigma_eq _ _) ▸[λ sc, sc₁ ≅ sc] (id_is_iso sc₁)).hom = i.hom,
-    apply hom_eq_to_hom_sc_eq, 
-    sorry },
+  { intro i, change (sigma_eq _ _) ▸[λ sc, sc₁ ≅ sc] (id_is_iso sc₁) = i,
+    apply iso_eq_to_iso_sc_eq, sorry },
   { intro p, hinduction p, sorry }
 end    
 
