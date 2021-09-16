@@ -154,7 +154,6 @@ def id_is_iso {C : Type u} [precategory.{v} C] (a : C) : a ≅ a :=
 @[hott, hsimp]
 def idtoiso {C : Type u} [precategory.{v} C] {a b : C} : (a = b) -> (a ≅ b) :=
   begin intro eq, exact eq ▸[λ c, a ≅ c] id_is_iso a end
---begin intro eq, hinduction eq, exact id_is_iso a end  
 
 /- `idtoiso` is natural. -/
 @[hott, hsimp]
@@ -646,10 +645,21 @@ def iso_sc_to_iso {C : Type u} [category.{v} C] {P : C -> trunctype.{0} -1}
 assume i, iso.mk i.hom i.inv i.r_inv i.l_inv 
 
 @[hott]
+def id_iso_sc_id_iso {C : Type u} [category.{v} C] {P : C -> trunctype.{0} -1}
+  {sc : subtype (λ c : C, ↥(P c))} : iso_sc_to_iso (id_is_iso sc) = id_is_iso sc.1 :=
+begin apply hom_eq_to_iso_eq, refl end  
+
+@[hott]
 def iso_eq_to_iso_sc_eq {C : Type u} [category.{v} C] (P : C -> trunctype.{0} -1) :
   Π {sc₁ sc₂ : subtype (λ c : C, ↥(P c))} (g h : sc₁ ≅ sc₂), 
   (iso_sc_to_iso g = iso_sc_to_iso h) -> (g = h) :=
 sorry 
+
+@[hott]
+def comm_eq_iso_sc_iso {C : Type u} [category.{v} C] (P : C -> trunctype.{0} -1) 
+  {sc₁ sc₂ sc₂': subtype (λ c : C, ↥(P c))} (p : sc₂ = sc₂') :
+  Π (g : sc₁ ≅ sc₂), iso_sc_to_iso (p ▸ g) = p..1 ▸ (iso_sc_to_iso g) :=
+begin hinduction p, intro g, refl end
 
 @[hott, instance]
 def full_subcat_on_subtype {C : Type u} [category.{v} C] (P : C -> trunctype.{0} -1) :
@@ -661,8 +671,16 @@ begin
     { apply category.isotoid (iso_sc_to_iso i)  },
     { apply pathover_of_tr_eq, exact is_prop.elim _ _ } },
   { intro i, change (sigma_eq _ _) ▸[λ sc, sc₁ ≅ sc] (id_is_iso sc₁) = i,
-    apply iso_eq_to_iso_sc_eq, sorry },
-  { intro p, hinduction p, sorry }
+    apply iso_eq_to_iso_sc_eq, rwr comm_eq_iso_sc_iso _ _, rwr sigma_eq_fst,
+    rwr id_iso_sc_id_iso, apply hom_eq_to_iso_eq,
+    change (λ (sc : C) (j : sc₁.1 ≅ sc), j.hom) sc₂.1 
+             (idtoiso⁻¹ᶠ (iso_sc_to_iso i) ▸ id_is_iso sc₁.fst) = _,
+    rwr @fn_ev_tr_tr_fn_ev _ _ _ (λ sc, λ j : sc₁.1 ≅ sc, j.hom) _ _ 
+          (idtoiso⁻¹ᶠ (iso_sc_to_iso i)) (id_is_iso sc₁.1), 
+    rwr id_hom_tr_comp', rwr category.idtoiso_rinv (iso_sc_to_iso i), hsimp },
+  { intro p, hinduction p, 
+    --change sigma_eq (refl sc₁.1) _ = refl sc₁,
+    rwr <- sigma_eq_eta (refl sc₁), sorry }
 end    
 
 end categories
