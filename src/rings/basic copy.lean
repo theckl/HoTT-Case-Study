@@ -11,8 +11,9 @@ open hott.is_trunc hott.is_equiv hott.algebra hott.set subset categories hott.tr
 
 namespace algebra
 
-/- We construct the category of rings as a first-order signature category of operations and 
-   laws governing them, extracted from a `comm_ring` structure. 
+/- We construct the category of rings as a full subcategory of a first-order signature 
+   category of operations on a set and laws governing them, and construct objects of that
+   category from a `comm_ring` structure on a set. 
    
    We first need to define the first-order signature. -/
 @[hott]
@@ -84,6 +85,25 @@ begin
     exact fin_Set 1, exact fin_Set 2, exact fin_Set 3, exact fin_Set 1, exact fin_Set 1, 
     exact fin_Set 2, exact fin_Set 3, exact fin_Set 3 } 
 end     
+
+/- To use the standard operation notations we need to define some instances. -/
+@[hott, instance]
+def ring_Ω_str_has_add (R : Ω_sign_str_objects ring_signature) : has_add R.carrier :=
+  sorry
+
+/- We define a predicate on the Ω-structures on sets having the ring signature, using a
+   predicate on ring relations. -/
+@[hott]
+def ring_rels_pred (R : Ω_sign_str_objects ring_signature) (r : ring_rels) :
+  trunctype.{0} -1 :=
+sorry
+/-match r with
+| add_assoc := to_Prop ((Π vars, (R.str.rels add_assoc vars).carrier) <-> 
+                        (∀ x y z : R.carrier, (x + y) + z = x + (y + z))   -/
+
+@[hott]
+def ring_Ω_str_pred : (Ω_sign_str_objects ring_signature) -> trunctype.{0} -1 :=
+  sorry
 
 /- We construct an Ω-structure on a ring signature from a `comm_ring` structure. 
 
