@@ -87,25 +87,79 @@ begin
 end     
 
 /- To use the standard operation notations we need to define some instances. -/
+@[hott]
+def ring_add (R : Ω_sign_str_objects ring_signature) : 
+  R.carrier -> R.carrier -> R.carrier :=
+begin intros x y, exact R.str.ops ring_ops.add (list_to_fin_Set (x :: y :: [])) end
+
 @[hott, instance]
 def ring_Ω_str_has_add (R : Ω_sign_str_objects ring_signature) : has_add R.carrier :=
-  sorry
+  ⟨ring_add R⟩
+
+@[hott, instance]
+def ring_Ω_str_has_zero (R : Ω_sign_str_objects ring_signature) : has_zero R.carrier :=
+begin 
+  apply has_zero.mk,  
+  exact R.str.ops ring_ops.zero (list_to_fin_Set []) 
+end
+
+@[hott, instance]
+def ring_Ω_str_has_neg (R : Ω_sign_str_objects ring_signature) : has_neg R.carrier :=
+begin 
+  apply has_neg.mk, intro x, 
+  exact R.str.ops ring_ops.neg (list_to_fin_Set (x :: [])) 
+end
+
+@[hott, instance]
+def ring_Ω_str_has_mul (R : Ω_sign_str_objects ring_signature) : has_mul R.carrier :=
+begin 
+  apply has_mul.mk, intros x y, 
+  exact R.str.ops ring_ops.mul (list_to_fin_Set (x :: y :: [])) 
+end
+
+@[hott, instance]
+def ring_Ω_str_has_one (R : Ω_sign_str_objects ring_signature) : has_one R.carrier :=
+begin 
+  apply has_one.mk,  
+  exact R.str.ops ring_ops.one (list_to_fin_Set []) 
+end
 
 /- We define a predicate on the Ω-structures on sets having the ring signature, using a
    predicate on ring relations. -/
 @[hott]
 def ring_rels_pred (R : Ω_sign_str_objects ring_signature) (r : ring_rels) :
   trunctype.{0} -1 :=
-sorry
-/-match r with
-| add_assoc := to_Prop ((Π vars, (R.str.rels add_assoc vars).carrier) <-> 
-                        (∀ x y z : R.carrier, (x + y) + z = x + (y + z))   -/
+begin  
+ hinduction r,
+ { exact to_Prop ((Π args, (R.str.rels ring_rels.add_assoc args).carrier) <-> 
+                        (∀ x y z : R.carrier, (ring_add R x y) + z = x + (y + z))) },  
+ { exact to_Prop ((Π args, (R.str.rels ring_rels.zero_add args).carrier) <-> 
+                        (∀ x : R.carrier, 0 + x = x)) },
+ { exact to_Prop ((Π args, (R.str.rels ring_rels.add_zero args).carrier) <-> 
+                        (∀ x : R.carrier, x + 0 = x)) },
+ { exact to_Prop ((Π args, (R.str.rels ring_rels.neg_add args).carrier) <-> 
+                        (∀ x : R.carrier, (-x) + x = 0)) },
+ { exact to_Prop ((Π args, (R.str.rels ring_rels.add_comm args).carrier) <-> 
+                        (∀ x y: R.carrier, x + y = y + x)) },
+ { exact to_Prop ((Π args, (R.str.rels ring_rels.mul_assoc args).carrier) <-> 
+                        (∀ x y z : R.carrier, (x * y) * z = x * (y * z))) },
+ { exact to_Prop ((Π args, (R.str.rels ring_rels.one_mul args).carrier) <-> 
+                        (∀ x : R.carrier, 1 * x = x)) },
+ { exact to_Prop ((Π args, (R.str.rels ring_rels.mul_one args).carrier) <-> 
+                        (∀ x : R.carrier, x * 1 = x)) },
+ { exact to_Prop ((Π args, (R.str.rels ring_rels.mul_comm args).carrier) <-> 
+                        (∀ x y: R.carrier, x * y = y * x)) },
+ { exact to_Prop ((Π args, (R.str.rels ring_rels.right_distrib args).carrier) <-> 
+                        (∀ x y z : R.carrier, (x + y) * z = x * z + y * z)) },
+ { exact to_Prop ((Π args, (R.str.rels ring_rels.left_distrib args).carrier) <-> 
+                        (∀ x y z : R.carrier, x * (y + z) = x * y + x * z)) } 
+end                       
 
 @[hott]
 def ring_Ω_str_pred : (Ω_sign_str_objects ring_signature) -> trunctype.{0} -1 :=
-  sorry
+  assume R, to_Prop (∀ r : ring_rels, ring_rels_pred R r)
 
-/- We construct an Ω-structure on a ring signature from a `comm_ring` structure. 
+/- We construct an Ω-structure of a ring signature from a `comm_ring` structure. 
 
    Since the set structure underlying `comm_ring` is not bundled we need a variation of 
    `comm_ring`. -/
