@@ -748,8 +748,12 @@ structure_identity_principle (std_str_of_Ω_str sign)
    define a predicate on the objects of the Ω-structure category and then a 
    full subcategory. In the following we construct this subcategory from a predicate. -/
 @[hott]
-def Ω_structure_pred (sign : fo_signature) (carrier : Set) := 
-  Ω_structure_on sign carrier -> trunctype.{0} -1 
+def Ω_structure_pred (sign : fo_signature) := 
+  Ω_sign_str_objects sign -> trunctype.{0} -1 
+
+@[hott]
+def Ω_str_subtype (sign : fo_signature) (P : Ω_structure_pred sign) := 
+  sigma.subtype (λ Ω_str_obj : Ω_sign_str_objects sign, P Ω_str_obj)
 
 /- Subsets of the underlying sets of an object in a category of first-order signature 
    category inherit the structure of the object if the operations are closed on the subset.
