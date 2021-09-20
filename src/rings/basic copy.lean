@@ -170,17 +170,7 @@ instance CommRing_to_Set : has_coe CommRing Set :=
 instance CommRing_to_Type : has_coe_to_sort CommRing :=
   has_coe_to_sort.mk (Type _) (λ R : CommRing, R.1.carrier)  
 
-/- We construct an Ω-structure of a ring signature from a `comm_ring` structure. 
-
-   Since the set structure underlying `comm_ring` is not bundled we need a variation of 
-   `comm_ring`. -/
-@[hott]
-def comm_ring_set (X : Set) := comm_ring X
-
-@[hott]
-instance {X : Set} : has_coe (comm_ring_set X) (comm_ring X) :=
-  ⟨λ α : comm_ring_set X, α ⟩
-
+/- We construct an Ω-structure of a ring signature from a `comm_ring` structure. -/
 @[hott, instance]
 def ring_is_inhabited {R : Set} [α : comm_ring R] : inhabited ↥R :=
   ⟨0⟩
@@ -216,6 +206,29 @@ def ring_structure_on {R : Set} (α : comm_ring R) : Ω_structure_on ring_signat
       { let vals := @fin_Set_to_list _ 3 x, let r := head vals, let s := head (tail vals),
         let t := head (tail (tail vals)), exact to_Prop (r * (s + t) = (r * s) + (r * t)) } }
   end 
+
+@[hott]
+def comm_ring_to_CommRing {R : Set} (α : comm_ring R) : CommRing :=
+begin
+  fapply dpair,
+  { fapply std_structure.mk, 
+    { exact R },
+    { exact ring_structure_on α } },
+  { intro r, hinduction r, 
+    { fapply pair, 
+      { intros p x y z, sorry },
+      { sorry } },
+    { sorry },
+    { sorry },
+    { sorry },
+    { sorry },
+    { sorry },
+    { sorry },
+    { sorry },
+    { sorry },
+    { sorry },
+    { sorry } }
+end  
 
 /- A criterion to decide whether a subset of a commutative ring given by a predicate is a
    commutative (sub)ring : The ring operation are closed under the predicate. -/ 
