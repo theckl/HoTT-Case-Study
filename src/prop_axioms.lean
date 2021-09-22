@@ -217,6 +217,10 @@ def prop_iff_eqv_eq :
 assume A B pA pB,
 equiv.trans (@prop_iff_eqv_equiv A B pA pB) (equiv.symm (eq_equiv_equiv A B))   
 
+@[hott]
+def inhab_props_iff {P Q : Prop} (p : P) (q : Q) : P ↔ Q :=
+begin fapply pair, intro p, exact q, intro q, exact p end
+
 /- Interchanging between types that are proposition and `Prop` -/
 @[hott]
 def to_Prop_eq (P : Prop) : to_Prop ↥P = P :=
