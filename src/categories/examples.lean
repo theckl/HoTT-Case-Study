@@ -752,12 +752,12 @@ def Ω_structure_pred (sign : fo_signature) :=
   Ω_sign_str_objects sign -> trunctype.{0} -1 
 
 @[hott]
-def Ω_str_subtype (sign : fo_signature) (P : Ω_structure_pred sign) := 
+def Ω_str_subtype {sign : fo_signature} (P : Ω_structure_pred sign) := 
   sigma.subtype (λ Ω_str_obj : Ω_sign_str_objects sign, P Ω_str_obj)
 
 /- Subsets of the underlying sets of an object in a category of first-order signature 
    category inherit the structure of the object if the operations are closed on the subset.
-   Furthermore, structures on the subset such that the mebedding is a homomorphism, are 
+   Furthermore, structures on the subset such that the embedding is a homomorphism, are 
    unique. -/
 @[hott]
 def ops_closed {sign : fo_signature} {S : Ω_sign_str_objects sign} (R : Subset S.carrier) :=
@@ -803,6 +803,17 @@ begin
  { intros r x rx, change ↥(substr.rels r x), 
    exact (prop_resize_to_prop R_str_comp).rels_pres r x rx }
 end                              
+
+/- Subsets of structured sets in the full subcategory of Ω-structures defined by a 
+   predicate closed under the structure operation do not necessarily satisfy the 
+   predicate. But this is the case if the predicate only depends on the relations. -/
+@[hott] 
+def Ω_structure_rels_pred (sign : fo_signature) : Ω_structure_pred sign :=
+begin
+  intro S, 
+  exact to_Prop (∀ (r : sign.rels) (args : (sign.rels_arity r) -> S.carrier), 
+                                                                  S.str.rels r args) 
+end  
 
 end categories
 
