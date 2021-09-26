@@ -160,7 +160,7 @@ def ring_Ω_str_pred : Ω_structure_pred ring_signature :=
   assume R, to_Prop (∀ r : ring_rels, ring_rels_pred R r)
 
 @[hott]
-def CommRing := Ω_str_subtype ring_signature ring_Ω_str_pred
+def CommRing := @Ω_str_subtype ring_signature ring_Ω_str_pred
 
 @[hott]
 instance CommRing_to_Set : has_coe CommRing Set :=
