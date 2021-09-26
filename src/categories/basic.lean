@@ -679,6 +679,8 @@ begin
     apply @is_prop.elim _ H _ _ }
 end    
 
+/- The fully embedded category of a type injectively mapped to a category. -/
+
 end categories
 
 end hott
