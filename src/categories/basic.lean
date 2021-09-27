@@ -680,6 +680,37 @@ begin
 end    
 
 /- The fully embedded category of a type injectively mapped to a category. -/
+@[hott, instance]
+def embedded_type_has_hom {C : Type u} [category.{v} C] {D : Type u'} (f : D -> C)
+  [inj : is_injective f] : has_hom D :=
+begin fapply has_hom.mk, intros d₁ d₂, exact f d₁ ⟶ f d₂ end  
+
+@[hott, instance]
+def emb_type_cat_struct {C : Type u} [category.{v} C] {D : Type u'} (f : D -> C)
+  [inj : is_injective f] : category_struct D :=
+begin
+  fapply @category_struct.mk D (@embedded_type_has_hom _ _ _ f inj),
+  { intro a, exact 𝟙 (f a) },
+  { intros a b c f g, exact f ≫ g }
+end  
+
+@[hott, instance]
+def fully_emb_precategory {C : Type u} [category.{v} C] {D : Type u'} (f : D -> C)
+  [inj : is_injective f] : precategory D :=
+begin
+  fapply @precategory.mk D (@emb_type_cat_struct _ _ _ f inj),
+  { sorry },
+  { sorry },
+  { sorry }
+end  
+
+@[hott, instance]
+def fully_embedded_category {C : Type u} [category.{v} C] {D : Type u'} (f : D -> C)
+  [inj : is_injective f] : category D :=
+begin
+  fapply @category.mk D (@fully_emb_precategory _ _ _ f inj),
+  sorry
+end    
 
 end categories
 
