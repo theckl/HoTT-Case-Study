@@ -40,7 +40,7 @@ def id_map_is_right_neutral {A : Set} {B : Set} (map : A -> B) :
 by hsimp   
 
 @[hott, class]
-def is_injective {A : Type _} {B : Type _} (f : B -> A) := 
+def is_injective {A : Type u} {B : Type v} (f : B -> A) := 
   forall b1 b2 : B, f b1 = f b2 -> b1 = b2
 
 @[hott, class]
