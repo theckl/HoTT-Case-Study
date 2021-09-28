@@ -682,8 +682,18 @@ end
 /- The fully embedded category of a type injectively mapped to a category. -/
 @[hott, instance]
 def embedded_type_has_hom {C : Type u} [category.{v} C] {D : Type u'} (f : D -> C)
-  [inj : is_injective f] : has_hom D :=
+  [is_injective f] : has_hom D :=
 begin fapply has_hom.mk, intros d₁ d₂, exact f d₁ ⟶ f d₂ end  
+
+set_option trace.class_instances true
+
+@[hott]
+def emb_type_hom_hom {C : Type u} [category.{v} C] {D : Type u'} (f : D -> C)
+  [is_injective f] {d₁ d₂ : D} : (d₁ ⟶ d₂) ->(f d₁ ⟶ f d₂) := sorry
+--@has_hom.hom _ (@embedded_type_has_hom _ _ _ f inj) d₁ d₂ -> (f d₁ ⟶ f d₂) :=
+--assume h, h  
+
+set_option trace.class_instances false
 
 @[hott, instance]
 def emb_type_cat_struct {C : Type u} [category.{v} C] {D : Type u'} (f : D -> C)
@@ -699,17 +709,35 @@ def fully_emb_precategory {C : Type u} [category.{v} C] {D : Type u'} (f : D -> 
   [inj : is_injective f] : precategory D :=
 begin
   fapply @precategory.mk D (@emb_type_cat_struct _ _ _ f inj),
-  { sorry },
-  { sorry },
-  { sorry }
+  { intros d₁ d₂ f, hsimp },
+  { intros d₁ d₂ f, hsimp },
+  { intros d₁ d₂ d₃ d₄ f g h, hsimp, refl }
 end  
+
+@[hott]
+def emb_type_iso_iso {C : Type u} [category.{v} C] {D : Type u'} (f : D -> C)
+  [inj : is_injective f] {d₁ d₂ : D} : (d₁ ≅ d₂) -> (f d₁ ≅ f d₂) := 
+sorry  
 
 @[hott, instance]
 def fully_embedded_category {C : Type u} [category.{v} C] {D : Type u'} (f : D -> C)
   [inj : is_injective f] : category D :=
 begin
   fapply @category.mk D (@fully_emb_precategory _ _ _ f inj),
-  sorry
+  intros d₁ d₂, fapply adjointify, 
+  { intro i, 
+    have iC : f d₁ ≅ f d₂, from 
+    begin
+      fapply iso.mk, 
+      { exact @emb_type_hom_hom _ _ _ f inj d₁ d₂ i.hom },
+      { sorry },
+      { sorry },
+      { sorry },
+    end,  
+    have p : f d₁ = f d₂, from category.isotoid iC,
+    exact inj d₁ d₂ p },
+  { sorry },
+  { sorry }
 end    
 
 end categories
