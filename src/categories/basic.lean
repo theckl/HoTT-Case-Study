@@ -679,64 +679,60 @@ begin
     apply @is_prop.elim _ H _ _ }
 end    
 
-/- The fully embedded category of a type injectively mapped to a category. -/
+/- The fully embedded category of a type injectively mapped to a category. 
+   We start with a synonym for an (embedded) type `D`, on which the category structure
+   will be defined, as in [category_theory.full_subcategory] of the mathlib. -/
+@[hott]
+def ind_cat_type {C : Type u} [category.{v} C] {D : Type u'} (f : D -> C) := D
+
 @[hott, instance]
-def embedded_type_has_hom {C : Type u} [category.{v} C] {D : Type u'} (f : D -> C)
-  [is_injective f] : has_hom D :=
+def mapped_type_has_hom {C : Type u} [category.{v} C] {D : Type u'} (f : D -> C) : 
+  has_hom (ind_cat_type f) :=
 begin fapply has_hom.mk, intros d₁ d₂, exact f d₁ ⟶ f d₂ end  
 
-set_option trace.class_instances true
-
 @[hott]
-def emb_type_hom_hom {C : Type u} [category.{v} C] {D : Type u'} (f : D -> C)
-  [is_injective f] {d₁ d₂ : D} : (d₁ ⟶ d₂) ->(f d₁ ⟶ f d₂) := sorry
---@has_hom.hom _ (@embedded_type_has_hom _ _ _ f inj) d₁ d₂ -> (f d₁ ⟶ f d₂) :=
---assume h, h  
-
-set_option trace.class_instances false
+def ind_type_hom_hom {C : Type u} [category.{v} C] {D : Type u'} (f : D -> C)
+  {d₁ d₂ : ind_cat_type f} : (d₁ ⟶ d₂) -> (f d₁ ⟶ f d₂) := 
+assume h, h  
 
 @[hott, instance]
-def emb_type_cat_struct {C : Type u} [category.{v} C] {D : Type u'} (f : D -> C)
-  [inj : is_injective f] : category_struct D :=
+def ind_type_cat_struct {C : Type u} [category.{v} C] {D : Type u'} (f : D -> C) : 
+  category_struct (ind_cat_type f) :=
 begin
-  fapply @category_struct.mk D (@embedded_type_has_hom _ _ _ f inj),
+  fapply category_struct.mk,
   { intro a, exact 𝟙 (f a) },
   { intros a b c f g, exact f ≫ g }
 end  
 
 @[hott, instance]
-def fully_emb_precategory {C : Type u} [category.{v} C] {D : Type u'} (f : D -> C)
-  [inj : is_injective f] : precategory D :=
+def fully_ind_precategory {C : Type u} [category.{v} C] {D : Type u'} (f : D -> C) : 
+  precategory (ind_cat_type f) :=
 begin
-  fapply @precategory.mk D (@emb_type_cat_struct _ _ _ f inj),
+  fapply precategory.mk,
   { intros d₁ d₂ f, hsimp },
   { intros d₁ d₂ f, hsimp },
   { intros d₁ d₂ d₃ d₄ f g h, hsimp, refl }
 end  
 
 @[hott]
-def emb_type_iso_iso {C : Type u} [category.{v} C] {D : Type u'} (f : D -> C)
-  [inj : is_injective f] {d₁ d₂ : D} : (d₁ ≅ d₂) -> (f d₁ ≅ f d₂) := 
-sorry  
+def ind_type_iso_iso {C : Type u} [category.{v} C] {D : Type u'} (f : D -> C)
+  {d₁ d₂ : ind_cat_type f} : (d₁ ≅ d₂) -> (f d₁ ≅ f d₂) := 
+begin
+  intro i, fapply iso.mk,  
+  { exact i.hom },
+  { exact i.inv },
+  { exact i.r_inv },
+  { exact i.l_inv }
+end  
 
 @[hott, instance]
 def fully_embedded_category {C : Type u} [category.{v} C] {D : Type u'} (f : D -> C)
-  [inj : is_injective f] : category D :=
+  [inj : is_injective f] : category (ind_cat_type f) :=
 begin
-  fapply @category.mk D (@fully_emb_precategory _ _ _ f inj),
+  fapply category.mk,
   intros d₁ d₂, fapply adjointify, 
-  { intro i, 
-    have iC : f d₁ ≅ f d₂, from 
-    begin
-      fapply iso.mk, 
-      { exact @emb_type_hom_hom _ _ _ f inj d₁ d₂ i.hom },
-      { sorry },
-      { sorry },
-      { sorry },
-    end,  
-    have p : f d₁ = f d₂, from category.isotoid iC,
-    exact inj d₁ d₂ p },
-  { sorry },
+  { intro i, exact inj d₁ d₂ (category.isotoid (ind_type_iso_iso f i)) },
+  { intro i, sorry },
   { sorry }
 end    
 
