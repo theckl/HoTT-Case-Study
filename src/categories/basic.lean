@@ -725,15 +725,28 @@ begin
   { exact i.l_inv }
 end  
 
+@[hott]
+def ind_idtoiso_hom {C : Type u} [category.{v} C] {D : Type u'} (f : D -> C)
+  (inj : is_injective (λ d : ind_cat_type f, f d)) {d₁ d₂ : ind_cat_type f} : 
+  Π p : f d₁ = f d₂, (idtoiso (inj d₁ d₂ p)).hom = (idtoiso p).hom :=
+begin intro p, sorry end
+
 @[hott, instance]
 def fully_embedded_category {C : Type u} [category.{v} C] {D : Type u'} (f : D -> C)
-  [inj : is_injective f] : category (ind_cat_type f) :=
+  [inj : is_injective f] (inj_idp : ∀ d : ind_cat_type f, inj d d idp = idp) : 
+  category (ind_cat_type f) :=
 begin
   fapply category.mk,
   intros d₁ d₂, fapply adjointify, 
   { intro i, exact inj d₁ d₂ (category.isotoid (ind_type_iso_iso f i)) },
-  { intro i, sorry },
-  { sorry }
+  { intro i, apply hom_eq_to_iso_eq, 
+    rwr ind_idtoiso_hom f inj (category.isotoid (ind_type_iso_iso f i)),
+    change (idtoiso (idtoiso⁻¹ᶠ (ind_type_iso_iso f i))).hom = i.hom,
+    rwr category.idtoiso_rinv (ind_type_iso_iso f i) },
+  { intro p, hinduction p, rwr idtoiso_refl_eq d₁, 
+    have H : ind_type_iso_iso f (id_is_iso d₁) = id_is_iso (f d₁), from 
+      begin apply hom_eq_to_iso_eq, refl end,
+    rwr H, rwr isotoid_id_refl, exact inj_idp d₁ }
 end    
 
 end categories
