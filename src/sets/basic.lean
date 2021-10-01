@@ -40,12 +40,19 @@ def id_map_is_right_neutral {A : Set} {B : Set} (map : A -> B) :
 by hsimp   
 
 @[hott, class]
-def is_injective {A : Type u} {B : Type v} (f : B -> A) := 
+def is_set_injective {A : Set} {B : Set} (f : B -> A) := 
   forall b1 b2 : B, f b1 = f b2 -> b1 = b2
 
-@[hott, class]
-def is_set_injective {A : Set} {B : Set} (f : B -> A) := 
-  @is_injective A B f
+/- Set injectivity implies injectivity of maps between types, shown in [types2]. -/
+@[hott]
+def set_inj_to_type_inj {A : Set} {B : Set} (f : B -> A) :
+  (is_set_injective f) -> is_injective f :=
+begin 
+  intro inj, intros b1 b2, fapply is_equiv.adjointify, 
+  { exact inj b1 b2 },
+  { intro p, exact is_set.elim _ _ },
+  { intro q, exact is_set.elim _ _ }
+end      
 
 @[hott, instance]
 def comp_inj_inj {A B C : Set} (f : A -> B) (g : B -> C) [f_inj : is_set_injective f] 
