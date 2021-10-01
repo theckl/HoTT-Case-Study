@@ -67,4 +67,21 @@ begin
   exact sum.inl ⟨a, idp⟩, exact sum.inr ⟨b, idp⟩
 end
 
+/- The injectivity of a map of types is only useful if it also implies relations between
+   equalities of objects of domain and codomain, in particular that `rfl` is mapped to 
+   `rfl`. For sets, this is automatic and shown in [sets.basic] -/
+@[hott, class]
+def is_injective {A : Type u} {B : Type v} (f : B -> A) := 
+  forall b1 b2 : B, is_equiv (λ p : b1 = b2, ap f p)
+
+@[hott]
+def inj_imp {A : Type u} {B : Type v} {f : B -> A} (inj : is_injective f) :  
+  ∀ b1 b2 : B, f b1 = f b2 -> b1 = b2 :=
+begin intros b1 b2, exact (inj b1 b2).inv end  
+
+@[hott]
+def inj_idp {A : Type u} {B : Type v} {f : B -> A} (inj : is_injective f) :  
+  ∀ b : B, inj_imp inj b b idp = idp :=
+sorry  
+
 end hott
