@@ -695,6 +695,11 @@ def ind_type_hom_hom {C : Type u} [category.{v} C] {D : Type u'} (f : D -> C)
   {d₁ d₂ : ind_cat_type f} : (d₁ ⟶ d₂) -> (f d₁ ⟶ f d₂) := 
 assume h, h  
 
+@[hott]
+def hom_ind_type_hom {C : Type u} [category.{v} C] {D : Type u'} (f : D -> C)
+  {d₁ d₂ : ind_cat_type f} : (f d₁ ⟶ f d₂) -> (d₁ ⟶ d₂) := 
+assume h, h
+
 @[hott, instance]
 def ind_type_cat_struct {C : Type u} [category.{v} C] {D : Type u'} (f : D -> C) : 
   category_struct (ind_cat_type f) :=
@@ -729,7 +734,12 @@ end
 def ind_idtoiso_hom {C : Type u} [category.{v} C] {D : Type u'} (f : D -> C)
   (inj : is_injective (λ d : ind_cat_type f, f d)) {d₁ d₂ : ind_cat_type f} : 
   Π p : f d₁ = f d₂, (idtoiso (inj_imp inj d₁ d₂ p)).hom = (idtoiso p).hom :=
-begin intro p, sorry end
+begin 
+  intro p, 
+  --change (inj_imp inj d₁ d₂ p) ▸[λ d, ↥(d₁ ⟶ d)] (𝟙 d₁) = hom_ind_type_hom _ (idtoiso p).hom,
+  --(p ▸[λ c, ↥(f d₁ ⟶ c)] 𝟙 (f d₁)), 
+  sorry 
+end
 
 @[hott, instance]
 def fully_embedded_category {C : Type u} [category.{v} C] {D : Type u'} (f : D -> C)
@@ -745,7 +755,7 @@ begin
   { intro p, hinduction p, rwr idtoiso_refl_eq d₁, 
     have H : ind_type_iso_iso f (id_is_iso d₁) = id_is_iso (f d₁), from 
       begin apply hom_eq_to_iso_eq, refl end,
-    rwr H, rwr isotoid_id_refl, exact inj_idp inj d₁ }
+    rwr H, rwr isotoid_id_refl, exact inj_idp d₁ }
 end    
 
 end categories
