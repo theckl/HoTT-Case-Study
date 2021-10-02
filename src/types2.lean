@@ -80,8 +80,13 @@ def inj_imp {A : Type u} {B : Type v} {f : B -> A} (inj : is_injective f) :
 begin intros b1 b2, exact (inj b1 b2).inv end  
 
 @[hott]
-def inj_idp {A : Type u} {B : Type v} {f : B -> A} (inj : is_injective f) :  
+def inj_idp {A : Type u} {B : Type v} {f : B -> A} [inj : is_injective f] :  
   ∀ b : B, inj_imp inj b b idp = idp :=
-sorry  
+begin 
+  intro b, 
+  change @is_equiv.inv _ _ (λ p : b = b, ap f p) (inj b b) (@idp _ (f b)) = idp, 
+  have H : (λ p : b = b, ap f p) idp = idp, from rfl,
+  rwr <- H, rwr @is_equiv.left_inv _ _ (λ p : b = b, ap f p) (inj b b) (@idp _ b)
+end 
 
 end hott
