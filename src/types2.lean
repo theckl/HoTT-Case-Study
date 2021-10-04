@@ -89,4 +89,11 @@ begin
   rwr <- H, rwr @is_equiv.left_inv _ _ (λ p : b = b, ap f p) (inj b b) (@idp _ b)
 end 
 
+/- Maps that are equivalences allow to exchange types of arguments in dependent 
+   functions. -/
+@[hott]
+def equiv_arg_exchange {A : Type _} {B : Type _} {f : A -> B} (H : is_equiv f) 
+  {C : B -> Type _} : (∀ a : A, C (f a)) -> (∀ b : B, C b) :=
+begin intros g b, rwr <- is_equiv.right_inv f b, exact g (f⁻¹ᶠ b) end     
+
 end hott
