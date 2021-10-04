@@ -695,11 +695,6 @@ def ind_type_hom_hom {C : Type u} [category.{v} C] {D : Type u'} (f : D -> C)
   {d₁ d₂ : ind_cat_type f} : (d₁ ⟶ d₂) -> (f d₁ ⟶ f d₂) := 
 assume h, h  
 
-@[hott]
-def hom_ind_type_hom {C : Type u} [category.{v} C] {D : Type u'} (f : D -> C)
-  {d₁ d₂ : ind_cat_type f} : (f d₁ ⟶ f d₂) -> (d₁ ⟶ d₂) := 
-assume h, h
-
 @[hott, instance]
 def ind_type_cat_struct {C : Type u} [category.{v} C] {D : Type u'} (f : D -> C) : 
   category_struct (ind_cat_type f) :=
@@ -735,10 +730,16 @@ def ind_idtoiso_hom {C : Type u} [category.{v} C] {D : Type u'} (f : D -> C)
   (inj : is_injective (λ d : ind_cat_type f, f d)) {d₁ d₂ : ind_cat_type f} : 
   Π p : f d₁ = f d₂, (idtoiso (inj_imp inj d₁ d₂ p)).hom = (idtoiso p).hom :=
 begin 
-  intro p, 
-  --change (inj_imp inj d₁ d₂ p) ▸[λ d, ↥(d₁ ⟶ d)] (𝟙 d₁) = hom_ind_type_hom _ (idtoiso p).hom,
-  --(p ▸[λ c, ↥(f d₁ ⟶ c)] 𝟙 (f d₁)), 
-  sorry 
+  fapply equiv_arg_exchange,
+  { exact d₁ = d₂ },
+  { intro p, exact ap f p },
+  { exact inj d₁ d₂ },
+  { intro q, fapply @eq.rec _ d₁ (λ d₂, λ q : d₁ = d₂, 
+               (idtoiso (inj_imp inj d₁ d₂ (ap f q))).hom = (idtoiso (ap f q)).hom), 
+    change (idtoiso (inj_imp inj d₁ d₁ (ap f (refl d₁)))).hom = 𝟙 d₁, 
+    have H : inj_imp inj d₁ d₁ (ap f (refl d₁)) = refl d₁, from
+      @is_equiv.left_inv _ _ _ (inj d₁ d₁) (refl d₁), 
+    rwr H }
 end
 
 @[hott, instance]
