@@ -603,82 +603,6 @@ def forget {J : Type.{u'}} [precategory.{v'} J] {C : Type u} [category.{v} C]
   {std_str : std_structure_on C} (F : J ⥤ std_structure std_str) : J ⥤ C :=
 F ⋙ (forget_str std_str)  
 
-/- The full subcategory of a subtype of a category. -/
-@[hott, instance]
-def subtype_has_hom {C : Type u} [category.{v} C] (P : C -> trunctype.{0} -1) :
-  has_hom (subtype (λ c : C, ↥(P c))) :=
-begin fapply has_hom.mk, intros sc₁ sc₂, exact sc₁.1 ⟶ sc₂.1 end
-
-@[hott, instance]
-def subtype_cat_struct {C : Type u} [category.{v} C] (P : C -> trunctype.{0} -1) :
-  category_struct (subtype (λ c : C, ↥(P c))) :=
-begin
-  fapply category_struct.mk,
-  { intro sc, exact 𝟙 sc.1 },
-  { intros sc₁ sc₂ sc₃ f g, exact f ≫ g }
-end    
-
-@[hott, instance]
-def full_subprecat_on_subtype {C : Type u} [category.{v} C] (P : C -> trunctype.{0} -1) :
-  precategory (subtype (λ c : C, ↥(P c))) :=
-begin  
-  fapply precategory.mk,
-  { intros sc₁ sc₂ f, hsimp },
-  { intros sc₁ sc₂ f, hsimp },
-  { intros sc₁ sc₂ sc₃ sc₄ f g h, hsimp, refl }
-end  
-
-@[hott]
-def iso_sc_to_iso {C : Type u} [category.{v} C] {P : C -> trunctype.{0} -1} 
-  {sc₁ sc₂ : subtype (λ c : C, ↥(P c))} : (sc₁ ≅ sc₂) -> (sc₁.1 ≅ sc₂.1) :=
-assume i, iso.mk i.hom i.inv i.r_inv i.l_inv 
-
-@[hott]
-def id_iso_sc_id_iso {C : Type u} [category.{v} C] {P : C -> trunctype.{0} -1}
-  {sc : subtype (λ c : C, ↥(P c))} : iso_sc_to_iso (id_is_iso sc) = id_is_iso sc.1 :=
-begin apply hom_eq_to_iso_eq, refl end  
-
-@[hott]
-def iso_eq_to_iso_sc_eq {C : Type u} [category.{v} C] (P : C -> trunctype.{0} -1) :
-  Π {sc₁ sc₂ : subtype (λ c : C, ↥(P c))} (g h : sc₁ ≅ sc₂), 
-  (iso_sc_to_iso g = iso_sc_to_iso h) -> (g = h) :=
-begin intros sc₁ sc₂ g h p, apply hom_eq_to_iso_eq, exact ap iso.hom p end 
-
-@[hott]
-def comm_eq_iso_sc_iso {C : Type u} [category.{v} C] (P : C -> trunctype.{0} -1) 
-  {sc₁ sc₂ sc₂': subtype (λ c : C, ↥(P c))} (p : sc₂ = sc₂') :
-  Π (g : sc₁ ≅ sc₂), iso_sc_to_iso (p ▸ g) = p..1 ▸ (iso_sc_to_iso g) :=
-begin hinduction p, intro g, refl end
-
-@[hott, instance]
-def full_subcat_on_subtype {C : Type u} [category.{v} C] (P : C -> trunctype.{0} -1) :
-  category (subtype (λ c : C, ↥(P c))) :=
-begin
-  apply category.mk,
-  intros sc₁ sc₂, fapply adjointify,
-  { intro i, fapply sigma_eq, 
-    { apply category.isotoid (iso_sc_to_iso i)  },
-    { apply pathover_of_tr_eq, exact is_prop.elim _ _ } },
-  { intro i, change (sigma_eq _ _) ▸[λ sc, sc₁ ≅ sc] (id_is_iso sc₁) = i,
-    apply iso_eq_to_iso_sc_eq, rwr comm_eq_iso_sc_iso _ _, rwr sigma_eq_fst,
-    rwr id_iso_sc_id_iso, apply hom_eq_to_iso_eq,
-    change (λ (sc : C) (j : sc₁.1 ≅ sc), j.hom) sc₂.1 
-             (idtoiso⁻¹ᶠ (iso_sc_to_iso i) ▸ id_is_iso sc₁.fst) = _,
-    rwr @fn_ev_tr_tr_fn_ev _ _ _ (λ sc, λ j : sc₁.1 ≅ sc, j.hom) _ _ 
-          (idtoiso⁻¹ᶠ (iso_sc_to_iso i)) (id_is_iso sc₁.1), 
-    rwr id_hom_tr_comp', rwr category.idtoiso_rinv (iso_sc_to_iso i), hsimp },
-  { intro p, hinduction p, rwr idtoiso_refl_eq sc₁, rwr id_iso_sc_id_iso, 
-    rwr isotoid_id_refl, rwr <- sigma_eq_eta (refl sc₁), fapply apd011 sigma_eq,
-    refl, apply pathover_of_tr_eq, rwr idp_tr, 
-    have H : is_prop (sc₁.2 =[refl sc₁.1; λ (a : C), (λ (c : C), ↥(P c)) a] sc₁.2), from
-    begin 
-      fapply is_trunc_is_equiv_closed_rev -1 (pathover_equiv_tr_eq (refl sc₁.1) _ _).to_fun,
-      { exact is_trunc_eq -1 _ _ },
-      { exact (pathover_equiv_tr_eq (refl sc₁.1) _ _).to_is_equiv } 
-    end,
-    apply @is_prop.elim _ H _ _ }
-end    
-
 /- The fully embedded category of a type injectively mapped to a category. 
    We start with a synonym for an (embedded) type `D`, on which the category structure
    will be defined, as in [category_theory.full_subcategory] of the mathlib. -/
@@ -758,6 +682,22 @@ begin
       begin apply hom_eq_to_iso_eq, refl end,
     rwr H, rwr isotoid_id_refl, exact inj_idp d₁ }
 end    
+
+/- The full subcategory on a subtype of the type of a category can be defined using
+   the injctive embedding of the subtype into the type. -/
+@[hott]
+def subtype_emb {C : Type u} [category.{v} C] (P : C -> trunctype.{0} -1) :
+  subtype (λ c : C, ↥(P c)) -> C := assume sc, sc.1
+
+@[hott, instance]
+def subtype_emb_is_inj {C : Type u} [category.{v} C] (P : C -> trunctype.{0} -1) :
+  is_injective (subtype_emb P) :=
+begin intros sc₁ sc₂, exact (subtype_eq_equiv sc₁ sc₂).to_is_equiv end    
+
+@[hott, instance]
+def full_subcat_on_subtype {C : Type u} [category.{v} C] (P : C -> trunctype.{0} -1) :
+  category (subtype (λ c : C, ↥(P c))) :=
+@fully_embedded_category _ _ _ (subtype_emb P) (subtype_emb_is_inj P)  
 
 end categories
 
