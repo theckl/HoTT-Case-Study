@@ -88,37 +88,37 @@ end
 
 /- To use the standard operation notations we need to define some instances. -/
 @[hott]
-def ring_add (R : Ω_sign_str_objects ring_signature) : 
+def ring_add (R : Ω_structure ring_signature) : 
   R.carrier -> R.carrier -> R.carrier :=
 begin intros x y, exact R.str.ops ring_ops.add (list_to_fin_Set (x :: y :: [])) end
 
 @[hott, instance]
-def ring_Ω_str_has_add (R : Ω_sign_str_objects ring_signature) : has_add R.carrier :=
+def ring_Ω_str_has_add (R : Ω_structure ring_signature) : has_add R.carrier :=
   ⟨ring_add R⟩
 
 @[hott, instance]
-def ring_Ω_str_has_zero (R : Ω_sign_str_objects ring_signature) : has_zero R.carrier :=
+def ring_Ω_str_has_zero (R : Ω_structure ring_signature) : has_zero R.carrier :=
 begin 
   apply has_zero.mk,  
   exact R.str.ops ring_ops.zero (list_to_fin_Set []) 
 end
 
 @[hott, instance]
-def ring_Ω_str_has_neg (R : Ω_sign_str_objects ring_signature) : has_neg R.carrier :=
+def ring_Ω_str_has_neg (R : Ω_structure ring_signature) : has_neg R.carrier :=
 begin 
   apply has_neg.mk, intro x, 
   exact R.str.ops ring_ops.neg (list_to_fin_Set (x :: [])) 
 end
 
 @[hott, instance]
-def ring_Ω_str_has_mul (R : Ω_sign_str_objects ring_signature) : has_mul R.carrier :=
+def ring_Ω_str_has_mul (R : Ω_structure ring_signature) : has_mul R.carrier :=
 begin 
   apply has_mul.mk, intros x y, 
   exact R.str.ops ring_ops.mul (list_to_fin_Set (x :: y :: [])) 
 end
 
 @[hott, instance]
-def ring_Ω_str_has_one (R : Ω_sign_str_objects ring_signature) : has_one R.carrier :=
+def ring_Ω_str_has_one (R : Ω_structure ring_signature) : has_one R.carrier :=
 begin 
   apply has_one.mk,  
   exact R.str.ops ring_ops.one (list_to_fin_Set []) 
@@ -127,7 +127,7 @@ end
 /- We define a predicate on the Ω-structures on sets having the ring signature, using a
    predicate on ring relations. -/
 @[hott]
-def ring_rels_pred (R : Ω_sign_str_objects ring_signature) (r : ring_rels) :
+def ring_rels_pred (R : Ω_structure ring_signature) (r : ring_rels) :
   trunctype.{0} -1 :=
 begin  
  hinduction r,
@@ -264,7 +264,7 @@ end
 /- A criterion to decide whether a subset of a commutative ring given by a predicate is a
    commutative (sub)ring : The ring operation are closed under the predicate. -/ 
 @[hott]
-class ring_pred_closed {R : CommRing} (P : Subset R.carrier) :=
+class ring_pred_closed {R : CommRing} (P : Subset R.1.carrier) :=
   (add : ∀ r s : R, P r -> P s -> P (r + s)) 
   (zero : P 0) 
   (neg : ∀ r : R, P r -> P (-r))
@@ -272,7 +272,7 @@ class ring_pred_closed {R : CommRing} (P : Subset R.carrier) :=
   (one : P 1)
 
 @[hott]   
-def comm_subring {R : CommRing} (P : Subset R.carrier) [ring_pred_closed P] : 
+def comm_subring {R : CommRing} (P : Subset R.1.carrier) [ring_pred_closed P] : 
   comm_ring ↥P :=
 begin  
   fapply @comm_ring_mk (pred_Set P),
