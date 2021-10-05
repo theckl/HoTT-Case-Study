@@ -636,7 +636,7 @@ structure fo_signature :=
 @[hott]  
 structure Ω_structure_on (sign : fo_signature) (carrier : Set) :=
   ( ops : ∀ o : sign.ops, ((sign.ops_arity o) -> carrier) -> carrier )
-  ( rels : ∀ r : sign.rels, ((sign.rels_arity r) -> carrier) -> trunctype.{0} -1 ) 
+  ( rels : ∀ r : sign.rels, ((sign.rels_arity r) -> carrier) -> trunctype.{0} -1 )
 
 /- The following three lemmas should be produced automatically. -/
 @[hott]
@@ -729,17 +729,22 @@ begin
 end  
 
 @[hott]
-def Ω_sign_str_objects (sign : fo_signature) :=
+def Ω_structure (sign : fo_signature) :=
   std_structure (std_str_of_Ω_str sign)
 
 @[hott, instance]
 def Ω_sign_str_precategory (sign : fo_signature) : 
-  precategory (Ω_sign_str_objects sign) := 
+  precategory (Ω_structure sign) := 
+std_str_precategory (std_str_of_Ω_str sign)
+
+@[hott, instance]
+def Ω_str_precategory (sign : fo_signature) : 
+  precategory (Ω_structure sign) := 
 std_str_precategory (std_str_of_Ω_str sign)
 
 @[hott, instance]
 def Ω_sign_str_category (sign : fo_signature) : 
-  category (Ω_sign_str_objects sign) := 
+  category (Ω_structure sign) := 
 structure_identity_principle (std_str_of_Ω_str sign)
 
 /- The category of Ω-structures on sets having a given signature is usually too large to
@@ -749,24 +754,24 @@ structure_identity_principle (std_str_of_Ω_str sign)
    full subcategory. In the following we construct this subcategory from a predicate. -/
 @[hott]
 def Ω_structure_pred (sign : fo_signature) := 
-  Ω_sign_str_objects sign -> trunctype.{0} -1 
+  Ω_structure sign -> trunctype.{0} -1 
 
 @[hott]
 def Ω_str_subtype {sign : fo_signature} (P : Ω_structure_pred sign) := 
-  sigma.subtype (λ Ω_str_obj : Ω_sign_str_objects sign, P Ω_str_obj)
+  sigma.subtype (λ Ω_str_obj : Ω_structure sign, P Ω_str_obj)
 
 /- Subsets of the underlying sets of an object in a category of first-order signature 
    category inherit the structure of the object if the operations are closed on the subset.
    Furthermore, structures on the subset such that the embedding is a homomorphism, are 
    unique. -/
 @[hott]
-def ops_closed {sign : fo_signature} {S : Ω_sign_str_objects sign} (R : Subset S.carrier) :=
+def ops_closed {sign : fo_signature} {S : Ω_structure sign} (R : Subset S.carrier) :=
   ∀ (o : sign.ops) (x : (sign.ops_arity o) -> S.carrier), 
     (∀ i : sign.ops_arity o, x i ∈ R) -> S.str.ops o x ∈ R 
 
 @[hott]
-def str_subobject {sign : fo_signature} {S : Ω_sign_str_objects sign} {R : Subset S.carrier}
-  (oc : ops_closed R) : Ω_sign_str_objects sign :=
+def str_subobject {sign : fo_signature} {S : Ω_structure sign} {R : Subset S.carrier}
+  (oc : ops_closed R) : Ω_structure sign :=
 begin
   fapply std_structure.mk,
   { exact pred_Set R },
@@ -780,7 +785,7 @@ end
    relations on elements in `R` in the Ω-structure on `S` that do not hold in the 
    Ω-structure on `R`. But `str_subobject` is terminal among all those structures. -/
 @[hott]
-def str_subobject_comp {sign : fo_signature} {S : Ω_sign_str_objects sign} 
+def str_subobject_comp {sign : fo_signature} {S : Ω_structure sign} 
   {R : Subset S.carrier} (oc : ops_closed R) : 
   (std_str_of_Ω_str sign).H (str_subobject oc).str S.str (pred_Set_map R) :=
 begin
@@ -790,7 +795,7 @@ begin
 end    
 
 @[hott]
-def terminal_str_on_subobj {sign : fo_signature} {S : Ω_sign_str_objects sign} 
+def terminal_str_on_subobj {sign : fo_signature} {S : Ω_structure sign} 
   {R : Subset S.carrier} (oc : ops_closed R) : 
   ∀ R_str : Ω_structure_on sign (pred_Set R), 
     (std_str_of_Ω_str sign).H R_str S.str (pred_Set_map R) ->
