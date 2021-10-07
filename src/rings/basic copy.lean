@@ -261,6 +261,29 @@ begin
         let y := head (tail vals), let z := head (tail (tail vals)), exact q x y z } } }
 end  
 
+@[hott]
+def CommRing_to_comm_ring (R : CommRing) : comm_ring R :=
+begin
+  fapply comm_ring.mk,
+  { apply_instance },
+  { exact ring_add R.1 },
+  { apply (R.2 ring_rels.add_assoc).1, sorry },
+  { sorry },
+  { sorry },
+  { sorry },
+  { sorry },
+  { sorry },
+  { sorry },
+  { sorry },
+  { sorry },
+  { sorry },
+  { sorry },
+  { sorry },
+  { sorry },
+  { sorry },
+  { sorry }
+end  
+
 /- A criterion to decide whether a subset of a commutative ring given by a predicate is a
    commutative (sub)ring : The ring operation are closed under the predicate. -/ 
 @[hott]
