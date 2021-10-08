@@ -132,27 +132,38 @@ def ring_rels_pred (R : Ω_structure ring_signature) (r : ring_rels) :
 begin  
  hinduction r,
  { exact to_Prop ((Π args, (R.str.rels ring_rels.add_assoc args).carrier) <-> 
-                        (∀ x y z : R.carrier, (ring_add R x y) + z = x + (y + z))) },  
+                        (∀ x y z : R.carrier, (ring_add R x y) + z = x + (y + z))) and 
+         is_true (to_Prop (Π args, (R.str.rels ring_rels.add_assoc args))) },  
  { exact to_Prop ((Π args, (R.str.rels ring_rels.zero_add args).carrier) <-> 
-                        (∀ x : R.carrier, 0 + x = x)) },
+                        (∀ x : R.carrier, 0 + x = x)) and 
+         is_true (to_Prop (Π args, (R.str.rels ring_rels.zero_add args))) },
  { exact to_Prop ((Π args, (R.str.rels ring_rels.add_zero args).carrier) <-> 
-                        (∀ x : R.carrier, x + 0 = x)) },
+                        (∀ x : R.carrier, x + 0 = x)) and 
+         is_true (to_Prop (Π args, (R.str.rels ring_rels.add_zero args))) },
  { exact to_Prop ((Π args, (R.str.rels ring_rels.neg_add args).carrier) <-> 
-                        (∀ x : R.carrier, (-x) + x = 0)) },
+                        (∀ x : R.carrier, (-x) + x = 0)) and 
+         is_true (to_Prop (Π args, (R.str.rels ring_rels.neg_add args))) },
  { exact to_Prop ((Π args, (R.str.rels ring_rels.add_comm args).carrier) <-> 
-                        (∀ x y: R.carrier, x + y = y + x)) },
+                        (∀ x y: R.carrier, x + y = y + x)) and 
+         is_true (to_Prop (Π args, (R.str.rels ring_rels.add_comm args))) },
  { exact to_Prop ((Π args, (R.str.rels ring_rels.mul_assoc args).carrier) <-> 
-                        (∀ x y z : R.carrier, (x * y) * z = x * (y * z))) },
+                        (∀ x y z : R.carrier, (x * y) * z = x * (y * z))) and 
+         is_true (to_Prop (Π args, (R.str.rels ring_rels.mul_assoc args))) },
  { exact to_Prop ((Π args, (R.str.rels ring_rels.one_mul args).carrier) <-> 
-                        (∀ x : R.carrier, 1 * x = x)) },
+                        (∀ x : R.carrier, 1 * x = x)) and 
+         is_true (to_Prop (Π args, (R.str.rels ring_rels.one_mul args))) },
  { exact to_Prop ((Π args, (R.str.rels ring_rels.mul_one args).carrier) <-> 
-                        (∀ x : R.carrier, x * 1 = x)) },
+                        (∀ x : R.carrier, x * 1 = x)) and 
+         is_true (to_Prop (Π args, (R.str.rels ring_rels.mul_one args))) },
  { exact to_Prop ((Π args, (R.str.rels ring_rels.mul_comm args).carrier) <-> 
-                        (∀ x y: R.carrier, x * y = y * x)) },
+                        (∀ x y: R.carrier, x * y = y * x)) and 
+         is_true (to_Prop (Π args, (R.str.rels ring_rels.mul_comm args))) },
  { exact to_Prop ((Π args, (R.str.rels ring_rels.right_distrib args).carrier) <-> 
-                        (∀ x y z : R.carrier, (x + y) * z = x * z + y * z)) },
+                        (∀ x y z : R.carrier, (x + y) * z = x * z + y * z)) and 
+         is_true (to_Prop (Π args, (R.str.rels ring_rels.right_distrib args))) },
  { exact to_Prop ((Π args, (R.str.rels ring_rels.left_distrib args).carrier) <-> 
-                        (∀ x y z : R.carrier, x * (y + z) = x * y + x * z)) } 
+                        (∀ x y z : R.carrier, x * (y + z) = x * y + x * z)) and 
+         is_true (to_Prop (Π args, (R.str.rels ring_rels.left_distrib args))) } 
 end                       
 
 @[hott]
@@ -216,9 +227,11 @@ begin
     { exact ring_structure_on α } },
   { intro r, hinduction r, 
     { fapply pair, 
-      { intros p x y z, exact p (list_to_fin_Set (x::y::z::[])) },
-      { intros q args, let vals := @fin_Set_to_list _ 3 args, let x := head vals, 
-        let y := head (tail vals), let z := head (tail (tail vals)), exact q x y z } },
+      { fapply pair,
+        { intros p x y z, exact p (list_to_fin_Set (x::y::z::[])) },
+        { intros q args, let vals := @fin_Set_to_list _ 3 args, let x := head vals, 
+          let y := head (tail vals), let z := head (tail (tail vals)), exact q x y z } },
+      { sorry } },    
     { fapply pair,
       { intros p x, exact p (list_to_fin_Set (x::[])) },
       { intros q args, let vals := @fin_Set_to_list _ 1 args, let x := head vals, 
