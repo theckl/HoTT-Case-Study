@@ -175,12 +175,20 @@ begin
   { intros enP aP, hinduction enP, exact a.2 (aP a.1) }
 end  
 
-/- A true `Prop`, and a proof of a true `Prop`. -/
+/- A true `Prop`, a proof of a true `Prop`,a nd a `Prop` with a proof is true. -/
 @[hott]
 def is_true (P : Prop) := to_Prop (P <-> True)
 
 @[hott]
 def proof_of_true_Prop {P : Prop} : is_true P -> P :=
   assume trueP, trueP.2 true.intro
+
+@[hott]
+def proof_is_true_Prop {P : Prop} : P -> is_true P :=
+begin  
+  intro p, apply pair,
+  { intro q, exact true.intro },
+  { intro t, exact p }
+end   
 
 end hott
