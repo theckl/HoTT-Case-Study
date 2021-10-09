@@ -133,37 +133,37 @@ begin
  hinduction r,
  { exact to_Prop ((Π args, (R.str.rels ring_rels.add_assoc args).carrier) <-> 
                         (∀ x y z : R.carrier, (ring_add R x y) + z = x + (y + z))) and 
-         is_true (to_Prop (Π args, (R.str.rels ring_rels.add_assoc args))) },  
+         is_true (to_Prop (∀ x y z : R.carrier, (ring_add R x y) + z = x + (y + z))) },  
  { exact to_Prop ((Π args, (R.str.rels ring_rels.zero_add args).carrier) <-> 
                         (∀ x : R.carrier, 0 + x = x)) and 
-         is_true (to_Prop (Π args, (R.str.rels ring_rels.zero_add args))) },
+         is_true (to_Prop (∀ x : R.carrier, 0 + x = x)) },
  { exact to_Prop ((Π args, (R.str.rels ring_rels.add_zero args).carrier) <-> 
                         (∀ x : R.carrier, x + 0 = x)) and 
-         is_true (to_Prop (Π args, (R.str.rels ring_rels.add_zero args))) },
+         is_true (to_Prop (∀ x : R.carrier, x + 0 = x)) },
  { exact to_Prop ((Π args, (R.str.rels ring_rels.neg_add args).carrier) <-> 
                         (∀ x : R.carrier, (-x) + x = 0)) and 
-         is_true (to_Prop (Π args, (R.str.rels ring_rels.neg_add args))) },
+         is_true (to_Prop (∀ x : R.carrier, (-x) + x = 0)) },
  { exact to_Prop ((Π args, (R.str.rels ring_rels.add_comm args).carrier) <-> 
                         (∀ x y: R.carrier, x + y = y + x)) and 
-         is_true (to_Prop (Π args, (R.str.rels ring_rels.add_comm args))) },
+         is_true (to_Prop (∀ x y: R.carrier, x + y = y + x)) },
  { exact to_Prop ((Π args, (R.str.rels ring_rels.mul_assoc args).carrier) <-> 
                         (∀ x y z : R.carrier, (x * y) * z = x * (y * z))) and 
-         is_true (to_Prop (Π args, (R.str.rels ring_rels.mul_assoc args))) },
+         is_true (to_Prop (∀ x y z : R.carrier, (x * y) * z = x * (y * z))) },
  { exact to_Prop ((Π args, (R.str.rels ring_rels.one_mul args).carrier) <-> 
                         (∀ x : R.carrier, 1 * x = x)) and 
-         is_true (to_Prop (Π args, (R.str.rels ring_rels.one_mul args))) },
+         is_true (to_Prop (∀ x : R.carrier, 1 * x = x)) },
  { exact to_Prop ((Π args, (R.str.rels ring_rels.mul_one args).carrier) <-> 
                         (∀ x : R.carrier, x * 1 = x)) and 
-         is_true (to_Prop (Π args, (R.str.rels ring_rels.mul_one args))) },
+         is_true (to_Prop (∀ x : R.carrier, x * 1 = x)) },
  { exact to_Prop ((Π args, (R.str.rels ring_rels.mul_comm args).carrier) <-> 
                         (∀ x y: R.carrier, x * y = y * x)) and 
-         is_true (to_Prop (Π args, (R.str.rels ring_rels.mul_comm args))) },
+         is_true (to_Prop (∀ x y: R.carrier, x * y = y * x)) },
  { exact to_Prop ((Π args, (R.str.rels ring_rels.right_distrib args).carrier) <-> 
                         (∀ x y z : R.carrier, (x + y) * z = x * z + y * z)) and 
-         is_true (to_Prop (Π args, (R.str.rels ring_rels.right_distrib args))) },
+         is_true (to_Prop (∀ x y z : R.carrier, (x + y) * z = x * z + y * z)) },
  { exact to_Prop ((Π args, (R.str.rels ring_rels.left_distrib args).carrier) <-> 
                         (∀ x y z : R.carrier, x * (y + z) = x * y + x * z)) and 
-         is_true (to_Prop (Π args, (R.str.rels ring_rels.left_distrib args))) } 
+         is_true (to_Prop (∀ x y z : R.carrier, x * (y + z) = x * y + x * z)) } 
 end                       
 
 @[hott]
@@ -218,6 +218,8 @@ def ring_structure_on {R : Set} (α : comm_ring R) : Ω_structure_on ring_signat
         let t := head (tail (tail vals)), exact to_Prop (r * (s + t) = (r * s) + (r * t)) } }
   end 
 
+#print fields comm_ring
+
 @[hott]
 def comm_ring_to_CommRing {R : Set} (α : comm_ring R) : CommRing :=
 begin
@@ -231,47 +233,67 @@ begin
         { intros p x y z, exact p (list_to_fin_Set (x::y::z::[])) },
         { intros q args, let vals := @fin_Set_to_list _ 3 args, let x := head vals, 
           let y := head (tail vals), let z := head (tail (tail vals)), exact q x y z } },
-      { sorry } },    
+      { exact proof_is_true_Prop α.add_assoc } },    
     { fapply pair,
-      { intros p x, exact p (list_to_fin_Set (x::[])) },
-      { intros q args, let vals := @fin_Set_to_list _ 1 args, let x := head vals, 
-        exact q x } },
+      { fapply pair,
+        { intros p x, exact p (list_to_fin_Set (x::[])) },
+        { intros q args, let vals := @fin_Set_to_list _ 1 args, let x := head vals, 
+          exact q x } },
+      { exact proof_is_true_Prop α.zero_add } },    
     { fapply pair,
-      { intros p x, exact p (list_to_fin_Set (x::[])) },
-      { intros q args, let vals := @fin_Set_to_list _ 1 args, let x := head vals, 
-        exact q x } },
+      { fapply pair,
+        { intros p x, exact p (list_to_fin_Set (x::[])) },
+        { intros q args, let vals := @fin_Set_to_list _ 1 args, let x := head vals, 
+          exact q x } },
+      { exact proof_is_true_Prop α.add_zero } },    
     { fapply pair,
-      { intros p x, exact p (list_to_fin_Set (x::[])) },
-      { intros q args, let vals := @fin_Set_to_list _ 1 args, let x := head vals, 
-        exact q x } },
+      { fapply pair,
+        { intros p x, exact p (list_to_fin_Set (x::[])) },
+        { intros q args, let vals := @fin_Set_to_list _ 1 args, let x := head vals, 
+          exact q x } },
+      { exact proof_is_true_Prop α.add_left_inv } },   
     { fapply pair,
-      { intros p x y, exact p (list_to_fin_Set (x::y::[])) },
-      { intros q args, let vals := @fin_Set_to_list _ 2 args, let x := head vals, 
-        let y := head (tail vals), exact q x y } },
+      { fapply pair,
+        { intros p x y, exact p (list_to_fin_Set (x::y::[])) },
+        { intros q args, let vals := @fin_Set_to_list _ 2 args, let x := head vals, 
+          let y := head (tail vals), exact q x y } },
+      { exact proof_is_true_Prop α.add_comm } },
     { fapply pair,
-      { intros p x y z, exact p (list_to_fin_Set (x::y::z::[])) },
-      { intros q args, let vals := @fin_Set_to_list _ 3 args, let x := head vals, 
-        let y := head (tail vals), let z := head (tail (tail vals)), exact q x y z } },
+      { fapply pair,
+        { intros p x y z, exact p (list_to_fin_Set (x::y::z::[])) },
+        { intros q args, let vals := @fin_Set_to_list _ 3 args, let x := head vals, 
+          let y := head (tail vals), let z := head (tail (tail vals)), exact q x y z } },
+      { exact proof_is_true_Prop α.mul_assoc } },    
     { fapply pair,
-      { intros p x, exact p (list_to_fin_Set (x::[])) },
-      { intros q args, let vals := @fin_Set_to_list _ 1 args, let x := head vals, 
-        exact q x }},
+      { fapply pair,
+        { intros p x, exact p (list_to_fin_Set (x::[])) },
+        { intros q args, let vals := @fin_Set_to_list _ 1 args, let x := head vals, 
+          exact q x }},
+      { exact proof_is_true_Prop α.one_mul } },
     { fapply pair,
-      { intros p x, exact p (list_to_fin_Set (x::[])) },
-      { intros q args, let vals := @fin_Set_to_list _ 1 args, let x := head vals, 
-        exact q x } },
+      { fapply pair,
+        { intros p x, exact p (list_to_fin_Set (x::[])) },
+        { intros q args, let vals := @fin_Set_to_list _ 1 args, let x := head vals, 
+          exact q x } },
+      { exact proof_is_true_Prop α.mul_one } },    
     { fapply pair,
-      { intros p x y, exact p (list_to_fin_Set (x::y::[])) },
-      { intros q args, let vals := @fin_Set_to_list _ 2 args, let x := head vals, 
-        let y := head (tail vals), exact q x y } },
+      { fapply pair,
+        { intros p x y, exact p (list_to_fin_Set (x::y::[])) },
+        { intros q args, let vals := @fin_Set_to_list _ 2 args, let x := head vals, 
+          let y := head (tail vals), exact q x y } },
+      { exact proof_is_true_Prop α.mul_comm } },    
     { fapply pair,
-      { intros p x y z, exact p (list_to_fin_Set (x::y::z::[])) },
-      { intros q args, let vals := @fin_Set_to_list _ 3 args, let x := head vals, 
-        let y := head (tail vals), let z := head (tail (tail vals)), exact q x y z } },
+      { fapply pair,
+        { intros p x y z, exact p (list_to_fin_Set (x::y::z::[])) },
+        { intros q args, let vals := @fin_Set_to_list _ 3 args, let x := head vals, 
+          let y := head (tail vals), let z := head (tail (tail vals)), exact q x y z } },
+      { exact proof_is_true_Prop α.right_distrib } },    
     { fapply pair,
-      { intros p x y z, exact p (list_to_fin_Set (x::y::z::[])) },
-      { intros q args, let vals := @fin_Set_to_list _ 3 args, let x := head vals, 
-        let y := head (tail vals), let z := head (tail (tail vals)), exact q x y z } } }
+      { fapply pair,
+        { intros p x y z, exact p (list_to_fin_Set (x::y::z::[])) },
+        { intros q args, let vals := @fin_Set_to_list _ 3 args, let x := head vals, 
+          let y := head (tail vals), let z := head (tail (tail vals)), exact q x y z } } },
+      { exact proof_is_true_Prop α.left_distrib } }
 end  
 
 @[hott]
@@ -279,22 +301,22 @@ def CommRing_to_comm_ring (R : CommRing) : comm_ring R :=
 begin
   fapply comm_ring.mk,
   { apply_instance },
-  { exact ring_add R.1 },
-  { apply (R.2 ring_rels.add_assoc).1, sorry },
-  { sorry },
-  { sorry },
-  { sorry },
-  { sorry },
-  { sorry },
-  { sorry },
-  { sorry },
-  { sorry },
-  { sorry },
-  { sorry },
-  { sorry },
-  { sorry },
-  { sorry },
-  { sorry }
+  { intros r s, exact r + s },
+  { exact proof_of_true_Prop (R.2 ring_rels.add_assoc).2 },
+  { exact 0 },
+  { exact proof_of_true_Prop (R.2 ring_rels.zero_add).2 },
+  { exact proof_of_true_Prop (R.2 ring_rels.add_zero).2 },
+  { intro r, exact -r },
+  { exact proof_of_true_Prop (R.2 ring_rels.neg_add).2 },
+  { exact proof_of_true_Prop (R.2 ring_rels.add_comm).2 },
+  { intros r s, exact r * s },
+  { exact proof_of_true_Prop (R.2 ring_rels.mul_assoc).2 },
+  { exact 1 },
+  { exact proof_of_true_Prop (R.2 ring_rels.one_mul).2 },
+  { exact proof_of_true_Prop (R.2 ring_rels.mul_one).2 },
+  { exact proof_of_true_Prop (R.2 ring_rels.left_distrib).2 },
+  { exact proof_of_true_Prop (R.2 ring_rels.right_distrib).2 },
+  { exact proof_of_true_Prop (R.2 ring_rels.mul_comm).2 }
 end  
 
 /- A criterion to decide whether a subset of a commutative ring given by a predicate is a
