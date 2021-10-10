@@ -748,17 +748,29 @@ def Ω_sign_str_category (sign : fo_signature) :
 structure_identity_principle (std_str_of_Ω_str sign)
 
 /- The category of Ω-structures on sets having a given signature is usually too large to
-   capture algebraic structures: These require relations involving the operations. By 
-   prescribing logical equivalences of the signature relations to such relations we can 
-   define a predicate on the objects of the Ω-structure category and then a 
-   full subcategory. In the following we construct this subcategory from a predicate. -/
+   capture algebraic structures: These require that particular relations involving the
+   operations are true for all possible arguments. 
+   
+   By prescribing logical equivalences of the signature relations to such relations and
+   and requesting that they are always true we can define a predicate on the objects 
+   of the Ω-structure category and using that a full subcategory. -/
 @[hott]
-def Ω_structure_pred (sign : fo_signature) := 
-  Ω_structure sign -> trunctype.{0} -1 
+def Ω_structure_rels (sign : fo_signature) :=
+  Π (r : sign.rels), trunctype.{0} -1
 
 @[hott]
-def Ω_str_subtype {sign : fo_signature} (P : Ω_structure_pred sign) := 
-  sigma.subtype (λ Ω_str_obj : Ω_structure sign, P Ω_str_obj)
+def Ω_structure_laws_pred {sign : fo_signature} (P : Ω_structure_rels sign) : 
+  Ω_structure sign -> trunctype.{0} -1 :=
+begin  
+intro S, 
+exact prop_resize 
+      (to_Prop (∀ r : sign.rels, (Π args, (S.str.rels r args).carrier) <-> (P r)) and
+       to_Prop (∀ r : sign.rels, is_true (P r)))
+end                        
+
+@[hott]
+def Ω_str_subtype {sign : fo_signature} (P : Ω_structure_rels sign) := 
+  sigma.subtype (λ S : Ω_structure sign, Ω_structure_laws_pred P S)
 
 /- Subsets of the underlying sets of an object in a category of first-order signature 
    category inherit the structure of the object if the operations are closed on the subset.
@@ -809,16 +821,24 @@ begin
    exact (prop_resize_to_prop R_str_comp).rels_pres r x rx }
 end                              
 
-/- Subsets of structured sets in the full subcategory of Ω-structures defined by a 
-   predicate closed under the structure operation do not necessarily satisfy the 
-   predicate. But this is the case if the predicate only depends on the relations. -/
+/- The induced structure on subsets of structured sets in the full subcategory of 
+   Ω-structures defined by a predicate that are closed under the structure operation 
+   do not necessarily satisfy the predicate. But this is the case if the relations must    
+   hold for all possible arguments. -/
 @[hott] 
-def Ω_structure_rels_pred (sign : fo_signature) : Ω_structure_pred sign :=
+def Ω_structure_with_laws {sign : fo_signature} (S : Ω_structure sign) := 
+  ∀ (r : sign.rels) (args : (sign.rels_arity r) -> S.carrier), 
+                                                  is_true (S.str.rels r args) 
+
+@[hott]
+def str_subset {sign : fo_signature} {S : Ω_structure sign} 
+  (P : Ω_structure_pred sign) (L : Ω_structure_with_laws S) {R : Subset S.carrier} 
+  (oc : ops_closed R) : Ω_str_subtype P :=
 begin
-  intro S, 
-  exact to_Prop (∀ (r : sign.rels) (args : (sign.rels_arity r) -> S.carrier), 
-                                                                  S.str.rels r args) 
-end  
+  fapply sigma.mk,
+  { exact str_subobject oc },
+  { sorry }
+end
 
 end categories
 
