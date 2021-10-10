@@ -218,8 +218,6 @@ def ring_structure_on {R : Set} (α : comm_ring R) : Ω_structure_on ring_signat
         let t := head (tail (tail vals)), exact to_Prop (r * (s + t) = (r * s) + (r * t)) } }
   end 
 
-#print fields comm_ring
-
 @[hott]
 def comm_ring_to_CommRing {R : Set} (α : comm_ring R) : CommRing :=
 begin
