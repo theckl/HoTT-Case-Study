@@ -756,7 +756,8 @@ structure_identity_principle (std_str_of_Ω_str sign)
    of the Ω-structure category and using that a full subcategory. -/
 @[hott]
 def Ω_structure_rels (sign : fo_signature) :=
-  Π (r : sign.rels), trunctype.{0} -1
+  Π (r : sign.rels) (S : Ω_structure sign) (args : (sign.rels_arity r) -> S.carrier), 
+  trunctype.{0} -1
 
 @[hott]
 def Ω_structure_laws_pred {sign : fo_signature} (P : Ω_structure_rels sign) : 
@@ -764,8 +765,8 @@ def Ω_structure_laws_pred {sign : fo_signature} (P : Ω_structure_rels sign) :
 begin  
 intro S, 
 exact prop_resize 
-      (to_Prop (∀ r : sign.rels, (Π args, (S.str.rels r args).carrier) <-> (P r)) and
-       to_Prop (∀ r : sign.rels, is_true (P r)))
+      (to_Prop (∀ r args, (S.str.rels r args).carrier <-> (P r S args)) and
+       to_Prop (∀ r args, is_true (P r S args)))
 end                        
 
 @[hott]
@@ -773,9 +774,8 @@ def Ω_str_subtype {sign : fo_signature} (P : Ω_structure_rels sign) :=
   sigma.subtype (λ S : Ω_structure sign, Ω_structure_laws_pred P S)
 
 /- Subsets of the underlying sets of an object in a category of first-order signature 
-   category inherit the structure of the object if the operations are closed on the subset.
-   Furthermore, structures on the subset such that the embedding is a homomorphism, are 
-   unique. -/
+   category inherit the structure of the object if the operations are closed on the 
+   subset. -/
 @[hott]
 def ops_closed {sign : fo_signature} {S : Ω_structure sign} (R : Subset S.carrier) :=
   ∀ (o : sign.ops) (x : (sign.ops_arity o) -> S.carrier), 
@@ -831,13 +831,18 @@ def Ω_structure_with_laws {sign : fo_signature} (S : Ω_structure sign) :=
                                                   is_true (S.str.rels r args) 
 
 @[hott]
-def str_subset {sign : fo_signature} {S : Ω_structure sign} 
-  (P : Ω_structure_pred sign) (L : Ω_structure_with_laws S) {R : Subset S.carrier} 
-  (oc : ops_closed R) : Ω_str_subtype P :=
+def str_subset {sign : fo_signature} {S : Ω_structure sign} {P : Ω_structure_rels sign} 
+  (Q : Ω_structure_laws_pred P S) {R : Subset S.carrier} (oc : ops_closed R) : 
+  Ω_str_subtype P :=
 begin
   fapply sigma.mk,
   { exact str_subobject oc },
-  { sorry }
+  { change ↥(Ω_structure_laws_pred P (str_subobject oc)),
+    apply prop_to_prop_resize, apply prod.mk, 
+    { intros r args, apply prod.mk, 
+      { sorry },
+      { sorry } },
+    { intros r args, sorry } }--exact ((prop_resize_to_prop Q).2 r args) } }
 end
 
 end categories
