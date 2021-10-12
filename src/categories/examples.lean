@@ -753,24 +753,24 @@ structure_identity_principle (std_str_of_Ω_str sign)
    
    By prescribing logical equivalences of the signature relations to such relations and
    and requesting that they are always true we can define a predicate on the objects 
-   of the Ω-structure category and using that a full subcategory. -/
+   of the Ω-structure category that gives a full subcategory. -/
 @[hott]
-def Ω_structure_rels (sign : fo_signature) :=
-  Π (r : sign.rels) (S : Ω_structure sign) (args : (sign.rels_arity r) -> S.carrier), 
+def signature_laws (sign : fo_signature) :=
+  Π (S : Ω_structure sign) (r : sign.rels) (args : (sign.rels_arity r) -> S.carrier), 
   trunctype.{0} -1
 
 @[hott]
-def Ω_structure_laws_pred {sign : fo_signature} (P : Ω_structure_rels sign) : 
+def Ω_structure_laws_pred {sign : fo_signature} (P : signature_laws sign) : 
   Ω_structure sign -> trunctype.{0} -1 :=
 begin  
 intro S, 
 exact prop_resize 
-      (to_Prop (∀ r args, (S.str.rels r args).carrier <-> (P r S args)) and
-       to_Prop (∀ r args, is_true (P r S args)))
+      (to_Prop (∀ r args, (S.str.rels r args).carrier <-> (P S r args)) and
+       to_Prop (∀ r args, is_true (P S r args)))
 end                        
 
 @[hott]
-def Ω_str_subtype {sign : fo_signature} (P : Ω_structure_rels sign) := 
+def Ω_str_subtype {sign : fo_signature} (P : signature_laws sign) := 
   sigma.subtype (λ S : Ω_structure sign, Ω_structure_laws_pred P S)
 
 /- Subsets of the underlying sets of an object in a category of first-order signature 
@@ -778,8 +778,8 @@ def Ω_str_subtype {sign : fo_signature} (P : Ω_structure_rels sign) :=
    subset. -/
 @[hott]
 def ops_closed {sign : fo_signature} {S : Ω_structure sign} (R : Subset S.carrier) :=
-  ∀ (o : sign.ops) (x : (sign.ops_arity o) -> S.carrier), 
-    (∀ i : sign.ops_arity o, x i ∈ R) -> S.str.ops o x ∈ R 
+  ∀ (o : sign.ops) (args : (sign.ops_arity o) -> S.carrier), 
+    (∀ i : sign.ops_arity o, args i ∈ R) -> S.str.ops o args ∈ R 
 
 @[hott]
 def str_subobject {sign : fo_signature} {S : Ω_structure sign} {R : Subset S.carrier}
@@ -821,28 +821,43 @@ begin
    exact (prop_resize_to_prop R_str_comp).rels_pres r x rx }
 end                              
 
-/- The induced structure on subsets of structured sets in the full subcategory of 
-   Ω-structures defined by a predicate that are closed under the structure operation 
-   do not necessarily satisfy the predicate. But this is the case if the relations must    
-   hold for all possible arguments. -/
-@[hott] 
-def Ω_structure_with_laws {sign : fo_signature} (S : Ω_structure sign) := 
-  ∀ (r : sign.rels) (args : (sign.rels_arity r) -> S.carrier), 
-                                                  is_true (S.str.rels r args) 
+/- The induced structure on a subset of structured sets that is closed under the 
+   structure operation does not necessarily satisfy the laws of a predicate if the 
+   laws are satisfied by the structured set.
+   
+   But this is the case if the laws are functorial and left-exact. -/
+@[hott]
+def funct_sign_laws {sign : fo_signature} (P : signature_laws sign) :=
+  Π {S R : Ω_structure sign} (f : R.carrier -> S.carrier) (r : sign.rels) 
+  (args : (sign.rels_arity r) -> R.carrier), P R r args -> P S r (f ∘ args)   
 
 @[hott]
-def str_subset {sign : fo_signature} {S : Ω_structure sign} {P : Ω_structure_rels sign} 
-  (Q : Ω_structure_laws_pred P S) {R : Subset S.carrier} (oc : ops_closed R) : 
-  Ω_str_subtype P :=
+def left_exact_sign_laws {sign : fo_signature} (P : signature_laws sign) :=
+  Π {S R : Ω_structure sign} (f : R.carrier -> S.carrier) (r : sign.rels) 
+    (args : (sign.rels_arity r) -> R.carrier), 
+  is_set_injective f -> (P S r (f ∘ args) -> P R r args)  
+
+@[hott]
+def law_str_subset {sign : fo_signature} {P : signature_laws sign} {S : Ω_str_subtype P}
+  (funct : funct_sign_laws P) {le_laws : left_exact_sign_laws P} (R : Subset S.1.carrier) 
+  (oc : ops_closed R) : Ω_str_subtype P :=
 begin
+  let emb_map : (str_subobject oc).carrier -> S.1.carrier := pred_Set_map R,
   fapply sigma.mk,
   { exact str_subobject oc },
   { change ↥(Ω_structure_laws_pred P (str_subobject oc)),
     apply prop_to_prop_resize, apply prod.mk, 
     { intros r args, apply prod.mk, 
-      { sorry },
-      { sorry } },
-    { intros r args, sorry } }--exact ((prop_resize_to_prop Q).2 r args) } }
+      { intro so_rel, apply le_laws emb_map r args (pred_Set_map_is_inj R),
+        apply ((prop_resize_to_prop S.2).1 r (((pred_Set_map R)) ∘ args)).1, 
+        assumption },
+      { intro so_P, apply ((prop_resize_to_prop S.2).1 r (((pred_Set_map R)) ∘ args)).2, 
+        apply funct emb_map r args, assumption } },
+    { intros r args, apply prod.mk, 
+      { intro so_P, exact true.intro },
+      { intro t, apply le_laws emb_map r args (pred_Set_map_is_inj R),
+        apply ((prop_resize_to_prop S.2).2 r (((pred_Set_map R)) ∘ args)).2,
+        assumption } } }
 end
 
 end categories
