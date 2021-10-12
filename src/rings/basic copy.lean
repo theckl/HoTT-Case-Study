@@ -127,40 +127,19 @@ end
 /- We define a predicate on the Ω-structures on sets having the ring signature, using a
    predicate on ring relations. -/
 @[hott]
-def ring_rels_pred (R : Ω_structure ring_signature) (r : ring_rels) :
-  trunctype.{0} -1 :=
+def ring_laws : signature_laws ring_signature :=
 begin  
- hinduction r,
- { exact to_Prop ((Π args, (R.str.rels ring_rels.add_assoc args).carrier) <-> 
-                        (∀ x y z : R.carrier, (ring_add R x y) + z = x + (y + z))) and 
-         is_true (to_Prop (∀ x y z : R.carrier, (ring_add R x y) + z = x + (y + z))) },  
- { exact to_Prop ((Π args, (R.str.rels ring_rels.zero_add args).carrier) <-> 
-                        (∀ x : R.carrier, 0 + x = x)) and 
-         is_true (to_Prop (∀ x : R.carrier, 0 + x = x)) },
- { exact to_Prop ((Π args, (R.str.rels ring_rels.add_zero args).carrier) <-> 
-                        (∀ x : R.carrier, x + 0 = x)) and 
-         is_true (to_Prop (∀ x : R.carrier, x + 0 = x)) },
- { exact to_Prop ((Π args, (R.str.rels ring_rels.neg_add args).carrier) <-> 
-                        (∀ x : R.carrier, (-x) + x = 0)) and 
-         is_true (to_Prop (∀ x : R.carrier, (-x) + x = 0)) },
- { exact to_Prop ((Π args, (R.str.rels ring_rels.add_comm args).carrier) <-> 
-                        (∀ x y: R.carrier, x + y = y + x)) and 
-         is_true (to_Prop (∀ x y: R.carrier, x + y = y + x)) },
- { exact to_Prop ((Π args, (R.str.rels ring_rels.mul_assoc args).carrier) <-> 
-                        (∀ x y z : R.carrier, (x * y) * z = x * (y * z))) and 
-         is_true (to_Prop (∀ x y z : R.carrier, (x * y) * z = x * (y * z))) },
- { exact to_Prop ((Π args, (R.str.rels ring_rels.one_mul args).carrier) <-> 
-                        (∀ x : R.carrier, 1 * x = x)) and 
-         is_true (to_Prop (∀ x : R.carrier, 1 * x = x)) },
- { exact to_Prop ((Π args, (R.str.rels ring_rels.mul_one args).carrier) <-> 
-                        (∀ x : R.carrier, x * 1 = x)) and 
-         is_true (to_Prop (∀ x : R.carrier, x * 1 = x)) },
- { exact to_Prop ((Π args, (R.str.rels ring_rels.mul_comm args).carrier) <-> 
-                        (∀ x y: R.carrier, x * y = y * x)) and 
-         is_true (to_Prop (∀ x y: R.carrier, x * y = y * x)) },
- { exact to_Prop ((Π args, (R.str.rels ring_rels.right_distrib args).carrier) <-> 
-                        (∀ x y z : R.carrier, (x + y) * z = x * z + y * z)) and 
-         is_true (to_Prop (∀ x y z : R.carrier, (x + y) * z = x * z + y * z)) },
+ intros R r args, hinduction r,
+ { exact to_Prop (∀ x y z : R.carrier, (ring_add R x y) + z = x + (y + z)) },  
+ { exact to_Prop (∀ x : R.carrier, 0 + x = x) },
+ { exact to_Prop (∀ x : R.carrier, x + 0 = x) },
+ { exact to_Prop (∀ x : R.carrier, (-x) + x = 0) },
+ { exact to_Prop (∀ x y: R.carrier, x + y = y + x) },
+ { exact to_Prop (∀ x y z : R.carrier, (x * y) * z = x * (y * z)) },
+ { exact to_Prop (∀ x : R.carrier, 1 * x = x) },
+ { exact to_Prop (∀ x : R.carrier, x * 1 = x) },
+ { exact to_Prop (∀ x y: R.carrier, x * y = y * x) },
+ { exact to_Prop (∀ x y z : R.carrier, (x + y) * z = x * z + y * z) },
  { exact to_Prop ((Π args, (R.str.rels ring_rels.left_distrib args).carrier) <-> 
                         (∀ x y z : R.carrier, x * (y + z) = x * y + x * z)) and 
          is_true (to_Prop (∀ x y z : R.carrier, x * (y + z) = x * y + x * z)) } 
