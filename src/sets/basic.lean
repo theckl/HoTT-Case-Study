@@ -1,11 +1,12 @@
 import hott.init init2 hott.types.trunc prop_logic hott.types.prod hott.hit.quotient 
-       hott.algebra.relation types2
+       hott.algebra.relation types2 hott.types.nat.order
 
 universes u u' v w
 hott_theory
 
 namespace hott
-open is_trunc trunc equiv is_equiv hott.prod hott.quotient hott.sigma hott.relation nat
+open is_trunc trunc equiv is_equiv hott.prod hott.quotient hott.sigma hott.relation 
+     nat 
 
 namespace set
 
@@ -598,10 +599,10 @@ def sum_Set (A B : Set) : Set :=
 def fin_Set (n : ℕ) : Set.{0} :=
 begin hinduction n with n fin_n, exact Zero_Set, exact sum_Set fin_n One_Set end  
 
-/- `fin_Set n` can be used to enumerate `n` elements of a set `R`, by exhibiting a map
-   `fin_Set n -> R`. Instead one can construct a list of elements of `R`, of length `n`. 
-   Then one can use the operations on lists to extract the elements, or work with the
-   empty list. -/
+/- `fin_Set n` can be used to enumerate `n` elements of a (non-empty) set `R`, by 
+   exhibiting a map `fin_Set n -> R`. To extract the kth element we construct a list 
+   of elements of `R`, of length `n`, and then a function taking the map and the 
+   index k, delivering the kth element if `k ≤ n` and a default element otherwise. -/
 @[hott, reducible, hsimp]
 def fin_Set_to_list {A : Set.{0}} {n : ℕ} : (fin_Set n -> A) -> list A :=
 begin
@@ -619,6 +620,17 @@ begin
   { exact ap succ (ih (f ∘ sum.inl)) }
 end    
 
+@[hott]
+def fin_Set_kth {n : ℕ} {R : Set} [r : inhabited R] (f : fin_Set n -> R) (k : ℕ) : R :=    
+begin
+  fapply @nat.lt_ge_by_cases k n _, 
+  { rwr <- fin_Set_list.length f, intro lt, apply list.nth_le (fin_Set_to_list f) k, 
+    sorry  },
+  { sorry } 
+end  
+
+/- We can also produce a `fin_Set` from a list, and the two operations are inverse to 
+   each other. -/
 @[hott, reducible, hsimp]
 def list_to_fin_Set {A : Set.{0}} : Π l : list A, (fin_Set (list.length l) -> A) :=
 begin
