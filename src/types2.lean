@@ -1,10 +1,10 @@
-import hott.init hott.hit.trunc hott.types.trunc
+import hott.init hott.hit.trunc hott.types.trunc hott.types.nat.order
 
 universes u v w
 hott_theory
 
 namespace hott
-open hott.is_trunc hott.trunc
+open hott.is_trunc hott.trunc hott.nat
 
 /- Properties of the product of two types -/
 @[hott]
@@ -95,5 +95,12 @@ end
 def equiv_arg_exchange {A : Type _} {B : Type _} {f : A -> B} (H : is_equiv f) 
   {C : B -> Type _} : (∀ a : A, C (f a)) -> (∀ b : B, C b) :=
 begin intros g b, rwr <- is_equiv.right_inv f b, exact g (f⁻¹ᶠ b) end     
+
+/- Inequalities of natural numbers in the core are non-HoTT propositions, so procedures
+   using them need to be rewritten.  -/
+@[simp] def list_nth_le {α : Type _} : Π (l : list α) (n), n < l.length → α
+| []       n     h := absurd h (not_lt_zero n)
+| (a :: l) 0     h := a
+| (a :: l) (n+1) h := list_nth_le l n (le_of_succ_le_succ h)
 
 end hott
