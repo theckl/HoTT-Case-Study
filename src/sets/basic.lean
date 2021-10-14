@@ -624,10 +624,12 @@ end
 def fin_Set_kth {n : ℕ} {R : Set} [r : inhabited R] (f : fin_Set n -> R) (k : ℕ) : R :=    
 begin
   fapply @nat.lt_ge_by_cases k n _, 
-  { rwr <- fin_Set_list.length f, intro lt, apply list.nth_le (fin_Set_to_list f) k, 
-    sorry  },
-  { sorry } 
+  { rwr <- fin_Set_list.length f, intro lt, 
+    exact list_nth_le (fin_Set_to_list f) k lt },
+  { intro lt, exact r.default } 
 end  
+
+--notation x `_[`:200 k `]`:200 := fin_Set_kth x k
 
 /- We can also produce a `fin_Set` from a list, and the two operations are inverse to 
    each other. -/
