@@ -604,7 +604,7 @@ begin hinduction n with n fin_n, exact Zero_Set, exact sum_Set fin_n One_Set end
    of elements of `R`, of length `n`, and then a function taking the map and the 
    index k, delivering the kth element if `k ≤ n` and a default element otherwise. -/
 @[hott, reducible, hsimp]
-def fin_Set_to_list {A : Set.{0}} {n : ℕ} : (fin_Set n -> A) -> list A :=
+def fin_Set_to_list {A : Set} {n : ℕ} : (fin_Set n -> A) -> list A :=
 begin
   hinduction n, 
   { intro f, exact [] },
@@ -612,7 +612,7 @@ begin
 end 
 
 @[hott]
-def fin_Set_list.length {A : Set.{0}} {n : ℕ} (f : fin_Set n -> A) :
+def fin_Set_list.length {A : Set} {n : ℕ} (f : fin_Set n -> A) :
   list.length (fin_Set_to_list f) = n :=
 begin
   hinduction n, 
@@ -629,12 +629,12 @@ begin
   { intro lt, exact r.default } 
 end  
 
---notation x `_[`:200 k `]`:200 := fin_Set_kth x k
+notation x `^[` k `]` := fin_Set_kth x k
 
 /- We can also produce a `fin_Set` from a list, and the two operations are inverse to 
    each other. -/
 @[hott, reducible, hsimp]
-def list_to_fin_Set {A : Set.{0}} : Π l : list A, (fin_Set (list.length l) -> A) :=
+def list_to_fin_Set {A : Set} : Π l : list A, (fin_Set (list.length l) -> A) :=
 begin
   intro l, hinduction l,  
   { intro fin_el, hinduction fin_el },
@@ -644,7 +644,7 @@ begin
 end  
 
 @[hott]
-def rinv_fin_Set_list (A : Set.{0}) : 
+def rinv_fin_Set_list (A : Set) : 
   ∀ l : list A, fin_Set_to_list (list_to_fin_Set l) = l :=
 begin
   intro l, hinduction l,
@@ -658,7 +658,7 @@ begin
 end
 
 @[hott]
-def linv_fin_Set_list (A : Set.{0}) {n : ℕ}: 
+def linv_fin_Set_list (A : Set) {n : ℕ}: 
   ∀ f : fin_Set n -> A, list_to_fin_Set (fin_Set_to_list f) 
                               =[fin_Set_list.length f; λ m, fin_Set m -> A] f :=
 begin
