@@ -134,23 +134,20 @@ def ring_str_is_inhabited {R : Ω_structure ring_signature} : inhabited R.carrie
 def ring_laws : signature_laws ring_signature :=
 begin  
  intros R r, hinduction r,
- { hsimp, intro args, let x := fin_Set_kth args 0, let y := fin_Set_kth args 1, 
-   let z := fin_Set_kth args 2, exact to_Prop ((ring_add R x y) + z = x + (y + z)) },  
- { hsimp, intro args, let x := fin_Set_kth args 0, exact to_Prop (0 + x = x) },
- { hsimp, intro args, let x := fin_Set_kth args 0, exact to_Prop (x + 0 = x) },
- { hsimp, intro args, let x := fin_Set_kth args 0, exact to_Prop ((-x) + x = 0) },
- { hsimp, intro args, let x := fin_Set_kth args 0, let y := fin_Set_kth args 1, 
-   exact to_Prop (x + y = y + x) },
- { hsimp, intro args, let x := fin_Set_kth args 0, let y := fin_Set_kth args 1, 
-   let z := fin_Set_kth args 2, exact to_Prop ((x * y) * z = x * (y * z)) },
- { hsimp, intro args, let x := fin_Set_kth args 0, exact to_Prop (1 * x = x) },
- { hsimp, intro args, let x := fin_Set_kth args 0, exact to_Prop (x * 1 = x) },
- { hsimp, intro args, let x := fin_Set_kth args 0, let y := fin_Set_kth args 1, 
-   exact to_Prop (x * y = y * x) },
- { hsimp, intro args, let x := fin_Set_kth args 0, let y := fin_Set_kth args 1, 
-   let z := fin_Set_kth args 2, exact to_Prop ((x + y) * z = x * z + y * z) },
- { hsimp, intro args, let x := fin_Set_kth args 0, let y := fin_Set_kth args 1, 
-   let z := fin_Set_kth args 2, exact to_Prop (x * (y + z) = x * y + x * z) } 
+ { hsimp, intro x, 
+   exact to_Prop ((ring_add R (x^[0]) (x^[1])) + x^[2] = x^[0] + (x^[1] + x^[2])) },  
+ { hsimp, intro x, exact to_Prop (0 + x^[0] = x^[0]) },
+ { hsimp, intro x, exact to_Prop (x^[0] + 0 = x^[0]) },
+ { hsimp, intro x, exact to_Prop ((-(x^[0])) + x^[0] = 0) },
+ { hsimp, intro x, exact to_Prop (x^[0] + x^[1] = x^[1] + x^[0]) },
+ { hsimp, intro x, exact to_Prop ((x^[0] * x^[1]) * x^[2] = x^[0] * (x^[1] * x^[2])) },
+ { hsimp, intro x, exact to_Prop (1 * x^[0] = x^[0]) },
+ { hsimp, intro x, exact to_Prop (x^[0] * 1 = x^[0]) },
+ { hsimp, intro x, exact to_Prop (x^[0] * x^[1] = x^[1] * x^[0]) },
+ { hsimp, intro x, 
+   exact to_Prop ((x^[0] + x^[1]) * x^[2] = x^[0] * x^[2] + x^[1] * x^[2]) },
+ { hsimp, intro x, 
+   exact to_Prop (x^[0] * (x^[1] + x^[2]) = x^[0] * x^[1] + x^[0] * x^[2]) } 
 end                       
 
 @[hott]
@@ -167,38 +164,35 @@ instance CommRing_to_Type : has_coe_to_sort CommRing :=
 /- We construct an Ω-structure of a ring signature from a `comm_ring` structure. -/
 @[hott, instance]
 def comm_ring_is_inhabited {R : Set} (α : comm_ring R) : inhabited R.carrier :=
-  ⟨0⟩
+  ⟨α.zero⟩
 
 @[hott]
-def ring_structure_on {R : Set} (α : comm_ring R) : Ω_structure_on ring_signature R :=
-  begin
-    fapply Ω_structure_on.mk, let H := comm_ring_is_inhabited α,
-    { intros o, hinduction o, 
-      { hsimp, intro args, let r := @fin_Set_kth _ _ H args 0, 
-        let s := @fin_Set_kth _ _ H args 1, exact r + s },
-      { hsimp, intro args, exact 0 },
-      { hsimp, intro args, let r := @fin_Set_kth _ _ H args 0, exact -r },
-      { hsimp, intro args, let r := @fin_Set_kth _ _ H args 0, 
-        let s := @fin_Set_kth _ _ H args 1, exact r * s },
-      { hsimp, intro args, exact 1 } },
-    { intros r x, hinduction r, 
-      { let vals := @fin_Set_to_list _ 3 x, let r := head vals, let s := head (tail vals),
-        let t := head (tail (tail vals)), exact to_Prop ((r + s) + t = r + (s + t)) },
-      { let vals := @fin_Set_to_list _ 1 x, let r := head vals, exact to_Prop (0 + r = r) },
-      { let vals := @fin_Set_to_list _ 1 x, let r := head vals, exact to_Prop (r + 0 = r) },
-      { let vals := @fin_Set_to_list _ 1 x, let r := head vals, exact to_Prop ((-r) + r = 0) },
-      { let vals := @fin_Set_to_list _ 2 x, let r := head vals, let s := head (tail vals),
-        exact to_Prop (r + s = s + r) },
-      { let vals := @fin_Set_to_list _ 3 x, let r := head vals, let s := head (tail vals),
-        let t := head (tail (tail vals)), exact to_Prop ((r * s) * t = r * (s * t)) },
-      { let vals := @fin_Set_to_list _ 1 x, let r := head vals, exact to_Prop (1 * r = r) },
-      { let vals := @fin_Set_to_list _ 1 x, let r := head vals, exact to_Prop (r * 1 = r) },
-      { let vals := @fin_Set_to_list _ 2 x, let r := head vals, let s := head (tail vals),
-        exact to_Prop (r * s = s * r) },
-      { let vals := @fin_Set_to_list _ 3 x, let r := head vals, let s := head (tail vals),
-        let t := head (tail (tail vals)), exact to_Prop ((r + s) * t = (r * t) + (s * t)) },
-      { let vals := @fin_Set_to_list _ 3 x, let r := head vals, let s := head (tail vals),
-        let t := head (tail (tail vals)), exact to_Prop (r * (s + t) = (r * s) + (r * t)) } }
+def ring_structure_on {R : Set} (α : comm_ring R) [inhabited R.carrier] : 
+  Ω_structure_on ring_signature R :=
+begin
+  fapply Ω_structure_on.mk,
+  { intro o, hinduction o, 
+    { hsimp, intro x, exact x^[0] + x^[1] },
+    { hsimp, intro args, exact 0 },
+    { hsimp, intro x, exact -(x^[0]) },
+    { hsimp, intro x, exact x^[0] * x^[1] },
+    { hsimp, intro x, exact 1 } },
+  { intro r, hinduction r, 
+      { hsimp, intro x, exact prop_resize (to_Prop ((x^[0] + x^[1]) + (x^[2]) =
+                                                       x^[0] + (x^[1] + x^[2]))) },
+      { hsimp, intro x, exact to_Prop (0 + x^[0] = x^[0]) },
+      { hsimp, intro x, exact to_Prop (x^[0] + 0 = x^[0]) },
+      { hsimp, intro x, exact to_Prop ((-(x^[0])) + x^[0] = 0) },
+      { hsimp, intro x, exact to_Prop (x^[0] + x^[1] = x^[1] + x^[0]) },
+      { hsimp, intro x, 
+        exact to_Prop ((x^[0] * x^[1]) * x^[2] = x^[0] * (x^[1] * x^[2])) },
+      { hsimp, intro x, exact to_Prop (1 * x^[0] = x^[0]) },
+      { hsimp, intro x, exact to_Prop (x^[0] * 1 = x^[0]) },
+      { hsimp, intro x, exact to_Prop (x^[0] * x^[1] = x^[1] * x^[0]) },
+      { hsimp, intro x, 
+        exact to_Prop ((x^[0] + x^[1]) * x^[2] = (x^[0] * x^[2]) + (x^[1] * x^[2])) },
+      { hsimp, intro x,  
+        exact to_Prop (x^[0] * (x^[1] + x^[2]) = (x^[0] * x^[1]) + (x^[0] * x^[2])) } }
   end 
 
 @[hott]
@@ -207,11 +201,11 @@ begin
   fapply dpair,
   { fapply std_structure.mk, 
     { exact R },
-    { exact ring_structure_on α } },
+    { exact @ring_structure_on R α (comm_ring_is_inhabited α) } },
   { apply prop_to_prop_resize, apply prod.mk, 
-    { intros r args, hinduction r, 
-      { fapply pair, 
-        { intros p x y z, exact p (list_to_fin_Set (x::y::z::[])) },
+    { intros r, hinduction r, 
+      { hsimp, intro x, fapply pair, 
+        { intro p, sorry },
         { sorry } }, 
       { sorry },
       { sorry },
