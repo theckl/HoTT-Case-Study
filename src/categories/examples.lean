@@ -839,7 +839,7 @@ def left_exact_sign_laws {sign : fo_signature} (P : signature_laws sign) :=
 
 @[hott]
 def law_str_subset {sign : fo_signature} {P : signature_laws sign} {S : Ω_str_subtype P}
-  (funct : funct_sign_laws P) {le_laws : left_exact_sign_laws P} (R : Subset S.1.carrier) 
+  (funct : funct_sign_laws P) (le_laws : left_exact_sign_laws P) (R : Subset S.1.carrier) 
   (oc : ops_closed R) : Ω_str_subtype P :=
 begin
   let emb_map : (str_subobject oc).carrier -> S.1.carrier := pred_Set_map R,
