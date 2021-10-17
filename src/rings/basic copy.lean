@@ -200,85 +200,18 @@ begin
       all_goals { hsimp, intro x, fapply pair, 
         { intro p, exact p },
         { intro q, exact q } } }, 
-    { intro r, hinduction r, 
-      { hsimp, intro x, sorry }, 
-      { sorry }, 
-      { sorry }, 
-      { sorry }, 
-      { sorry }, 
-      { sorry }, 
-      { sorry }, 
-      { sorry }, 
-      { sorry }, 
-      { sorry }, 
-      { sorry } } }
-/-    { intros r args, hinduction r, }
-    { fapply pair, 
-      { fapply pair,
-        { intros p x y z, exact p (list_to_fin_Set (x::y::z::[])) },
-        { intros q args, let vals := @fin_Set_to_list _ 3 args, let x := head vals, 
-          let y := head (tail vals), let z := head (tail (tail vals)), exact q x y z } },
-      { exact proof_is_true_Prop α.add_assoc } },    
-    { fapply pair,
-      { fapply pair,
-        { intros p x, exact p (list_to_fin_Set (x::[])) },
-        { intros q args, let vals := @fin_Set_to_list _ 1 args, let x := head vals, 
-          exact q x } },
-      { exact proof_is_true_Prop α.zero_add } },    
-    { fapply pair,
-      { fapply pair,
-        { intros p x, exact p (list_to_fin_Set (x::[])) },
-        { intros q args, let vals := @fin_Set_to_list _ 1 args, let x := head vals, 
-          exact q x } },
-      { exact proof_is_true_Prop α.add_zero } },    
-    { fapply pair,
-      { fapply pair,
-        { intros p x, exact p (list_to_fin_Set (x::[])) },
-        { intros q args, let vals := @fin_Set_to_list _ 1 args, let x := head vals, 
-          exact q x } },
-      { exact proof_is_true_Prop α.add_left_inv } },   
-    { fapply pair,
-      { fapply pair,
-        { intros p x y, exact p (list_to_fin_Set (x::y::[])) },
-        { intros q args, let vals := @fin_Set_to_list _ 2 args, let x := head vals, 
-          let y := head (tail vals), exact q x y } },
-      { exact proof_is_true_Prop α.add_comm } },
-    { fapply pair,
-      { fapply pair,
-        { intros p x y z, exact p (list_to_fin_Set (x::y::z::[])) },
-        { intros q args, let vals := @fin_Set_to_list _ 3 args, let x := head vals, 
-          let y := head (tail vals), let z := head (tail (tail vals)), exact q x y z } },
-      { exact proof_is_true_Prop α.mul_assoc } },    
-    { fapply pair,
-      { fapply pair,
-        { intros p x, exact p (list_to_fin_Set (x::[])) },
-        { intros q args, let vals := @fin_Set_to_list _ 1 args, let x := head vals, 
-          exact q x }},
-      { exact proof_is_true_Prop α.one_mul } },
-    { fapply pair,
-      { fapply pair,
-        { intros p x, exact p (list_to_fin_Set (x::[])) },
-        { intros q args, let vals := @fin_Set_to_list _ 1 args, let x := head vals, 
-          exact q x } },
-      { exact proof_is_true_Prop α.mul_one } },    
-    { fapply pair,
-      { fapply pair,
-        { intros p x y, exact p (list_to_fin_Set (x::y::[])) },
-        { intros q args, let vals := @fin_Set_to_list _ 2 args, let x := head vals, 
-          let y := head (tail vals), exact q x y } },
-      { exact proof_is_true_Prop α.mul_comm } },    
-    { fapply pair,
-      { fapply pair,
-        { intros p x y z, exact p (list_to_fin_Set (x::y::z::[])) },
-        { intros q args, let vals := @fin_Set_to_list _ 3 args, let x := head vals, 
-          let y := head (tail vals), let z := head (tail (tail vals)), exact q x y z } },
-      { exact proof_is_true_Prop α.right_distrib } },    
-    { fapply pair,
-      { fapply pair,
-        { intros p x y z, exact p (list_to_fin_Set (x::y::z::[])) },
-        { intros q args, let vals := @fin_Set_to_list _ 3 args, let x := head vals, 
-          let y := head (tail vals), let z := head (tail (tail vals)), exact q x y z } } },
-      { exact proof_is_true_Prop α.left_distrib } } -/
+    { intro r, hinduction r, all_goals {hsimp, intro x, apply proof_is_true_Prop},
+      { fapply α.add_assoc }, 
+      { fapply α.zero_add }, 
+      { fapply α.add_zero }, 
+      { fapply α.add_left_inv }, 
+      { fapply α.add_comm }, 
+      { fapply α.mul_assoc }, 
+      { fapply α.one_mul }, 
+      { fapply α.mul_one }, 
+      { fapply α.mul_comm }, 
+      { fapply α.right_distrib }, 
+      { fapply α.left_distrib } } }
 end  
 
 @[hott]
@@ -287,61 +220,56 @@ begin
   fapply comm_ring.mk,
   { apply_instance },
   { intros r s, exact r + s },
-  { exact proof_of_true_Prop (R.2 ring_rels.add_assoc).2 },
+  { intros r s t, exact proof_of_true_Prop ((prop_resize_to_prop R.2).2 
+                              ring_rels.add_assoc (list_to_fin_Set (r::s::t::[]))) },
   { exact 0 },
-  { exact proof_of_true_Prop (R.2 ring_rels.zero_add).2 },
-  { exact proof_of_true_Prop (R.2 ring_rels.add_zero).2 },
+  { intro r, exact proof_of_true_Prop ((prop_resize_to_prop R.2).2 
+                              ring_rels.zero_add (list_to_fin_Set (r::[]))) },
+  { intro r, exact proof_of_true_Prop ((prop_resize_to_prop R.2).2 
+                              ring_rels.add_zero (list_to_fin_Set (r::[]))) },
   { intro r, exact -r },
-  { exact proof_of_true_Prop (R.2 ring_rels.neg_add).2 },
-  { exact proof_of_true_Prop (R.2 ring_rels.add_comm).2 },
+  { intro r, exact proof_of_true_Prop ((prop_resize_to_prop R.2).2 
+                              ring_rels.neg_add (list_to_fin_Set (r::[]))) },
+  { intros r s, exact proof_of_true_Prop ((prop_resize_to_prop R.2).2 
+                              ring_rels.add_comm (list_to_fin_Set (r::s::[]))) },
   { intros r s, exact r * s },
-  { exact proof_of_true_Prop (R.2 ring_rels.mul_assoc).2 },
+  { intros r s t, exact proof_of_true_Prop ((prop_resize_to_prop R.2).2
+                              ring_rels.mul_assoc (list_to_fin_Set (r::s::t::[]))) },
   { exact 1 },
-  { exact proof_of_true_Prop (R.2 ring_rels.one_mul).2 },
-  { exact proof_of_true_Prop (R.2 ring_rels.mul_one).2 },
-  { exact proof_of_true_Prop (R.2 ring_rels.left_distrib).2 },
-  { exact proof_of_true_Prop (R.2 ring_rels.right_distrib).2 },
-  { exact proof_of_true_Prop (R.2 ring_rels.mul_comm).2 }
+  { intro r, exact proof_of_true_Prop ((prop_resize_to_prop R.2).2
+                              ring_rels.one_mul (list_to_fin_Set (r::[]))) },
+  { intro r, exact proof_of_true_Prop ((prop_resize_to_prop R.2).2
+                              ring_rels.mul_one (list_to_fin_Set (r::[]))) },
+  { intros r s t, exact proof_of_true_Prop ((prop_resize_to_prop R.2).2
+                              ring_rels.left_distrib (list_to_fin_Set (r::s::t::[]))) },
+  { intros r s t, exact proof_of_true_Prop ((prop_resize_to_prop R.2).2
+                              ring_rels.right_distrib (list_to_fin_Set (r::s::t::[]))) },
+  { intros r s, exact proof_of_true_Prop ((prop_resize_to_prop R.2).2
+                              ring_rels.mul_comm (list_to_fin_Set (r::s::[]))) }
 end  
 
-/- A criterion to decide whether a subset of a commutative ring given by a predicate is a
-   commutative (sub)ring : The ring operation are closed under the predicate. -/ 
+/- Subrings are subsets of rings with the induced ring structure. So they can be 
+   constructed from the data of a subset and the closedness under operations which we
+   collect in a structure. For the construction we need the functoriality and the left 
+   exactness of the ring laws. A subring structure can be coerced into a `CommRing`. -/
 @[hott]
-class ring_pred_closed {R : CommRing} (P : Subset R.1.carrier) :=
-  (add : ∀ r s : R, P r -> P s -> P (r + s)) 
-  (zero : P 0) 
-  (neg : ∀ r : R, P r -> P (-r))
-  (mul : ∀ r s : R, P r -> P s -> P (r * s)) 
-  (one : P 1)
+structure is_Subring (S : CommRing) :=
+  (subset : Subset S.1.carrier)
+  (ops_closed : ops_closed subset)
 
-@[hott]   
-def comm_subring {R : CommRing} (P : Subset R.1.carrier) [ring_pred_closed P] : 
-  comm_ring ↥P :=
-begin  
-  fapply @comm_ring_mk (pred_Set P),
-  { fapply comm_ring_ops.mk, 
-    { intros r s, exact ⟨r.1 + s.1, ring_pred_closed.add r.1 s.1 r.2 s.2⟩ }, --add
-    { exact ⟨0, ring_pred_closed.zero P⟩ }, --zero
-    { intro r, exact ⟨-r.1, ring_pred_closed.neg r.1 r.2⟩ }, --neg
-    { intros r s, exact ⟨r.1 * s.1, ring_pred_closed.mul r.1 s.1 r.2 s.2⟩ }, --mul
-    { exact ⟨1, ring_pred_closed.one P⟩ } }, --one
-  { fapply comm_ring_laws.mk, 
-    { intros r s t, hsimp, apply sigma_Prop_eq, hsimp, 
-      exact comm_ring.add_assoc r.1 s.1 t.1 }, --add_assoc 
-    { intro r, hsimp, apply sigma_Prop_eq, hsimp, exact comm_ring.zero_add r.1 }, --zero_add
-    { intro r, hsimp, apply sigma_Prop_eq, hsimp, exact comm_ring.add_zero r.1 }, --add_zero 
-    { intro r, hsimp, apply sigma_Prop_eq, hsimp, exact comm_ring.add_left_inv r.1 }, --add_left_inv 
-    { intros r s, hsimp, apply sigma_Prop_eq, hsimp, exact comm_ring.add_comm r.1 s.1 },  --add_comm 
-    { intros r s t, hsimp, apply sigma_Prop_eq, hsimp, 
-      exact comm_ring.mul_assoc r.1 s.1 t.1 }, --mul_assoc
-    { intro r, hsimp, apply sigma_Prop_eq, hsimp, exact comm_ring.one_mul r.1 }, --one_mul 
-    { intro r, hsimp, apply sigma_Prop_eq, hsimp, exact comm_ring.mul_one r.1 }, --mul_one 
-    { intros r s, hsimp, apply sigma_Prop_eq, hsimp, exact comm_ring.mul_comm r.1 s.1 }, --mul_comm
-    { intros r s t, hsimp, apply sigma_Prop_eq, hsimp, 
-      exact comm_ring.left_distrib r.1 s.1 t.1 }, --left_distrib 
-    { intros r s t, hsimp, apply sigma_Prop_eq, hsimp, 
-      exact comm_ring.right_distrib r.1 s.1 t.1 }, } --right_distrib
-end  
+@[hott]
+def funct_ring_laws : funct_sign_laws ring_laws :=
+  sorry
+
+@[hott]
+def left_exact_ring_laws : left_exact_sign_laws ring_laws :=
+  sorry  
+
+#check funct_ring_laws
+
+@[hott]
+def Subring.mk {S : CommRing} (R : is_Subring S) : CommRing :=
+  law_str_subset funct_ring_laws left_exact_ring_laws R.subset R.ops_closed
 
 @[hott]
 def CommSubring {R : CommRing} (P : Subset R.carrier) [ring_pred_closed P] : CommRing :=
