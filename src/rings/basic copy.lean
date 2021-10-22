@@ -11,6 +11,9 @@ open hott.is_trunc hott.is_equiv hott.algebra hott.set subset categories hott.tr
 
 namespace algebra
 
+set_option pp.universes false
+set_option pp.implicit false
+
 /- We construct the category of rings as a full subcategory of a first-order signature 
    category of operations on a set and laws governing them, and construct objects of that
    category from a `comm_ring` structure on a set. 
@@ -134,17 +137,17 @@ def ring_str_is_inhabited {R : Ω_structure ring_signature} : inhabited R.carrie
 def ring_laws : signature_laws ring_signature :=
 begin  
  intros R r, hinduction r, all_goals {hsimp, intro x},
- { exact to_Prop ((x^[0] + x^[1]) + x^[2] = x^[0] + (x^[1] + x^[2])) },  
- { exact to_Prop (0 + x^[0] = x^[0]) },
- { exact to_Prop (x^[0] + 0 = x^[0]) },
- { exact to_Prop ((-(x^[0])) + x^[0] = 0) },
- { exact to_Prop (x^[0] + x^[1] = x^[1] + x^[0]) },
- { exact to_Prop ((x^[0] * x^[1]) * x^[2] = x^[0] * (x^[1] * x^[2])) },
- { exact to_Prop (1 * x^[0] = x^[0]) },
- { exact to_Prop (x^[0] * 1 = x^[0]) },
- { exact to_Prop (x^[0] * x^[1] = x^[1] * x^[0]) },
- { exact to_Prop ((x^[0] + x^[1]) * x^[2] = x^[0] * x^[2] + x^[1] * x^[2]) },
- { exact to_Prop (x^[0] * (x^[1] + x^[2]) = x^[0] * x^[1] + x^[0] * x^[2]) } 
+ { exact prop_resize (to_Prop ((x^[0] + x^[1]) + x^[2] = x^[0] + (x^[1] + x^[2]))) },  
+ { exact prop_resize (to_Prop (0 + x^[0] = x^[0])) },
+ { exact prop_resize (to_Prop (x^[0] + 0 = x^[0])) },
+ { exact prop_resize (to_Prop ((-(x^[0])) + x^[0] = 0)) },
+ { exact prop_resize (to_Prop (x^[0] + x^[1] = x^[1] + x^[0])) },
+ { exact prop_resize (to_Prop ((x^[0] * x^[1]) * x^[2] = x^[0] * (x^[1] * x^[2]))) },
+ { exact prop_resize (to_Prop (1 * x^[0] = x^[0])) },
+ { exact prop_resize (to_Prop (x^[0] * 1 = x^[0])) },
+ { exact prop_resize (to_Prop (x^[0] * x^[1] = x^[1] * x^[0])) },
+ { exact prop_resize (to_Prop ((x^[0] + x^[1]) * x^[2] = x^[0] * x^[2] + x^[1] * x^[2])) },
+ { exact prop_resize (to_Prop (x^[0] * (x^[1] + x^[2]) = x^[0] * x^[1] + x^[0] * x^[2])) } 
 end                       
 
 @[hott]
@@ -175,17 +178,17 @@ begin
     { exact x^[0] * x^[1] },
     { exact 1 } },
   { intro r, hinduction r, all_goals {hsimp, intro x},
-      { exact (to_Prop ((x^[0] + x^[1]) + (x^[2]) = x^[0] + (x^[1] + x^[2]))) },
-      { exact to_Prop (0 + x^[0] = x^[0]) },
-      { exact to_Prop (x^[0] + 0 = x^[0]) },
-      { exact to_Prop ((-(x^[0])) + x^[0] = 0) },
-      { exact to_Prop (x^[0] + x^[1] = x^[1] + x^[0]) },
-      { exact to_Prop ((x^[0] * x^[1]) * x^[2] = x^[0] * (x^[1] * x^[2])) },
-      { exact to_Prop (1 * x^[0] = x^[0]) },
-      { exact to_Prop (x^[0] * 1 = x^[0]) },
-      { exact to_Prop (x^[0] * x^[1] = x^[1] * x^[0]) },
-      { exact to_Prop ((x^[0] + x^[1]) * x^[2] = (x^[0] * x^[2]) + (x^[1] * x^[2])) },
-      { exact to_Prop (x^[0] * (x^[1] + x^[2]) = (x^[0] * x^[1]) + (x^[0] * x^[2])) } }
+      { exact prop_resize (to_Prop ((x^[0] + x^[1]) + (x^[2]) = x^[0] + (x^[1] + x^[2]))) },
+      { exact prop_resize (to_Prop (0 + x^[0] = x^[0])) },
+      { exact prop_resize (to_Prop (x^[0] + 0 = x^[0])) },
+      { exact prop_resize (to_Prop ((-(x^[0])) + x^[0] = 0)) },
+      { exact prop_resize (to_Prop (x^[0] + x^[1] = x^[1] + x^[0])) },
+      { exact prop_resize (to_Prop ((x^[0] * x^[1]) * x^[2] = x^[0] * (x^[1] * x^[2]))) },
+      { exact prop_resize (to_Prop (1 * x^[0] = x^[0])) },
+      { exact prop_resize (to_Prop (x^[0] * 1 = x^[0])) },
+      { exact prop_resize (to_Prop (x^[0] * x^[1] = x^[1] * x^[0])) },
+      { exact prop_resize (to_Prop ((x^[0] + x^[1]) * x^[2] = (x^[0] * x^[2]) + (x^[1] * x^[2]))) },
+      { exact prop_resize (to_Prop (x^[0] * (x^[1] + x^[2]) = (x^[0] * x^[1]) + (x^[0] * x^[2]))) } }
   end 
 
 @[hott]
@@ -201,17 +204,17 @@ begin
         { intro p, exact p },
         { intro q, exact q } } }, 
     { intro r, hinduction r, all_goals {hsimp, intro x, apply proof_is_true_Prop},
-      { fapply α.add_assoc }, 
-      { fapply α.zero_add }, 
-      { fapply α.add_zero }, 
-      { fapply α.add_left_inv }, 
-      { fapply α.add_comm }, 
-      { fapply α.mul_assoc }, 
-      { fapply α.one_mul }, 
-      { fapply α.mul_one }, 
-      { fapply α.mul_comm }, 
-      { fapply α.right_distrib }, 
-      { fapply α.left_distrib } } }
+      { apply prop_to_prop_resize, fapply α.add_assoc }, 
+      { apply prop_to_prop_resize, fapply α.zero_add }, 
+      { apply prop_to_prop_resize, fapply α.add_zero }, 
+      { apply prop_to_prop_resize, fapply α.add_left_inv }, 
+      { apply prop_to_prop_resize, fapply α.add_comm }, 
+      { apply prop_to_prop_resize, fapply α.mul_assoc }, 
+      { apply prop_to_prop_resize, fapply α.one_mul }, 
+      { apply prop_to_prop_resize, fapply α.mul_one }, 
+      { apply prop_to_prop_resize, fapply α.mul_comm }, 
+      { apply prop_to_prop_resize, fapply α.right_distrib }, 
+      { apply prop_to_prop_resize, fapply α.left_distrib } } }
 end  
 
 @[hott]
@@ -220,32 +223,32 @@ begin
   fapply comm_ring.mk,
   { apply_instance },
   { intros r s, exact r + s },
-  { intros r s t, exact proof_of_true_Prop ((prop_resize_to_prop R.2).2 
-                              ring_rels.add_assoc (list_to_fin_Set (r::s::t::[]))) },
+  { intros r s t, exact prop_resize_to_prop (proof_of_true_Prop 
+      ((prop_resize_to_prop R.2).2 ring_rels.add_assoc (list_to_fin_Set (r::s::t::[])))) },
   { exact 0 },
-  { intro r, exact proof_of_true_Prop ((prop_resize_to_prop R.2).2 
-                              ring_rels.zero_add (list_to_fin_Set (r::[]))) },
-  { intro r, exact proof_of_true_Prop ((prop_resize_to_prop R.2).2 
-                              ring_rels.add_zero (list_to_fin_Set (r::[]))) },
+  { intro r, exact prop_resize_to_prop (proof_of_true_Prop 
+      ((prop_resize_to_prop R.2).2 ring_rels.zero_add (list_to_fin_Set (r::[])))) },
+  { intro r, exact prop_resize_to_prop (proof_of_true_Prop 
+      ((prop_resize_to_prop R.2).2 ring_rels.add_zero (list_to_fin_Set (r::[])))) },
   { intro r, exact -r },
-  { intro r, exact proof_of_true_Prop ((prop_resize_to_prop R.2).2 
-                              ring_rels.neg_add (list_to_fin_Set (r::[]))) },
-  { intros r s, exact proof_of_true_Prop ((prop_resize_to_prop R.2).2 
-                              ring_rels.add_comm (list_to_fin_Set (r::s::[]))) },
+  { intro r, exact prop_resize_to_prop (proof_of_true_Prop 
+      ((prop_resize_to_prop R.2).2 ring_rels.neg_add (list_to_fin_Set (r::[])))) },
+  { intros r s, exact prop_resize_to_prop (proof_of_true_Prop 
+      ((prop_resize_to_prop R.2).2 ring_rels.add_comm (list_to_fin_Set (r::s::[])))) },
   { intros r s, exact r * s },
-  { intros r s t, exact proof_of_true_Prop ((prop_resize_to_prop R.2).2
-                              ring_rels.mul_assoc (list_to_fin_Set (r::s::t::[]))) },
+  { intros r s t, exact prop_resize_to_prop (proof_of_true_Prop 
+      ((prop_resize_to_prop R.2).2 ring_rels.mul_assoc (list_to_fin_Set (r::s::t::[])))) },
   { exact 1 },
-  { intro r, exact proof_of_true_Prop ((prop_resize_to_prop R.2).2
-                              ring_rels.one_mul (list_to_fin_Set (r::[]))) },
-  { intro r, exact proof_of_true_Prop ((prop_resize_to_prop R.2).2
-                              ring_rels.mul_one (list_to_fin_Set (r::[]))) },
-  { intros r s t, exact proof_of_true_Prop ((prop_resize_to_prop R.2).2
-                              ring_rels.left_distrib (list_to_fin_Set (r::s::t::[]))) },
-  { intros r s t, exact proof_of_true_Prop ((prop_resize_to_prop R.2).2
-                              ring_rels.right_distrib (list_to_fin_Set (r::s::t::[]))) },
-  { intros r s, exact proof_of_true_Prop ((prop_resize_to_prop R.2).2
-                              ring_rels.mul_comm (list_to_fin_Set (r::s::[]))) }
+  { intro r, exact prop_resize_to_prop (proof_of_true_Prop 
+      ((prop_resize_to_prop R.2).2 ring_rels.one_mul (list_to_fin_Set (r::[])))) },
+  { intro r, exact prop_resize_to_prop (proof_of_true_Prop 
+      ((prop_resize_to_prop R.2).2 ring_rels.mul_one (list_to_fin_Set (r::[])))) },
+  { intros r s t, exact prop_resize_to_prop (proof_of_true_Prop 
+      ((prop_resize_to_prop R.2).2 ring_rels.left_distrib (list_to_fin_Set (r::s::t::[])))) },
+  { intros r s t, exact prop_resize_to_prop (proof_of_true_Prop 
+      ((prop_resize_to_prop R.2).2 ring_rels.right_distrib (list_to_fin_Set (r::s::t::[])))) },
+  { intros r s, exact prop_resize_to_prop (proof_of_true_Prop 
+      ((prop_resize_to_prop R.2).2 ring_rels.mul_comm (list_to_fin_Set (r::s::[])))) }
 end  
 
 /- Subrings are subsets of rings with the induced ring structure. So they can be 
@@ -259,31 +262,23 @@ structure is_Subring (S : CommRing) :=
 
 @[hott]
 def funct_ring_laws : funct_sign_laws ring_laws :=
-  sorry
+begin
+  intros S R f r x laws_r_x, 
+  sorry 
+end
 
 @[hott]
 def left_exact_ring_laws : left_exact_sign_laws ring_laws :=
   sorry  
 
-#check funct_ring_laws
-
 @[hott]
-def Subring.mk {S : CommRing} (R : is_Subring S) : CommRing :=
-  law_str_subset funct_ring_laws left_exact_ring_laws R.subset R.ops_closed
-
-@[hott]
-def CommSubring {R : CommRing} (P : Subset R.carrier) [ring_pred_closed P] : CommRing :=
-  CommRing.mk (pred_Set P) (comm_subring P)
-
-@[hott]
-def CommSubring.to_Subset {R : CommRing} (P : Subset R.carrier) [ring_pred_closed P] : 
-  Subset R.carrier :=
-{r ∈ R.carrier | P r}    
+def Subring.mk {S : CommRing} (R : is_Subring S) : CommRing := 
+  law_str_subset @funct_ring_laws @left_exact_ring_laws R.subset R.ops_closed
 
 /- The embedding of the underlying subset of a subring into the underlying set of the ring is a 
    ring homomorphism. -/
 @[hott]
-def comm_subring_embed_hom {R : CommRing} (P : Subset R.carrier) [ring_pred_closed P]:
+def Subring_embed_hom {R : CommRing} (P : Subset R.carrier) [ring_pred_closed P]:
   comm_ring_str.H (CommSubring P).str R.str (pred_Set_map (CommSubring.to_Subset P)) :=
 begin 
   fapply is_ring_hom.mk, 
