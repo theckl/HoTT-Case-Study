@@ -773,6 +773,11 @@ end
 def Ω_str_subtype {sign : fo_signature} (P : signature_laws sign) := 
   sigma.subtype (λ S : Ω_structure sign, Ω_structure_laws_pred P S)
 
+@[hott, instance]
+def Ω_str_subtype_category {sign : fo_signature} (P : signature_laws sign) : 
+  category (Ω_str_subtype P) :=
+full_subcat_on_subtype (Ω_structure_laws_pred P)  
+
 /- Subsets of the underlying sets of an object in a category of first-order signature 
    category inherit the structure of the object if the operations are closed on the 
    subset. -/
