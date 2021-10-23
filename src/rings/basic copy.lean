@@ -161,6 +161,10 @@ instance CommRing_to_Set : has_coe CommRing Set :=
 instance CommRing_to_Type : has_coe_to_sort CommRing :=
   has_coe_to_sort.mk (Type _) (λ R : CommRing, R.1.carrier)  
 
+
+@[hott, instance]
+def CommRing_category : category CommRing := Ω_str_subtype_category ring_laws
+
 /- We construct an Ω-structure of a ring signature from a `comm_ring` structure. -/
 @[hott, instance]
 def comm_ring_is_inhabited {R : Set} (α : comm_ring R) : inhabited R.carrier :=
@@ -251,6 +255,30 @@ begin
       ((prop_resize_to_prop R.2).2 ring_rels.mul_comm (list_to_fin_Set (r::s::[])))) }
 end  
 
+/- Maps between the carrier sets of Ω-structures are homomorphisms iff they preserve 
+   both operations and relations. In the case of Ω-structures of ring signature 
+   satisfying the ring laws it is enough to preserve the ring operations. -/
+@[hott]
+def is_ring_ops_preserving {R S : CommRing} (f : R -> S) :=
+  ∀ (o : ring_signature.ops) (x : (ring_signature.ops_arity o) → R), 
+              f (R.1.str.ops o x) = (S.1.str.ops o) (f ∘ x)
+
+@[hott]
+def ring_hom_to_ops_preserving_map {R S : CommRing} (f : R ⟶ S) : 
+  is_ring_ops_preserving f.1 := 
+sorry    
+
+@[hott]
+def ops_preserving_map_to_ring_hom {R S : CommRing} (f : R -> S) 
+  (ops_pres : is_ring_ops_preserving f) : R ⟶ S :=
+sorry
+
+@[hott] 
+def ops_preserving_map_ring_hom_inv {R S : CommRing} (f : R -> S) 
+  (ops_pres : is_ring_ops_preserving f) : 
+  (ops_preserving_map_to_ring_hom f ops_pres).1 = f :=
+sorry  
+
 /- Subrings are subsets of rings with the induced ring structure. So they can be 
    constructed from the data of a subset and the closedness under operations which we
    collect in a structure. For the construction we need the functoriality and the left 
@@ -278,15 +306,17 @@ def Subring.mk {S : CommRing} (R : is_Subring S) : CommRing :=
 /- The embedding of the underlying subset of a subring into the underlying set of the ring is a 
    ring homomorphism. -/
 @[hott]
-def Subring_embed_hom {R : CommRing} (P : Subset R.carrier) [ring_pred_closed P]:
-  comm_ring_str.H (CommSubring P).str R.str (pred_Set_map (CommSubring.to_Subset P)) :=
-begin 
-  fapply is_ring_hom.mk, 
-  { refl },
-  { intros r s, refl },
-  { refl },
-  { intros r s, refl }
-end     
+def Subring_embed_map {S : CommRing} (R : is_Subring S) : Subring.mk R -> S :=
+ sorry
+
+@[hott]
+def Subring_embed_pres_ops {S : CommRing} (R : is_Subring S) :
+  is_ring_ops_preserving (Subring_embed_map R) :=
+sorry  
+
+@[hott]
+def Subring_embed_hom {S : CommRing} (R : is_Subring S) : (Subring.mk R) ⟶ S :=
+  sorry
 
 /- Units of a ring as a bundled structure. Since for a given ring element there is at most a 
    unique inverse we can also define a predicate identifying invertible ring elements. -/
