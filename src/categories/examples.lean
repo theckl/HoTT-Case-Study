@@ -826,41 +826,37 @@ begin
    exact (prop_resize_to_prop R_str_comp).rels_pres r x rx }
 end                              
 
-/- The induced structure on a subset of structured sets that is closed under the 
+/- The induced structure on a subset of a structured set that is closed under the 
    structure operation does not necessarily satisfy the laws of a predicate if the 
    laws are satisfied by the structured set.
    
-   But this is the case if the laws are functorial and left-exact. -/
+   But this is the case if the laws are left-exact. -/
 @[hott]
-def funct_sign_laws {sign : fo_signature} (P : signature_laws sign) :=
-  Π {S R : Ω_structure sign} (f : R.carrier -> S.carrier) (r : sign.rels) 
-  (args : (sign.rels_arity r) -> R.carrier), P R r args -> P S r (f ∘ args)   
-
-@[hott]
-def left_exact_sign_laws {sign : fo_signature} (P : signature_laws sign) :=
-  Π {S R : Ω_structure sign} (f : R.carrier -> S.carrier) (r : sign.rels) 
-    (args : (sign.rels_arity r) -> R.carrier), 
-  is_set_injective f -> (P S r (f ∘ args) -> P R r args)  
+def left_exact_sign_laws {sign : fo_signature} (P : signature_laws sign)
+  {S : Ω_structure sign} (R : Subset S.1) (oc_R : ops_closed R) := Π (r : sign.rels) 
+    (args : (sign.rels_arity r) -> (pred_Set R).carrier), 
+    (P S r ((pred_Set_map R) ∘ args) -> P (str_subobject oc_R) r args)  
 
 @[hott]
 def law_str_subset {sign : fo_signature} {P : signature_laws sign} {S : Ω_str_subtype P}
-  (funct : funct_sign_laws P) (le_laws : left_exact_sign_laws P) (R : Subset S.1.carrier) 
-  (oc : ops_closed R) : Ω_str_subtype P :=
+  (R : Subset S.1.1) (oc_R : ops_closed R) 
+  (le_laws : @left_exact_sign_laws sign P S.1 R oc_R) : 
+  Ω_str_subtype P :=
 begin
-  let emb_map : (str_subobject oc).carrier -> S.1.carrier := pred_Set_map R,
   fapply sigma.mk,
-  { exact str_subobject oc },
-  { change ↥(Ω_structure_laws_pred P (str_subobject oc)),
+  { exact str_subobject oc_R },
+  { change ↥(Ω_structure_laws_pred P (str_subobject oc_R)),
     apply prop_to_prop_resize, apply prod.mk, 
     { intros r args, apply prod.mk, 
-      { intro so_rel, apply le_laws emb_map r args (pred_Set_map_is_inj R),
+      { intro so_rel, apply le_laws r args,
         apply ((prop_resize_to_prop S.2).1 r (((pred_Set_map R)) ∘ args)).1, 
         assumption },
       { intro so_P, apply ((prop_resize_to_prop S.2).1 r (((pred_Set_map R)) ∘ args)).2, 
-        apply funct emb_map r args, assumption } },
+        apply ((prop_resize_to_prop S.2).2 r (((pred_Set_map R)) ∘ args)).2, 
+        exact true.intro } },
     { intros r args, apply prod.mk, 
       { intro so_P, exact true.intro },
-      { intro t, apply le_laws emb_map r args (pred_Set_map_is_inj R),
+      { intro t, apply le_laws r args,
         apply ((prop_resize_to_prop S.2).2 r (((pred_Set_map R)) ∘ args)).2,
         assumption } } }
 end
