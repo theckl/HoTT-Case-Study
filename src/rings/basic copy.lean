@@ -257,7 +257,8 @@ end
 
 /- Maps between the carrier sets of Ω-structures are homomorphisms iff they preserve 
    both operations and relations. In the case of Ω-structures of ring signature 
-   satisfying the ring laws it is enough to preserve the ring operations. -/
+   satisfying the ring laws it is enough to preserve the ring operations, because the
+   ring laws are functorial. -/
 @[hott]
 def is_ring_ops_preserving {R S : CommRing} (f : R -> S) :=
   ∀ (o : ring_signature.ops) (x : (ring_signature.ops_arity o) → R), 
@@ -266,18 +267,24 @@ def is_ring_ops_preserving {R S : CommRing} (f : R -> S) :=
 @[hott]
 def ring_hom_to_ops_preserving_map {R S : CommRing} (f : R ⟶ S) : 
   is_ring_ops_preserving f.1 := 
-sorry    
+(prop_resize_to_prop f.2).ops_pres    
 
 @[hott]
 def ops_preserving_map_to_ring_hom {R S : CommRing} (f : R -> S) 
   (ops_pres : is_ring_ops_preserving f) : R ⟶ S :=
-sorry
+begin
+  fapply sigma.mk,
+  { exact f },
+  { apply prop_to_prop_resize, fapply is_Ω_structure_hom.mk, 
+    { exact ops_pres },
+    { intros r x rel_R, apply ((prop_resize_to_prop S.2).1 r (f ∘ x)).2,
+      apply ((prop_resize_to_prop S.2).2 r (f ∘ x)).2, exact true.intro } }
+end
 
 @[hott] 
 def ops_preserving_map_ring_hom_inv {R S : CommRing} (f : R -> S) 
   (ops_pres : is_ring_ops_preserving f) : 
-  (ops_preserving_map_to_ring_hom f ops_pres).1 = f :=
-sorry  
+  (ops_preserving_map_to_ring_hom f ops_pres).1 = f := rfl  
 
 /- Subrings are subsets of rings with the induced ring structure. So they can be 
    constructed from the data of a subset and the closedness under operations which we
@@ -289,25 +296,19 @@ structure is_Subring (S : CommRing) :=
   (ops_closed : ops_closed subset)
 
 @[hott]
-def funct_ring_laws : funct_sign_laws ring_laws :=
-begin
-  intros S R f r x laws_r_x, 
-  sorry 
-end
-
-@[hott]
-def left_exact_ring_laws : left_exact_sign_laws ring_laws :=
-  sorry  
+def left_exact_ring_laws {S : CommRing} (R : is_Subring S) : 
+  left_exact_sign_laws ring_laws R.subset R.ops_closed :=
+sorry  
 
 @[hott]
 def Subring.mk {S : CommRing} (R : is_Subring S) : CommRing := 
-  law_str_subset @funct_ring_laws @left_exact_ring_laws R.subset R.ops_closed
+  law_str_subset R.subset R.ops_closed (left_exact_ring_laws R)
 
 /- The embedding of the underlying subset of a subring into the underlying set of the ring is a 
    ring homomorphism. -/
 @[hott]
 def Subring_embed_map {S : CommRing} (R : is_Subring S) : Subring.mk R -> S :=
- sorry
+  sorry
 
 @[hott]
 def Subring_embed_pres_ops {S : CommRing} (R : is_Subring S) :
