@@ -298,7 +298,15 @@ structure is_Subring (S : CommRing) :=
 @[hott]
 def left_exact_ring_laws {S : CommRing} (R : is_Subring S) : 
   left_exact_sign_laws ring_laws R.subset R.ops_closed :=
-sorry  
+begin 
+  intros r x laws_S, 
+  
+  hinduction r, 
+  { apply prop_to_prop_resize, fapply sigma_eq, 
+    { sorry }, 
+    { sorry } }, 
+  all_goals { sorry } 
+end    
 
 @[hott]
 def Subring.mk {S : CommRing} (R : is_Subring S) : CommRing := 
