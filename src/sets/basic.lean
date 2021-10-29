@@ -704,6 +704,11 @@ begin
            ... = f (sum.inr s) : by rwr is_prop.elim One.star s } }
 end
 
+@[hott]
+def list_to_fin_Set_map {A B : Set} (f : A -> B) (l : list A) :
+  f ∘ (list_to_fin_Set l) = list_to_fin_Set (list.map f l) :=
+sorry  
+
 end set
 
 end hott
