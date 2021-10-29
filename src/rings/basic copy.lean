@@ -296,15 +296,24 @@ structure is_Subring (S : CommRing) :=
   (ops_closed : ops_closed subset)
 
 @[hott]
+def subring_add {S : CommRing} (R : is_Subring S) : 
+  ∀ x y : (str_subobject R.ops_closed).carrier, (x + y).1 = x.1 + y.1 :=
+begin
+  intros x y, 
+  have p : sigma.fst ∘ (list_to_fin_Set (x::y::[])) = list_to_fin_Set (x.1::y.1::[]), from
+    begin apply eq_of_homotopy, intro n, hinduction n, sorry, refl end, 
+  change S.1.str.ops ring_ops.add (sigma.fst ∘ (list_to_fin_Set (x::y::[]))) = x.1 + y.1,
+  rwr p
+end  
+
+@[hott]
 def left_exact_ring_laws {S : CommRing} (R : is_Subring S) : 
   left_exact_sign_laws ring_laws R.subset R.ops_closed :=
 begin 
-  intros r x laws_S, 
-  
-  hinduction r, 
+  intros r x laws_S, hinduction r, 
   { apply prop_to_prop_resize, fapply sigma_eq, 
-    { sorry }, 
-    { sorry } }, 
+    { repeat {rwr subring_add }, exact prop_resize_to_prop laws_S }, 
+    { apply pathover_of_tr_eq, exact is_prop.elim _ _ } }, 
   all_goals { sorry } 
 end    
 
