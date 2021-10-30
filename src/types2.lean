@@ -98,9 +98,16 @@ begin intros g b, rwr <- is_equiv.right_inv f b, exact g (f⁻¹ᶠ b) end
 
 /- Inequalities of natural numbers in the core are non-HoTT propositions, so procedures
    using them need to be rewritten.  -/
-@[simp] def list_nth_le {α : Type _} : Π (l : list α) (n), n < l.length → α
+@[hott, hsimp] 
+def list_nth_le {α : Type _} : Π (l : list α) (n), n < l.length → α
 | []       n     h := absurd h (not_lt_zero n)
 | (a :: l) 0     h := a
 | (a :: l) (n+1) h := list_nth_le l n (le_of_succ_le_succ h)
+
+/- Further factes on lists -/
+@[hott, hsimp]
+def list_map_size_eq {A B : Type _} (f : A -> B) (l : list A) : 
+  list.length (list.map f l) = list.length l :=
+begin hinduction l, refl, hsimp, rwr ih end  
 
 end hott
