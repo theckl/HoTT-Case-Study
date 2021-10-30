@@ -664,8 +664,7 @@ def linv_fin_Set_list (A : Set) {n : ℕ}:
 begin
   intro f, apply pathover_of_tr_eq, apply eq_of_homotopy, intro s, hinduction n, 
   { hinduction s },
-  {  
-    hinduction s with s s, 
+  { hinduction s with s s, 
     { rwr tr_dep_fn_eval_tr (fin_Set_list.length f) _, 
       have H : ((fin_Set_list.length f)⁻¹ ▸[λ m, ↥(fin_Set m)] sum.inl s) = 
                            sum.inl ((fin_Set_list.length (f ∘ sum.inl))⁻¹ ▸ s), from 
@@ -704,10 +703,21 @@ begin
            ... = f (sum.inr s) : by rwr is_prop.elim One.star s } }
 end
 
+@[hott, hsimp]
+def fin_Set_eq_map {n m : ℕ} (p : n = m) : fin_Set n -> fin_Set m := 
+  λ s : fin_Set n, p ▸ s
+
 @[hott]
 def list_to_fin_Set_map {A B : Set} (f : A -> B) (l : list A) :
-  f ∘ (list_to_fin_Set l) = list_to_fin_Set (list.map f l) :=
-sorry  
+  f ∘ (list_to_fin_Set l) = (list_to_fin_Set (list.map f l)) ∘ 
+                            (fin_Set_eq_map (list_map_size_eq f l)⁻¹) :=
+begin 
+  apply eq_of_homotopy, intro s, hinduction l, 
+  { hinduction s },
+  { hinduction s with s,
+    { rwr ih s, sorry },
+    { sorry } } 
+end  
 
 end set
 
