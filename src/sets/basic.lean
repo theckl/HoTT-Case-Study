@@ -708,15 +708,32 @@ def fin_Set_eq_map {n m : ℕ} (p : n = m) : fin_Set n -> fin_Set m :=
   λ s : fin_Set n, p ▸ s
 
 @[hott]
+def fin_Set_eq_map_inl {n m : ℕ} (p : n = m) (s : fin_Set n) :
+  fin_Set_eq_map (ap succ p) (sum.inl s) = sum.inl (fin_Set_eq_map p s) :=
+begin hinduction p, refl end  
+
+@[hott]
+def fin_Set_eq_map_inr {n m : ℕ} (p : n = m) (s : One_Set) :
+  fin_Set_eq_map (ap succ p) (sum.inr s) = sum.inr s :=
+begin hinduction p, refl end  
+
+@[hott]
 def list_to_fin_Set_map {A B : Set} (f : A -> B) (l : list A) :
   f ∘ (list_to_fin_Set l) = (list_to_fin_Set (list.map f l)) ∘ 
                             (fin_Set_eq_map (list_map_size_eq f l)⁻¹) :=
 begin 
   apply eq_of_homotopy, intro s, hinduction l, 
   { hinduction s },
-  { hinduction s with s,
-    { rwr ih s, sorry },
-    { sorry } } 
+  { have p : (ap succ (list_map_size_eq f tl)⁻¹) = 
+                        ((list_map_size_eq f (hd :: tl))⁻¹), from is_prop.elim _ _,
+    hinduction s with s s,
+    { rwr ih s, rwr <- p, 
+      change _ = (list_to_fin_Set (list.map f (hd :: tl))) 
+                   (fin_Set_eq_map (ap succ (list_map_size_eq f tl)⁻¹) (sum.inl s)),
+      rwr fin_Set_eq_map_inl (list_map_size_eq f tl)⁻¹ s },
+    { change f hd = (list_to_fin_Set (list.map f (hd :: tl))) 
+                    ((fin_Set_eq_map (list_map_size_eq f (hd :: tl))⁻¹) (sum.inr s)), 
+      rwr <-p, rwr fin_Set_eq_map_inr (list_map_size_eq f tl)⁻¹ s } } 
 end  
 
 end set
