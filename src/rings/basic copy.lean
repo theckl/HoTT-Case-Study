@@ -161,9 +161,14 @@ instance CommRing_to_Set : has_coe CommRing Set :=
 instance CommRing_to_Type : has_coe_to_sort CommRing :=
   has_coe_to_sort.mk (Type _) (λ R : CommRing, R.1.carrier)  
 
-
 @[hott, instance]
 def CommRing_category : category CommRing := Ω_str_subtype_category ring_laws
+
+/- For calculations we need to extract the ring laws from the `CommRing` structure. -/
+@[hott]
+def CommRing.add_assoc (R : CommRing) : ∀ x y z : R, (x + y) + z = x + (y + z) :=
+  λ r s t, prop_resize_to_prop (proof_of_true_Prop 
+    ((prop_resize_to_prop R.2).2 ring_rels.add_assoc (list_to_fin_Set (r::s::t::[]))))
 
 /- We construct an Ω-structure of a ring signature from a `comm_ring` structure. -/
 @[hott, instance]
@@ -227,8 +232,7 @@ begin
   fapply comm_ring.mk,
   { apply_instance },
   { intros r s, exact r + s },
-  { intros r s t, exact prop_resize_to_prop (proof_of_true_Prop 
-      ((prop_resize_to_prop R.2).2 ring_rels.add_assoc (list_to_fin_Set (r::s::t::[])))) },
+  { exact CommRing.add_assoc R },
   { exact 0 },
   { intro r, exact prop_resize_to_prop (proof_of_true_Prop 
       ((prop_resize_to_prop R.2).2 ring_rels.zero_add (list_to_fin_Set (r::[])))) },
@@ -300,21 +304,57 @@ def subring_add {S : CommRing} (R : is_Subring S) :
   ∀ x y : (str_subobject R.ops_closed).carrier, (x + y).1 = x.1 + y.1 :=
 begin
   intros x y, 
-  have p : sigma.fst ∘ (list_to_fin_Set (x::y::[])) = list_to_fin_Set (x.1::y.1::[]), from
-    begin apply eq_of_homotopy, intro n, hinduction n, sorry, refl end, 
-  change S.1.str.ops ring_ops.add (sigma.fst ∘ (list_to_fin_Set (x::y::[]))) = x.1 + y.1,
-  rwr p
-end  
+  change S.1.str.ops ring_ops.add (sigma.fst ∘ (list_to_fin_Set (x::y::[]))) = _,
+  rwr @list_to_fin_Set_map (str_subobject R.ops_closed).carrier S.1.carrier sigma.fst _
+end
+
+@[hott]
+def subring_zero {S : CommRing} (R : is_Subring S) : 
+  (0 : (str_subobject R.ops_closed).carrier).1 = (0 : S.1.carrier) :=
+begin
+  change S.1.str.ops ring_ops.zero (sigma.fst ∘ 
+              (list_to_fin_Set ([] : list (str_subobject R.ops_closed).carrier))) = _,
+  rwr @list_to_fin_Set_map (str_subobject R.ops_closed).carrier S.1.carrier sigma.fst _
+end
+
+@[hott]
+def subring_neg {S : CommRing} (R : is_Subring S) : 
+  ∀ x : (str_subobject R.ops_closed).carrier, (-x).1 = -(x.1) :=
+begin
+  intro x, 
+  change S.1.str.ops ring_ops.neg (sigma.fst ∘ (list_to_fin_Set [x])) = _,
+  rwr @list_to_fin_Set_map (str_subobject R.ops_closed).carrier S.1.carrier sigma.fst _
+end
+
+@[hott]
+def subring_mul {S : CommRing} (R : is_Subring S) : 
+  ∀ x y : (str_subobject R.ops_closed).carrier, (x * y).1 = x.1 * y.1 :=
+begin
+  intros x y, 
+  change S.1.str.ops ring_ops.mul (sigma.fst ∘ (list_to_fin_Set (x::y::[]))) = _,
+  rwr @list_to_fin_Set_map (str_subobject R.ops_closed).carrier S.1.carrier sigma.fst _
+end
+
+@[hott]
+def subring_one {S : CommRing} (R : is_Subring S) : 
+  (1 : (str_subobject R.ops_closed).carrier).1 = (1 : S.1.carrier) :=
+begin
+  change S.1.str.ops ring_ops.one (sigma.fst ∘ 
+              (list_to_fin_Set ([] : list (str_subobject R.ops_closed).carrier))) = _,
+  rwr @list_to_fin_Set_map (str_subobject R.ops_closed).carrier S.1.carrier sigma.fst _
+end
 
 @[hott]
 def left_exact_ring_laws {S : CommRing} (R : is_Subring S) : 
   left_exact_sign_laws ring_laws R.subset R.ops_closed :=
 begin 
   intros r x laws_S, hinduction r, 
+  all_goals 
   { apply prop_to_prop_resize, fapply sigma_eq, 
-    { repeat {rwr subring_add }, exact prop_resize_to_prop laws_S }, 
-    { apply pathover_of_tr_eq, exact is_prop.elim _ _ } }, 
-  all_goals { sorry } 
+    { repeat {rwr subring_add <|> rwr subring_zero <|> rwr subring_neg <|> 
+              rwr subring_mul <|> rwr subring_one}, 
+      exact prop_resize_to_prop laws_S }, 
+    { apply pathover_of_tr_eq, exact is_prop.elim _ _ } }
 end    
 
 @[hott]
@@ -325,16 +365,16 @@ def Subring.mk {S : CommRing} (R : is_Subring S) : CommRing :=
    ring homomorphism. -/
 @[hott]
 def Subring_embed_map {S : CommRing} (R : is_Subring S) : Subring.mk R -> S :=
-  sorry
+  λ r, r.1
 
 @[hott]
 def Subring_embed_pres_ops {S : CommRing} (R : is_Subring S) :
   is_ring_ops_preserving (Subring_embed_map R) :=
-sorry  
+begin intro o, hinduction o, all_goals { intro x, refl } end    
 
 @[hott]
 def Subring_embed_hom {S : CommRing} (R : is_Subring S) : (Subring.mk R) ⟶ S :=
-  sorry
+  ops_preserving_map_to_ring_hom (Subring_embed_map R) (Subring_embed_pres_ops R)
 
 /- Units of a ring as a bundled structure. Since for a given ring element there is at most a 
    unique inverse we can also define a predicate identifying invertible ring elements. -/
@@ -354,8 +394,9 @@ end units
 open units
 
 @[hott]
-def unique_mul_inv {R : CommRing.{u}} (r : R) : is_prop (Σ (u : units R), r = u) :=
+def unique_mul_inv {R : CommRing} (r : R) : is_prop (Σ (u : units R), r = u) :=
 begin 
+  have α : comm_ring R, from CommRing_to_comm_ring R,
   fapply is_prop.mk, intros x y, fapply sigma_eq, 
   { hinduction x.1, hinduction y.1, 
     have H : val = val_1, from
@@ -366,7 +407,7 @@ begin
       rwr <- q, change r = ↑(y.1), rwr <- y.2
     end, 
     have H' : inv = inv_1, from 
-      calc inv = inv * 1 : (comm_ring.mul_one inv)⁻¹
+      calc inv = inv * 1 : hott.eq.inverse (@comm_ring.mul_one _ α inv)
            ... = inv * (val_1 * inv_1) : by rwr val_inv_1
            ... = inv * (val * inv_1) : by rwr H
            ... = (inv * val) * inv_1 : (comm_ring.mul_assoc inv val inv_1)⁻¹
