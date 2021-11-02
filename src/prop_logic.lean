@@ -175,9 +175,9 @@ begin
   { intros enP aP, hinduction enP, exact a.2 (aP a.1) }
 end  
 
-/- A true `Prop`, a proof of a true `Prop`,a nd a `Prop` with a proof is true. -/
+/- A true `Prop`, a proof of a true `Prop`,and a `Prop` with a proof is true. -/
 @[hott]
-def is_true (P : Prop) := to_Prop (P <-> True)
+def is_true (P : trunctype.{u} -1) := to_Prop (P <-> True.{u})
 
 @[hott]
 def proof_of_true_Prop {P : Prop} : is_true P -> P :=
