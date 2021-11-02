@@ -427,8 +427,8 @@ begin
       rwr <- ap sigma.fst (s.π.naturality f), hsimp } }  --naturality
 end    
 
-/- We define the the structure data of a limit cone for all limit cones of the underlying
-   category at once, because we can change then easily to the best suited construction. -/
+/- We define the structure data of a limit cone for all limit cones of the underlying
+   category at once, because we can change then easily to the most fitting construction. -/
 @[hott]
 structure limit_cone_str_data {J : Set.{u'}} [precategory.{v'} J] {C : Type u} 
   [category.{v} C] [has_limits_of_shape J C] {std_str : std_structure_on C} 
