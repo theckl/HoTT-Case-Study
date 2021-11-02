@@ -11,7 +11,7 @@ open hott.is_trunc hott.is_equiv hott.algebra hott.set subset categories hott.tr
 
 namespace algebra
 
-set_option pp.universes false
+set_option pp.universes true
 set_option pp.implicit false
 
 /- We construct the category of rings as a full subcategory of a first-order signature 
@@ -113,6 +113,15 @@ begin
   exact R.str.ops ring_ops.neg (list_to_fin_Set (x :: [])) 
 end
 
+@[hott]
+def ring_sub (R : Ω_structure ring_signature) : 
+  R.carrier -> R.carrier -> R.carrier :=
+begin intros x y, exact R.str.ops ring_ops.add (list_to_fin_Set (x :: (-y) :: [])) end
+
+@[hott, instance]
+def ring_Ω_str_has_sub (R : Ω_structure ring_signature) : has_sub R.carrier :=
+  ⟨ring_sub R⟩
+
 @[hott, instance]
 def ring_Ω_str_has_mul (R : Ω_structure ring_signature) : has_mul R.carrier :=
 begin 
@@ -169,6 +178,56 @@ def CommRing_category : category CommRing := Ω_str_subtype_category ring_laws
 def CommRing.add_assoc (R : CommRing) : ∀ x y z : R, (x + y) + z = x + (y + z) :=
   λ r s t, prop_resize_to_prop (proof_of_true_Prop 
     ((prop_resize_to_prop R.2).2 ring_rels.add_assoc (list_to_fin_Set (r::s::t::[]))))
+
+@[hott]
+def CommRing.zero_add (R : CommRing) : ∀ x : R, 0 + x = x :=
+  λ r, prop_resize_to_prop (proof_of_true_Prop 
+      ((prop_resize_to_prop R.2).2 ring_rels.zero_add (list_to_fin_Set (r::[]))))
+
+@[hott]
+def CommRing.add_zero (R : CommRing) : ∀ x : R, x + 0 = x :=
+  λ r, prop_resize_to_prop (proof_of_true_Prop 
+      ((prop_resize_to_prop R.2).2 ring_rels.add_zero (list_to_fin_Set (r::[]))))
+
+@[hott]
+def CommRing.neg_add (R : CommRing) : ∀ x : R, (-x) + x = 0 :=
+  λ r, prop_resize_to_prop (proof_of_true_Prop 
+      ((prop_resize_to_prop R.2).2 ring_rels.neg_add (list_to_fin_Set (r::[]))))
+
+@[hott]
+def CommRing.add_comm (R : CommRing) : ∀ x y : R, x + y = y + x :=
+  λ r s, prop_resize_to_prop (proof_of_true_Prop 
+      ((prop_resize_to_prop R.2).2 ring_rels.add_comm (list_to_fin_Set (r::s::[]))))
+
+@[hott]
+def CommRing.mul_assoc (R : CommRing) : ∀ x y z : R, (x * y) * z = x * (y * z) :=
+  λ r s t, prop_resize_to_prop (proof_of_true_Prop 
+      ((prop_resize_to_prop R.2).2 ring_rels.mul_assoc (list_to_fin_Set (r::s::t::[]))))
+
+@[hott]
+def CommRing.one_mul (R : CommRing) : ∀ x : R, 1 * x = x :=
+  λ r, prop_resize_to_prop (proof_of_true_Prop 
+      ((prop_resize_to_prop R.2).2 ring_rels.one_mul (list_to_fin_Set (r::[]))))
+
+@[hott]
+def CommRing.mul_one (R : CommRing) : ∀ x : R, x * 1 = x :=
+  λ r, prop_resize_to_prop (proof_of_true_Prop 
+      ((prop_resize_to_prop R.2).2 ring_rels.mul_one (list_to_fin_Set (r::[]))))      
+
+@[hott]
+def CommRing.mul_comm (R : CommRing) : ∀ x y : R, x * y = y * x :=
+  λ r s, prop_resize_to_prop (proof_of_true_Prop 
+      ((prop_resize_to_prop R.2).2 ring_rels.mul_comm (list_to_fin_Set (r::s::[]))))
+
+@[hott]
+def CommRing.right_distrib (R : CommRing) : ∀ x y z : R, (x + y) * z = x * z + y * z :=
+  λ r s t, prop_resize_to_prop (proof_of_true_Prop 
+      ((prop_resize_to_prop R.2).2 ring_rels.right_distrib (list_to_fin_Set (r::s::t::[]))))
+
+@[hott]
+def CommRing.left_distrib (R : CommRing) : ∀ x y z : R, x * (y + z) = x * y + x * z :=
+  λ r s t, prop_resize_to_prop (proof_of_true_Prop 
+      ((prop_resize_to_prop R.2).2 ring_rels.left_distrib (list_to_fin_Set (r::s::t::[]))))
 
 /- We construct an Ω-structure of a ring signature from a `comm_ring` structure. -/
 @[hott, instance]
@@ -234,29 +293,19 @@ begin
   { intros r s, exact r + s },
   { exact CommRing.add_assoc R },
   { exact 0 },
-  { intro r, exact prop_resize_to_prop (proof_of_true_Prop 
-      ((prop_resize_to_prop R.2).2 ring_rels.zero_add (list_to_fin_Set (r::[])))) },
-  { intro r, exact prop_resize_to_prop (proof_of_true_Prop 
-      ((prop_resize_to_prop R.2).2 ring_rels.add_zero (list_to_fin_Set (r::[])))) },
+  { exact CommRing.zero_add R },
+  { exact CommRing.add_zero R },
   { intro r, exact -r },
-  { intro r, exact prop_resize_to_prop (proof_of_true_Prop 
-      ((prop_resize_to_prop R.2).2 ring_rels.neg_add (list_to_fin_Set (r::[])))) },
-  { intros r s, exact prop_resize_to_prop (proof_of_true_Prop 
-      ((prop_resize_to_prop R.2).2 ring_rels.add_comm (list_to_fin_Set (r::s::[])))) },
+  { exact CommRing.neg_add R },
+  { exact CommRing.add_comm R },
   { intros r s, exact r * s },
-  { intros r s t, exact prop_resize_to_prop (proof_of_true_Prop 
-      ((prop_resize_to_prop R.2).2 ring_rels.mul_assoc (list_to_fin_Set (r::s::t::[])))) },
+  { exact CommRing.mul_assoc R },
   { exact 1 },
-  { intro r, exact prop_resize_to_prop (proof_of_true_Prop 
-      ((prop_resize_to_prop R.2).2 ring_rels.one_mul (list_to_fin_Set (r::[])))) },
-  { intro r, exact prop_resize_to_prop (proof_of_true_Prop 
-      ((prop_resize_to_prop R.2).2 ring_rels.mul_one (list_to_fin_Set (r::[])))) },
-  { intros r s t, exact prop_resize_to_prop (proof_of_true_Prop 
-      ((prop_resize_to_prop R.2).2 ring_rels.left_distrib (list_to_fin_Set (r::s::t::[])))) },
-  { intros r s t, exact prop_resize_to_prop (proof_of_true_Prop 
-      ((prop_resize_to_prop R.2).2 ring_rels.right_distrib (list_to_fin_Set (r::s::t::[])))) },
-  { intros r s, exact prop_resize_to_prop (proof_of_true_Prop 
-      ((prop_resize_to_prop R.2).2 ring_rels.mul_comm (list_to_fin_Set (r::s::[])))) }
+  { exact CommRing.one_mul R },
+  { exact CommRing.mul_one R },
+  { exact CommRing.left_distrib R },
+  { exact CommRing.right_distrib R },
+  { exact CommRing.mul_comm R }
 end  
 
 /- Maps between the carrier sets of Ω-structures are homomorphisms iff they preserve 
@@ -407,13 +456,13 @@ begin
       rwr <- q, change r = ↑(y.1), rwr <- y.2
     end, 
     have H' : inv = inv_1, from 
-      calc inv = inv * 1 : hott.eq.inverse (@comm_ring.mul_one _ α inv)
+      calc inv = inv * 1 : (CommRing.mul_one R inv)⁻¹
            ... = inv * (val_1 * inv_1) : by rwr val_inv_1
            ... = inv * (val * inv_1) : by rwr H
-           ... = (inv * val) * inv_1 : (comm_ring.mul_assoc inv val inv_1)⁻¹
-           ... = (val * inv) * inv_1 : ap (λ r : R, r * inv_1) (comm_ring.mul_comm inv val)
+           ... = (inv * val) * inv_1 : (CommRing.mul_assoc R inv val inv_1)⁻¹
+           ... = (val * inv) * inv_1 : ap (λ r : R, r * inv_1) (CommRing.mul_comm R inv val)
            ... = 1 * inv_1 : by rwr val_inv
-           ... = inv_1 : comm_ring.one_mul inv_1, 
+           ... = inv_1 : CommRing.one_mul R inv_1, 
     fapply apd001 units.mk, 
     { exact H },
     { exact H' },
@@ -435,8 +484,10 @@ class local_ring (R : CommRing) :=
 @[hott]
 def CommRing_ulift : CommRing.{u} -> CommRing.{(max u' u)} :=
 begin
-  intro R, fapply CommRing.mk,
-  { exact trunctype_ulift R.carrier },
+  intro R, fapply dpair,
+  { fapply std_structure.mk,
+    { exact trunctype_ulift R.1.carrier },
+    { sorry } },
   { let α := comm_ring_to_ops R.str,
     fapply comm_ring_mk, 
     { fapply comm_ring_ops.mk, 
