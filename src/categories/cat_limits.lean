@@ -380,7 +380,7 @@ def set_has_limit {J : Set} [precategory J] (F : J ⥤ Set) : has_limit F :=
   has_limit.mk (set_limit_cone F)
 
 @[hott, instance]
-def set_has_limits_of_shape {J : Set} [precategory J] : has_limits_of_shape J Set :=
+def set_has_limits_of_shape (J : Set) [precategory J] : has_limits_of_shape J Set :=
   has_limits_of_shape.mk (λ F, set_has_limit F)     
 
 @[hott, instance]
@@ -478,6 +478,22 @@ def std_structure_has_limits_of_shape {J : Set.{u'}} [precategory.{v'} J] {C : T
   (lcd_F : Π F : J ⥤ (std_structure std_str), limit_cone_str_data (get_limit_cone (forget F))): 
   has_limits_of_shape J (std_structure std_str) :=
 has_limits_of_shape.mk (λ F, str_has_limit F (lcd_F F))
+
+/- Ω-structured sets have all limits because the Ω-structure on sections is induced by 
+   the Ω-structure on the sets in the diagram. -/
+@[hott]
+def Ω_str_on_limit_cone {J : Set.{u'}} [precategory.{v'} J] {sign : fo_signature} 
+  {F : J ⥤ (Ω_structure sign)} : limit_cone_str_data (set_limit_cone (forget F)) :=
+begin 
+  fapply limit_cone_str_data.mk,
+  { fapply Ω_structure_on.mk, 
+    { intros o x, fapply dpair, 
+      { intro j, sorry },
+      { sorry } },
+    { intros o x, sorry } },
+  { sorry },
+  { sorry }
+end
 
 end category_theory.limits
 
