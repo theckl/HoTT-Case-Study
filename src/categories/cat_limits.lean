@@ -488,8 +488,10 @@ begin
   fapply limit_cone_str_data.mk,
   { fapply Ω_structure_on.mk, 
     { intros o x, fapply dpair, 
-      { intro j, sorry },
-      { sorry } },
+      { intro j, 
+        exact (F.obj j).str.ops o (((set_limit_cone (forget F)).cone.π.app j) ∘ x) },
+      { apply prop_to_prop_resize, intros j k f,  
+        rwr (set_limit_cone (forget F)).cone.π.naturality f, sorry } },
     { intros o x, sorry } },
   { sorry },
   { sorry }
