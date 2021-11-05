@@ -16,10 +16,17 @@ namespace category_theory.limits
 
 set_option pp.universes false
 
+@[hott]
 structure cone {J : Set.{u'}} [precategory.{v'} J] {C : Type u} 
   [precategory.{v} C] (F : J ⥤ C) :=
 (X : C)
 (π : (constant_functor J C X) ⟹ F)
+
+@[hott]
+def cone.fac {J : Set.{u'}} [precategory.{v'} J] {C : Type u} 
+  [precategory.{v} C] {F : J ⥤ C} (s : cone F) : 
+  ∀ {j k : J} (f : j ⟶ k), s.π.app j ≫ F.map f = s.π.app k :=
+begin intros j k f, rwr <- s.π.naturality f, hsimp end   
 
 @[hott]
 structure is_limit {J : Set.{u'}} [precategory.{v'} J] {C : Type u} [precategory.{v} C] 
@@ -490,9 +497,12 @@ begin
     { intros o x, fapply dpair, 
       { intro j, 
         exact (F.obj j).str.ops o (((set_limit_cone (forget F)).cone.π.app j) ∘ x) },
-      { apply prop_to_prop_resize, intros j k f,  
-        rwr (set_limit_cone (forget F)).cone.π.naturality f, sorry } },
-    { intros o x, sorry } },
+      { apply prop_to_prop_resize, intros j k f, 
+        change _ = (F.obj k).str.ops o ((set_limit_cone (forget F)).cone.π.app k ∘ x), 
+        rwr <- cone.fac (set_limit_cone (forget F)).cone f, 
+        exact (prop_resize_to_prop (hom_H (F.map f))).ops_pres o _ } },
+    { intros r x, exact prop_resize (to_Prop (Π j : J, 
+           (F.obj j).str.rels r (((set_limit_cone (forget F)).cone.π.app j) ∘ x))) } },
   { sorry },
   { sorry }
 end
