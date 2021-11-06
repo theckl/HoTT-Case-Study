@@ -503,8 +503,17 @@ begin
         exact (prop_resize_to_prop (hom_H (F.map f))).ops_pres o _ } },
     { intros r x, exact prop_resize (to_Prop (Π j : J, 
            (F.obj j).str.rels r (((set_limit_cone (forget F)).cone.π.app j) ∘ x))) } },
-  { sorry },
-  { sorry }
+  { intro j, apply prop_to_prop_resize, apply is_Ω_structure_hom.mk, 
+    { intros o x, refl },
+    { intros r x limit_rel, exact prop_resize_to_prop limit_rel j } },
+  { intro s, apply prop_to_prop_resize, apply is_Ω_structure_hom.mk, 
+    { intros o x, fapply sigma.sigma_eq, 
+      { apply eq_of_homotopy, intro j,
+        change (s.π.app j).1 (s.X.str.ops o x) = (F.obj j).str.ops o ((s.π.app j).1 ∘ x),
+        rwr (prop_resize_to_prop (s.π.app j).2).ops_pres },
+      { apply pathover_of_tr_eq, exact is_prop.elim _ _ } },
+    { intros r x s_rel, exact prop_to_prop_resize 
+                (λ j : J, (prop_resize_to_prop (s.π.app j).2).rels_pres r x s_rel) } }
 end
 
 end category_theory.limits
