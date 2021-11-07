@@ -14,7 +14,7 @@ open hott.eq hott.is_trunc hott.trunc hott.set hott.subset
 
 namespace category_theory.limits
 
-set_option pp.universes false
+set_option pp.universes true
 
 @[hott]
 structure cone {J : Set.{u'}} [precategory.{v'} J] {C : Type u} 
@@ -337,25 +337,28 @@ cone.mk c π
    for use later on.
    
    Note that the limit cone vertex may be the empty set - then all cones over the functor `F`
-   are empty because they cannot factorize through the empty set. -/
+   are empty because otherwise they cannot factorize through the empty set. 
+   
+   Also not that the cone must live in an uiniverse both containing the diagram set 
+   and the sets ordered according to the diagram. -/
 @[hott]
-def set_limit_pred {J : Set.{u'}} [precategory.{v'} J] (F : J ⥤ Set.{u}) : 
+def set_limit_pred {J : Set.{u'}} [precategory.{v'} J] (F : J ⥤ Set) : 
   Subset (Sections F.obj) :=
 λ s, prop_resize (to_Prop (∀ (j k : J) (f : j ⟶ k), F.map f (s j) = s k)) 
 
 @[hott, reducible]
-def set_cone {J : Set} [precategory J] (F : J ⥤ Set) : cone F :=
+def set_cone {J : Set.{u'}} [precategory.{v'} J] (F : J ⥤ Set) : cone F :=
 begin
-  fapply cone.mk,
+  fapply cone.mk, 
   /- The limit cone vertex set -/
-  { exact pred_Set { s ∈ Sections F.obj | set_limit_pred F s } },
+  { exact pred_Set (set_limit_pred F) }, 
   { fapply nat_trans.mk, 
     /- the leg maps of the limit cone -/
     { intro j, exact λ u, u.1 j },
     /- compatibility of the leg maps -/
     { intros j k f, hsimp, 
-      fapply eq_of_homotopy, intro u, hsimp, 
-      change u.1 k = F.map f (u.1 j), rwr prop_resize_to_prop u.2 } }
+      fapply eq_of_homotopy, intro u, hsimp, change u.1 k = F.map f (u.1 j), 
+      rwr (prop_resize_to_prop u.2 j k f) } }
 end  
 
 @[hott, reducible]
@@ -438,7 +441,7 @@ end
    category at once, because we can change then easily to the most fitting construction. -/
 @[hott]
 structure limit_cone_str_data {J : Set.{u'}} [precategory.{v'} J] {C : Type u} 
-  [category.{v} C] [has_limits_of_shape J C] {std_str : std_structure_on C} 
+  [category.{v} C] {std_str : std_structure_on C} 
   {F : J ⥤ (std_structure std_str)} (lc : limit_cone (forget F)) :=
 (lc_str : std_str.P (lc.cone.X)) 
 (lc_legs_H : Π (j : J), std_str.H lc_str ((F.obj j).str) (lc.cone.π.app j))
@@ -446,7 +449,7 @@ structure limit_cone_str_data {J : Set.{u'}} [precategory.{v'} J] {C : Type u}
 
 @[hott]
 def str_limit_cone {J : Set.{u'}} [precategory.{v'} J] {C : Type u} 
-  [category.{v} C] [has_limits_of_shape J C] {std_str : std_structure_on C} 
+  [category.{v} C] {std_str : std_structure_on C} 
   {F : J ⥤ (std_structure.{v u w} std_str)} (lc : limit_cone (forget F))
   (lcd : limit_cone_str_data lc) : limit_cone F :=
 begin 
@@ -490,7 +493,7 @@ has_limits_of_shape.mk (λ F, str_has_limit F (lcd_F F))
    the Ω-structure on the sets in the diagram. -/
 @[hott]
 def Ω_str_on_limit_cone {J : Set.{u'}} [precategory.{v'} J] {sign : fo_signature} 
-  {F : J ⥤ (Ω_structure sign)} : limit_cone_str_data (set_limit_cone (forget F)) :=
+  (F : J ⥤ (Ω_structure sign)) : limit_cone_str_data (set_limit_cone (forget F)) :=
 begin 
   fapply limit_cone_str_data.mk,
   { fapply Ω_structure_on.mk, 
@@ -515,6 +518,30 @@ begin
     { intros r x s_rel, exact prop_to_prop_resize 
                 (λ j : J, (prop_resize_to_prop (s.π.app j).2).rels_pres r x s_rel) } }
 end
+
+@[hott]
+def Ω_str_limit_cone {J : Set.{u'}} [precategory.{v'} J] {sign : fo_signature} 
+  (F : J ⥤ (Ω_structure sign)) : limit_cone F :=
+str_limit_cone (set_limit_cone (forget F)) (Ω_str_on_limit_cone F)  
+
+@[hott, instance]
+def Ω_str_has_limit {J : Set} [precategory J] {sign : fo_signature} 
+  (F : J ⥤ (Ω_structure sign)) : has_limit F :=
+has_limit.mk (Ω_str_limit_cone F)
+
+@[hott, instance]
+def Ω_str_has_limits_of_shape (J : Set) [precategory J] (sign : fo_signature) : 
+  has_limits_of_shape J (Ω_structure sign) :=
+  has_limits_of_shape.mk (λ F, Ω_str_has_limit F)     
+
+@[hott, instance]
+def Ω_str_has_products (sign : fo_signature) : has_products (Ω_structure sign) :=
+  ⟨λ J : Set, Ω_str_has_limits_of_shape (discrete J) sign⟩
+
+@[hott, instance]
+def Ω_str_has_product {J : Set} {sign : fo_signature} (f : J -> (Ω_structure sign)) : 
+  has_product f :=
+Ω_str_has_limit (discrete.functor f)
 
 end category_theory.limits
 
