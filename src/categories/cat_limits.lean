@@ -543,6 +543,14 @@ def Ω_str_has_product {J : Set} {sign : fo_signature} (f : J -> (Ω_structure s
   has_product f :=
 Ω_str_has_limit (discrete.functor f)
 
+/- The full subcategory on a subtype of a category with limits has limits if the limit
+   of a diagram of objects of the subtype is also in the subtype. -/
+@[hott]
+def limit_closed_subtype {J : Set.{u'}} [precategory.{v'} J] {C : Type u} [category.{v} C]   
+  [has_limits_of_shape J C] (P : C -> trunctype.{0} -1) :=
+  Π (F : J ⥤ (sigma.subtype (λ c : C, ↥(P c)))), 
+                        P (get_limit_cone (F ⋙ (emb_functor (subtype_emb P)))).cone.X
+
 end category_theory.limits
 
 end hott
