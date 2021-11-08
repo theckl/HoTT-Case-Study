@@ -683,6 +683,17 @@ begin
     rwr H, rwr isotoid_id_refl, exact inj_idp d₁ }
 end    
 
+@[hott]
+def emb_functor {C : Type u} [category.{v} C] {D : Type u'} (f : D -> C) : 
+  (ind_cat_type f) ⥤ C :=
+begin
+  fapply functor.mk,
+  { exact f },
+  { intros x y h, exact h },
+  { intro x, refl },
+  { intros x y z g h, refl }
+end    
+
 /- The full subcategory on a subtype of the type of a category can be defined using
    the injctive embedding of the subtype into the type. -/
 @[hott]
