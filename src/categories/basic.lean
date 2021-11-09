@@ -692,7 +692,7 @@ begin
   { intros x y h, exact h },
   { intro x, refl },
   { intros x y z g h, refl }
-end    
+end  
 
 /- The full subcategory on a subtype of the type of a category can be defined using
    the injctive embedding of the subtype into the type. -/
@@ -709,6 +709,11 @@ begin intros sc₁ sc₂, exact (subtype_eq_equiv sc₁ sc₂).to_is_equiv end
 def full_subcat_on_subtype {C : Type u} [category.{v} C] (P : C -> trunctype.{0} -1) :
   category (subtype (λ c : C, ↥(P c))) :=
 @fully_embedded_category _ _ _ (subtype_emb P) (subtype_emb_is_inj P)  
+
+@[hott]
+def embed {C : Type u} [category.{v} C] {P : C -> trunctype.{0} -1} 
+  {D : Type u'} [precategory.{v'} D] (F : D ⥤ subtype (λ c : C, ↥(P c))) : D ⥤ C :=
+F ⋙ (emb_functor (subtype_emb P))   
 
 end categories
 
