@@ -547,22 +547,66 @@ def Ω_str_has_product {J : Set} {sign : fo_signature} (f : J -> (Ω_structure s
    of a diagram of objects of the subtype is also in the subtype. -/
 @[hott]
 def limit_closed_subtype {J : Set.{u'}} [precategory.{v'} J] {C : Type u} [category.{v} C]   
-  (P : C -> trunctype.{0} -1) (F : J ⥤ (sigma.subtype (λ c : C, ↥(P c)))) 
-  (lc : limit_cone (embed F)) := 
-(P lc.cone.X).carrier
+  (P : C -> trunctype.{0} -1) (F : J ⥤ (sigma.subtype (λ c : C, ↥(P c)))) :=
+∀ (lc : limit_cone (embed F)), (P lc.cone.X).carrier
+
+@[hott] 
+def emb_cone {J : Set.{u'}} [precategory.{v'} J] {C : Type u} [category.{v} C]   
+  {P : C -> trunctype.{0} -1} {F : J ⥤ (sigma.subtype (λ c : C, ↥(P c)))} 
+  (s : cone F) : cone (embed F) :=
+begin
+  fapply cone.mk, 
+  { exact s.X.1 },
+  { fapply nat_trans.mk,
+    { intro j, exact s.π.app j },
+    { intros j k f, exact s.π.naturality f } }
+end  
 
 @[hott]
 def subcat_limit_cone {J : Set.{u'}} [precategory.{v'} J] {C : Type u} [category.{v} C]   
   {P : C -> trunctype.{0} -1} {F : J ⥤ (sigma.subtype (λ c : C, ↥(P c)))} 
-  (lc : limit_cone (embed F)) (lim_clos : limit_closed_subtype P F lc) : 
+  (lc : limit_cone (embed F)) (lim_clos : (P lc.cone.X).carrier) : 
   limit_cone F :=
 begin
   fapply limit_cone.mk,
   { fapply cone.mk,
     { exact ⟨lc.cone.X, lim_clos⟩ },
-    { sorry } },
-  { sorry }
+    { fapply nat_trans.mk, 
+      { intro j, exact lc.cone.π.app j },
+      { intros j k f, exact lc.cone.π.naturality f } } },
+  { fapply is_limit.mk,
+    { intro s, exact lc.is_limit.lift (emb_cone s) },
+    { intros s j, exact lc.is_limit.fac (emb_cone s) j },
+    { intros s m j, exact lc.is_limit.uniq (emb_cone s) m j } }
 end  
+
+@[hott, instance]
+def subcat_has_limit {J : Set} [precategory J] {C : Type u} [category.{v} C]   
+  {P : C -> trunctype.{0} -1} {F : J ⥤ (sigma.subtype (λ c : C, ↥(P c)))} 
+  [has_limit (embed F)] (lim_clos : limit_closed_subtype P F) : has_limit F :=
+has_limit.mk (subcat_limit_cone (get_limit_cone (embed F)) 
+             (lim_clos (get_limit_cone (embed F))))
+
+@[hott, instance]
+def subcat_has_limits_of_shape (J : Set) [precategory J] {C : Type u} [category.{v} C]   
+  {P : C -> trunctype.{0} -1} [has_limits_of_shape J C] 
+  (lim_clos : ∀ F : J ⥤ (sigma.subtype (λ c : C, ↥(P c))), 
+                                                  @limit_closed_subtype J _ _ _ P F) : 
+  has_limits_of_shape J (sigma.subtype (λ c : C, ↥(P c))) :=
+has_limits_of_shape.mk (λ F, subcat_has_limit (lim_clos F))     
+
+@[hott, instance]
+def subcat_has_products {C : Type u} [category.{v} C] {P : C -> trunctype.{0} -1} 
+  [has_products C] 
+  (lim_clos : ∀ (J : Set) (F : (discrete J) ⥤ (sigma.subtype (λ c : C, ↥(P c)))), 
+                                  limit_closed_subtype P F) : 
+  has_products (sigma.subtype (λ c : C, ↥(P c))) :=
+  ⟨λ J : Set, subcat_has_limits_of_shape (discrete J) (lim_clos J)⟩
+
+@[hott, instance]
+def subcat_has_product {J : Set} {sign : fo_signature} (f : J -> (Ω_structure sign)) : 
+  has_product f :=
+Ω_str_has_limit (discrete.functor f)
 
 end category_theory.limits
 
