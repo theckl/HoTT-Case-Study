@@ -174,9 +174,9 @@ notation `∏ ` f:20 := pi_obj f
 class has_products (C : Type u) [category.{v} C] := 
   (has_limit_of_shape : Π J : Set.{u'}, has_limits_of_shape (discrete J) C)
 
-@[hott, priority 100]
-instance has_limits_of_shape_of_has_products 
-  {J : Set.{u'}} (C : Type u) [category.{v} C] [has_products.{v u u'} C] :
+@[hott, instance, priority 100]
+def has_limits_of_shape_of_has_products 
+  (J : Set.{u'}) (C : Type u) [category.{v} C] [has_products.{v u u'} C] :
   has_limits_of_shape (discrete J) C :=
 has_products.has_limit_of_shape C J
 
@@ -601,12 +601,23 @@ def subcat_has_products {C : Type u} [category.{v} C] {P : C -> trunctype.{0} -1
   (lim_clos : ∀ (J : Set) (F : (discrete J) ⥤ (sigma.subtype (λ c : C, ↥(P c)))), 
                                   limit_closed_subtype P F) : 
   has_products (sigma.subtype (λ c : C, ↥(P c))) :=
-  ⟨λ J : Set, subcat_has_limits_of_shape (discrete J) (lim_clos J)⟩
+⟨λ J : Set, @subcat_has_limits_of_shape (discrete J) _ _ _ _ 
+             (has_limits_of_shape_of_has_products J C) (lim_clos J)⟩
 
 @[hott, instance]
 def subcat_has_product {J : Set} {sign : fo_signature} (f : J -> (Ω_structure sign)) : 
   has_product f :=
 Ω_str_has_limit (discrete.functor f)
+
+/- A subtype of Ω-structures is closed under taking limits. -/
+@[hott]
+def Ω_str_subtype_is_limit_closed {J : Set} [precategory J] {sign : fo_signature} 
+  (P : signature_laws sign) (F : J ⥤ Ω_str_subtype P) : 
+  limit_closed_subtype (Ω_structure_laws_pred P) F :=
+begin
+  intro lc,
+  sorry
+end    
 
 end category_theory.limits
 
