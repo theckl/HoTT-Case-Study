@@ -14,7 +14,7 @@ open hott.eq hott.is_trunc hott.trunc hott.set hott.subset
 
 namespace category_theory.limits
 
-set_option pp.universes true
+set_option pp.universes false
 
 @[hott]
 structure cone {J : Set.{u'}} [precategory.{v'} J] {C : Type u} 
@@ -615,8 +615,11 @@ def Ω_str_subtype_is_limit_closed {J : Set} [precategory J] {sign : fo_signatur
   (P : signature_laws sign) (F : J ⥤ Ω_str_subtype P) : 
   limit_closed_subtype (Ω_structure_laws_pred P) F :=
 begin
-  intro lc,
-  sorry
+  intro lc, apply prop_to_prop_resize, apply prod.mk,
+  { intros r x, apply prod.mk, 
+    { intro lc_rel_r_x, sorry },
+    { sorry } },
+  { sorry }
 end    
 
 end category_theory.limits
