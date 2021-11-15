@@ -755,9 +755,12 @@ structure_identity_principle (std_str_of_Ω_str sign)
    and requesting that they are always true we can define a predicate on the objects 
    of the Ω-structure category that gives a full subcategory. -/
 @[hott]
-def signature_laws (sign : fo_signature) :=
-  Π (S : Ω_structure sign) (r : sign.rels) (args : (sign.rels_arity r) -> S.carrier), 
-  trunctype.{0} -1
+structure signature_laws (sign : fo_signature) :=
+  (pred : Π (S : Ω_structure sign) (r : sign.rels) 
+            (args : (sign.rels_arity r) -> S.carrier), trunctype.{0} -1)
+  (funct : Π {S T : Ω_structure sign} (f : S ⟶ T) (r : sign.rels) 
+            (args : (sign.rels_arity r) -> S.carrier), 
+            pred S r args -> pred T r (↑f ∘ args))          
 
 @[hott]
 def Ω_structure_laws_pred {sign : fo_signature} (P : signature_laws sign) : 
@@ -765,8 +768,8 @@ def Ω_structure_laws_pred {sign : fo_signature} (P : signature_laws sign) :
 begin  
 intro S, 
 exact prop_resize 
-      (to_Prop (∀ r args, (S.str.rels r args).carrier <-> (P S r args)) and
-       to_Prop (∀ r args, is_true (P S r args)))
+      (to_Prop (∀ r args, (S.str.rels r args).carrier <-> (P.pred S r args)) and
+       to_Prop (∀ r args, is_true (P.pred S r args)))
 end                        
 
 @[hott]
@@ -778,9 +781,8 @@ def Ω_str_subtype_category {sign : fo_signature} (P : signature_laws sign) :
   category (Ω_str_subtype P) :=
 full_subcat_on_subtype (Ω_structure_laws_pred P)  
 
-/- Subsets of the underlying sets of an object in a category of first-order signature 
-   category inherit the structure of the object if the operations are closed on the 
-   subset. -/
+/- A Subset of the underlying set of an Ω-structure inherit the structure of the 
+   Ω-structure if the operations are closed on the subset. -/
 @[hott]
 def ops_closed {sign : fo_signature} {S : Ω_structure sign} (R : Subset S.carrier) :=
   ∀ (o : sign.ops) (args : (sign.ops_arity o) -> S.carrier), 
@@ -826,8 +828,8 @@ begin
    exact (prop_resize_to_prop R_str_comp).rels_pres r x rx }
 end                              
 
-/- The induced structure on a subset of a structured set that is closed under the 
-   structure operation does not necessarily satisfy the laws of a predicate if the 
+/- The induced structure on a subset of an Ω-structured set closed under the 
+   structure operations does not necessarily satisfy the laws of a predicate if the 
    laws are satisfied by the structured set.
    
    But this is the case if the laws are left-exact. -/
@@ -835,7 +837,7 @@ end
 def left_exact_sign_laws {sign : fo_signature} (P : signature_laws sign)
   {S : Ω_structure sign} (R : Subset S.1) (oc_R : ops_closed R) := Π (r : sign.rels) 
     (args : (sign.rels_arity r) -> (pred_Set R).carrier), 
-    (P S r ((pred_Set_map R) ∘ args) -> P (str_subobject oc_R) r args)  
+    (P.pred S r ((pred_Set_map R) ∘ args) -> P.pred (str_subobject oc_R) r args)  
 
 @[hott]
 def law_str_subset {sign : fo_signature} {P : signature_laws sign} {S : Ω_str_subtype P}
