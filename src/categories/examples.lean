@@ -760,7 +760,11 @@ structure signature_laws (sign : fo_signature) :=
             (args : (sign.rels_arity r) -> S.carrier), trunctype.{0} -1)
   (funct : Π {S T : Ω_structure sign} (f : S ⟶ T) (r : sign.rels) 
             (args : (sign.rels_arity r) -> S.carrier), 
-            pred S r args -> pred T r (↑f ∘ args))          
+            pred S r args -> pred T r (↑f ∘ args))  
+  (ops_dep : Π {S T : Ω_structure sign} (f : S ⟶ T), 
+               @is_set_bijective T.carrier S.carrier f -> 
+               ∀ (r : sign.rels) (args : (sign.rels_arity r) -> S.carrier), 
+               pred S r args <-> pred T r (↑f ∘ args))                  
 
 @[hott]
 def Ω_structure_laws_pred {sign : fo_signature} (P : signature_laws sign) : 
