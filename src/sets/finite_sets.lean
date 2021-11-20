@@ -13,6 +13,8 @@ namespace set
 def fin_Set (n : ℕ) : Set.{0} :=
 begin hinduction n with n fin_n, exact Zero_Set, exact sum_Set fin_n One_Set end  
 
+/- These finte sets can be used to check whether a set is finite and to define the 
+   cardinality of finite sets. -/
 @[hott]
 def is_finite (S : Set) := Σ n : ℕ, bijection S (fin_Set n)
 
@@ -35,8 +37,23 @@ end
 def card_of (S : Set) (fin : is_finite S) : ℕ := fin.1
 
 @[hott]
+def fin_Set_bij : ∀ {n m : ℕ}, bijection (fin_Set n) (fin_Set m) -> n = m 
+| 0 0 := begin intro bij, refl end
+| (succ n) 0 := begin intro bij, hinduction bij.map (sum.inr One.star) end
+| 0 (succ m) := begin intro bij, hinduction (inv_of_bijection bij).1 (sum.inr One.star) end
+| (succ n) (succ m) := 
+  begin 
+    intro bij, 
+    have bij_n_m : bijection (fin_Set n) (fin_Set m), from sorry,
+    exact ap succ (fin_Set_bij bij_n_m) 
+  end
+
+@[hott]
 def fin_card_is_uniq {S : Set} : Π (fin₁ fin₂ : is_finite S), fin₁.1 = fin₂.1 :=
-  sorry   
+  assume fin₁ fin₂,
+  have bij : bijection (fin_Set fin₁.1) (fin_Set fin₂.1), from sorry,
+  fin_Set_bij  bij
+
 
 @[hott]
 def card_fin_Set {n : ℕ} : card_of (fin_Set n) (fin_Set_fin n) = n := rfl
