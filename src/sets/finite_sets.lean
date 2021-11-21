@@ -8,10 +8,15 @@ open nat is_trunc
 
 namespace set
 
-/- We construct finite sets of arbitrary size using the sum of sets in the induction step. -/
+/- We construct finite sets of arbitrary size using the sum of sets in the induction 
+   step and show that they have decidable equality. -/
 @[hott]
 def fin_Set (n : ℕ) : Set.{0} :=
 begin hinduction n with n fin_n, exact Zero_Set, exact sum_Set fin_n One_Set end  
+
+@[hott]
+def fin_Set_dec_eq (n : ℕ) : decidable_eq (fin_Set n) :=
+  sorry
 
 /- These finte sets can be used to check whether a set is finite and to define the 
    cardinality of finite sets. -/
