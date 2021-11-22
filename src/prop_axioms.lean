@@ -384,6 +384,9 @@ begin
 end 
 
 @[hott, instance]
+def One_dec_eq : decidable_eq One := assume t₁ t₂, decidable.inl (eq_One t₁ t₂) 
+
+@[hott, instance]
 def One_is_prop : is_prop One :=
   is_prop.mk eq_One
 
