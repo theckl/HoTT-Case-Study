@@ -16,7 +16,11 @@ begin hinduction n with n fin_n, exact Zero_Set, exact sum_Set fin_n One_Set end
 
 @[hott]
 def fin_Set_dec_eq (n : ℕ) : decidable_eq (fin_Set n) :=
-  sorry
+begin
+  hinduction n,
+  { intro p, hinduction p },
+  { intros a b, exact @decidable_eq_sum _ _ ih _ a b }
+end
 
 /- These finte sets can be used to check whether a set is finite and to define the 
    cardinality of finite sets. -/
@@ -49,7 +53,13 @@ def fin_Set_bij : ∀ {n m : ℕ}, bijection (fin_Set n) (fin_Set m) -> n = m
 | (succ n) (succ m) := 
   begin 
     intro bij, 
-    have bij_n_m : bijection (fin_Set n) (fin_Set m), from sorry,
+    have bij_n_m : bijection (fin_Set n) (fin_Set m), from 
+      begin 
+        fapply has_inverse_to_bijection,
+        { sorry },
+        { sorry },
+        { sorry }
+      end,
     exact ap succ (fin_Set_bij bij_n_m) 
   end
 
