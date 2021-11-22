@@ -52,6 +52,32 @@ def sum_encode {A : Type.{u}} {B : Type.{v}} {z z' : A ⊎ B} (p : z = z') : sum
   by induction p; induction z; exact ulift.up idp
 
 @[hott] 
+def empty_of_inl_eq_inr {A : Type.{u}} {B : Type.{v}} {a : A} {b : B} 
+  (p : sum.inl a = sum.inr b) : empty :=
+ulift.down (sum_encode p)
+
+@[hott] 
+def empty_of_inr_eq_inl {A : Type.{u}} {B : Type.{v}} {a : A} {b : B}
+  (p : sum.inr b = sum.inl a) : empty := 
+ulift.down (sum_encode p)
+
+@[hott, instance] 
+def decidable_eq_sum (A B : Type _)
+    [HA : hott.decidable_eq A] [HB : hott.decidable_eq B] :
+    hott.decidable_eq (A ⊎ B) :=
+  begin
+    intros v v', induction v with a b; induction v' with a' b',
+    { hinduction HA a a',
+      { exact decidable.inl (ap sum.inl a_1) },
+      { apply decidable.inr, intro p, apply a_1, exact ulift.down (sum_encode p) }},
+    { apply decidable.inr, intro p, apply empty_of_inl_eq_inr p },
+    { apply decidable.inr, intro p, apply empty_of_inr_eq_inl p },
+    { hinduction HB b b',
+      { exact decidable.inl (ap sum.inr a) },
+      { apply decidable.inr, intro p, apply a, exact ulift.down (sum_encode p) }},
+  end
+
+@[hott] 
 def sum_eq_equiv {A : Type.{u}} {B : Type.{v}} {z z' : A ⊎ B} : (z = z') ≃ sum_code z z' :=
   begin
     fapply equiv.MK, apply sum_encode, apply sum_decode,
