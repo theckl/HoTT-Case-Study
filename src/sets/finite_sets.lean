@@ -55,8 +55,23 @@ def fin_Set_bij : ∀ {n m : ℕ}, bijection (fin_Set n) (fin_Set m) -> n = m
     intro bij, 
     have bij_n_m : bijection (fin_Set n) (fin_Set m), from 
       begin 
+        let f := bij.map, let g := (inv_of_bijection bij).1,
         fapply has_inverse_to_bijection,
-        { sorry },
+        { intro a, hinduction fin_Set_dec_eq (n+1) (sum.inl a) (g (sum.inr One.star)),
+          { hinduction sum.mem_cases (f (sum.inr One.star)), 
+            { exact val.1 },
+            { have p : sum.inl a = sum.inr One.star, from 
+              begin 
+                fapply bij.bij.inj, change f (sum.inl a) = f (sum.inr One.star),
+                rwr ap f a_1, have q : f (sum.inr One.star) = sum.inr val.1, from val.2,
+                rwr q, rwr @is_prop.elim _ One_is_prop val.1 One.star, 
+                rwr @is_set_inverse_of.r_inv _ _ f g (inv_of_bijection bij).2 
+                                                                    (sum.inr One.star)
+              end,
+              hinduction empty_of_inl_eq_inr p } },
+          { hinduction sum.mem_cases (f (sum.inl a)),
+            { exact val.1 },
+            { sorry } } },
         { sorry },
         { sorry }
       end,
