@@ -46,16 +46,10 @@ end
 def card_of (S : Set) (fin : is_finite S) : ℕ := fin.1
 
 @[hott]
-def fin_Set_bij : ∀ {n m : ℕ}, bijection (fin_Set n) (fin_Set m) -> n = m 
-| 0 0 := begin intro bij, refl end
-| (succ n) 0 := begin intro bij, hinduction bij.map (sum.inr One.star) end
-| 0 (succ m) := begin intro bij, hinduction (inv_of_bijection bij).1 (sum.inr One.star) end
-| (succ n) (succ m) := 
-  begin 
-    intro bij, 
-    have bij_n_m : bijection (fin_Set n) (fin_Set m), from 
-      begin 
-        let f := bij.map, let g := (inv_of_bijection bij).1,
+def fin_Set_bij_succ_bij : ∀ {n m : ℕ}, bijection (fin_Set (n+1)) (fin_Set (m+1)) ->
+  bijection (fin_Set n) (fin_Set m) :=
+begin 
+  intros n m bij, let f := bij.map, let g := (inv_of_bijection bij).1,
         fapply has_inverse_to_bijection,
         { intro a, hinduction fin_Set_dec_eq (n+1) (sum.inl a) (g (sum.inr One.star)),
           { hinduction sum.mem_cases (f (sum.inr One.star)), 
@@ -71,12 +65,50 @@ def fin_Set_bij : ∀ {n m : ℕ}, bijection (fin_Set n) (fin_Set m) -> n = m
               hinduction empty_of_inl_eq_inr p } },
           { hinduction sum.mem_cases (f (sum.inl a)),
             { exact val.1 },
-            { sorry } } },
-        { sorry },
-        { sorry }
-      end,
-    exact ap succ (fin_Set_bij bij_n_m) 
-  end
+            { have p : sum.inl a = g (sum.inr One.star), from 
+              begin 
+                fapply bij.bij.inj, change f (sum.inl a) = f (g (sum.inr One.star)),
+                rwr @is_set_inverse_of.r_inv _ _ f g (inv_of_bijection bij).2 
+                                                                    (sum.inr One.star), 
+                rwr @is_prop.elim _ One_is_prop One.star val.1, exact val.2
+              end,
+              hinduction a_1 p } } },
+        { intro b, hinduction fin_Set_dec_eq (m+1) (sum.inl b) (f (sum.inr One.star)),
+          { hinduction sum.mem_cases (g (sum.inr One.star)), 
+            { exact val.1 },
+            { have p : sum.inl b = sum.inr One.star, from 
+              begin 
+                fapply (inv_bijection_of bij).bij.inj, 
+                change g (sum.inl b) = g (sum.inr One.star),
+                rwr ap g a, have q : g (sum.inr One.star) = sum.inr val.1, from val.2,
+                rwr q, rwr @is_prop.elim _ One_is_prop val.1 One.star, 
+                rwr @is_set_inverse_of.l_inv _ _ f g (inv_of_bijection bij).2 
+                                                                    (sum.inr One.star)
+              end,
+              hinduction empty_of_inl_eq_inr p } },
+          { hinduction sum.mem_cases (g (sum.inl b)),
+            { exact val.1 },
+            { have p : sum.inl b = f (sum.inr One.star), from 
+              begin 
+                fapply (inv_bijection_of bij).bij.inj, 
+                change g (sum.inl b) = g (f (sum.inr One.star)),
+                rwr @is_set_inverse_of.l_inv _ _ f g (inv_of_bijection bij).2 
+                                                                    (sum.inr One.star), 
+                rwr @is_prop.elim _ One_is_prop One.star val.1, exact val.2
+              end,
+              hinduction a p } } },
+        { fapply is_set_inverse_of.mk, 
+          { intro b, sorry },
+          { intro a, sorry } }
+      end
+
+@[hott]
+def fin_Set_bij : ∀ {n m : ℕ}, bijection (fin_Set n) (fin_Set m) -> n = m 
+| 0 0 := begin intro bij, refl end
+| (succ n) 0 := begin intro bij, hinduction bij.map (sum.inr One.star) end
+| 0 (succ m) := begin intro bij, hinduction (inv_of_bijection bij).1 (sum.inr One.star) end
+| (succ n) (succ m) := 
+  begin intro bij, exact ap succ (fin_Set_bij (fin_Set_bij_succ_bij bij)) end
 
 @[hott]
 def fin_card_is_uniq {S : Set} : Π (fin₁ fin₂ : is_finite S), fin₁.1 = fin₂.1 :=
