@@ -155,7 +155,8 @@ protected def not_elem {A : Set} (a : A) (S : Subset A) :=
 hott_theory_cmd "local infix  `∈`:70 := hott.subset.elem"
 hott_theory_cmd "local infix  `∉`:70 := hott.subset.not_elem" 
 
-notation `{ ` binder ` ∈ ` B ` | ` P:scoped  ` }` := (P : Subset B) 
+notation `{ ` binder ` ∈ ` B ` | ` P:scoped  ` }` := (P : Subset B)
+notation `{ ` binder ` ∈ ` B ` | ` P:scoped  ` }` := (P : Subset (to_Set B)) 
 
 @[hott, reducible]
 def pred_elem {A : Set} {P : Subset A} (a : A) : a ∈ { a ∈ A | P a } <-> P a :=
