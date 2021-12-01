@@ -1,4 +1,4 @@
-import sets.subset hott.types.sigma
+import sets.subset hott.types.nat.default hott.types.sigma
 
 universes u u' v w
 hott_theory
@@ -51,9 +51,8 @@ def fin_Set_bij_succ_map {n m : ℕ} (bij : bijection (fin_Set (n+1)) (fin_Set (
   fin_Set n -> fin_Set m :=
 begin
   let f := bij.map, let g := (inv_of_bijection bij).1,
-  intro a, hinduction fin_Set_dec_eq (n+1) ,
-  { hinduction sum.mem_cases (f (sum.inr One.star)), 
-    { exact val.1 },
+  intro a, hinduction nat.has_decidable_eq (f a).1 m,
+  { hinduction nat.has_decidable_eq (f ⟨n,lt.base n⟩).1 (g ⟨m,lt.base m⟩).1, 
     { have p : sum.inl a = sum.inr One.star, from 
       begin 
         fapply bij.bij.inj, change f (sum.inl a) = f (sum.inr One.star),
@@ -62,7 +61,8 @@ begin
         rwr @is_set_inverse_of.r_inv _ _ f g (inv_of_bijection bij).2 
                                                                     (sum.inr One.star)
       end,
-      hinduction empty_of_inl_eq_inr p } },
+      hinduction empty_of_inl_eq_inr p }, 
+    { exact val.1 } },
   { hinduction sum.mem_cases (f (sum.inl a)),
     { exact val.1 },
     { have p : sum.inl a = g (sum.inr One.star), from 
