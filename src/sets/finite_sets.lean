@@ -14,6 +14,14 @@ namespace set
 def fin_Set (n : ℕ) : Set.{0} := to_Set (Σ m : ℕ, m < n)
 
 @[hott]
+def fin_Set_lift {n m : ℕ} (H : n ≤ m) : fin_Set n -> fin_Set m :=
+  assume a, ⟨a.1, nat.lt_of_lt_of_le a.2 H⟩
+
+@[hott]
+def fin_Set_eq {n : ℕ} {a b : fin_Set n} : a.1 = b.1 -> a = b :=
+  assume p, sigma_eq p (pathover_of_tr_eq (is_prop.elim _ _)) 
+
+@[hott]
 def fin_Set_dec_eq (n : ℕ) : decidable_eq (fin_Set n) :=
 begin
   intros m m', hinduction hott.nat.has_decidable_eq m.1 m'.1, 
@@ -46,33 +54,29 @@ end
 @[hott]
 def card_of (S : Set) (fin : is_finite S) : ℕ := fin.1
 
+/- Note that inequalities in [types.nat.order] are often theorems, without need, and 
+   therefore produce an error because they are assumed to be noncomputable. -/
 @[hott]
 def fin_Set_bij_succ_map {n m : ℕ} (bij : bijection (fin_Set (n+1)) (fin_Set (m+1))) :
   fin_Set n -> fin_Set m :=
 begin
   let f := bij.map, let g := (inv_of_bijection bij).1,
-  intro a, hinduction nat.has_decidable_eq (f a).1 m,
-  { hinduction nat.has_decidable_eq (f ⟨n,lt.base n⟩).1 (g ⟨m,lt.base m⟩).1, 
-    { have p : sum.inl a = sum.inr One.star, from 
+  intro a, hinduction nat.has_decidable_eq (f (fin_Set_lift (nat.le_succ n) a)).1 m,
+  { have H1 : (f ⟨n, nat.le_refl (n+1)⟩).1 ≠ m, from 
       begin 
-        fapply bij.bij.inj, change f (sum.inl a) = f (sum.inr One.star),
-        rwr ap f a_1, have q : f (sum.inr One.star) = sum.inr val.1, from val.2,
-        rwr q, rwr @is_prop.elim _ One_is_prop val.1 One.star, 
-        rwr @is_set_inverse_of.r_inv _ _ f g (inv_of_bijection bij).2 
-                                                                    (sum.inr One.star)
+        intro p, apply λH1 : a.1 = n, 
+                 nat.lt_irrefl n (nat.le_trans (nat.le_of_eq (ap nat.succ H1⁻¹)) a.2), 
+        have q : (fin_Set_lift (nat.le_succ n) a) = ⟨n, nat.le_refl (n+1)⟩, from 
+          begin apply bij.bij.inj, exact fin_Set_eq (a_1 ⬝ p⁻¹) end,
+        exact ap sigma.fst q
       end,
-      hinduction empty_of_inl_eq_inr p }, 
-    { exact val.1 } },
-  { hinduction sum.mem_cases (f (sum.inl a)),
-    { exact val.1 },
-    { have p : sum.inl a = g (sum.inr One.star), from 
-      begin 
-        fapply bij.bij.inj, change f (sum.inl a) = f (g (sum.inr One.star)),
-        rwr @is_set_inverse_of.r_inv _ _ f g (inv_of_bijection bij).2 
-                                                                    (sum.inr One.star), 
-        rwr @is_prop.elim _ One_is_prop One.star val.1, exact val.2
-      end,
-      hinduction a_1 p } }
+    have H2 : (f ⟨n, nat.le_refl (n+1)⟩).1 < m, from 
+      nat.lt_of_le_prod_ne (le_of_succ_le_succ (f ⟨n, nat.le_refl (n+1)⟩).2) H1,   
+    exact ⟨(f ⟨n, nat.le_refl (n+1)⟩).1, H2⟩ }, 
+  { have H :  (f (fin_Set_lift (nat.le_succ n) a)).1 < m, from 
+      nat.lt_of_le_prod_ne (le_of_succ_le_succ (f (fin_Set_lift (nat.le_succ n) a)).2) 
+                                                                                   a_1,
+    exact ⟨(f (fin_Set_lift (nat.le_succ n) a)).1, H⟩ }
 end  
 
 /-
