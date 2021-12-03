@@ -79,31 +79,25 @@ begin
     exact ⟨(f (fin_Set_lift (nat.le_succ n) a)).1, H⟩ }
 end  
 
-/-
 @[hott]
-def fin_Set_bij_succ_map_eq1 {n m : ℕ} (bij : bijection (fin_Set (n+1)) (fin_Set (m+1))) :
-  ∀ a : fin_Set n, sum.inl a = (inv_of_bijection bij).1 (sum.inr One.star) ->
-                sum.inl ((fin_Set_bij_succ_map bij) a) = bij.map (sum.inr One.star) :=
-sorry                
-
-@[hott]
-def fin_Set_bij_succ_map_eq2 {n m : ℕ} (bij : bijection (fin_Set (n+1)) (fin_Set (m+1))) :
-  ∀ a : fin_Set n, ¬sum.inl a = (inv_of_bijection bij).1 (sum.inr One.star) ->
-                   sum.inl ((fin_Set_bij_succ_map bij) a) = bij.map (sum.inl a) :=
+def fin_Set_bij_succ_map_eq {n m : ℕ} (bij : bijection (fin_Set (n+1)) (fin_Set (m+1)))
+  {a : fin_Set n} (p : (bij.map (fin_Set_lift (nat.le_succ n) a)).1 = m) :
+  (fin_Set_bij_succ_map bij a).1 = (bij.map ⟨n, nat.le_refl (n+1)⟩).1 :=
 sorry
--/
+
+
 
 @[hott]
 def fin_Set_succ_bij_bij : ∀ {n m : ℕ}, bijection (fin_Set (n+1)) (fin_Set (m+1)) ->
   bijection (fin_Set n) (fin_Set m) :=
 begin 
-  intros n m bij, let f := bij.map, let g := (inv_of_bijection bij).1, 
-  fapply has_inverse_to_bijection,
+  intros n m bij, let f := bij.map, let bij_inv := inv_bijection_of bij, 
+  let g := bij_inv.map, fapply has_inverse_to_bijection,
   { exact fin_Set_bij_succ_map bij },
-  { exact fin_Set_bij_succ_map (inv_bijection_of bij) },
+  { exact fin_Set_bij_succ_map bij_inv },
   { fapply is_set_inverse_of.mk, 
-    { intro b, hinduction fin_Set_dec_eq (m+1) (sum.inl b) (f (sum.inr One.star)),
-      { sorry },
+    { intro b, hinduction nat.has_decidable_eq (g (fin_Set_lift (nat.le_succ m) b)).1 n,
+      { apply fin_Set_eq, sorry },
       { sorry } },
     { intro a, sorry } }
 end
@@ -111,9 +105,9 @@ end
 @[hott]
 def fin_Set_bij : ∀ {n m : ℕ}, bijection (fin_Set n) (fin_Set m) -> n = m 
 | 0 0 := begin intro bij, refl end
-| (succ n) 0 := begin intro bij, sorry end
-| 0 (succ m) := begin intro bij, sorry end
-| (succ n) (succ m) := begin intro bij, sorry end
+| (n+1) 0 := begin intro bij, sorry end
+| 0 (m+1) := begin intro bij, sorry end
+| (n+1) (m+1) := begin intro bij, sorry end
 
 @[hott]
 def fin_card_is_uniq {S : Set} : Π (fin₁ fin₂ : is_finite S), fin₁.1 = fin₂.1 :=
