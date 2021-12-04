@@ -278,7 +278,7 @@ def inv_bijection_of {A : Set} {B : Set} (f : bijection A B) : bijection B A :=
   has_inverse_to_bijection g f (set_inv_inv f g inv_f_g)
 
 @[hott]
-lemma inv_bij_is_inv {A : Set} {B : Set} (f : bijection A B) :
+def inv_bij_is_inv {A : Set} {B : Set} (f : bijection A B) :
   is_set_inverse_of f (inv_bijection_of f) := 
 (inv_of_bijection f).2
 
@@ -296,7 +296,7 @@ by hsimp
 
 /- The inverse of the identity map is the identity map itself. -/
 @[hott]
-lemma inv_bij_of_id_id {A : Set} : 
+def inv_bij_of_id_id {A : Set} : 
   inv_bijection_of (identity A) = identity A := 
 let inv_bij := bijection.map (inv_bijection_of (identity A)) in  
 have map_inv_id_id : inv_bij = id_map A, from
