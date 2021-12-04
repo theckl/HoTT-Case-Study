@@ -18,18 +18,12 @@ def fin_Set_lift {n m : ℕ} (H : n ≤ m) : fin_Set n -> fin_Set m :=
   assume a, ⟨a.1, nat.lt_of_lt_of_le a.2 H⟩
 
 @[hott]
-def fin_Set_eq {n : ℕ} {a b : fin_Set n} : a.1 = b.1 -> a = b :=
-  assume p, sigma_eq p (pathover_of_tr_eq (is_prop.elim _ _)) 
+def fin_Set_desc {n m : ℕ} (b : fin_Set m) (H : b.1 < n) : fin_Set n :=
+  ⟨b.1, H⟩  
 
 @[hott]
-def fin_Set_dec_eq (n : ℕ) : decidable_eq (fin_Set n) :=
-begin
-  intros m m', hinduction hott.nat.has_decidable_eq m.1 m'.1, 
-    { have p : m = m', from sigma_eq a (pathover_of_tr_eq (is_prop.elim _ _)),
-      exact decidable.inl p },
-    { have q : ¬ m = m', from assume p, a (ap sigma.fst p),
-      exact decidable.inr q } 
-end
+def fin_Set_eq {n : ℕ} {a b : fin_Set n} : a.1 = b.1 -> a = b :=
+  assume p, sigma_eq p (pathover_of_tr_eq (is_prop.elim _ _)) 
 
 /- These finte sets can be used to check whether a set is finite and to define the 
    cardinality of finite sets. -/
@@ -57,47 +51,70 @@ def card_of (S : Set) (fin : is_finite S) : ℕ := fin.1
 /- Note that inequalities in [types.nat.order] are often theorems, without need, and 
    therefore produce an error because they are assumed to be noncomputable. -/
 @[hott]
+def fin_Set_bij_succ_map_eq_ineq {n m : ℕ} 
+  (bij : bijection (fin_Set (n+1)) (fin_Set (m+1))) {a : fin_Set n} 
+  (p : (bij.map (fin_Set_lift (nat.le_succ n) a)).1 = m) :
+  (bij.map ⟨n, nat.le_refl (n+1)⟩).1 < m :=
+have H1 : (bij ⟨n, nat.le_refl (n+1)⟩).1 ≠ m, from 
+  begin 
+    intro q, apply λ H : a.1 = n, 
+               nat.lt_irrefl n (nat.le_trans (nat.le_of_eq (ap nat.succ H⁻¹)) a.2), 
+    have r : (fin_Set_lift (nat.le_succ n) a) = ⟨n, nat.le_refl (n+1)⟩, from 
+          begin apply bij.bij.inj, exact fin_Set_eq (p ⬝ q⁻¹) end,
+    exact ap sigma.fst r
+  end,  
+nat.lt_of_le_prod_ne (le_of_succ_le_succ (bij ⟨n, nat.le_refl (n+1)⟩).2) H1
+
+@[hott]
+def fin_Set_bij_succ_map_neq_ineq {n m : ℕ} 
+  (bij : bijection (fin_Set (n+1)) (fin_Set (m+1))) {a : fin_Set n} 
+  (np : (bij.map (fin_Set_lift (nat.le_succ n) a)).1 ≠ m) :
+  (bij (fin_Set_lift (nat.le_succ n) a)).1 < m :=
+nat.lt_of_le_prod_ne (le_of_succ_le_succ (bij (fin_Set_lift (nat.le_succ n) a)).2) np
+
+@[hott]
 def fin_Set_bij_succ_map {n m : ℕ} (bij : bijection (fin_Set (n+1)) (fin_Set (m+1))) :
   fin_Set n -> fin_Set m :=
 begin
   let f := bij.map, let g := (inv_of_bijection bij).1,
   intro a, hinduction nat.has_decidable_eq (f (fin_Set_lift (nat.le_succ n) a)).1 m,
-  { have H1 : (f ⟨n, nat.le_refl (n+1)⟩).1 ≠ m, from 
-      begin 
-        intro p, apply λH1 : a.1 = n, 
-                 nat.lt_irrefl n (nat.le_trans (nat.le_of_eq (ap nat.succ H1⁻¹)) a.2), 
-        have q : (fin_Set_lift (nat.le_succ n) a) = ⟨n, nat.le_refl (n+1)⟩, from 
-          begin apply bij.bij.inj, exact fin_Set_eq (a_1 ⬝ p⁻¹) end,
-        exact ap sigma.fst q
-      end,
-    have H2 : (f ⟨n, nat.le_refl (n+1)⟩).1 < m, from 
-      nat.lt_of_le_prod_ne (le_of_succ_le_succ (f ⟨n, nat.le_refl (n+1)⟩).2) H1,   
-    exact ⟨(f ⟨n, nat.le_refl (n+1)⟩).1, H2⟩ }, 
-  { have H :  (f (fin_Set_lift (nat.le_succ n) a)).1 < m, from 
-      nat.lt_of_le_prod_ne (le_of_succ_le_succ (f (fin_Set_lift (nat.le_succ n) a)).2) 
-                                                                                   a_1,
-    exact ⟨(f (fin_Set_lift (nat.le_succ n) a)).1, H⟩ }
+  { exact ⟨(f ⟨n, nat.le_refl (n+1)⟩).1, fin_Set_bij_succ_map_eq_ineq bij a_1⟩ }, 
+  { exact ⟨(f (fin_Set_lift (nat.le_succ n) a)).1, fin_Set_bij_succ_map_neq_ineq bij a_1⟩ }
 end  
+
+#print fin_Set_bij_succ_map
+#check decidable.rec
 
 @[hott]
 def fin_Set_bij_succ_map_eq {n m : ℕ} (bij : bijection (fin_Set (n+1)) (fin_Set (m+1)))
   {a : fin_Set n} (p : (bij.map (fin_Set_lift (nat.le_succ n) a)).1 = m) :
-  (fin_Set_bij_succ_map bij a).1 = (bij.map ⟨n, nat.le_refl (n+1)⟩).1 :=
-sorry
-
-
+  fin_Set_bij_succ_map bij a = fin_Set_desc (bij.map ⟨n, nat.le_refl (n+1)⟩) 
+                                 (fin_Set_bij_succ_map_eq_ineq bij p) :=
+begin 
+  apply fin_Set_eq, sorry 
+end
 
 @[hott]
 def fin_Set_succ_bij_bij : ∀ {n m : ℕ}, bijection (fin_Set (n+1)) (fin_Set (m+1)) ->
   bijection (fin_Set n) (fin_Set m) :=
 begin 
   intros n m bij, let f := bij.map, let bij_inv := inv_bijection_of bij, 
-  let g := bij_inv.map, fapply has_inverse_to_bijection,
-  { exact fin_Set_bij_succ_map bij },
-  { exact fin_Set_bij_succ_map bij_inv },
+  let g := bij_inv.map, let f' := fin_Set_bij_succ_map bij, 
+  let g' := fin_Set_bij_succ_map bij_inv, fapply has_inverse_to_bijection,
+  { exact f' },
+  { exact g' },
   { fapply is_set_inverse_of.mk, 
     { intro b, hinduction nat.has_decidable_eq (g (fin_Set_lift (nat.le_succ m) b)).1 n,
-      { apply fin_Set_eq, sorry },
+      { apply fin_Set_eq, 
+        have p1 : (g' b).1 = (g ⟨m, nat.le_refl (m+1)⟩).1, from 
+          fin_Set_bij_succ_map_eq bij_inv a,
+        have p2 : (f (fin_Set_lift (le_succ n) (g' b))).1 = m, from 
+          begin change (f ⟨(g' b).1, _⟩).1 = m, sorry end,
+        rwr fin_Set_bij_succ_map_eq bij p2, 
+        rwr <- @fin_Set_eq _ _ ⟨n, nat.le_refl (n + 1)⟩ a,
+        change (f (g (fin_Set_lift (le_succ m) b))).1 = b.1, 
+        rwr @is_set_inverse_of.r_inv _ _ f g (inv_bij_is_inv bij) 
+                                      (fin_Set_lift (le_succ m) b) },
       { sorry } },
     { intro a, sorry } }
 end
