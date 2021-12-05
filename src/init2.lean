@@ -260,4 +260,22 @@ def down_eq_up {A : Type u} (x : ulift.{v u} A) (y : A) :
   x.down = y -> x = ulift.up y :=
 begin hinduction x, intro H, rwr down_up_eq down at H, exact ap ulift.up H end
 
+/- The calculation rules for dependent if-then-else `dite` are missing in 
+   [hott.init.logic]. -/
+@[hott] def dif_pos {c : Type _} [is_prop c] [H : decidable c] (Hc : c) {A : Type _} 
+  {t : c -> A} {e : ¬c -> A} : (dite c t e) = t Hc :=
+decidable.rec
+  (λ Hc' : c,    calc (@dite c (decidable.inl Hc') A t e) = t Hc' : rfl
+                      ... = t Hc : ap t (is_prop.elim _ _)) 
+  (λ Hnc : ¬c,  absurd Hc Hnc)
+  H
+
+@[hott] def dif_neg {c : Type _} [is_prop c] [H : decidable c] (Hnc : ¬c) {A : Type _} {t : c -> A} 
+  {e : ¬c -> A} : (dite c t e) = e Hnc :=
+decidable.rec
+  (λ Hc : c,    absurd Hc Hnc)
+  (λ Hnc' : ¬c, calc @dite c (decidable.inr Hnc') A t e = e Hnc' : rfl 
+                     ... = e Hnc : ap e (is_prop.elim _ _))
+  H   
+
 end hott
