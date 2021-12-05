@@ -77,22 +77,24 @@ def fin_Set_bij_succ_map {n m : ℕ} (bij : bijection (fin_Set (n+1)) (fin_Set (
   fin_Set n -> fin_Set m :=
 begin
   let f := bij.map, let g := (inv_of_bijection bij).1,
-  intro a, hinduction nat.has_decidable_eq (f (fin_Set_lift (nat.le_succ n) a)).1 m,
-  { exact ⟨(f ⟨n, nat.le_refl (n+1)⟩).1, fin_Set_bij_succ_map_eq_ineq bij a_1⟩ }, 
-  { exact ⟨(f (fin_Set_lift (nat.le_succ n) a)).1, fin_Set_bij_succ_map_neq_ineq bij a_1⟩ }
+  intro a, exact (dite ((f (fin_Set_lift (nat.le_succ n) a)).1 = m)
+           (λ p, ⟨(f ⟨n, nat.le_refl (n+1)⟩).1, fin_Set_bij_succ_map_eq_ineq bij p⟩) 
+  (λ np, ⟨(f (fin_Set_lift (nat.le_succ n) a)).1, fin_Set_bij_succ_map_neq_ineq bij np⟩))
 end  
-
-#print fin_Set_bij_succ_map
-#check decidable.rec
 
 @[hott]
 def fin_Set_bij_succ_map_eq {n m : ℕ} (bij : bijection (fin_Set (n+1)) (fin_Set (m+1)))
   {a : fin_Set n} (p : (bij.map (fin_Set_lift (nat.le_succ n) a)).1 = m) :
   fin_Set_bij_succ_map bij a = fin_Set_desc (bij.map ⟨n, nat.le_refl (n+1)⟩) 
                                  (fin_Set_bij_succ_map_eq_ineq bij p) :=
-begin 
-  apply fin_Set_eq, sorry 
-end
+begin change dite _ _ _ = _, rwr dif_pos p end
+
+@[hott]
+def fin_Set_bij_succ_map_neq {n m : ℕ} (bij : bijection (fin_Set (n+1)) (fin_Set (m+1)))
+  {a : fin_Set n} (np : ¬(bij.map (fin_Set_lift (nat.le_succ n) a)).1 = m) :
+  fin_Set_bij_succ_map bij a = fin_Set_desc (bij.map (fin_Set_lift (nat.le_succ n) a)) 
+                                 (fin_Set_bij_succ_map_neq_ineq bij np) :=
+begin change dite _ _ _ = _, rwr dif_neg np end
 
 @[hott]
 def fin_Set_succ_bij_bij : ∀ {n m : ℕ}, bijection (fin_Set (n+1)) (fin_Set (m+1)) ->
