@@ -10,7 +10,7 @@ open is_trunc trunc equiv is_equiv hott.prod hott.quotient hott.sigma hott.relat
 
 namespace set
 
-set_option pp.universes true
+set_option pp.universes false
 
 /- `Prop`s are `Set`s. -/
 @[hott]
@@ -264,7 +264,8 @@ have f_surj : is_set_surjective f, from assume b,
 have is_bij : is_set_bijective f, from is_set_bijective.mk f_inj f_surj,
 bijection.mk f is_bij
 
-/- The inverse of a bijection is a bijection. -/
+/- The inverse of a bijection is a bijection, and the inverse of the inverse is 
+   the bijection itself. -/
 @[hott]
 def set_inv_inv {A : Set} {B : Set} (f : A -> B) (g : B -> A) :
   is_set_inverse_of f g -> is_set_inverse_of g f :=
@@ -277,10 +278,32 @@ def inv_bijection_of {A : Set} {B : Set} (f : bijection A B) : bijection B A :=
   let g := (inv_of_bijection f).1, inv_f_g := (inv_of_bijection f).2 in
   has_inverse_to_bijection g f (set_inv_inv f g inv_f_g)
 
-@[hott]
+@[hott, instance]
 def inv_bij_is_inv {A : Set} {B : Set} (f : bijection A B) :
   is_set_inverse_of f (inv_bijection_of f) := 
 (inv_of_bijection f).2
+
+@[hott]
+def bij_is_inv_of_bij_inv {A : Set} {B : Set} (f : bijection A B) :
+  f = inv_bijection_of (inv_bijection_of f) :=
+begin 
+  apply bijection_eq_from_map_eq, 
+  change f.map = (inv_of_bijection (inv_bijection_of f)).1, 
+  apply inv_is_unique (inv_bijection_of f).map,
+  { apply set_inv_inv _ _, exact (inv_of_bijection f).2 },
+  { exact (inv_of_bijection (inv_bijection_of f)).2 } 
+end 
+
+/- The composition of two bijections is a bijection -/
+def comp_bijection {A B C : Set} (f : bijection A B) (g : bijection B C) : bijection A C :=
+begin
+  fapply has_inverse_to_bijection, 
+  { exact g ∘ f },
+  { exact (inv_bijection_of f) ∘ (inv_bijection_of g) },
+  { fapply is_set_inverse_of.mk,
+    { sorry },
+    { sorry } }
+end  
 
 /- The identity map is a bijection. -/
 @[hott, reducible, hsimp]
