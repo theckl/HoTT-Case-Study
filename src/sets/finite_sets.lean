@@ -124,7 +124,8 @@ begin
                                                            bij_inv np)))).1 ≠ m, by
     begin
       rwr fin_Set_lift_desc, rwr @is_set_inverse_of.r_inv _ _ f bij_inv.map _, 
-      change b.1 ≠ m, sorry
+      change b.1 ≠ m, 
+      exact λH1, nat.lt_irrefl m (nat.le_trans (nat.le_of_eq (ap nat.succ H1⁻¹)) b.2)
     end,  
     rwr fin_Set_bij_succ_map_neq bij nq, 
     change (bij.map (fin_Set_lift (le_succ n) (fin_Set_desc (bij_inv.map (fin_Set_lift 
@@ -142,34 +143,32 @@ begin
   { exact fin_Set_bij_succ_map bij },
   { exact fin_Set_bij_succ_map bij_inv },
   { fapply is_set_inverse_of.mk, 
-    { intro b, apply fin_Set_eq,  
-      hinduction nat.has_decidable_eq (g (fin_Set_lift (nat.le_succ m) b)).1 n with h p,
-      { have p2 : (f (fin_Set_lift (le_succ n) (fin_Set_bij_succ_map bij_inv b))).1 = m, by
-        begin 
-          rwr fin_Set_bij_succ_map_eq bij_inv p, rwr fin_Set_lift_desc, 
-          rwr @is_set_inverse_of.r_inv _ _ f g,
-        end,
-        rwr fin_Set_bij_succ_map_eq bij p2, 
-        change (bij.map ⟨n, nat.le_refl (n + 1)⟩).1 = (fin_Set_lift (le_succ m) b).1,
-        rwr <- @is_set_inverse_of.r_inv _ _ f g (inv_bij_is_inv bij) 
-                                                (fin_Set_lift (le_succ m) b),
-        rwr <- @fin_Set_eq _ _ ⟨n, nat.le_refl (n + 1)⟩ p },
-      { sorry } },
-    { intro a, sorry } }
+    { exact fin_Set_bij_succ_map_inv bij },
+    { change is_set_right_inverse_of (fin_Set_bij_succ_map bij_inv) 
+                                     (fin_Set_bij_succ_map bij),
+      rwr bij_is_inv_of_bij_inv bij, exact fin_Set_bij_succ_map_inv bij_inv } }
 end
 
 @[hott]
-def fin_Set_bij : ∀ {n m : ℕ}, bijection (fin_Set n) (fin_Set m) -> n = m 
-| 0 0 := begin intro bij, refl end
-| (n+1) 0 := begin intro bij, sorry end
-| 0 (m+1) := begin intro bij, sorry end
-| (n+1) (m+1) := begin intro bij, sorry end
+def fin_Set_bij : ∀ {n m : ℕ}, bijection (fin_Set n) (fin_Set m) -> n = m :=
+begin
+  intro n, hinduction n, 
+  { intro m, hinduction m with m,
+    { intro bij, refl },
+    { intro bij, 
+      hinduction not_succ_le_zero ((inv_bijection_of bij).map ⟨0, zero_lt_succ m⟩).1 
+                                  ((inv_bijection_of bij).map ⟨0, zero_lt_succ m⟩).2 } },
+  { intro m, hinduction m with m, 
+    { intro bij, hinduction not_succ_le_zero (bij.map ⟨n, nat.le_refl _⟩).1 
+                                             (bij.map ⟨n, nat.le_refl _⟩).2 },
+    { intro bij, exact ap nat.succ (@ih m (fin_Set_succ_bij_bij bij)) } }
+end    
 
 @[hott]
 def fin_card_is_uniq {S : Set} : Π (fin₁ fin₂ : is_finite S), fin₁.1 = fin₂.1 :=
   assume fin₁ fin₂,
   have bij : bijection (fin_Set fin₁.1) (fin_Set fin₂.1), from sorry,
-  fin_Set_bij  bij
+  fin_Set_bij bij
 
 
 @[hott]
