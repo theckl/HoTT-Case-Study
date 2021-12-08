@@ -25,6 +25,11 @@ def fin_Set_desc {n m : ℕ} (b : fin_Set m) (H : b.1 < n) : fin_Set n :=
 def fin_Set_eq {n : ℕ} {a b : fin_Set n} : a.1 = b.1 -> a = b :=
   assume p, sigma_eq p (pathover_of_tr_eq (is_prop.elim _ _)) 
 
+@[hott]
+def fin_Set_lift_desc {n m : ℕ} (H1 : n ≤ m) (b : fin_Set m) (H2 : b.1 < n) :
+  fin_Set_lift H1 (fin_Set_desc b H2) = b :=
+begin apply fin_Set_eq, refl end  
+
 /- These finte sets can be used to check whether a set is finite and to define the 
    cardinality of finite sets. -/
 @[hott]
@@ -97,26 +102,58 @@ def fin_Set_bij_succ_map_neq {n m : ℕ} (bij : bijection (fin_Set (n+1)) (fin_S
 begin change dite _ _ _ = _, rwr dif_neg np end
 
 @[hott]
+def fin_Set_bij_succ_map_inv {n m : ℕ} (bij : bijection (fin_Set (n+1)) (fin_Set (m+1))) :
+  is_set_right_inverse_of (fin_Set_bij_succ_map bij) 
+                          (fin_Set_bij_succ_map (inv_bijection_of bij)) :=
+begin 
+  let f := bij.map, let bij_inv := inv_bijection_of bij, let g := bij_inv.map,
+  intro b, apply fin_Set_eq, 
+  hinduction nat.has_decidable_eq (g (fin_Set_lift (nat.le_succ m) b)).1 n with h p np,
+  { have q : (f (fin_Set_lift (le_succ n) (fin_Set_bij_succ_map bij_inv b))).1 = m, by
+    begin 
+      rwr fin_Set_bij_succ_map_eq bij_inv p, rwr fin_Set_lift_desc, 
+      rwr @is_set_inverse_of.r_inv _ _ f g _
+    end,
+    rwr fin_Set_bij_succ_map_eq bij q, 
+    change (bij.map ⟨n, nat.le_refl (n + 1)⟩).1 = (fin_Set_lift (le_succ m) b).1,
+    rwr <- @is_set_inverse_of.r_inv _ _ f g _ (fin_Set_lift (le_succ m) b),
+    rwr <- @fin_Set_eq _ _ ⟨n, nat.le_refl (n + 1)⟩ p },
+  { rwr fin_Set_bij_succ_map_neq bij_inv np, 
+    have nq : (f (fin_Set_lift (nat.le_succ n) (fin_Set_desc (bij_inv.map 
+                  (fin_Set_lift (le_succ m) b)) (fin_Set_bij_succ_map_neq_ineq 
+                                                           bij_inv np)))).1 ≠ m, by
+    begin
+      rwr fin_Set_lift_desc, rwr @is_set_inverse_of.r_inv _ _ f bij_inv.map _, 
+      change b.1 ≠ m, sorry
+    end,  
+    rwr fin_Set_bij_succ_map_neq bij nq, 
+    change (bij.map (fin_Set_lift (le_succ n) (fin_Set_desc (bij_inv.map (fin_Set_lift 
+      (le_succ m) b)) (fin_Set_bij_succ_map_neq_ineq bij_inv np)))).1 = b.1, 
+    rwr fin_Set_lift_desc, rwr @is_set_inverse_of.r_inv _ _ bij.map bij_inv.map _ }
+end    
+
+@[hott]
 def fin_Set_succ_bij_bij : ∀ {n m : ℕ}, bijection (fin_Set (n+1)) (fin_Set (m+1)) ->
   bijection (fin_Set n) (fin_Set m) :=
 begin 
   intros n m bij, let f := bij.map, let bij_inv := inv_bijection_of bij, 
   let g := bij_inv.map, let f' := fin_Set_bij_succ_map bij, 
   let g' := fin_Set_bij_succ_map bij_inv, fapply has_inverse_to_bijection,
-  { exact f' },
-  { exact g' },
+  { exact fin_Set_bij_succ_map bij },
+  { exact fin_Set_bij_succ_map bij_inv },
   { fapply is_set_inverse_of.mk, 
-    { intro b, hinduction nat.has_decidable_eq (g (fin_Set_lift (nat.le_succ m) b)).1 n,
-      { apply fin_Set_eq, 
-        have p1 : (g' b).1 = (g ⟨m, nat.le_refl (m+1)⟩).1, from 
-          fin_Set_bij_succ_map_eq bij_inv a,
-        have p2 : (f (fin_Set_lift (le_succ n) (g' b))).1 = m, from 
-          begin change (f ⟨(g' b).1, _⟩).1 = m, sorry end,
+    { intro b, apply fin_Set_eq,  
+      hinduction nat.has_decidable_eq (g (fin_Set_lift (nat.le_succ m) b)).1 n with h p,
+      { have p2 : (f (fin_Set_lift (le_succ n) (fin_Set_bij_succ_map bij_inv b))).1 = m, by
+        begin 
+          rwr fin_Set_bij_succ_map_eq bij_inv p, rwr fin_Set_lift_desc, 
+          rwr @is_set_inverse_of.r_inv _ _ f g,
+        end,
         rwr fin_Set_bij_succ_map_eq bij p2, 
-        rwr <- @fin_Set_eq _ _ ⟨n, nat.le_refl (n + 1)⟩ a,
-        change (f (g (fin_Set_lift (le_succ m) b))).1 = b.1, 
-        rwr @is_set_inverse_of.r_inv _ _ f g (inv_bij_is_inv bij) 
-                                      (fin_Set_lift (le_succ m) b) },
+        change (bij.map ⟨n, nat.le_refl (n + 1)⟩).1 = (fin_Set_lift (le_succ m) b).1,
+        rwr <- @is_set_inverse_of.r_inv _ _ f g (inv_bij_is_inv bij) 
+                                                (fin_Set_lift (le_succ m) b),
+        rwr <- @fin_Set_eq _ _ ⟨n, nat.le_refl (n + 1)⟩ p },
       { sorry } },
     { intro a, sorry } }
 end
