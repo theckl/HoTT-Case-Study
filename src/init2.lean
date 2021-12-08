@@ -261,7 +261,9 @@ def down_eq_up {A : Type u} (x : ulift.{v u} A) (y : A) :
 begin hinduction x, intro H, rwr down_up_eq down at H, exact ap ulift.up H end
 
 /- The calculation rules for dependent if-then-else `dite` are missing in 
-   [hott.init.logic]. -/
+   [hott.init.logic]: Instances of the decision-clause may be not equal, and then the 
+   eliminator `decidable.rec` does not work. This problem vanishes if the decision-clause 
+   is a proposition. -/
 @[hott] def dif_pos {c : Type _} [is_prop c] [H : decidable c] (Hc : c) {A : Type _} 
   {t : c -> A} {e : ¬c -> A} : (dite c t e) = t Hc :=
 decidable.rec
