@@ -1,0 +1,13 @@
+init2       :   283
+types2      :   139
+prop_axioms :   625
+prop_logic  :   194
+sets
+  basic     :   630
+  finite    :   193
+  subset    :   407
+  axioms    :   340
+  algebra   :   224
+  quotients :   205
+              -----
+               3240
