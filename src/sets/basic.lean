@@ -301,8 +301,16 @@ begin
   { exact g ∘ f },
   { exact (inv_bijection_of f) ∘ (inv_bijection_of g) },
   { fapply is_set_inverse_of.mk,
-    { sorry },
-    { sorry } }
+    { intro c, 
+      calc g (f ((inv_bijection_of f) ((inv_bijection_of g) c))) = 
+                 g ((inv_bijection_of g) c) : 
+                 by rwr @is_set_inverse_of.r_inv _ _ f (inv_bijection_of f) _
+           ... = c : by rwr @is_set_inverse_of.r_inv _ _ g (inv_bijection_of g) _ },
+    { intro a, 
+      calc (inv_bijection_of f) ((inv_bijection_of g) (g (f a))) = 
+                 (inv_bijection_of f) (f a) : 
+                 by rwr @is_set_inverse_of.l_inv _ _ g (inv_bijection_of g) _
+           ... = a : by rwr @is_set_inverse_of.l_inv _ _ f (inv_bijection_of f) _ } }
 end  
 
 /- The identity map is a bijection. -/
