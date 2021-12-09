@@ -1,4 +1,4 @@
-import sets.setalgebra init2 types2 sets.set_axioms
+import sets.algebra init2 types2 sets.axioms
 
 universes v v' v'' u u' u'' w 
 hott_theory
@@ -350,13 +350,13 @@ begin intro p, hinduction p, hinduction x, refl end
 def std_str_has_hom {C : Type u} [category.{v} C] (std_str : std_structure_on C) :
   has_hom (std_structure std_str) := 
 has_hom.mk (λ (x y : std_structure std_str), 
-            pred_Set {f ∈ (x.carrier ⟶ y) | std_str.H (x.str) (y.str) f})
+            pred_Set (λ f : (x.carrier ⟶ y), std_str.H (x.str) (y.str) f))
 
 @[hott]
 instance hom_std_C {C : Type u} [category.{v} C] {std_str : std_structure_on C}
   {x y : std_structure std_str} : has_coe ↥(x ⟶ y) ↥(x.carrier ⟶ y.carrier) :=
 ⟨λ f : x ⟶ y, 
-   pred_Set_map {f ∈ (x.carrier ⟶ y) | std_str.H (x.str) (y.str) f} f⟩  
+   pred_Set_map (λ f : (x.carrier ⟶ y), std_str.H (x.str) (y.str) f) f⟩  
 
 @[hott]
 def hom_H {C : Type u} [category.{v} C] {std_str : std_structure_on C} 
