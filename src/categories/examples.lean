@@ -620,12 +620,14 @@ def Set_category : category Set.{u} :=
   category.mk ideqviso  
 
 /- Categories in the algebraic hierarchy are categories of structured sets. The structures can
-   be charcaterized even more specifically: They are Ω-structures 
-   made up of functions and relations on the sets (see [HoTT-Book], Sec.9.8). Such structures 
-   allow the construction of subsheaves of sections, see [topology.category.Top_sheaves]. 
+   be constructed by an instance of a more general technique: as the model structure of an 
+   (algebraic) first-order theory built on a first-order signature in a category with suitable 
+   properties. The Ω-structures made up of functions and relations on sets in [HoTT-Book], 
+   Sec.9.8) are another example of this technique, but it also allows the construction of 
+   subsheaves of sections, see [topology.category.Top_sheaves]. 
    
-   First-order signatures prescribe the number and arity of functions and relations in an
-   Ω-structure. -/
+   First-order signatures prescribe the types of arguments and the arity of functions and 
+   relations in a first-order theory. -/
 @[hott]
 structure fo_signature :=
   ( ops : Set.{0} ) 
