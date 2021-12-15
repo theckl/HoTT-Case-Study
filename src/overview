@@ -9,5 +9,7 @@ sets
   axioms    :   340
   algebra   :   224
   quotients :   205
-              -----
-               3240
+categories  
+  basic     :   720
+                -----
+               3960
