@@ -623,17 +623,41 @@ def Set_category : category Set.{u} :=
    be constructed by an instance of a more general technique: as the model structure of an 
    (algebraic) first-order theory built on a first-order signature in a category with suitable 
    properties. The Ω-structures made up of functions and relations on sets in [HoTT-Book], 
-   Sec.9.8) are another example of this technique, but it also allows the construction of 
-   subsheaves of sections, see [topology.category.Top_sheaves]. 
+   Sec.9.8) are another example of this technique, but the more general construction also 
+   allows the construction of categories of topological groups or locally ringed sheaves. 
    
    First-order signatures prescribe the types of arguments and the arity of functions and 
    relations in a first-order theory. -/
 @[hott]
 structure fo_signature :=
-  ( ops : Set.{0} ) 
-  ( rels : Set.{0} )
-  ( ops_arity : Π (o : ops), Set.{0} )
-  ( rels_arity : Π (r : rels), Set.{0} )
+  (sorts : Set.{0})
+  (ops : Set.{0}) 
+  (ops_arity : Π (o : ops), Set.{0})
+  (ops_source : Π (o : ops), ops_arity o -> sorts)
+  (ops_target : Π (o : ops), sorts)
+  (rels : Set.{0})
+  (rels_arity : Π (r : rels), Set.{0})
+  (rels_comp : Π (r : rels), rels_arity r -> sorts)
+
+@[hott]
+structure sign_variable (sign : fo_signature) :=
+  (name : string)
+  (sort : sign.sorts) 
+
+@[hott]
+inductive sign_expr (sign : fo_signature)
+| var {} : sign_variable sign -> sign_expr 
+| op {} : Π (o : sign.ops), (sign.ops_arity o -> sign_expr) -> sign_expr 
+
+@[hott]
+def sign_expr_sort {sign : fo_signature} : sign_expr sign -> sign.sorts :=
+  begin intro e, hinduction e with var op args, exact var.sort, exact sign.ops_target op end
+
+@[hott]
+inductive sign_term (sign : fo_signature) 
+| var {} : sign_variable sign -> sign_term
+| op {} : Π (o : sign.ops) (f : sign.ops_arity o -> sign_expr sign), 
+            (Π k : sign.ops_arity o, sign_expr_sort (f k) = sign.ops_source o k) -> sign_term
 
 @[hott]  
 structure Ω_structure_on (sign : fo_signature) (carrier : Set) :=
