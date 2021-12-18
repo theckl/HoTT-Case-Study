@@ -628,6 +628,8 @@ def Set_category : category Set.{u} :=
    
    First-order signatures prescribe the types of arguments and the arity of functions and 
    relations in a first-order theory. -/
+namespace signature
+
 @[hott]
 structure fo_signature :=
   (sorts : Set.{0})
@@ -640,24 +642,53 @@ structure fo_signature :=
   (rels_comp : Π (r : rels), rels_arity r -> sorts)
 
 @[hott]
-structure sign_variable (sign : fo_signature) :=
-  (name : string)
+structure var (sign : fo_signature) :=
   (sort : sign.sorts) 
 
+/- The following three lemmas should be produced automatically. -/
 @[hott]
-inductive sign_expr (sign : fo_signature)
-| var {} : sign_variable sign -> sign_expr 
-| op {} : Π (o : sign.ops), (sign.ops_arity o -> sign_expr) -> sign_expr 
+def var_eq {sign : fo_signature} {v₁ v₂ : var sign} : (v₁.sort = v₂.sort) -> (v₁ = v₂) :=
+begin
+  intro p_sort, 
+  hinduction v₁ with n₁ s₁, hinduction v₂ with n₂ s₂,
+  exact ap var.mk p_sort
+end    
 
 @[hott]
-def sign_expr_sort {sign : fo_signature} : sign_expr sign -> sign.sorts :=
-  begin intro e, hinduction e with var op args, exact var.sort, exact sign.ops_target op end
+def var_eq_eta {sign : fo_signature} {v₁ v₂ : var sign} (p : v₁ = v₂) :
+  var_eq (ap var.sort p) = p := 
+begin hinduction p, hinduction v₁, reflexivity end    
+    
+@[hott, instance]
+def var_is_set {sign : fo_signature} : is_set (var sign) :=
+begin
+  fapply is_set.mk, intros x y p q, 
+  rwr <- var_eq_eta p, rwr <- var_eq_eta q,
+  apply ap var_eq, apply is_set.elim
+end   
+
+@[hott] 
+inductive term_of_sort {sign : fo_signature} : sign.sorts -> Type
+| var : Π (s : sign.sorts) (v : var sign), (v.sort = s) -> term_of_sort s
+| op : Π (s : sign.sorts) (f : sign.ops) (p : sign.ops_target f = s)
+         (args : Π (k : sign.ops_arity f), term_of_sort (sign.ops_source f k)), 
+         term_of_sort s
 
 @[hott]
-inductive sign_term (sign : fo_signature) 
-| var {} : sign_variable sign -> sign_term
-| op {} : Π (o : sign.ops) (f : sign.ops_arity o -> sign_expr sign), 
-            (Π k : sign.ops_arity o, sign_expr_sort (f k) = sign.ops_source o k) -> sign_term
+inductive term (sign : fo_signature) 
+| mk {} : Π {s : sign.sorts}, term_of_sort s -> term
+
+@[hott]
+def free_vars_of_term {sign : fo_signature} : term sign -> Subset (to_Set (var sign)) :=
+begin 
+  intro t, hinduction t with s ts, hinduction ts with s v p, 
+  { sorry }, 
+  { sorry }
+end
+
+end signature
+
+open signature
 
 @[hott]  
 structure Ω_structure_on (sign : fo_signature) (carrier : Set) :=
