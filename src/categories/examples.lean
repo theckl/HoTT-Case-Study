@@ -633,30 +633,33 @@ namespace signature
 @[hott]
 structure fo_signature :=
   (sorts : Set.{0})
+  (var_labels : Set.{0})
   (ops : Set.{0}) 
   (ops_arity : Π (o : ops), Set.{0})
   (ops_source : Π (o : ops), ops_arity o -> sorts)
   (ops_target : Π (o : ops), sorts)
   (rels : Set.{0})
   (rels_arity : Π (r : rels), Set.{0})
-  (rels_comp : Π (r : rels), rels_arity r -> sorts)
+  (rels_comp : Π {r : rels}, rels_arity r -> sorts)
 
 @[hott]
 structure var (sign : fo_signature) :=
+  (label : sign.var_labels)
   (sort : sign.sorts) 
 
 /- The following three lemmas should be produced automatically. -/
 @[hott]
-def var_eq {sign : fo_signature} {v₁ v₂ : var sign} : (v₁.sort = v₂.sort) -> (v₁ = v₂) :=
+def var_eq {sign : fo_signature} {v₁ v₂ : var sign} : 
+  (v₁.label = v₂.label) -> (v₁.sort = v₂.sort) -> (v₁ = v₂) :=
 begin
-  intro p_sort, 
-  hinduction v₁ with n₁ s₁, hinduction v₂ with n₂ s₂,
-  exact ap var.mk p_sort
+  intros p_label p_sort, 
+  hinduction v₁ with l₁ s₁, hinduction v₂ with l₂ s₂,
+  exact ap011 var.mk p_label p_sort
 end    
 
 @[hott]
 def var_eq_eta {sign : fo_signature} {v₁ v₂ : var sign} (p : v₁ = v₂) :
-  var_eq (ap var.sort p) = p := 
+  var_eq (ap var.label p) (ap var.sort p) = p := 
 begin hinduction p, hinduction v₁, reflexivity end    
     
 @[hott, instance]
@@ -664,7 +667,7 @@ def var_is_set {sign : fo_signature} : is_set (var sign) :=
 begin
   fapply is_set.mk, intros x y p q, 
   rwr <- var_eq_eta p, rwr <- var_eq_eta q,
-  apply ap var_eq, apply is_set.elim
+  apply ap011 var_eq, apply is_set.elim, apply is_set.elim
 end   
 
 @[hott] 
@@ -679,11 +682,29 @@ inductive term (sign : fo_signature)
 | mk {} : Π {s : sign.sorts}, term_of_sort s -> term
 
 @[hott]
+def term_sort {sign : fo_signature} : term sign -> sign.sorts :=
+  begin intro t, hinduction t, exact s end
+
+@[hott]
 def free_vars_of_term {sign : fo_signature} : term sign -> Subset (to_Set (var sign)) :=
 begin 
   intro t, hinduction t with s ts, hinduction ts with s v p, 
-  { sorry }, 
-  { sorry }
+  { exact elem_to_Subset v }, 
+  { exact iUnion ih }
+end
+
+@[hott]
+inductive atomic_formula (sign : fo_signature)
+| eq_terms : Π (t₁ t₂ : term sign), (term_sort t₁ = term_sort t₂) -> atomic_formula
+| rel_terms : Π (r : sign.rels) 
+          (f : Π (k : sign.rels_arity r), term_of_sort (sign.rels_comp k)), atomic_formula
+
+@[hott]
+def free_vars_of_atom {sign : fo_signature} : atomic_formula sign -> Subset (to_Set (var sign)) :=
+begin 
+  intro atom, hinduction atom, 
+  { exact (free_vars_of_term t₁) ∪ (free_vars_of_term t₂) }, 
+  { exact iUnion (λ (k : sign.rels_arity r), free_vars_of_term ⟨f k⟩) } 
 end
 
 end signature
