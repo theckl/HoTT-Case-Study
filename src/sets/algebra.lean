@@ -219,6 +219,15 @@ begin
     exact (elem_comp_iff (f a.1) x).1 (i_el a.1) a.2 }
 end  
 
+/- Lists of elements of a set define subsets. -/
+@[hott]
+def elem_to_Subset {S : Set} (a : S) : Subset S :=
+  λ b, to_Prop (b = a)
+
+@[hott]
+def list_to_Subset {S : Set} (l : list S) : Subset S :=
+begin hinduction l with hd tl S', exact empty_Subset S, exact S' ∪ (elem_to_Subset hd) end
+
 end subset
 
 end hott
