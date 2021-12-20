@@ -626,6 +626,8 @@ def Set_category : category Set.{u} :=
    Sec.9.8) are another example of this technique, but the more general construction also 
    allows the construction of categories of topological groups or locally ringed sheaves. 
    
+   We mainly follow the introduction to categorical model theory by [caramello14]. 
+
    First-order signatures prescribe the types of arguments and the arity of functions and 
    relations in a first-order theory. -/
 namespace signature
@@ -678,6 +680,10 @@ inductive term_of_sort {sign : fo_signature} : sign.sorts -> Type
          term_of_sort s
 
 @[hott]
+def term_of_sort_is_set {sign : fo_signature} (s : sign.sorts) : is_set (term_of_sort s) :=
+  sorry
+
+@[hott]
 inductive term (sign : fo_signature) 
 | mk {} : Π {s : sign.sorts}, term_of_sort s -> term
 
@@ -706,6 +712,21 @@ begin
   { exact (free_vars_of_term t₁) ∪ (free_vars_of_term t₂) }, 
   { exact iUnion (λ (k : sign.rels_arity r), free_vars_of_term ⟨f k⟩) } 
 end
+
+@[hott]
+def context (sign : fo_signature) := Subset (to_Set (var sign))
+
+@[hott]
+def atom_formula_in_context {sign : fo_signature} (φ : atomic_formula sign) 
+  (cont : context sign) := (free_vars_of_atom φ) ⊆ cont  
+
+@[hott]
+structure sequent {sign : fo_signature} :=
+  (cont : context sign)
+  (ass : atomic_formula sign)
+  (con : atomic_formula sign)
+  (ass_in_cont : atom_formula_in_context ass cont)
+  (con_in_cont : atom_formula_in_context ass cont)
 
 end signature
 
