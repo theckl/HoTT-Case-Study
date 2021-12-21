@@ -680,28 +680,55 @@ inductive term_of_sort {sign : fo_signature} : sign.sorts -> Type
          term_of_sort s
 
 @[hott]
+def term_of_sort_code {sign : fo_signature} (s : sign.sorts) : 
+  term_of_sort s -> term_of_sort s -> Type :=
+begin 
+  intro t₁, hinduction t₁, 
+  { intro t₂, hinduction t₂ with s v' p', exact v = v', exact Zero },
+  { intro t₂, hinduction t₂ with s' v' p' s' f' p' args' ih', 
+    { exact Zero },
+    { exact Σ (q : f' = f), Π (k : sign.ops_arity f'), ih (q ▸ k) ((q ▸ args') (q ▸ k)) } } 
+end 
+
+@[hott]
+def term_of_sort_encode {sign : fo_signature} (s : sign.sorts) : 
+  Π t₁ t₂ : term_of_sort s, t₁ = t₂ -> term_of_sort_code s t₁ t₂ :=
+begin
+  intros t₁ t₂ p, hinduction p, hinduction t₁ with s v p,
+  { exact rfl },
+  { exact ⟨rfl, λ k, ih k⟩ }  
+end
+
+@[hott]
+def term_of_sort_decode {sign : fo_signature} (s : sign.sorts) : 
+  Π t₁ t₂ : term_of_sort s, term_of_sort_code s t₁ t₂ -> t₁ = t₂ :=
+sorry  
+
+@[hott]
+def term_of_sort_code_equiv {sign : fo_signature} (s : sign.sorts) : 
+  Π t₁ t₂ : term_of_sort s, (t₁ = t₂) ≃ (term_of_sort_code s t₁ t₂) :=
+sorry  
+
+@[hott]
 def term_of_sort_is_set {sign : fo_signature} (s : sign.sorts) : is_set (term_of_sort s) :=
   sorry
 
 @[hott]
-inductive term (sign : fo_signature) 
-| mk {} : Π {s : sign.sorts}, term_of_sort s -> term
-
-@[hott]
-def term_sort {sign : fo_signature} : term sign -> sign.sorts :=
-  begin intro t, hinduction t, exact s end
+structure term (sign : fo_signature) :=
+  (sort : sign.sorts)
+  (term : term_of_sort sort)
 
 @[hott]
 def free_vars_of_term {sign : fo_signature} : term sign -> Subset (to_Set (var sign)) :=
 begin 
-  intro t, hinduction t with s ts, hinduction ts with s v p, 
+  intro t, hinduction t, hinduction term, 
   { exact elem_to_Subset v }, 
   { exact iUnion ih }
 end
 
 @[hott]
 inductive atomic_formula (sign : fo_signature)
-| eq_terms : Π (t₁ t₂ : term sign), (term_sort t₁ = term_sort t₂) -> atomic_formula
+| eq_terms : Π (t₁ t₂ : term sign), (t₁.sort = t₂.sort) -> atomic_formula
 | rel_terms : Π (r : sign.rels) 
           (f : Π (k : sign.rels_arity r), term_of_sort (sign.rels_comp k)), atomic_formula
 
@@ -710,7 +737,7 @@ def free_vars_of_atom {sign : fo_signature} : atomic_formula sign -> Subset (to_
 begin 
   intro atom, hinduction atom, 
   { exact (free_vars_of_term t₁) ∪ (free_vars_of_term t₂) }, 
-  { exact iUnion (λ (k : sign.rels_arity r), free_vars_of_term ⟨f k⟩) } 
+  { exact iUnion (λ (k : sign.rels_arity r), free_vars_of_term ⟨sign.rels_comp k, f k⟩) } 
 end
 
 @[hott]
