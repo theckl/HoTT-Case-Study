@@ -687,12 +687,12 @@ begin
   { intro t₂, hinduction t₂ with s v' p', exact v = v', exact Zero },
   { intro t₂, hinduction t₂ with s' v' p' s' f' p' args' ih', 
     { exact Zero },
-    { exact Σ (q : f' = f), Π (k : sign.ops_arity f'), ih (q ▸ k) ((q ▸ args') (q ▸ k)) } } 
+    { exact Σ (q : f = f'), Π (k : sign.ops_arity f), ih k ((q⁻¹ ▸ args') k) } } 
 end 
 
 @[hott]
-def term_of_sort_encode {sign : fo_signature} (s : sign.sorts) : 
-  Π t₁ t₂ : term_of_sort s, t₁ = t₂ -> term_of_sort_code s t₁ t₂ :=
+def term_of_sort_encode {sign : fo_signature} {s : sign.sorts} : 
+  Π {t₁ t₂ : term_of_sort s}, t₁ = t₂ -> term_of_sort_code s t₁ t₂ :=
 begin
   intros t₁ t₂ p, hinduction p, hinduction t₁ with s v p,
   { exact rfl },
@@ -700,18 +700,67 @@ begin
 end
 
 @[hott]
-def term_of_sort_decode {sign : fo_signature} (s : sign.sorts) : 
-  Π t₁ t₂ : term_of_sort s, term_of_sort_code s t₁ t₂ -> t₁ = t₂ :=
-sorry  
+def term_of_sort_decode {sign : fo_signature} {s : sign.sorts} : 
+  Π {t₁ t₂ : term_of_sort s}, term_of_sort_code s t₁ t₂ -> t₁ = t₂ :=
+begin
+  intros t₁ t₂ t_code, hinduction t₁ with s v p,  
+  { hinduction t₂ with s v' p', 
+    { have r : p =[t_code; λ w : var sign, w.sort = s] p', from 
+        begin apply pathover_of_tr_eq, exact is_prop.elim _ _ end,
+      exact apd011 (term_of_sort.var s) t_code r },
+    { hinduction t_code } },
+  { hinduction t₂ with s v' p' s f' p' args' ih',
+    { hinduction t_code },
+    { have r : p =[t_code.1; λ g : sign.ops, sign.ops_target g = s] p', from
+        begin apply pathover_of_tr_eq, exact is_prop.elim _ _ end,
+      have r' : args =[t_code.1; λ g : sign.ops, Π (k : sign.ops_arity g), 
+                       term_of_sort (sign.ops_source g k)] args', from
+        begin 
+          apply pathover_of_tr_eq, apply tr_eq_of_eq_inv_tr, 
+          apply eq_of_homotopy, intro k, apply ih k, exact t_code.2 k 
+        end,                 
+      exact apdd2 (term_of_sort.op s) t_code.1 r r' } }
+end  
 
 @[hott]
 def term_of_sort_code_equiv {sign : fo_signature} (s : sign.sorts) : 
   Π t₁ t₂ : term_of_sort s, (t₁ = t₂) ≃ (term_of_sort_code s t₁ t₂) :=
-sorry  
+begin
+  intros t₁ t₂, fapply equiv.MK,
+  { exact term_of_sort_encode },
+  { exact term_of_sort_decode },
+  { intro t_code, hinduction t₁ with s v p, 
+    { hinduction t₂ with s v' p', 
+      { sorry },
+      { hinduction t_code } },
+    { hinduction t₂ with s v' p' s f' p' args' ih', 
+      { hinduction t_code },
+      { sorry } } },
+  { intro p, hinduction p, hinduction t₁ with s v p, 
+    { sorry },
+    { sorry } }
+end    
+
+@[hott, instance]
+def term_of_sort_code_is_prop  {sign : fo_signature} (s : sign.sorts) : 
+  Π t₁ t₂ : term_of_sort s, is_prop (term_of_sort_code s t₁ t₂) :=
+begin
+  intros t₁ t₂, hinduction t₁ with s v p,  
+  { hinduction t₂ with s v' p', 
+    { change is_prop (v = v'), apply is_prop.mk, intros q q', exact is_set.elim _ _ },
+    { change is_prop Zero, apply_instance } },
+  { hinduction t₂ with s v' p' s f' p' args' ih',
+    { change is_prop Zero, apply_instance },
+    { sorry } }
+end   
 
 @[hott]
 def term_of_sort_is_set {sign : fo_signature} (s : sign.sorts) : is_set (term_of_sort s) :=
-  sorry
+begin 
+  apply is_trunc_succ_intro, intros t₁ t₂, 
+  apply is_trunc_equiv_closed_rev -1 (term_of_sort_code_equiv s t₁ t₂),
+  exact term_of_sort_code_is_prop s t₁ t₂ 
+end
 
 @[hott]
 structure term (sign : fo_signature) :=
@@ -730,14 +779,14 @@ end
 inductive atomic_formula (sign : fo_signature)
 | eq_terms : Π (t₁ t₂ : term sign), (t₁.sort = t₂.sort) -> atomic_formula
 | rel_terms : Π (r : sign.rels) 
-          (f : Π (k : sign.rels_arity r), term_of_sort (sign.rels_comp k)), atomic_formula
+       (comp : Π (k : sign.rels_arity r), term_of_sort (sign.rels_comp k)), atomic_formula
 
 @[hott]
 def free_vars_of_atom {sign : fo_signature} : atomic_formula sign -> Subset (to_Set (var sign)) :=
 begin 
   intro atom, hinduction atom, 
   { exact (free_vars_of_term t₁) ∪ (free_vars_of_term t₂) }, 
-  { exact iUnion (λ (k : sign.rels_arity r), free_vars_of_term ⟨sign.rels_comp k, f k⟩) } 
+  { exact iUnion (λ (k : sign.rels_arity r), free_vars_of_term ⟨sign.rels_comp k, comp k⟩) } 
 end
 
 @[hott]
@@ -753,7 +802,7 @@ structure sequent {sign : fo_signature} :=
   (ass : atomic_formula sign)
   (con : atomic_formula sign)
   (ass_in_cont : atom_formula_in_context ass cont)
-  (con_in_cont : atom_formula_in_context ass cont)
+  (con_in_cont : atom_formula_in_context con cont)
 
 end signature
 
