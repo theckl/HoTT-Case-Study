@@ -694,9 +694,11 @@ end
 def term_of_sort_encode {sign : fo_signature} {s : sign.sorts} : 
   Π {t₁ t₂ : term_of_sort s}, t₁ = t₂ -> term_of_sort_code s t₁ t₂ :=
 begin
-  intros t₁ t₂ p, hinduction p, hinduction t₁ with s v p,
-  { exact rfl },
-  { exact ⟨rfl, λ k, ih k⟩ }  
+  intros t₁ t₂ p, hinduction t₁ with s v₁ p₁ s f₁ p₁ args₁ ih₁,
+  { hinduction p, exact rfl },
+  { hinduction p, 
+    have q : Π k, args₁ k = ((inverse (@rfl _ f₁)) ▸ args₁) k, from assume k, rfl,
+    exact ⟨rfl, λ k, ih₁ k (q k)⟩ }  
 end
 
 @[hott]
@@ -731,11 +733,14 @@ begin
   { exact term_of_sort_decode },
   { intro t_code, hinduction t₁ with s v p, 
     { hinduction t₂ with s v' p', 
-      { sorry },
+      { change @eq (v = v') _ _, exact is_prop.elim _ _ },
       { hinduction t_code } },
     { hinduction t₂ with s v' p' s f' p' args' ih', 
       { hinduction t_code },
-      { sorry } } },
+      { fapply sigma.sigma_eq, 
+        { exact is_prop.elim _ _ },
+        { apply pathover_of_tr_eq, apply eq_of_homotopy, intro k, 
+          rwr <- ih k _ (t_code.snd k), sorry } } } },
   { intro p, hinduction p, hinduction t₁ with s v p, 
     { sorry },
     { sorry } }
