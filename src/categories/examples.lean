@@ -672,6 +672,8 @@ begin
   apply ap011 var_eq, apply is_set.elim, apply is_set.elim
 end   
 
+namespace term_of_sort
+
 @[hott] 
 inductive term_of_sort {sign : fo_signature} : sign.sorts -> Type
 | var : Π (s : sign.sorts) (v : var sign), (v.sort = s) -> term_of_sort s
@@ -679,44 +681,46 @@ inductive term_of_sort {sign : fo_signature} : sign.sorts -> Type
          (args : Π (k : sign.ops_arity f), term_of_sort (sign.ops_source f k)), 
          term_of_sort s
 
+/- Pattern-matching needs the sort `s` marked as inaccessible, but does not work in 
+   hott-mode because it uses `eq.rec`. -/
 @[hott]
-def term_of_sort_code {sign : fo_signature} (s : sign.sorts) : 
+protected def code {sign : fo_signature} {s : sign.sorts} : 
   term_of_sort s -> term_of_sort s -> Type :=
 begin 
   intro t₁, hinduction t₁, 
-  { intro t₂, hinduction t₂ with s v' p', exact v = v', exact Zero },
-  { intro t₂, hinduction t₂ with s' v' p' s' f' p' args' ih', 
-    { exact Zero },
-    { exact Σ (q : f = f'), Π (k : sign.ops_arity f), ih k ((q⁻¹ ▸ args') k) } } 
-end 
-
-@[hott]
-def term_of_sort_encode {sign : fo_signature} {s : sign.sorts} : 
-  Π {t₁ t₂ : term_of_sort s}, t₁ = t₂ -> term_of_sort_code s t₁ t₂ :=
-begin
-  intros t₁ t₂ p, hinduction t₁ with s v₁ p₁ s f₁ p₁ args₁ ih₁,
-  { hinduction p, exact rfl },
-  { hinduction p, 
-    have q : Π k, args₁ k = ((inverse (@rfl _ f₁)) ▸ args₁) k, from assume k, rfl,
-    exact ⟨rfl, λ k, ih₁ k (q k)⟩ }  
+  { intro t₂, hinduction t₂, exact v = v_1, exact Zero },
+  { intro t₂, hinduction t₂, 
+    exact Zero, exact Σ (q : f = f_1), Π k, ih k ((q⁻¹ ▸ args_1) k) } 
 end
 
 @[hott]
-def term_of_sort_decode {sign : fo_signature} {s : sign.sorts} : 
-  Π {t₁ t₂ : term_of_sort s}, term_of_sort_code s t₁ t₂ -> t₁ = t₂ :=
+protected def refl {sign : fo_signature} {s : sign.sorts} : Π (t : term_of_sort s),
+  term_of_sort.code t t :=
+begin intro t, hinduction t, exact rfl , exact ⟨rfl, λ k, ih k⟩ end    
+
+@[hott]
+def encode {sign : fo_signature} {s : sign.sorts} {t₁ t₂ : term_of_sort s} 
+  (p : t₁ = t₂) : term_of_sort.code t₁ t₂ :=
+p ▸ (term_of_sort.refl t₁)  
+
+@[hott]
+def decode {sign : fo_signature} {s : sign.sorts} : 
+  Π {t₁ t₂ : term_of_sort s}, term_of_sort.code t₁ t₂ -> t₁ = t₂ :=
 begin
-  intros t₁ t₂ t_code, hinduction t₁ with s v p,  
-  { hinduction t₂ with s v' p', 
-    { have r : p =[t_code; λ w : var sign, w.sort = s] p', from 
+  intro t₁, hinduction t₁,  
+  { intro t₂, hinduction t₂, 
+    { intro t_code,
+      have r : a_1 =[t_code; λ w : var sign, w.sort = s] a, from 
         begin apply pathover_of_tr_eq, exact is_prop.elim _ _ end,
       exact apd011 (term_of_sort.var s) t_code r },
-    { hinduction t_code } },
-  { hinduction t₂ with s v' p' s f' p' args' ih',
-    { hinduction t_code },
-    { have r : p =[t_code.1; λ g : sign.ops, sign.ops_target g = s] p', from
+    { intro t_code, hinduction t_code } },
+  { intro t₂, hinduction t₂,
+    { intro t_code, hinduction t_code },
+    { intro t_code,
+      have r : p_1 =[t_code.1; λ g : sign.ops, sign.ops_target g = s] p, from
         begin apply pathover_of_tr_eq, exact is_prop.elim _ _ end,
       have r' : args =[t_code.1; λ g : sign.ops, Π (k : sign.ops_arity g), 
-                       term_of_sort (sign.ops_source g k)] args', from
+                       term_of_sort (sign.ops_source g k)] args_1, from
         begin 
           apply pathover_of_tr_eq, apply tr_eq_of_eq_inv_tr, 
           apply eq_of_homotopy, intro k, apply ih k, exact t_code.2 k 
@@ -725,30 +729,32 @@ begin
 end  
 
 @[hott]
-def term_of_sort_code_equiv {sign : fo_signature} (s : sign.sorts) : 
-  Π t₁ t₂ : term_of_sort s, (t₁ = t₂) ≃ (term_of_sort_code s t₁ t₂) :=
+def code_equiv {sign : fo_signature} {s : sign.sorts} : 
+  Π t₁ t₂ : term_of_sort s, (t₁ = t₂) ≃ (term_of_sort.code t₁ t₂) :=
 begin
   intros t₁ t₂, fapply equiv.MK,
-  { exact term_of_sort_encode },
-  { exact term_of_sort_decode },
-  { intro t_code, hinduction t₁ with s v p, 
-    { hinduction t₂ with s v' p', 
-      { change @eq (v = v') _ _, exact is_prop.elim _ _ },
+  { exact encode },
+  { exact decode },
+  { intro t_code, hinduction t₁, 
+    { hinduction t₂, 
+      { change @eq (v = v_1) _ _, exact is_prop.elim _ _ },
       { hinduction t_code } },
-    { hinduction t₂ with s v' p' s f' p' args' ih', 
+    { hinduction t₂, 
       { hinduction t_code },
-      { fapply sigma.sigma_eq, 
+      { hinduction t_code.1 with q, 
+        fapply sigma.sigma_eq, 
         { exact is_prop.elim _ _ },
         { apply pathover_of_tr_eq, apply eq_of_homotopy, intro k, 
           rwr <- ih k _ (t_code.snd k), sorry } } } },
   { intro p, hinduction p, hinduction t₁ with s v p, 
-    { sorry },
+    { have q : term_of_sort.encode (refl (term_of_sort.var s v p)) = @idp _ v, from rfl,
+      rwr q, change apd011 (term_of_sort.var s) idp _ = _, sorry },
     { sorry } }
 end    
 
 @[hott, instance]
 def term_of_sort_code_is_prop  {sign : fo_signature} (s : sign.sorts) : 
-  Π t₁ t₂ : term_of_sort s, is_prop (term_of_sort_code s t₁ t₂) :=
+  Π t₁ t₂ : term_of_sort s, is_prop (term_of_sort.code t₁ t₂) :=
 begin
   intros t₁ t₂, hinduction t₁ with s v p,  
   { hinduction t₂ with s v' p', 
@@ -766,6 +772,10 @@ begin
   apply is_trunc_equiv_closed_rev -1 (term_of_sort_code_equiv s t₁ t₂),
   exact term_of_sort_code_is_prop s t₁ t₂ 
 end
+
+end term_of_sort
+
+open term_of_sort
 
 @[hott]
 structure term (sign : fo_signature) :=
