@@ -768,10 +768,82 @@ end term_of_sort
 
 open term_of_sort
 
+namespace term
+
 @[hott]
 structure term (sign : fo_signature) :=
   (sort : sign.sorts)
   (term : term_of_sort sort)
+
+@[hott]
+protected def code {sign : fo_signature} : 
+  term sign -> term sign -> Type :=
+begin 
+  intro term₁, hinduction term₁ with s₁ t₁, hinduction t₁, 
+  { intro term₂, hinduction term₂ with s₂ t₂, hinduction t₂, 
+    exact v = v_1, exact Zero },
+  { intro term₂, hinduction term₂ with s₂ t₂, hinduction t₂, 
+    { exact Zero }, 
+    { exact Σ (q : f = f_1), Π k, ih k (⟨_, args_1 (q ▸ k)⟩) } } 
+end
+
+@[hott, instance]
+def code_is_prop  {sign : fo_signature} : 
+  Π term₁ term₂ : term sign, is_prop (term.code term₁ term₂) :=
+begin
+  intro term₁, hinduction term₁ with s₁ t₁, hinduction t₁ with s v p,  
+  { intro term₂, hinduction term₂ with s₂ t₂, hinduction t₂ with s v' p', 
+    { change is_prop (v = v'), apply is_prop.mk, intros q q', exact is_set.elim _ _ },
+    { change is_prop Zero, apply_instance } },
+  { intro term₂, hinduction term₂ with s₂ t₂, 
+    hinduction t₂ with s v' p' s f' p' args' ih',
+    { change is_prop Zero, apply_instance },
+    { apply is_prop.mk, intros t₁_code t₂_code, fapply sigma.sigma_eq, 
+      { exact is_set.elim _ _ },
+      { apply pathover_of_tr_eq, apply tr_eq_of_eq_inv_tr, 
+        apply eq_of_homotopy, intro k, exact @is_prop.elim _ (ih k _) _ _ } } }
+end 
+
+@[hott]
+protected def refl {sign : fo_signature} : Π t : term sign, term.code t t :=
+begin 
+  intro term, hinduction term with s t, hinduction t,
+  exact rfl , exact ⟨rfl, λ k, ih k⟩ 
+end    
+
+@[hott]
+def encode {sign : fo_signature} {term₁ term₂ : term sign} 
+  (p : term₁ = term₂) : term.code term₁ term₂ :=
+p ▸ (term.refl term₁)  
+
+#check term.term
+
+@[hott, hsimp]
+def decode {sign : fo_signature} : 
+  Π {term₁ term₂ : term sign}, term.code term₁ term₂ -> term₁ = term₂ :=
+begin
+  intro term₁, hinduction term₁ with s₁ t₁, hinduction t₁, 
+  { intro term₂, hinduction term₂ with s₂ t₂, hinduction t₂, 
+    { intro t_code, 
+      have q : v = v_1, from t_code, hinduction q, 
+      have r : s = s_1, from a⁻¹ ⬝ a_1, hinduction r,
+      fapply apd011 term.mk, exact rfl, apply pathover_idp_of_eq, 
+      exact ap (term_of_sort.var s v) (is_set.elim _ _) },
+    { intro t_code, hinduction t_code } },
+  { intro term₂, hinduction term₂ with s₂ t₂, hinduction t₂,
+    { intro t_code, hinduction t_code },
+    { have r : s = s_1, from p⁻¹ ⬝ p_1, hinduction r,
+      have r' : p = p_1, from is_prop.elim _ _, hinduction r',
+      intro t_code, hinduction t_code with q args_code, hinduction q,      
+      fapply apd011 term.mk, exact rfl, apply pathover_idp_of_eq,                 
+      apply ap (term_of_sort.op s f p), apply eq_of_homotopy, intro k, hsimp,
+      have q : term.mk _ (args k) = term.mk _ (args_1 k), from ih k (args_code k), 
+      sorry } }
+end  
+
+end term
+
+open term
 
 @[hott]
 def free_vars_of_term {sign : fo_signature} : term sign -> Subset (to_Set (var sign)) :=
