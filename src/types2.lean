@@ -1,4 +1,4 @@
-import hott.init hott.hit.trunc hott.types.trunc hott.types.nat.order
+import hott.init hott.hit.trunc hott.types.trunc hott.types.nat.order init2
 
 universes u v w
 hott_theory
@@ -135,5 +135,69 @@ def list_nth_le {α : Type _} : Π (l : list α) (n), n < l.length → α
 def list_map_size_eq {A B : Type _} (f : A -> B) (l : list A) : 
   list.length (list.map f l) = list.length l :=
 begin hinduction l, refl, hsimp, rwr ih end  
+
+/- Following [HoTT-Book, Ch.5.8] we characterize the identity types of a type by identity
+   systems which are type families with the same inductive properties as identity. The 
+   fibers of such a type family are equivalent to the identity types if the total space of 
+   the type family is contractible. 
+   
+   Egbert Rijke considers this criterion as the main tool to deal with identity types in 
+   HoTT. -/
+@[hott]
+def ppred {A : Type u} (a₀ : A) := Σ (R : A -> Type v), R a₀
+
+@[hott] 
+def ppmap {A : Type u} {a₀ : A} (R S : ppred a₀) := 
+  Σ (g : Π (a : A), R.1 a -> S.1 a), g a₀ R.2 = S.2  
+
+@[hott]
+def is_id_system {A : Type u} {a₀ : A} (R : ppred a₀) := 
+  Π (D : Π (a : A), R.1 a -> Type w) (d : D a₀ R.2),
+                      Σ (f : Π (a : A) (r : R.1 a), D a r), f a₀ R.2 = d 
+@[hott]
+def id_system {A : Type u} {a₀ : A} := Σ (R : ppred a₀), is_id_system R
+
+/- We split up the implications in [HoTT-Book, Thm.5.8.2]. -/
+@[hott]
+def tot_space_contr_id_sys {A : Type u} {a₀ : A} (R : ppred a₀) : 
+  is_contr (Σ (a : A), R.1 a) -> is_id_system R :=
+begin 
+  intros contr D d, 
+  let D' : (Σ (a : A), R.1 a) -> Type _ := λ (ar : Σ (a : A), R.1 a), D ar.1 ar.2,
+  have p : Π (u : Σ (a : A), R.1 a), u = ⟨a₀, R.2⟩, from 
+    assume u, @eq_of_is_contr _ contr _ _,
+  have q : p ⟨a₀, R.2⟩ = idp, from @prop_eq_of_is_contr _ contr _ _ _ _,  
+  fapply dpair, 
+  { exact λ (a : A) (r : R.1 a), (p ⟨a, r⟩)⁻¹ ▸[D'] d },
+  { apply inv_tr_eq_of_eq_tr, rwr q }
+end  
+
+@[hott]
+def id_sys_ppmap_contr {A : Type u} {a₀ : A} (R : ppred a₀) : is_id_system R -> 
+  Π (S : ppred a₀), is_contr (ppmap R S) :=
+begin
+  intros idsys S, 
+  let D := λ (a : A) (r : R.1 a), S.1 a, let map : ppmap R S := idsys D S.2, 
+  have H : is_prop (ppmap R S), from 
+  begin
+    apply is_prop.mk, intros m₁ m₂, hinduction m₁ with f fᵣ, hinduction m₂ with g gᵣ,
+    let D := λ (a : A) (r : R.1 a), f a r = g a r, let d := fᵣ ⬝ (gᵣ)⁻¹,
+    let h := idsys D d, fapply sigma.sigma_eq,
+    { sorry },
+    { sorry }
+  end,
+  exact @is_contr_of_inhabited_prop _ H map
+end    
+
+@[hott]
+def ppmap_contr_id_equiv {A : Type u} {a₀ : A} (R : ppred a₀) :
+  (Π (S : ppred a₀), is_contr (ppmap R S)) -> 
+                    Π a : A, is_equiv (λ p : a₀ = a, p ▸[λ b : A, R.1 b] R.2) :=
+sorry                    
+
+@[hott]
+def tot_space_contr_id_equiv {A : Type u} {a₀ : A} (R : ppred a₀) : 
+  is_contr (Σ (a : A), R.1 a) -> Π a : A, is_equiv (λ p : a₀ = a, p ▸[λ b : A, R.1 b] R.2) :=
+assume contr, ppmap_contr_id_equiv R (id_sys_ppmap_contr R (tot_space_contr_id_sys R contr))               
 
 end hott
