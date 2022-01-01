@@ -177,14 +177,16 @@ def id_sys_ppmap_contr {A : Type u} {a₀ : A} (R : ppred a₀) : is_id_system R
   Π (S : ppred a₀), is_contr (ppmap R S) :=
 begin
   intros idsys S, 
-  let D := λ (a : A) (r : R.1 a), S.1 a, let map : ppmap R S := idsys D S.2, 
+  let C := λ (a : A) (r : R.1 a), S.1 a, let map : ppmap R S := idsys C S.2, 
   have H : is_prop (ppmap R S), from 
   begin
     apply is_prop.mk, intros m₁ m₂, hinduction m₁ with f fᵣ, hinduction m₂ with g gᵣ,
     let D := λ (a : A) (r : R.1 a), f a r = g a r, let d := fᵣ ⬝ (gᵣ)⁻¹,
     let h := idsys D d, fapply sigma.sigma_eq,
-    { sorry },
-    { sorry }
+    { apply eq_of_homotopy2, exact h.1 },
+    { apply @po_of_po_apd100 A R.1 (λ a r, S.1 a) a₀ R.2 (λ c : S.1 a₀, c = S.2) _ _ 
+                             (eq_of_homotopy2 h.1) fᵣ gᵣ, 
+      sorry }
   end,
   exact @is_contr_of_inhabited_prop _ H map
 end    
