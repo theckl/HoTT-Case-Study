@@ -776,6 +776,16 @@ structure term (sign : fo_signature) :=
   (term : term_of_sort sort)
 
 @[hott]
+def term_eq_sort {sign : fo_signature} {term₁ term₂ : term sign} :
+  term₁ = term₂ -> term₁.sort = term₂.sort :=
+assume p, ap term.sort p 
+
+@[hott]
+def term_eq_term {sign : fo_signature} {term₁ term₂ : term sign} :
+  Π (q : term₁ = term₂), term₁.term =[term_eq_sort q] term₂.term :=
+begin intro q, hinduction q, exact idpo end
+
+@[hott]
 protected def code {sign : fo_signature} : 
   term sign -> term sign -> Type :=
 begin 
@@ -816,8 +826,6 @@ def encode {sign : fo_signature} {term₁ term₂ : term sign}
   (p : term₁ = term₂) : term.code term₁ term₂ :=
 p ▸ (term.refl term₁)  
 
-#check term.term
-
 @[hott, hsimp]
 def decode {sign : fo_signature} : 
   Π {term₁ term₂ : term sign}, term.code term₁ term₂ -> term₁ = term₂ :=
@@ -832,14 +840,25 @@ begin
     { intro t_code, hinduction t_code } },
   { intro term₂, hinduction term₂ with s₂ t₂, hinduction t₂,
     { intro t_code, hinduction t_code },
-    { have r : s = s_1, from p⁻¹ ⬝ p_1, hinduction r,
-      have r' : p = p_1, from is_prop.elim _ _, hinduction r',
-      intro t_code, hinduction t_code with q args_code, hinduction q,      
+    { intro t_code, hinduction t_code with q args_code, hinduction q,
+      have r : s = s_1, from p⁻¹ ⬝ p_1, hinduction r,
+      have r' : p = p_1, from is_prop.elim _ _, hinduction r',      
       fapply apd011 term.mk, exact rfl, apply pathover_idp_of_eq,                 
       apply ap (term_of_sort.op s f p), apply eq_of_homotopy, intro k, hsimp,
       have q : term.mk _ (args k) = term.mk _ (args_1 k), from ih k (args_code k), 
-      sorry } }
+      have p' : term_eq_sort q = idp, from is_set.elim _ _, 
+      let q'' := term_eq_term q, rwr p' at q'', exact eq_of_pathover_idp q'' } }
 end  
+
+@[hott]
+def code_is_contr {sign : fo_signature} {term₁ : term sign} : 
+  Π (t_code : Σ (term₂ : term sign), term.code term₁ term₂), t_code = 
+                                                           ⟨term₁, term.refl term₁⟩ :=
+begin 
+  intro t_code, fapply sigma.sigma_eq, 
+  { exact (decode t_code.2)⁻¹ },
+  { apply pathover_of_tr_eq, exact is_prop.elim _ _ } 
+end
 
 end term
 
