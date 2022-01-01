@@ -213,6 +213,19 @@ begin
   exact po_tr_eq
 end  
 
+/- Facts on combinations of pathovers and versions of `ap`. -/
+@[hott]
+def po_of_po_apd100 {A : Type _} {B : A -> Type _} {C : Π (a : A), B a -> Type _}
+  {a₀ : A} {b₀ : B a₀} {D : C a₀ b₀ -> Type _} 
+  {f g : Π (a : A) (b : B a), C a b} (p : f = g) (df : D (f a₀ b₀)) 
+  (dg : D (g a₀ b₀)) : (df =[apd100 p a₀ b₀; λ c, D c] dg) -> 
+                        df =[p; λ h : Π (a : A) (b : B a), C a b, D (h a₀ b₀)] dg :=
+begin 
+  hinduction p,
+  have q : apd100 (refl f) a₀ b₀ = refl (f a₀ b₀), from rfl, 
+  rwr q, intro po_apd, apply pathover_idp_of_eq, exact eq_of_pathover_idp po_apd 
+end
+
 /- Some facts involving equivalences -/
 @[hott]
 def dep_cast {A B : Type _} (e : A ≃ B) (P : B -> Type _) :
