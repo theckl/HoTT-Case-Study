@@ -1,5 +1,5 @@
-init2       :   283
-types2      :   139
+init2       :   290
+types2      :   205
 prop_axioms :   625
 prop_logic  :   194
 sets
@@ -12,4 +12,4 @@ sets
 categories  
   basic     :   720
                 -----
-               3969
+               4042
