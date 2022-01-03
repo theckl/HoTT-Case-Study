@@ -22,6 +22,11 @@ def id {A : Type _} (a : A) : A := a
 
 /- All these equalities should be produced by tactics. -/
 @[hott]
+def id_tr_eq_id_inv_con {A : Type _} {a₀ a₁ a₂ : A} (q : a₁ = a₂) (p : a₁ = a₀) :
+  q ▸ p = q⁻¹ ⬝ p :=
+begin hinduction q, rwr idp_tr, rwr idp_inv, rwr idp_con end  
+
+@[hott]
 def ap0111 {A : Type u} {B : Type v} {C D : A -> B -> Type _} {E : Type _}
   (f : Π (a : A) (b : B), C a b -> D a b -> E)
   {a₁ a₂ : A} {b₁ b₂ : B} {c₁ : C a₁ b₁} {c₂ : C a₂ b₂} {d₁ : D a₁ b₁} {d₂ : D a₂ b₂}
