@@ -829,11 +829,45 @@ begin
   { exact iUnion ih }
 end
 
+namespace atomic
+
 @[hott]
 inductive atomic_formula (sign : fo_signature)
 | eq_terms : Π (t₁ t₂ : term sign), (t₁.sort = t₂.sort) -> atomic_formula
 | rel_terms : Π (r : sign.rels) 
        (comp : Π (k : sign.rels_arity r), term_of_sort (sign.rels_comp k)), atomic_formula
+
+@[hott]
+protected def code {sign : fo_signature} : 
+  atomic_formula sign -> atomic_formula sign -> Type :=
+begin
+  intro atom₁, hinduction atom₁ with term₁ term₂ p,
+  { intro atom₂, hinduction atom₂ with term₁' term₂' p', 
+    { exact (term₁ = term₂) × (term₁' = term₂') },
+    { exact Zero } },
+  { intro atom₂, hinduction atom₂, 
+    { exact Zero },
+    { exact Σ (q : r = r_1), 
+              comp =[q; λ s, Π (k : sign.rels_arity s), term_of_sort (sign.rels_comp k)] comp_1 } }
+end  
+
+@[hott, instance]
+def code_is_prop  {sign : fo_signature} : 
+  Π atom₁ atom₂ : atomic_formula sign, is_prop (atomic.code atom₁ atom₂) :=
+begin
+  intro atom₁, hinduction atom₁ with term₁ term₂ p, 
+  { intro atom₂, hinduction atom₂ with term₁' term₂' p', 
+    { apply is_prop.mk, intros q q', apply pair_eq, 
+      exact is_prop.elim _ _, exact is_prop.elim _ _ },
+    { apply is_prop.mk, intro q, hinduction q } },
+  { intro atom₂, hinduction atom₂ with term₁' term₂' p', 
+    { apply is_prop.mk, intro q, hinduction q },
+    { sorry } }
+end  
+
+end atomic
+
+open atomic
 
 @[hott]
 def free_vars_of_atom {sign : fo_signature} : atomic_formula sign -> Subset (to_Set (var sign)) :=
