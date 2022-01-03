@@ -672,101 +672,12 @@ begin
   apply ap011 var_eq, apply is_set.elim, apply is_set.elim
 end   
 
-namespace term_of_sort
-
 @[hott] 
 inductive term_of_sort {sign : fo_signature} : sign.sorts -> Type
 | var : Π (s : sign.sorts) (v : var sign), (v.sort = s) -> term_of_sort s
 | op : Π (s : sign.sorts) (f : sign.ops) (p : sign.ops_target f = s)
          (args : Π (k : sign.ops_arity f), term_of_sort (sign.ops_source f k)), 
          term_of_sort s
-
-/- Pattern-matching needs the sort `s` marked as inaccessible, but does not work in 
-   hott-mode because it uses `eq.rec`. -/
-@[hott]
-protected def code {sign : fo_signature} {s : sign.sorts} : 
-  term_of_sort s -> term_of_sort s -> Type :=
-begin 
-  intro t₁, hinduction t₁, 
-  { intro t₂, hinduction t₂, exact v = v_1, exact Zero },
-  { intro t₂, hinduction t₂, 
-    exact Zero, exact Σ (q : f = f_1), Π k, ih k ((q⁻¹ ▸ args_1) k) } 
-end
-
-@[hott, instance]
-def code_is_prop  {sign : fo_signature} (s : sign.sorts) : 
-  Π t₁ t₂ : term_of_sort s, is_prop (term_of_sort.code t₁ t₂) :=
-begin
-  intros t₁ t₂, hinduction t₁ with s v p,  
-  { hinduction t₂ with s v' p', 
-    { change is_prop (v = v'), apply is_prop.mk, intros q q', exact is_set.elim _ _ },
-    { change is_prop Zero, apply_instance } },
-  { hinduction t₂ with s v' p' s f' p' args' ih',
-    { change is_prop Zero, apply_instance },
-    { apply is_prop.mk, intros t₁_code t₂_code, fapply sigma.sigma_eq, 
-      { exact is_set.elim _ _ },
-      { apply pathover_of_tr_eq, apply tr_eq_of_eq_inv_tr, 
-        apply eq_of_homotopy, intro k, exact @is_prop.elim _ (ih k _) _ _ } } }
-end 
-
-@[hott]
-protected def refl {sign : fo_signature} {s : sign.sorts} : Π (t : term_of_sort s),
-  term_of_sort.code t t :=
-begin intro t, hinduction t, exact rfl , exact ⟨rfl, λ k, ih k⟩ end    
-
-@[hott]
-def encode {sign : fo_signature} {s : sign.sorts} {t₁ t₂ : term_of_sort s} 
-  (p : t₁ = t₂) : term_of_sort.code t₁ t₂ :=
-p ▸ (term_of_sort.refl t₁)  
-
-@[hott, hsimp]
-def decode {sign : fo_signature} {s : sign.sorts} : 
-  Π {t₁ t₂ : term_of_sort s}, term_of_sort.code t₁ t₂ -> t₁ = t₂ :=
-begin
-  intro t₁, hinduction t₁,  
-  { intro t₂, hinduction t₂, 
-    { intro t_code,
-      have r : a_1 =[t_code; λ w : var sign, w.sort = s] a, from 
-        begin apply pathover_of_tr_eq, exact is_prop.elim _ _ end,
-      exact apd011 (term_of_sort.var s) t_code r },
-    { intro t_code, hinduction t_code } },
-  { intro t₂, hinduction t₂,
-    { intro t_code, hinduction t_code },
-    { intro t_code, hinduction t_code with q args_code, hinduction q,
-      have r : p_1 = p, from is_prop.elim _ _,
-      have r' : args = args_1, from eq_of_homotopy (λ k, ih k (args_code k)),                 
-      exact ap011 (term_of_sort.op s f) r r' } }
-end  
-
-@[hott]
-def code_equiv {sign : fo_signature} {s : sign.sorts} : 
-  Π t₁ t₂ : term_of_sort s, (t₁ = t₂) ≃ (term_of_sort.code t₁ t₂) :=
-begin
-  intros t₁ t₂, fapply equiv.MK,
-  { exact encode },
-  { exact decode },
-  { intro t_code, exact is_prop.elim _ _ },
-  { intro p, hinduction p, hinduction t₁, 
-    { have q : term_of_sort.encode (refl (term_of_sort.var s v a)) = @idp _ v, from rfl,
-      rwr q, change apd011 (term_of_sort.var s) idp 
-                                           (pathover_of_tr_eq (is_prop.elim a a)) = _,
-      rwr is_prop_elim_self a },      
-    { change decode (term_of_sort.refl _) = _, 
-      change ap011 (term_of_sort.op s f) _ _ = _, hsimp, sorry } }
-end      
-
-@[hott]
-def term_of_sort_is_set {sign : fo_signature} (s : sign.sorts) : 
-  is_set (term_of_sort s) :=
-begin 
-  apply is_trunc_succ_intro, intros t₁ t₂, 
-  apply is_trunc_equiv_closed_rev -1 (term_of_sort.code_equiv t₁ t₂),
-  exact term_of_sort.code_is_prop s t₁ t₂ 
-end
-
-end term_of_sort
-
-open term_of_sort
 
 namespace term
 
@@ -851,7 +762,7 @@ begin
 end  
 
 @[hott]
-def code_is_contr {sign : fo_signature} {term₁ : term sign} : 
+def code_is_contr_to_refl {sign : fo_signature} (term₁ : term sign) : 
   Π (t_code : Σ (term₂ : term sign), term.code term₁ term₂), t_code = 
                                                            ⟨term₁, term.refl term₁⟩ :=
 begin 
@@ -860,10 +771,56 @@ begin
   { apply pathover_of_tr_eq, exact is_prop.elim _ _ } 
 end
 
+@[hott, instance]
+def code_is_contr {sign : fo_signature} (term₁ : term sign) : 
+  is_contr (Σ (term₂ : term sign), term.code term₁ term₂) :=
+is_contr.mk _ (λ t_code, (code_is_contr_to_refl term₁ t_code)⁻¹)  
+
+@[hott, instance]
+def term_is_set {sign : fo_signature} : is_set (term sign) :=
+begin
+  apply is_trunc_succ_intro, intros term₁ term₂,
+  have eqv : (term₁ = term₂) ≃ (term.code term₁ term₂), from 
+    equiv.mk _ (tot_space_contr_id_equiv ⟨term.code term₁, term.refl term₁⟩ 
+                                         (code_is_contr term₁) term₂), 
+  exact is_trunc_equiv_closed_rev -1 eqv (code_is_prop _ _)
+end  
+
 end term
 
 open term
 
+/- Terms of a specific sort also form a set. -/
+@[hott]
+def term_eq {sign : fo_signature} {term₁ term₂ : term sign} : 
+  Π (p : term₁.sort = term₂.sort), (term₁.term =[p] term₂.term) -> (term₁ = term₂) :=
+begin
+  intros p q, hinduction term₁ with s₁ t₁, hinduction term₂ with s₂ t₂, 
+  exact apd011 term.mk p q
+end 
+
+@[hott]
+def term_of_sort_of_term {sign : fo_signature} (s : sign.sorts) :
+  (term_of_sort s) ≃ (Σ (t : term sign), t.sort = s) :=
+begin 
+  fapply equiv.mk, 
+  { intro t, exact ⟨term.mk s t, rfl⟩ },
+  { fapply adjointify, 
+    { intro t, exact t.2 ▸ t.1.term },
+    { intro t, hsimp, fapply sigma.sigma_eq, 
+      { fapply term_eq, 
+        { hsimp, exact t.2⁻¹ },
+        { hsimp, apply pathover_of_tr_eq, rwr idp_inv, hsimp } },
+      { apply pathover_of_tr_eq, exact is_set.elim _ _ } },
+    { intro t, hsimp } } 
+end  
+
+@[hott, instance]
+def term_of_sort_is_set {sign : fo_signature} (s : sign.sorts) : 
+  is_set (term_of_sort s) :=
+begin apply is_trunc_equiv_closed_rev 0 (term_of_sort_of_term s), apply_instance end  
+
+/- To define formulas we need the free variables of a term. -/
 @[hott]
 def free_vars_of_term {sign : fo_signature} : term sign -> Subset (to_Set (var sign)) :=
 begin 
