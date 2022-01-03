@@ -18,6 +18,7 @@ def trunc.elim2 {n : ℕ₋₂} {A : Type _} {B : Type _} {P : Type _} [Pt : is_
   (A → B -> P) → trunc n A → trunc n B -> P :=
 begin intros f tA tB, exact untrunc_of_is_trunc (trunc_functor2 f tA tB) end  
 
+/- Some useful facts on identities of Σ-types and pairs. -/
 @[hott]
 def sigma_Prop_eq {A : Type _} {B : Π a : A, Prop} (s₁ s₂ : Σ (a : A), B a) : 
   s₁.1 = s₂.1 -> s₁ = s₂ :=
@@ -25,6 +26,14 @@ begin
   intro p, fapply sigma.sigma_eq, 
   exact p, apply pathover_of_tr_eq, exact is_prop.elim _ _ 
 end  
+
+@[hott]
+def pair_eq {A B : Type _} : Π (c₁ c₂ : A × B), c₁.1 = c₂.1 -> c₁.2 = c₂.2 -> c₁ = c₂ :=
+begin 
+  intros c₁ c₂, 
+  hinduction c₁ with c₁_1 c₁_2, hinduction c₂ with c₂_1 c₂_2, hsimp,
+  intros q₁ q₂, apply ap011 pair q₁ q₂ 
+end
 
 /- The decode-encode technique for sums; it is contained in [types.sum] from the HoTT3 
    library, but this file does not compile. -/
