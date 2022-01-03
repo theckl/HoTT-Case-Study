@@ -4,7 +4,7 @@ universes u v w
 hott_theory
 
 namespace hott
-open hott.is_trunc hott.trunc hott.nat
+open hott.is_equiv hott.is_trunc hott.trunc hott.nat
 
 /- Properties of the product of two types -/
 @[hott]
@@ -146,14 +146,36 @@ begin hinduction l, refl, hsimp, rwr ih end
 @[hott]
 def ppred {A : Type u} (a₀ : A) := Σ (R : A -> Type v), R a₀
 
+@[hott]
+def id_ppred {A : Type u} (a₀ : A) : ppred a₀ :=
+  ⟨λ a, a₀ = a, refl a₀⟩
+
 @[hott] 
 def ppmap {A : Type u} {a₀ : A} (R S : ppred a₀) := 
-  Σ (g : Π (a : A), R.1 a -> S.1 a), g a₀ R.2 = S.2  
+  Σ (g : Π (a : A), R.1 a -> S.1 a), g a₀ R.2 = S.2 
+
+@[hott]
+def ppmap_id {A : Type u} {a₀ : A} (R : ppred a₀) : ppmap R R :=
+  ⟨λ (a : A) (r : R.1 a), r, refl R.2⟩    
+
+@[hott]
+def ppmap_comp {A : Type u} {a₀ : A} {R S T : ppred a₀} (f : ppmap R S) (g : ppmap S T) :
+  ppmap R T :=
+⟨λ (a : A) (r : R.1 a), g.1 a (f.1 a r), f.2⁻¹ ▸[λ s : S.1 a₀, g.1 a₀ s = T.2] g.2⟩  
 
 @[hott]
 def is_id_system {A : Type u} {a₀ : A} (R : ppred a₀) := 
   Π (D : Π (a : A), R.1 a -> Type w) (d : D a₀ R.2),
-                      Σ (f : Π (a : A) (r : R.1 a), D a r), f a₀ R.2 = d 
+                      Σ (f : Π (a : A) (r : R.1 a), D a r), (f a₀ R.2 = d) 
+
+@[hott]
+def id_type_fam_is_id_sys {A : Type u} {a₀ : A} : is_id_system (id_ppred a₀) :=
+begin 
+  intros D d, fapply dpair, 
+  { intros a p, hinduction p, exact d },
+  { refl }
+end
+
 @[hott]
 def id_system {A : Type u} {a₀ : A} := Σ (R : ppred a₀), is_id_system R
 
@@ -185,8 +207,11 @@ begin
     let h := idsys D d, fapply sigma.sigma_eq,
     { apply eq_of_homotopy2, exact h.1 },
     { apply @po_of_po_apd100 A R.1 (λ a r, S.1 a) a₀ R.2 (λ c : S.1 a₀, c = S.2) _ _ 
-                             (eq_of_homotopy2 h.1) fᵣ gᵣ, 
-      sorry }
+                             (eq_of_homotopy2 h.1) fᵣ gᵣ,
+      have q : apd100 (eq_of_homotopy2 h.1) = h.1, by  
+        apply (funext.is_equiv_apd100 f g).right_inv,                      
+      rwr q, let q' : h.1 a₀ R.2 = d := h.2, apply pathover_of_tr_eq, rwr q', 
+      rwr id_tr_eq_id_inv_con, rwr con_inv, rwr eq.inv_inv, rwr con.assoc, rwr con.left_inv }
   end,
   exact @is_contr_of_inhabited_prop _ H map
 end    
@@ -195,7 +220,20 @@ end
 def ppmap_contr_id_equiv {A : Type u} {a₀ : A} (R : ppred a₀) :
   (Π (S : ppred a₀), is_contr (ppmap R S)) -> 
                     Π a : A, is_equiv (λ p : a₀ = a, p ▸[λ b : A, R.1 b] R.2) :=
-sorry                    
+begin 
+  intro ppred_contr, let S : ppred a₀ := ⟨λ a, a₀ = a, refl a₀⟩, 
+  let map_SR : ppmap S R := ⟨λ (a : A) (p : a₀ = a), p ▸[λ b, R.1 b] R.2, idp_tr R.2⟩, 
+  let map_RS : ppmap R S := center' (ppred_contr S),
+  let map_RR : ppmap R R := ppmap_comp map_RS map_SR, 
+  have p_R : map_RR = ppmap_id R, from @eq_of_is_contr _ (ppred_contr R) _ _,
+  let map_SS : ppmap S S := ppmap_comp map_SR map_RS,
+  have p_S : map_SS = ppmap_id S, from 
+    @eq_of_is_contr _ (id_sys_ppmap_contr S (@id_type_fam_is_id_sys _ a₀) S) _ _,
+  intro a, fapply adjointify, 
+  { exact map_RS.1 a },
+  { intro r, change map_RR.1 a r = r, rwr p_R },
+  { intro p, change map_SS.1 a p = p, rwr p_S }
+end                      
 
 @[hott]
 def tot_space_contr_id_equiv {A : Type u} {a₀ : A} (R : ppred a₀) : 
