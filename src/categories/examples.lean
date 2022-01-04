@@ -843,7 +843,7 @@ protected def code {sign : fo_signature} :
 begin
   intro atom₁, hinduction atom₁ with term₁ term₂ p,
   { intro atom₂, hinduction atom₂ with term₁' term₂' p', 
-    { exact (term₁ = term₂) × (term₁' = term₂') },
+    { exact (term₁ = term₁') × (term₂ = term₂') },
     { exact Zero } },
   { intro atom₂, hinduction atom₂, 
     { exact Zero },
@@ -862,8 +862,59 @@ begin
     { apply is_prop.mk, intro q, hinduction q } },
   { intro atom₂, hinduction atom₂ with term₁' term₂' p', 
     { apply is_prop.mk, intro q, hinduction q },
-    { sorry } }
+    { apply is_prop.mk, intros code₁ code₂, 
+      apply @sigma_Prop_eq (r = r_1) (λ q, to_Prop (comp =[q; λ s, Π (k : sign.rels_arity s), 
+                                                    term_of_sort (sign.rels_comp k)] comp_1)),
+      exact is_set.elim _ _ } }
 end  
+
+@[hott]
+protected def refl {sign : fo_signature} : Π t : atomic_formula sign, atomic.code t t :=
+  begin intro t, hinduction t, exact ⟨idp, idp⟩, exact ⟨idp, idpo⟩ end  
+
+@[hott]
+def encode {sign : fo_signature} {atom₁ atom₂ : atomic_formula sign} 
+  (p : atom₁ = atom₂) : atomic.code atom₁ atom₂ :=
+p ▸ (atomic.refl atom₁) 
+
+@[hott, hsimp]
+def decode {sign : fo_signature} : 
+  Π {atom₁ atom₂ : atomic_formula sign}, atomic.code atom₁ atom₂ -> atom₁ = atom₂ :=
+begin
+  intro atom₁, hinduction atom₁,
+  { intro atom₂, hinduction atom₂, 
+    { intro atom_code, apply apd001 _ atom_code.1 atom_code.2, 
+      apply pathover_of_tr_eq, exact is_prop.elim _ _ },
+    { intro atom_code, hinduction atom_code } },
+  { intro atom₂, hinduction atom₂, 
+    { intro atom_code, hinduction atom_code },
+    { intro atom_code, exact apd011 atomic_formula.rel_terms atom_code.1 atom_code.2 } }
+end
+
+@[hott]
+def code_is_contr_to_refl {sign : fo_signature} (atom₁ : atomic_formula sign) : 
+  Π (a_code : Σ (atom₂ : atomic_formula sign), atomic.code atom₁ atom₂), a_code = 
+                                                           ⟨atom₁, atomic.refl atom₁⟩ :=
+begin 
+  intro a_code, fapply sigma.sigma_eq, 
+  { exact (decode a_code.2)⁻¹ },
+  { apply pathover_of_tr_eq, exact is_prop.elim _ _ } 
+end
+
+@[hott, instance]
+def code_is_contr {sign : fo_signature} (atom₁ : atomic_formula sign) : 
+  is_contr (Σ (atom₂ : atomic_formula sign), atomic.code atom₁ atom₂) :=
+is_contr.mk _ (λ a_code, (code_is_contr_to_refl atom₁ a_code)⁻¹)  
+
+@[hott, instance]
+def atom_is_set {sign : fo_signature} : is_set (atomic_formula sign) :=
+begin
+  apply is_trunc_succ_intro, intros atom₁ atom₂,
+  have eqv : (atom₁ = atom₂) ≃ (atomic.code atom₁ atom₂), from 
+    equiv.mk _ (tot_space_contr_id_equiv ⟨atomic.code atom₁, atomic.refl atom₁⟩ 
+                                         (code_is_contr atom₁) atom₂), 
+  exact is_trunc_equiv_closed_rev -1 eqv (code_is_prop _ _)
+end 
 
 end atomic
 
@@ -885,12 +936,20 @@ def atom_formula_in_context {sign : fo_signature} (φ : atomic_formula sign)
   (cont : context sign) := (free_vars_of_atom φ) ⊆ cont  
 
 @[hott]
-structure sequent {sign : fo_signature} :=
+structure sequent (sign : fo_signature) :=
   (cont : context sign)
   (ass : atomic_formula sign)
   (con : atomic_formula sign)
   (ass_in_cont : atom_formula_in_context ass cont)
   (con_in_cont : atom_formula_in_context con cont)
+
+@[hott]
+def sequent_eq {sign : fo_signature} {seq₁ seq₂ : sequent sign} :
+  Π (pct : seq₁.cont = seq₂.cont) (pa : seq₁.ass = seq₂.ass) (pcn : seq₁.con = seq₂.con), 
+    (seq₁.ass_in_cont =[ap011 (λ a c, atom_formula_in_context a c) pa pct] seq₂.ass_in_cont) ->
+    (seq₁.con_in_cont =[ap011 (λ a c, atom_formula_in_context a c) pcn pct] seq₂.con_in_cont) ->
+    seq₁ = seq₂ :=
+begin intros, hinduction seq₁, hinduction seq₂, sorry end    
 
 end signature
 
