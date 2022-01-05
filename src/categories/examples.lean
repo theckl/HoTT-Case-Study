@@ -931,6 +931,10 @@ end
 @[hott]
 def context (sign : fo_signature) := Subset (to_Set (var sign))
 
+@[hott, instance]
+def context_is_set {sign : fo_signature} : is_set (context sign) :=
+begin apply Powerset_is_set end
+
 @[hott]
 def atom_formula_in_context {sign : fo_signature} (φ : atomic_formula sign) 
   (cont : context sign) := (free_vars_of_atom φ) ⊆ cont  
@@ -943,13 +947,34 @@ structure sequent (sign : fo_signature) :=
   (ass_in_cont : atom_formula_in_context ass cont)
   (con_in_cont : atom_formula_in_context con cont)
 
-@[hott]
+@[hott, hsimp]
 def sequent_eq {sign : fo_signature} {seq₁ seq₂ : sequent sign} :
   Π (pct : seq₁.cont = seq₂.cont) (pa : seq₁.ass = seq₂.ass) (pcn : seq₁.con = seq₂.con), 
-    (seq₁.ass_in_cont =[ap011 (λ a c, atom_formula_in_context a c) pa pct] seq₂.ass_in_cont) ->
-    (seq₁.con_in_cont =[ap011 (λ a c, atom_formula_in_context a c) pcn pct] seq₂.con_in_cont) ->
     seq₁ = seq₂ :=
-begin intros, hinduction seq₁, hinduction seq₂, sorry end    
+begin 
+  intros, hinduction seq₁, hinduction seq₂, apply apd000011 sequent.mk pct pa pcn, 
+  { apply pathover_of_tr_eq, exact is_prop.elim _ _ },
+  { apply pathover_of_tr_eq, exact is_prop.elim _ _ } 
+end 
+
+@[hott]
+def sequent_eq_idp {sign : fo_signature} (seq : sequent sign) : 
+  @sequent_eq _ seq seq idp idp idp = idp :=
+begin hinduction seq, hsimp, rwr pathover_idp_of_id end  
+
+@[hott]
+def sequent_eq_eta {sign : fo_signature} {seq₁ seq₂ : sequent sign} (p : seq₁ = seq₂) :
+  sequent_eq (ap sequent.cont p) (ap sequent.ass p) (ap sequent.con p) = p := 
+begin hinduction p, hinduction seq₁, rwr ap_idp, rwr ap_idp, rwr ap_idp, rwr sequent_eq_idp _ end 
+
+@[hott, instance]
+def sequent_is_set {sign : fo_signature} : is_set (sequent sign) :=
+begin
+  fapply is_set.mk, intros seq₁ seq₂ p q, 
+  rwr <- sequent_eq_eta p, rwr <- sequent_eq_eta q,
+  apply eq.ap0111 sequent_eq, exact is_set.elim _ _, exact is_set.elim _ _, 
+  exact is_set.elim _ _
+end 
 
 end signature
 
