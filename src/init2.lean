@@ -27,6 +27,10 @@ def id_tr_eq_id_inv_con {A : Type _} {a₀ a₁ a₂ : A} (q : a₁ = a₂) (p :
 begin hinduction q, rwr idp_tr, rwr idp_inv, rwr idp_con end  
 
 @[hott]
+def pathover_idp_of_id {A : Type _} : Π a : A, pathover_idp_of_eq id (@idp _ a) = idpo := 
+  assume a, rfl
+
+@[hott]
 def ap0111 {A : Type u} {B : Type v} {C D : A -> B -> Type _} {E : Type _}
   (f : Π (a : A) (b : B), C a b -> D a b -> E)
   {a₁ a₂ : A} {b₁ b₂ : B} {c₁ : C a₁ b₁} {c₂ : C a₂ b₂} {d₁ : D a₁ b₁} {d₂ : D a₂ b₂}
@@ -129,6 +133,14 @@ def apd01111 {A F : Type _} {B C D E : A -> Type _}
   h a b c d e = h a' b' c' d' e' :=
 begin hinduction pA, hinduction pB, hinduction pC, hinduction pD,
       hinduction pE, refl end  
+
+@[hott]
+def apd000011 {A B C F : Type _} {D : B -> A -> Type _} {E : C -> A -> Type _} 
+  (f : Π (a : A) (b : B) (c : C), D b a -> E c a -> F) {a₁ a₂ : A} {b₁ b₂ : B} {c₁ c₂ : C}
+  {d₁ : D b₁ a₁} {d₂ : D b₂ a₂} {e₁ : E c₁ a₁} {e₂ : E c₂ a₂} (pa : a₁ = a₂) (pb : b₁ = b₂)
+  (pc : c₁ = c₂) (pd : d₁ =[ap011 D pb pa; id] d₂) (pe : e₁ =[ap011 E pc pa; id] e₂) : 
+  f a₁ b₁ c₁ d₁ e₁ = f a₂ b₂ c₂ d₂ e₂ :=
+begin hinduction pa, hinduction pb, hinduction pc, hinduction pd, hinduction pe, refl end  
 
 @[hott]
 def apd01111_eq {A F : Type _} {B C D E : A -> Type _} 
