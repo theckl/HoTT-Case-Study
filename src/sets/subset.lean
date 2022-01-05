@@ -22,7 +22,7 @@ instance (A : Set.{u}) : has_coe_to_sort (Subset A) :=
   has_coe_to_sort.mk Type.{u} (λ B, Σ a : A, B a)
 
 /- A HoTT-ism, but also a way to produce sets. -/
-@[hott]
+@[hott, instance]
 def is_set_pred {A : Set} : Π (B : Subset A), is_set (Σ (a : A), B a) :=
   assume B, 
   have forall (a : A), is_set (B a), from 
