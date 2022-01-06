@@ -916,17 +916,38 @@ begin
   exact is_trunc_equiv_closed_rev -1 eqv (code_is_prop _ _)
 end 
 
-end atomic
-
-open atomic
-
 @[hott]
-def free_vars_of_atom {sign : fo_signature} : atomic_formula sign -> Subset (to_Set (var sign)) :=
+protected def free_vars {sign : fo_signature} : atomic_formula sign -> Subset (to_Set (var sign)) :=
 begin 
   intro atom, hinduction atom, 
   { exact (free_vars_of_term t₁) ∪ (free_vars_of_term t₂) }, 
   { exact iUnion (λ (k : sign.rels_arity r), free_vars_of_term ⟨sign.rels_comp k, comp k⟩) } 
 end
+
+end atomic
+
+open atomic
+
+namespace formula
+
+/- If we need more formation rules for formulas the definition has to be extended, together 
+   with the proof that the type of formulas is a set and the association of free variables. -/
+@[hott]
+inductive formula (sign : fo_signature)   
+| atom : atomic_formula sign -> formula
+| T : formula
+
+@[hott]
+def free_vars {sign : fo_signature} : formula sign -> Subset (to_Set (var sign)) :=
+begin 
+  intro formula, hinduction formula, 
+  { exact atomic.free_vars a },
+  { exact empty_Subset _ }
+end  
+
+end formula
+
+open formula
 
 @[hott]
 def context (sign : fo_signature) := Subset (to_Set (var sign))
@@ -937,7 +958,7 @@ begin apply Powerset_is_set end
 
 @[hott]
 def atom_formula_in_context {sign : fo_signature} (φ : atomic_formula sign) 
-  (cont : context sign) := (free_vars_of_atom φ) ⊆ cont  
+  (cont : context sign) := (atomic.free_vars φ) ⊆ cont  
 
 @[hott]
 structure sequent (sign : fo_signature) :=
