@@ -945,6 +945,74 @@ begin
   { exact empty_Subset _ }
 end  
 
+@[hott]
+protected def code {sign : fo_signature} : 
+  formula sign -> formula sign -> Type :=
+begin
+  intro form₁, hinduction form₁ with atom₁,
+  { intro form₂, hinduction form₂ with atom₂, 
+    { exact atom₁ = atom₂ },
+    { exact Zero } },
+  { intro form₂, hinduction form₂ with atom₂, 
+    { exact Zero },
+    { exact One } }
+end  
+
+@[hott, instance]
+def code_is_prop  {sign : fo_signature} : 
+  Π form₁ form₂ : formula sign, is_prop (formula.code form₁ form₂) :=
+begin
+  intro form₁, hinduction form₁ with atom₁, 
+  { intro form₂, hinduction form₂ with atom₂, 
+    { apply is_prop.mk, intros q q', exact is_set.elim _ _ },
+    { apply is_prop.mk, intro q, hinduction q } },
+  { intro atom₂, hinduction atom₂ with term₁' term₂' p', 
+    { apply is_prop.mk, intro q, hinduction q },
+    { apply is_prop.mk, intros code₁ code₂, exact @is_prop.elim _ One_is_prop _ _ } }
+end 
+
+@[hott]
+protected def refl {sign : fo_signature} : Π t : formula sign, formula.code t t :=
+  begin intro t, hinduction t, exact idp, exact One.star end  
+
+@[hott, hsimp]
+def decode {sign : fo_signature} : 
+  Π {form₁ form₂ : formula sign}, formula.code form₁ form₂ -> form₁ = form₂ :=
+begin
+  intro form₁, hinduction form₁ with atom₁,
+  { intro form₂, hinduction form₂ with atom₂, 
+    { intro form_code, apply ap _ form_code },
+    { intro form_code, hinduction form_code } },
+  { intro form₂, hinduction form₂ with atom₂, 
+    { intro form_code, hinduction form_code },
+    { intro form_code, exact idp } }
+end
+
+@[hott]
+def code_is_contr_to_refl {sign : fo_signature} (form₁ : formula sign) : 
+  Π (f_code : Σ (form₂ : formula sign), formula.code form₁ form₂), f_code = 
+                                                           ⟨form₁, formula.refl form₁⟩ :=
+begin 
+  intro f_code, fapply sigma.sigma_eq, 
+  { exact (decode f_code.2)⁻¹ },
+  { apply pathover_of_tr_eq, exact is_prop.elim _ _ } 
+end
+
+@[hott, instance]
+def code_is_contr {sign : fo_signature} (form₁ : formula sign) : 
+  is_contr (Σ (form₂ : formula sign), formula.code form₁ form₂) :=
+is_contr.mk _ (λ f_code, (code_is_contr_to_refl form₁ f_code)⁻¹)  
+
+@[hott, instance]
+def form_is_set {sign : fo_signature} : is_set (formula sign) :=
+begin
+  apply is_trunc_succ_intro, intros form₁ form₂,
+  have eqv : (form₁ = form₂) ≃ (formula.code form₁ form₂), from 
+    equiv.mk _ (tot_space_contr_id_equiv ⟨formula.code form₁, formula.refl form₁⟩ 
+                                         (code_is_contr form₁) form₂), 
+  exact is_trunc_equiv_closed_rev -1 eqv (code_is_prop _ _)
+end 
+
 end formula
 
 open formula
@@ -957,16 +1025,16 @@ def context_is_set {sign : fo_signature} : is_set (context sign) :=
 begin apply Powerset_is_set end
 
 @[hott]
-def atom_formula_in_context {sign : fo_signature} (φ : atomic_formula sign) 
-  (cont : context sign) := (atomic.free_vars φ) ⊆ cont  
+def formula_in_context {sign : fo_signature} (φ : formula sign) 
+  (cont : context sign) := (free_vars φ) ⊆ cont  
 
 @[hott]
 structure sequent (sign : fo_signature) :=
   (cont : context sign)
-  (ass : atomic_formula sign)
-  (con : atomic_formula sign)
-  (ass_in_cont : atom_formula_in_context ass cont)
-  (con_in_cont : atom_formula_in_context con cont)
+  (ass : formula sign)
+  (con : formula sign)
+  (ass_in_cont : formula_in_context ass cont)
+  (con_in_cont : formula_in_context con cont)
 
 @[hott, hsimp]
 def sequent_eq {sign : fo_signature} {seq₁ seq₂ : sequent sign} :
@@ -996,6 +1064,23 @@ begin
   apply eq.ap0111 sequent_eq, exact is_set.elim _ _, exact is_set.elim _ _, 
   exact is_set.elim _ _
 end 
+
+@[hott]
+def fo_theory (sign : fo_signature) := Subset (to_Set (sequent sign)) 
+
+@[hott]
+def is_algebraic_seq {sign : fo_signature} : sequent sign -> Prop :=
+begin
+  intro seq, hinduction seq, hinduction ass with atom_ass,  
+  { exact False },
+  { hinduction con with atom_con, 
+    { hinduction atom_con, exact True, exact False },
+    { exact False } }
+end  
+
+@[hott]
+def is_algebraic {sign : fo_signature} : fo_theory sign -> Prop :=
+  assume th, to_Prop (Π seq : to_Set (sequent sign), seq ∈ th -> is_algebraic_seq seq) 
 
 end signature
 
