@@ -394,6 +394,17 @@ def One_is_prop : is_prop One :=
 def One_Set : Set :=
   Set.mk One (is_trunc_succ One -1)
 
+@[hott, instance]
+def is_prop_One_equiv (A : Type _) : is_prop (One ≃ A) :=
+begin 
+  apply is_prop.mk, intros eqv₁ eqv₂,
+  have H : is_prop A, from is_trunc_equiv_closed -1 eqv₁ One_is_prop, 
+  hinduction eqv₁ with f₁ is_eqv₁, hinduction eqv₂ with f₂ is_eqv₂,
+  fapply apd011 equiv.mk, 
+  { apply eq_of_homotopy, intro o, exact @is_prop.elim _ H _ _ },
+  { apply pathover_of_tr_eq, exact is_prop.elim _ _ } 
+end
+
 @[hott]
 inductive Two : Type _ 
 | zero : Two 
