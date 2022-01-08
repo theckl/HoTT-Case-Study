@@ -1080,7 +1080,8 @@ end
 
 @[hott]
 def is_algebraic {sign : fo_signature} : fo_theory sign -> Prop :=
-  assume th, to_Prop (Π seq : to_Set (sequent sign), seq ∈ th -> is_algebraic_seq seq) 
+  assume th, to_Prop (Π seq : to_Set (sequent sign), seq ∈ th -> is_algebraic_seq seq) and
+             to_Prop (One ≃ sign.sorts) 
 
 end signature
 
