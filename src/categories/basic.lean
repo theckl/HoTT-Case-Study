@@ -285,25 +285,29 @@ infixr ` ⋙ `:25 := functor_comp
 
 end
 
-/- We now define structures on categories and prove the Structure Identity Principle, following
-   the [HoTT-Book], Section 9.8.  -/
+/- We now define multi-sorted stamdard structures on categories and prove the Structure 
+   Identity Principle, following and generalizing the [HoTT-Book], Section 9.8.  -/
 @[hott]
 structure std_structure_on (C : Type u) [category.{v} C] :=
-  (P : C -> Type w)
-  (H : Π {x y : C} (α : P x) (β : P y) (f : x ⟶ y), trunctype.{0} -1)
-  (id_H : ∀ {x : C} (α : P x), H α α (𝟙 x))
-  (comp_H : ∀ {x y z : C} (α : P x) (β : P y) (γ : P z) (f : x ⟶ y) (g : y ⟶ z), 
-              H α β f -> H β γ g -> H α γ (f ≫ g))
-  (std : ∀ {x : C} (α β : P x), (H α β (𝟙 x) × H β α (𝟙 x)) ≃ α = β)           
+  (S : Set)   --the set of sorts of the structure
+  (P : (S -> C) -> Type w)
+  (H : Π {s t : S -> C} (α : P s) (β : P t) (f : Π (x : S), s x ⟶ t x), 
+                                                                trunctype.{0} -1)
+  (id_H : ∀ {s : S -> C} (α : P s), H α α (λ x : S, 𝟙 (s x)))
+  (comp_H : ∀ {s t u : S -> C} (α : P s) (β : P t) (γ : P u) (f : Π x : S, s x ⟶ t x) 
+              (g : Π x : S, t x ⟶ u x), 
+              H α β f -> H β γ g -> H α γ (λ x : S, f x ≫ g x))
+  (std : ∀ {s : S ->C} (α β : P s), 
+           (H α β (λ x : S, 𝟙 (s x)) × H β α (λ x : S, 𝟙 (s x))) ≃ α = β)           
 
 @[hott]
-structure std_structure {C : Type u} [category.{v} C] (std_str : std_structure_on C) :=
-  (carrier : C)
+structure std_structure {C : Type u} [category.{v} C] (std_str : std_structure_on C) := 
+  (carrier : std_str.S -> C)
   (str : std_str.P carrier)  
 
 @[hott]
 instance {C : Type u} [category.{v} C] (std_str : std_structure_on C) : 
-  has_coe (std_structure std_str) C :=
+  has_coe (std_structure std_str) (std_str.S -> C) :=
 ⟨λ x : std_structure std_str, x.carrier⟩  
 
 @[hott]
@@ -313,16 +317,16 @@ begin hinduction x, refl end
 
 @[hott, instance]
 def std_str_is_set {C : Type u} [category.{v} C] (std_str : std_structure_on C) :
-  ∀ a : C, is_set (std_str.P a) :=
-assume a, 
-have eq_eq : ∀ (α β : std_str.P a), is_prop (α = β), from 
+  ∀ s : std_str.S -> C, is_set (std_str.P s) :=
+assume s, 
+have eq_eq : ∀ (α β : std_str.P s), is_prop (α = β), from 
   assume α β, is_trunc_equiv_closed -1 (std_str.std α β) (prod.is_trunc_prod _ _ -1),
 is_trunc_succ_intro eq_eq 
 
 @[hott, instance]
 def std_str_po_is_prop {C : Type u} [category.{v} C] (std_str : std_structure_on C)
-  {a b : C} {α : std_str.P a} {β : std_str.P b} :
-  ∀ p : a = b, is_prop (α =[p] β) :=
+  {s t : std_str.S -> C} {α : std_str.P s} {β : std_str.P t} :
+  ∀ p : s = t, is_prop (α =[p] β) :=
 begin 
   intro p, hinduction p, 
   apply is_trunc_equiv_closed_rev -1 (pathover_idp _ α β), 
@@ -332,7 +336,7 @@ end
 /- Equalities like these should be produced automatically. -/
 @[hott]
 def ap_apd011_str {C : Type u} [category.{v} C] {std_str : std_structure_on C} 
-  {a b : C} {α : std_str.P a} {β : std_str.P b} : ∀ (p : a = b) (q : α =[p] β), 
+  {s t : std_str.S -> C} {α : std_str.P s} {β : std_str.P t} : ∀ (p : s = t) (q : α =[p] β), 
                      ap std_structure.carrier (apd011 std_structure.mk p q) = p :=
 begin intros p q, hinduction p, hinduction q, refl end 
 
@@ -349,29 +353,30 @@ begin intro p, hinduction p, hinduction x, refl end
 @[hott, instance]
 def std_str_has_hom {C : Type u} [category.{v} C] (std_str : std_structure_on C) :
   has_hom (std_structure std_str) := 
-has_hom.mk (λ (x y : std_structure std_str), 
-            pred_Set (λ f : (x.carrier ⟶ y), std_str.H (x.str) (y.str) f))
+has_hom.mk (λ (str₁ str₂ : std_structure std_str), 
+            pred_Set (λ f : to_Set (Π x : std_str.S, (str₁.carrier x ⟶ str₂.carrier x)), 
+                       std_str.H (str₁.str) (str₂.str) f))
 
 @[hott]
 instance hom_std_C {C : Type u} [category.{v} C] {std_str : std_structure_on C}
-  {x y : std_structure std_str} : has_coe ↥(x ⟶ y) ↥(x.carrier ⟶ y.carrier) :=
-⟨λ f : x ⟶ y, 
-   pred_Set_map (λ f : (x.carrier ⟶ y), std_str.H (x.str) (y.str) f) f⟩  
+  {str₁ str₂ : std_structure std_str} : 
+  has_coe ↥(str₁ ⟶ str₂) (Π x : std_str.S, (str₁.carrier x ⟶ str₂.carrier x)) :=
+⟨λ f : str₁ ⟶ str₂, pred_Set_map _ f⟩  
 
 @[hott]
 def hom_H {C : Type u} [category.{v} C] {std_str : std_structure_on C} 
-  {x y : std_structure std_str} :
-  Π f : x ⟶ y, std_str.H x.str y.str (↑f) :=
+  {str₁ str₂ : std_structure std_str} :
+  Π f : str₁ ⟶ str₂, std_str.H str₁.str str₂.str (↑f) :=
 begin intro f, exact f.2 end              
 
 @[hott]
 def hom_eq_C_std {C : Type u} [category.{v} C] {std_str : std_structure_on C} 
-  {x y : std_structure std_str} (f g : x ⟶ y) : 
-  (f.1 = (g.1 : x.carrier ⟶ y.carrier)) -> (f = g) :=
+  {str₁ str₂ : std_structure std_str} (f g : str₁ ⟶ str₂) : 
+  (f.1 = (g.1 : Π x : std_str.S, (str₁.carrier x ⟶ str₂.carrier x))) -> (f = g) :=
 assume (hom_eq_C : f.1 = g.1), 
-have H_eq : f.2 =[hom_eq_C; λ f : x.carrier ⟶ y, std_str.H x.str y.str f] g.2, from 
-  pathover_prop_eq (λ f : x.carrier ⟶ y, std_str.H x.str y.str f) hom_eq_C (hom_H f) 
-                                                                            (hom_H g),
+have H_eq : f.2 =[hom_eq_C; (λ f : to_Set (Π x : std_str.S, (str₁.carrier x ⟶ str₂.carrier x)), 
+                       std_str.H (str₁.str) (str₂.str) f)] g.2, from 
+  pathover_prop_eq _ hom_eq_C (hom_H f) (hom_H g),
 calc f = ⟨f.1, f.2⟩ : (sigma.eta f)⁻¹ 
    ... = ⟨g.1, g.2⟩ : dpair_eq_dpair hom_eq_C H_eq
    ... = g : sigma.eta g 
@@ -379,32 +384,42 @@ calc f = ⟨f.1, f.2⟩ : (sigma.eta f)⁻¹
 @[hott, instance]
 def std_str_cat_struct {C : Type u} [category.{v} C] (std_str : std_structure_on C) :
   category_struct (std_structure std_str) :=
-category_struct.mk (λ x : std_structure std_str, 
-                                         ⟨𝟙 ↑x, std_str.id_H x.str⟩) 
-  (λ (x y z : std_structure std_str) (f : x ⟶ y) (g : y ⟶ z), 
-     ⟨↑f ≫ ↑g, std_str.comp_H x.str y.str z.str ↑f ↑g (hom_H f) (hom_H g)⟩) 
+category_struct.mk (λ str : std_structure std_str, 
+                            ⟨λ x : std_str.S, 𝟙 (str.carrier x), std_str.id_H str.str⟩) 
+  (λ (str₁ str₂ str₃ : std_structure std_str) (f : str₁ ⟶ str₂) (g : str₂ ⟶ str₃), 
+     ⟨(λ x : std_str.S, (f : Π x : std_str.S, (str₁.carrier x ⟶ str₂.carrier x)) x ≫ g.1 x), 
+                        std_str.comp_H str₁.str str₂.str str₃.str ↑f ↑g (hom_H f) (hom_H g)⟩) 
 
 @[hott]
 def idhom_std_C {C : Type u} [category.{v} C] {std_str : std_structure_on C} 
-  (x : std_structure std_str) : ↑(𝟙 x) = 𝟙 x.carrier :=
+  (str : std_structure std_str) : ↑(𝟙 str) = λ x, 𝟙 (str.carrier x) :=
 rfl  
 
 @[hott]
 def comp_hom_std_C {C : Type u} [category.{v} C] {std_str : std_structure_on C} 
-  {x y z : std_structure std_str} (f : x ⟶ y) (g : y ⟶ z) : 
-  (f ≫ g).1 = (f.1 : x.carrier ⟶ y.carrier) ≫ (g.1 : y.carrier ⟶ z.carrier) :=
+  {str₁ str₂ str₃ : std_structure std_str} (f : str₁ ⟶ str₂) (g : str₂ ⟶ str₃) : 
+  (f ≫ g).1 = λ x : std_str.S, f.1 x ≫ g.1 x :=
 rfl  
 
 @[hott, instance]
 def std_str_precategory {C : Type u} [category.{v} C] (std_str : std_structure_on C) :
   precategory (std_structure std_str) :=
-have ic : ∀ (x y : std_structure std_str) (f : x ⟶ y), 𝟙 x ≫ f = f, from 
-  begin intros x y f, apply hom_eq_C_std _ _, rwr comp_hom_std_C, hsimp end,
-have ci : ∀ (x y : std_structure std_str) (f : x ⟶ y), f ≫ 𝟙 y = f, from 
-  begin intros x y f, apply hom_eq_C_std _ _, rwr comp_hom_std_C, hsimp end,
-have as : ∀ (x y z w: std_structure std_str) (f : x ⟶ y) (g : y ⟶ z) (h : z ⟶ w),
-          (f ≫ g) ≫ h = f ≫ (g ≫ h), from 
-  begin intros x y z w f g h, apply hom_eq_C_std _ _, repeat { rwr comp_hom_std_C }, hsimp end,
+have ic : ∀ (str₁ str₂ : std_structure std_str) (f : str₁ ⟶ str₂), 𝟙 str₁ ≫ f = f, from 
+begin 
+  intros str₁ str₂ f, apply hom_eq_C_std _ _, rwr comp_hom_std_C, 
+  apply eq_of_homotopy, intro x, hsimp 
+end,
+have ci : ∀ (str₁ str₂ : std_structure std_str) (f : str₁ ⟶ str₂), f ≫ 𝟙 str₂ = f, from 
+begin 
+  intros str₁ str₂ f, apply hom_eq_C_std _ _, rwr comp_hom_std_C, 
+  apply eq_of_homotopy, intro x, hsimp 
+end,
+have as : ∀ (str₁ str₂ str₃ str₄: std_structure std_str) (f : str₁ ⟶ str₂) (g : str₂ ⟶ str₃) 
+            (h : str₃ ⟶ str₄), (f ≫ g) ≫ h = f ≫ (g ≫ h), from 
+begin 
+  intros x y z w f g h, apply hom_eq_C_std _ _, repeat { rwr comp_hom_std_C }, 
+  apply eq_of_homotopy, intro x, hsimp 
+end,
 precategory.mk ic ci as 
 
 /- We prove the Structure Identity principle by splitting up the equivalence making the 
