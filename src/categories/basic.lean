@@ -429,61 +429,80 @@ precategory.mk ic ci as
    The first equivalence introduces the structure components in standard structures equalities. -/
 @[hott]
 def std_str_comp_eq {C : Type u} [category.{v} C] {std_str : std_structure_on C}
-  {x y : std_structure std_str} :
-  (x = y) ≃ (std_structure.mk x.carrier x.str = std_structure.mk y.carrier y.str) :=
-begin hinduction x with a α, hinduction y with b β, exact equiv.rfl end
+  {str₁ str₂ : std_structure std_str} :
+  (str₁ = str₂) ≃ 
+          (std_structure.mk str₁.carrier str₁.str = std_structure.mk str₂.carrier str₂.str) :=
+begin hinduction str₁ with s α, hinduction str₂ with t β, exact equiv.rfl end
 
 /- The second equivalence is the eta principle for standard structures equalities. -/
 @[hott]
 def std_str_eq_eta {C : Type u} [category.{v} C] {std_str : std_structure_on C}
-  {a b : C} {α : std_str.P a} {β : std_str.P b} :
-  (std_structure.mk a α = std_structure.mk b β) ≃ Σ (p : a = b), α =[p] β :=
-let x := std_structure.mk a α, y := std_structure.mk b β,
-    f := λ p : x = y, @dpair (a = b) (λ p : a = b, α =[p] β) 
-         (ap std_structure.carrier p : a = b) 
+  {s t : std_str.S -> C} {α : std_str.P s} {β : std_str.P t} :
+  (std_structure.mk s α = std_structure.mk t β) ≃ Σ (p : s = t), α =[p] β :=
+let str₁ := std_structure.mk s α, str₂ := std_structure.mk t β,
+    f := λ p : str₁ = str₂, @dpair (s = t) (λ p : s = t, α =[p] β) 
+         (ap std_structure.carrier p : s = t) 
          (pathover_ap std_str.P std_structure.carrier (apd std_structure.str p)),
-    g := λ pq : Σ (p : a = b), α =[p] β, apd011 std_structure.mk pq.1 pq.2 in                         
-have rinv : ∀ pq : Σ (p : a = b), α =[p] β, f (g pq) = pq, from 
+    g := λ pq : Σ (p : s = t), α =[p] β, apd011 std_structure.mk pq.1 pq.2 in                         
+have rinv : ∀ pq : Σ (p : s = t), α =[p] β, f (g pq) = pq, from 
   assume pq,
   have pq_1 : (f (g pq)).1 = pq.1, from 
     calc (f (g pq)).1 = ap std_structure.carrier (apd011 std_structure.mk pq.1 pq.2) : rfl
          ... = pq.1 : ap_apd011_str pq.1 pq.2,
-  have pq_2 : (f (g pq)).2 =[pq_1; λ p : a = b, α =[p] β] pq.2, from po_proofs pq_1 _ _,
+  have pq_2 : (f (g pq)).2 =[pq_1; λ p : s = t, α =[p] β] pq.2, from po_proofs pq_1 _ _,
   calc f (g pq) = ⟨(f (g pq)).1, (f (g pq)).2⟩ : sigma.eta (f (g pq))
        ... = ⟨pq.1, pq.2⟩ : apd011 sigma.mk pq_1 pq_2
        ... = pq : sigma.eta pq,
-have linv : ∀ p : x = y, g (f p) = p, from 
+have linv : ∀ p : str₁ = str₂, g (f p) = p, from 
   assume p,
-  have qx : std_str_eta x = idp, from rfl,
+  have qx : std_str_eta str₁ = idp, from rfl,
   calc g (f p) = apd011 std_structure.mk (ap std_structure.carrier p) (f p).2 : rfl
-       ... = (std_str_eta x)⁻¹ ⬝ p ⬝ (std_str_eta y) : apd011_ap_str p
+       ... = (std_str_eta str₁)⁻¹ ⬝ p ⬝ (std_str_eta str₂) : apd011_ap_str p
        ... = p : by rwr qx; rwr idp_inv; rwr idp_con p; rwr con_idp p,
 equiv.mk f (adjointify f g rinv linv)    
+
+#check homotopy_of_eq
 
 /- The third equivalence exchanges equalities and isomorphisms. -/
 @[hott]
 def strpair_id_to_iso {C : Type u} [category.{v} C] {std_str : std_structure_on C}
-  {a b : C} {α : std_str.P a} {β : std_str.P b} :
-  (Σ (p : a = b), α =[p] β) ≃ (Σ (f : a ≅ b), std_str.H α β f.hom and std_str.H β α f.inv) :=
-let x := std_structure.mk a α, y := std_structure.mk b β in  
-have po_hom : Π (p : a = b) (q : α =[p] β), std_str.H α β (idtoiso p).hom and 
-                                            std_str.H β α (idtoiso p).inv, from 
+  {s t : std_str.S -> C} {α : std_str.P s} {β : std_str.P t} :
+  (Σ (p : s = t), α =[p] β) ≃ (Σ (f : Π x, s x ≅ t x), std_str.H α β (λ x, (f x).hom) and 
+                                                        std_str.H β α (λ x, (f x).inv)) :=
+begin                                                        
+  let str₁ := std_structure.mk s α, let str₂ := std_structure.mk t β, 
+  have po_hom : Π (p : s = t) (q : α =[p] β), std_str.H α β (λ x, (idtoiso (ap10 p x)).hom) and 
+                                              std_str.H β α (λ x, (idtoiso (ap10 p x)).inv), from 
   begin 
-    intros p q, 
-    hinduction p, 
-    have q' : α = β, from eq_of_pathover_idp q,
-    rwr idtoiso_refl_eq, rwr <- q',
-    exact (std_str.id_H α, std_str.id_H α) 
-  end, 
-have idtoiso_hom_po : ∀ p : a = b, 
-     (std_str.H α β (idtoiso p).hom and std_str.H β α (idtoiso p).inv) -> α =[p] β, from
-  begin intros p H, hinduction p, apply pathover_idp_of_eq, exact std_str.std α β H end,                                            
-have hom_po : Π (f : a ≅ b), (std_str.H α β f.hom and std_str.H β α f.inv) ->
-                 α =[category.isotoid f] β, from 
-  assume f H,
-  have r : f = idtoiso (idtoiso⁻¹ᶠ f), by rwr category.idtoiso_rinv f,
-  begin rwr r at H, exact idtoiso_hom_po (idtoiso⁻¹ᶠ f) H end,                                                             
-let F := λ (pq : Σ (p : a = b), α =[p] β), 
+    intros p q, hinduction p, 
+    have q' : α = β, from eq_of_pathover_idp q, 
+    have r : (λ x : std_str.S, (idtoiso (ap10 (@idp _ s) x)).hom) = 
+              λ x : std_str.S, 𝟙 (s x), from rfl,
+    have r' : (λ x : std_str.S, (idtoiso (ap10 (@idp _ s) x)).inv) = 
+               λ x : std_str.S, 𝟙 (s x), from rfl,         
+    rwr r, rwr r', rwr <- q', exact (std_str.id_H α, std_str.id_H α) 
+  end,
+  have idtoiso_hom_po : ∀ p : s = t, std_str.H α β (λ x, (idtoiso (ap10 p x)).hom) and 
+                            std_str.H β α (λ x, (idtoiso (ap10 p x)).inv) -> α =[p] β, from
+    begin intros p H, hinduction p, apply pathover_idp_of_eq, exact std_str.std α β H end,
+  have hom_po : Π (f : Π x, s x ≅ t x), (std_str.H α β (λ x, (f x).hom) and 
+                  std_str.H β α (λ x, (f x).inv)) -> 
+                  α =[eq_of_homotopy (λ x, category.isotoid (f x))] β, from 
+    assume f H,
+    have r : f = λ x, idtoiso (ap10 (eq_of_homotopy (λ x, category.isotoid (f x))) x), from
+      begin 
+        apply eq_of_homotopy, intro x, change f x = idtoiso (apd10 _ x),
+        rwr apd10_eq_of_homotopy, change _ = idtoiso (idtoiso⁻¹ᶠ (f x)), 
+        rwr category.idtoiso_rinv (f x) 
+      end, 
+    begin 
+      apply idtoiso_hom_po, 
+      rwr <- eq_of_homotopy (λ x, ap iso.hom (apd10 r x)), 
+      rwr <- eq_of_homotopy (λ x, ap iso.inv (apd10 r x)), exact H 
+    end, 
+  sorry
+end
+/-let F := λ (pq : Σ (p : a = b), α =[p] β), 
          @dpair (a ≅ b) (λ f : a ≅ b, std_str.H α β f.hom and std_str.H β α f.inv) 
                 (idtoiso pq.1) (po_hom pq.1 pq.2),
     G := λ iso_H : (Σ (f : a ≅ b), std_str.H α β f.hom and std_str.H β α f.inv), 
@@ -504,7 +523,7 @@ have linv : ∀ (pq : Σ (p : a = b), α =[p] β), G (F pq) = pq, from
     { exact category.idtoiso_linv pq.1 },
     { apply pathover_of_eq_tr, exact is_prop.elim _ _ }, 
   end,                                                             
-equiv.mk F (adjointify F G rinv linv)  
+equiv.mk F (adjointify F G rinv linv) -/ 
 
 /- The fourth equivalence splits up equalities of standard structure isomorphisms. -/
 @[hott]
