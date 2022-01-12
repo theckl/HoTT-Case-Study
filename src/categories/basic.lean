@@ -461,8 +461,6 @@ have linv : ∀ p : str₁ = str₂, g (f p) = p, from
        ... = p : by rwr qx; rwr idp_inv; rwr idp_con p; rwr con_idp p,
 equiv.mk f (adjointify f g rinv linv)    
 
-#check homotopy_of_eq
-
 /- The third equivalence exchanges equalities and isomorphisms. -/
 @[hott]
 def strpair_id_to_iso {C : Type u} [category.{v} C] {std_str : std_structure_on C}
@@ -500,95 +498,108 @@ begin
       rwr <- eq_of_homotopy (λ x, ap iso.hom (apd10 r x)), 
       rwr <- eq_of_homotopy (λ x, ap iso.inv (apd10 r x)), exact H 
     end, 
-  sorry
-end
-/-let F := λ (pq : Σ (p : a = b), α =[p] β), 
-         @dpair (a ≅ b) (λ f : a ≅ b, std_str.H α β f.hom and std_str.H β α f.inv) 
-                (idtoiso pq.1) (po_hom pq.1 pq.2),
-    G := λ iso_H : (Σ (f : a ≅ b), std_str.H α β f.hom and std_str.H β α f.inv), 
-         @dpair (a = b) (λ p : a = b, α =[p] β) 
-                (category.isotoid iso_H.1) (hom_po iso_H.1 iso_H.2) in  
-have rinv : ∀ (iso_H : Σ (f : a ≅ b), std_str.H α β f.hom and std_str.H β α f.inv), 
-            F (G iso_H) = iso_H, from 
+  let F := λ (pq : Σ (p : s = t), α =[p] β), @dpair (Π x, s x ≅ t x) 
+    (λ f : Π x, s x ≅ t x, std_str.H α β (λ x, (f x).hom) and std_str.H β α (λ x, (f x).inv)) 
+    (λ x, idtoiso (ap10 pq.1 x)) (po_hom pq.1 pq.2),  
+  let G := λ iso_H : (Σ (f : Π x, s x ≅ t x), std_str.H α β (λ x, (f x).hom) and 
+                       std_str.H β α (λ x, (f x).inv)), @dpair (s = t) (λ p : s = t, α =[p] β) 
+                (eq_of_homotopy (λ x, category.isotoid (iso_H.1 x))) (hom_po iso_H.1 iso_H.2),
+  have rinv : ∀ iso_H, F (G iso_H) = iso_H, from 
   begin
-    intro iso_H,
-    fapply sigma_eq,
-    { exact category.idtoiso_rinv iso_H.1 },
+    intro iso_H, fapply sigma_eq,
+    { apply eq_of_homotopy, intro x, 
+      change idtoiso (apd10 _ x) = iso_H.1 x, rwr apd10_eq_of_homotopy,
+      change idtoiso (idtoiso⁻¹ᶠ (iso_H.1 x)) = iso_H.1 x,
+      exact category.idtoiso_rinv (iso_H.1 x) },
     { apply pathover_of_eq_tr, exact is_prop.elim _ _ }
-  end,            
-have linv : ∀ (pq : Σ (p : a = b), α =[p] β), G (F pq) = pq, from 
+  end,
+  have linv : ∀ (pq : Σ (p : s = t), α =[p] β), G (F pq) = pq, from 
   begin
-    intro pq,
+    intro pq, hinduction pq.1 with h,
     fapply sigma_eq,
-    { exact category.idtoiso_linv pq.1 },
+    { change (eq_of_homotopy (λ x, idtoiso⁻¹ᶠ (idtoiso (apd10 pq.1 x)))) = _,  
+      have r : Π x, apd10 pq.1 x = @idp _ (s x), from begin intro x, rwr h end, 
+      have q : (λ x, idtoiso⁻¹ᶠ (idtoiso (apd10 pq.1 x))) = λ x, (@idp _ (s x)), from 
+      begin 
+        apply eq_of_homotopy, intro x, change idtoiso⁻¹ᶠ (idtoiso (apd10 pq.1 x)) = _,
+        rwr r x, rwr category.idtoiso_linv ((@idp _ (s x)))
+      end,  
+      rwr q, rwr h, rwr eq_of_homotopy_idp }, 
     { apply pathover_of_eq_tr, exact is_prop.elim _ _ }, 
   end,                                                             
-equiv.mk F (adjointify F G rinv linv) -/ 
+  exact equiv.mk F (adjointify F G rinv linv) 
+end
 
 /- The fourth equivalence splits up equalities of standard structure isomorphisms. -/
 @[hott]
 def iso_std_C {C : Type u} [category.{v} C] {std_str : std_structure_on C}
-  {x y : std_structure std_str} (F : x ≅ y) : x.carrier ≅ ↑y :=
-let f := (F.hom : x ⟶ y).1, g := F.inv.1 in
-have rinv : g ≫ f = 𝟙 ↑y, by rwr <- comp_hom_std_C; rwr F.r_inv,
-have linv : f ≫ g = 𝟙 ↑x, by rwr <- comp_hom_std_C; rwr F.l_inv, 
-iso.mk f g rinv linv  
+  {str₁ str₂ : std_structure std_str} (F : str₁ ≅ str₂) : Π x, str₁.carrier x ≅ str₂.carrier x :=
+let f := (F.hom : str₁ ⟶ str₂).1, g := F.inv.1 in
+have rinv : Π x, (g x) ≫ (f x) = 𝟙 (str₂.carrier x), 
+  begin intro x, change (F.inv ≫ F.hom).1 x = _, rwr F.r_inv end,
+have linv : Π x, (f x) ≫ (g x) = 𝟙 (str₁.carrier x), 
+  begin intro x, change (F.hom ≫ F.inv).1 x = _, rwr F.l_inv end, 
+assume x, iso.mk (f x) (g x) (rinv x) (linv x)  
 
 @[hott]
 def str_iso_eq_comp {C : Type u} [category.{v} C] {std_str : std_structure_on C}
-  {a b : C} {α : std_str.P a} {β : std_str.P b} :
-  (Σ (f : a ≅ b), std_str.H α β f.hom and std_str.H β α f.inv) ≃ 
-  (std_structure.mk a α ≅ std_structure.mk b β) :=
+  {s t : std_str.S -> C} {α : std_str.P s} {β : std_str.P t} :
+  (Σ (f : Π x, s x ≅ t x), std_str.H α β (λ x, (f x).hom) and std_str.H β α (λ x, (f x).inv)) ≃ 
+  (std_structure.mk s α ≅ std_structure.mk t β) :=
 begin
-  let x := std_structure.mk a α, let y := std_structure.mk b β,
+  let str₁ := std_structure.mk s α, let str₂ := std_structure.mk t β,
   fapply equiv.mk,
-  /- We define `F : (Σ (f : a ≅ b), std_str.H α β f.hom and std_str.H β α f.inv) -> (x ≅ y)`. -/
+  /- We define `F : (Σ (f : Π x, s x ≅ t x), std_str.H α β (λ x, (f x).hom) and`
+                                            `std_str.H β α (λ x, (f x).inv)) -> (str₁ ≅ str₂)`. -/
   { intro iso_H, 
     fapply iso.mk,
-    { exact ⟨iso_H.1.hom, iso_H.2.1⟩ },
-    { exact ⟨iso_H.1.inv, iso_H.2.2⟩ },
-    { apply hom_eq_C_std _ _, repeat { rwr comp_hom_std_C }, hsimp, rwr iso_H.1.r_inv },
-    { apply hom_eq_C_std _ _, repeat { rwr comp_hom_std_C }, hsimp, rwr iso_H.1.l_inv } },
+    { exact ⟨λ x, (iso_H.1 x).hom, iso_H.2.1⟩ },
+    { exact ⟨λ x, (iso_H.1 x).inv, iso_H.2.2⟩ },
+    { apply hom_eq_C_std _ _, repeat { rwr comp_hom_std_C }, hsimp, 
+      apply eq_of_homotopy, intro x, hsimp, rwr (iso_H.1 x).r_inv },
+    { apply hom_eq_C_std _ _, repeat { rwr comp_hom_std_C }, hsimp, 
+      apply eq_of_homotopy, intro x, hsimp, rwr (iso_H.1 x).l_inv } },
   { fapply adjointify,
-    /- Now we define `G : (x ≅ y) -> (Σ (f : a ≅ b), std_str.H α β f.hom and std_str.H β α f.inv)`-/
+    /- Now we define `G : (str₁ ≅ str₂) -> (Σ (f : Π x, s x ≅ t x), std_str.H α β (λ x, (f x).hom) and`
+                                            `std_str.H β α (λ x, (f x).inv))`. -/
     { intro f, 
       fapply sigma.mk,
       { exact iso_std_C f },
       { exact (f.hom.2, f.inv.2) } },
-    /- `r_inv : ∀ f : x ≅ y, F (G f) = f` -/  
+    /- `r_inv : ∀ f : str₁ ≅ str₂, F (G f) = f` -/  
     { intro f,
       apply hom_eq_to_iso_eq, apply hom_eq_C_std _ _, 
       hsimp, refl },
-    /- `l_inv : ∀ iso_H : (Σ (f : a ≅ b), std_str.H α β f.hom and std_str.H β α f.inv),` 
-       `G (F iso_H)) = iso_H` -/  
+    /- `l_inv : ∀ iso_H : (Σ (f : Π x, s x ≅ t x), std_str.H α β (λ x, (f x).hom) and`
+                                            `std_str.H β α (λ x, (f x).inv)), G (F iso_H)) = iso_H` -/  
     { intro iso_H, 
       fapply sigma_eq, 
-      { apply hom_eq_to_iso_eq, refl },
+      { apply eq_of_homotopy, intro x, apply hom_eq_to_iso_eq, refl },
       { apply pathover_of_eq_tr, exact is_prop.elim _ _ } } }
 end    
 
 /- The last equivalence introduces the structure components in standard structures isomorphies. -/
 @[hott]
 def std_str_comp_iso {C : Type u} [category.{v} C] {std_str : std_structure_on C}
-  {x y : std_structure std_str} :
-  (x ≅ y) ≃ (std_structure.mk x.carrier x.str ≅ std_structure.mk y.carrier y.str) :=
-begin hinduction x with a α, hinduction y with b β, exact equiv.rfl end
+  {str₁ str₂ : std_structure std_str} :
+  (str₁ ≅ str₂) ≃ (std_structure.mk str₁.carrier str₁.str ≅ std_structure.mk str₂.carrier str₂.str) :=
+begin hinduction str₁ with s α, hinduction str₂ with t β, exact equiv.rfl end
 
 /- Finally, we show that the composition of the five equivalences is `idtoiso`. -/
 @[hott]
 def comp_eqv_idtoiso {C : Type u} [category.{v} C] {std_str : std_structure_on C}
-  {x y : std_structure std_str} :
-  ∀ (p : x = y), (std_str_comp_iso.to_fun⁻¹ᶠ (str_iso_eq_comp.to_fun (strpair_id_to_iso.to_fun 
+  {str₁ str₂ : std_structure std_str} (p : str₁ = str₂) :
+        (std_str_comp_iso.to_fun⁻¹ᶠ (str_iso_eq_comp.to_fun (strpair_id_to_iso.to_fun 
                             (std_str_eq_eta.to_fun (std_str_comp_eq.to_fun p))))) = idtoiso p :=                            
 begin
-  intro p, hinduction p, hinduction x with a α,
-  let x := std_structure.mk a α,
-  have p₁ : std_str_comp_eq.to_fun (refl x) = refl x, from rfl,
-  have p₂ : std_str_eq_eta.to_fun (refl x) = ⟨refl a, idpo⟩, from rfl,
-  have p₃ : strpair_id_to_iso.to_fun ⟨refl a, idpo⟩ = 
-            ⟨id_is_iso a, (std_str.id_H α, std_str.id_H α)⟩, from rfl,
-  have p₄ : str_iso_eq_comp.to_fun ⟨id_is_iso a, (std_str.id_H α, std_str.id_H α)⟩ = id_is_iso x,
-    from begin apply hom_eq_to_iso_eq, refl end,         
+  hinduction p, hinduction str₁ with s α,
+  let str := std_structure.mk s α,
+  have p₁ : std_str_comp_eq.to_fun (refl str) = refl str, from rfl,
+  have p₂ : std_str_eq_eta.to_fun (refl str) = ⟨refl s, idpo⟩, from rfl,
+  have p₃ : strpair_id_to_iso.to_fun ⟨refl s, idpo⟩ = 
+            ⟨λ x, id_is_iso (s x), (std_str.id_H α, std_str.id_H α)⟩, from rfl,
+  have p₄ : str_iso_eq_comp.to_fun ⟨λ x, id_is_iso (s x), (std_str.id_H α, std_str.id_H α)⟩ = id_is_iso str,
+    by apply hom_eq_to_iso_eq; refl,         
   rwr idtoiso_refl_eq, rwr p₁, rwr p₂, rwr p₃, rwr p₄
 end     
 
@@ -611,31 +622,7 @@ have idtoiso_eqv : ∀ x y : std_structure std_str, is_equiv (@idtoiso _ _ x y),
   assume x y,
   have eqv : is_equiv (std_str_eq_eqv_iso x y).to_fun, from (std_str_eq_eqv_iso x y).to_is_equiv,
   by rwr idtoiso_eq x y at eqv; exact eqv, 
-category.mk idtoiso_eqv
-
-/- The forgetful functor from a category of standard structures to the underlying category -/
-@[hott]
-def forget_str {C : Type u} [category.{v} C] (std_str : std_structure_on C) :
-  (std_structure std_str) ⥤ C :=
-begin
-  fapply functor.mk,  
-  { exact λ x, x.carrier },  -- map of objects
-  { intros x y f, exact f.1 },  -- map of morphisms
-  { intro x, exact idhom_std_C x },  -- preserves identity morphisms
-  { intros x y z f g, exact comp_hom_std_C f g }  -- preserves compositions of morphisms 
-end 
-
-/- The forgetful functor is faithful. -/
-@[hott]
-def forget_is_faithful {C : Type u} [category.{v} C] (std_str : std_structure_on C) :
-  is_faithful_functor _ _ (forget_str std_str) :=
-begin intros x y, exact pred_Set_map_is_inj _ end  
-
-/- The forgetful functor composed with a functor to a category of standard structures -/
-@[hott]
-def forget {J : Type.{u'}} [precategory.{v'} J] {C : Type u} [category.{v} C] 
-  {std_str : std_structure_on C} (F : J ⥤ std_structure std_str) : J ⥤ C :=
-F ⋙ (forget_str std_str)  
+category.mk idtoiso_eqv  
 
 /- The fully embedded category of a type injectively mapped to a category. 
    We start with a synonym for an (embedded) type `D`, on which the category structure
