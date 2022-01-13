@@ -1,4 +1,4 @@
-import sets.setalgebra categories.examples
+import sets.algebra categories.examples
 
 universes v v' u u' w
 hott_theory
@@ -417,131 +417,6 @@ begin
   apply ap trunctype.carrier (total_pred_Set_eq_Set (Sections U))
 end 
 
-/- A criterion for a category of standard structures over a category with limits to have limits:
-   - The limit cone of the underlying functor of a shape carries a structure.
-   - The leg morphisms of this limit cone respect the structures.
-   - The lift morphisms to this limit cone respect the structures. 
-   
-   We first need to construct the underlying cone of a cone in the category of structures. -/
-@[hott, reducible]
-def str_cone_to_cone {J : Set.{u'}} [precategory.{v'} J] {C : Type u} [category.{v} C] 
-  {std_str : std_structure_on C} {F : J ⥤ (std_structure std_str)} (s : cone F) :
-  cone (forget F) :=
-begin 
-  fapply cone.mk, 
-  { exact s.X.1 },  -- vertex
-  { fapply nat_trans.mk,
-    { intro j, exact (s.π.app j).1 },  --transformation of objects
-    { intros j k f, hsimp, 
-      change (s.π.app k).1 = (s.π.app j).1 ≫ (F.map f).1, rwr <- comp_hom_std_C _ _,
-      rwr <- ap sigma.fst (s.π.naturality f), hsimp } }  --naturality
-end    
-
-/- We define the structure data of a limit cone for all limit cones of the underlying
-   category at once, because we can change then easily to the most fitting construction. -/
-@[hott]
-structure limit_cone_str_data {J : Set.{u'}} [precategory.{v'} J] {C : Type u} 
-  [category.{v} C] {std_str : std_structure_on C} 
-  {F : J ⥤ (std_structure std_str)} (lc : limit_cone (forget F)) :=
-(lc_str : std_str.P (lc.cone.X)) 
-(lc_legs_H : Π (j : J), std_str.H lc_str ((F.obj j).str) (lc.cone.π.app j))
-(lift_H : Π (s : cone F), std_str.H s.X.str lc_str (lc.is_limit.lift (str_cone_to_cone s)))
-
-@[hott]
-def str_limit_cone {J : Set.{u'}} [precategory.{v'} J] {C : Type u} 
-  [category.{v} C] {std_str : std_structure_on C} 
-  {F : J ⥤ (std_structure.{v u w} std_str)} (lc : limit_cone (forget F))
-  (lcd : limit_cone_str_data lc) : limit_cone F :=
-begin 
-  fapply limit_cone.mk, 
-  { fapply cone.mk, -- the limit cone 
-    { exact std_structure.mk lc.cone.X lcd.lc_str },
-    { fapply nat_trans.mk, 
-      { intro j, 
-        exact ⟨lc.cone.π.app j, lcd.lc_legs_H j⟩ },
-      { intros j k f, apply hom_eq_C_std, rwr comp_hom_std_C,  
-        exact lc.cone.π.naturality f } } },
-  { fapply is_limit.mk, -- the limit cone is a limit
-    { intro s, 
-      exact ⟨lc.is_limit.lift (str_cone_to_cone s), lcd.lift_H s⟩ },
-    { intros s j, apply hom_eq_C_std, rwr comp_hom_std_C, hsimp, 
-      exact lc.is_limit.fac (str_cone_to_cone s) j },
-    { intros s m fac_m, apply hom_eq_C_std, hsimp, 
-      have fac_m1 : ∀ j : J, m.1 ≫ (lc.cone.π.app j) = 
-                                                   (str_cone_to_cone s).π.app j, from 
-        assume j, 
-        calc m.1 ≫ (lc.cone.π.app j) = (s.π.app j).1 : ap sigma.fst (fac_m j)
-             ... = (str_cone_to_cone s).π.app j : rfl,
-      exact lc.is_limit.uniq (str_cone_to_cone s) m.1 fac_m1 } }
-end                
-
-@[hott]
-def str_has_limit {J : Set.{u'}} [precategory.{v'} J] {C : Type u} 
-  [category.{v} C] [has_limits_of_shape J C] {std_str : std_structure_on C} 
-  (F : J ⥤ (std_structure std_str)) 
-  (lcd : limit_cone_str_data (get_limit_cone (forget F))) : has_limit F :=
-has_limit.mk (str_limit_cone (get_limit_cone (forget F)) lcd)                                           
-
-@[hott, instance]
-def std_structure_has_limits_of_shape {J : Set.{u'}} [precategory.{v'} J] {C : Type u} 
-  [category.{v} C] [has_limits_of_shape J C] {std_str : std_structure_on C} 
-  (lcd_F : Π F : J ⥤ (std_structure std_str), limit_cone_str_data (get_limit_cone (forget F))) : 
-  has_limits_of_shape J (std_structure std_str) :=
-has_limits_of_shape.mk (λ F, str_has_limit F (lcd_F F))
-
-/- Ω-structured sets have all limits because the Ω-structure on sections is induced by 
-   the Ω-structure on the sets in the diagram. -/
-@[hott]
-def Ω_str_on_limit_cone {J : Set.{u'}} [precategory.{v'} J] {sign : fo_signature} 
-  (F : J ⥤ (Ω_structure sign)) : limit_cone_str_data (set_limit_cone (forget F)) :=
-begin 
-  fapply limit_cone_str_data.mk,
-  { fapply Ω_structure_on.mk, 
-    { intros o x, fapply dpair, 
-      { intro j, 
-        exact (F.obj j).str.ops o (((set_limit_cone (forget F)).cone.π.app j) ∘ x) },
-      { apply prop_to_prop_resize, intros j k f, 
-        change _ = (F.obj k).str.ops o ((set_limit_cone (forget F)).cone.π.app k ∘ x), 
-        rwr <- cone.fac (set_limit_cone (forget F)).cone f, 
-        exact (prop_resize_to_prop (hom_H (F.map f))).ops_pres o _ } },
-    { intros r x, exact prop_resize (to_Prop (Π j : J, 
-           (F.obj j).str.rels r (((set_limit_cone (forget F)).cone.π.app j) ∘ x))) } },
-  { intro j, apply prop_to_prop_resize, apply is_Ω_structure_hom.mk, 
-    { intros o x, refl },
-    { intros r x limit_rel, exact prop_resize_to_prop limit_rel j } },
-  { intro s, apply prop_to_prop_resize, apply is_Ω_structure_hom.mk, 
-    { intros o x, fapply sigma.sigma_eq, 
-      { apply eq_of_homotopy, intro j,
-        change (s.π.app j).1 (s.X.str.ops o x) = (F.obj j).str.ops o ((s.π.app j).1 ∘ x),
-        rwr (prop_resize_to_prop (s.π.app j).2).ops_pres },
-      { apply pathover_of_tr_eq, exact is_prop.elim _ _ } },
-    { intros r x s_rel, exact prop_to_prop_resize 
-                (λ j : J, (prop_resize_to_prop (s.π.app j).2).rels_pres r x s_rel) } }
-end
-
-@[hott]
-def Ω_str_limit_cone {J : Set.{u'}} [precategory.{v'} J] {sign : fo_signature} 
-  (F : J ⥤ (Ω_structure sign)) : limit_cone F :=
-str_limit_cone (set_limit_cone (forget F)) (Ω_str_on_limit_cone F)  
-
-@[hott, instance]
-def Ω_str_has_limit {J : Set} [precategory J] {sign : fo_signature} 
-  (F : J ⥤ (Ω_structure sign)) : has_limit F :=
-has_limit.mk (Ω_str_limit_cone F)
-
-@[hott, instance]
-def Ω_str_has_limits_of_shape (J : Set) [precategory J] (sign : fo_signature) : 
-  has_limits_of_shape J (Ω_structure sign) :=
-  has_limits_of_shape.mk (λ F, Ω_str_has_limit F)     
-
-@[hott, instance]
-def Ω_str_has_products (sign : fo_signature) : has_products (Ω_structure sign) :=
-  ⟨λ J : Set, Ω_str_has_limits_of_shape (discrete J) sign⟩
-
-@[hott, instance]
-def Ω_str_has_product {J : Set} {sign : fo_signature} (f : J -> (Ω_structure sign)) : 
-  has_product f :=
-Ω_str_has_limit (discrete.functor f)
 
 /- The full subcategory on a subtype of a category with limits has limits if the limit
    of a diagram of objects of the subtype is also in the subtype. -/
@@ -603,48 +478,6 @@ def subcat_has_products {C : Type u} [category.{v} C] {P : C -> trunctype.{0} -1
   has_products (sigma.subtype (λ c : C, ↥(P c))) :=
 ⟨λ J : Set, @subcat_has_limits_of_shape (discrete J) _ _ _ _ 
              (has_limits_of_shape_of_has_products J C) (lim_clos J)⟩
-
-@[hott, instance]
-def subcat_has_product {J : Set} {sign : fo_signature} (f : J -> (Ω_structure sign)) : 
-  has_product f :=
-Ω_str_has_limit (discrete.functor f)
-
-/- A subtype of Ω-structures is closed under taking limits. -/
-@[hott]
-def Ω_str_subtype_is_limit_closed {J : Set} [precategory J] {sign : fo_signature} 
-  (P : signature_laws sign) (F : J ⥤ Ω_str_subtype P) : 
-  limit_closed_subtype (Ω_structure_laws_pred P) F :=
-begin
-  intro lc, apply prop_to_prop_resize, apply prod.mk,
-  { intros r x, apply prod.mk, 
-    { intro lc_rel_r_x, sorry },
-    { sorry } },
-  { sorry }
-end  
-
-/- The forgetful functor from a category of standard structures to the underlying category -/
-@[hott]
-def forget_str {C : Type u} [category.{v} C] (std_str : std_structure_on C) :
-  (std_structure std_str) ⥤ C :=
-begin
-  fapply functor.mk,  
-  { exact λ x, x.carrier },  -- map of objects
-  { intros x y f, exact f.1 },  -- map of morphisms
-  { intro x, exact idhom_std_C x },  -- preserves identity morphisms
-  { intros x y z f g, exact comp_hom_std_C f g }  -- preserves compositions of morphisms 
-end 
-
-/- The forgetful functor is faithful. -/
-@[hott]
-def forget_is_faithful {C : Type u} [category.{v} C] (std_str : std_structure_on C) :
-  is_faithful_functor _ _ (forget_str std_str) :=
-begin intros x y, exact pred_Set_map_is_inj _ end  
-
-/- The forgetful functor composed with a functor to a category of standard structures -/
-@[hott]
-def forget {J : Type.{u'}} [precategory.{v'} J] {C : Type u} [category.{v} C] 
-  {std_str : std_structure_on C} (F : J ⥤ std_structure std_str) : J ⥤ C :=
-F ⋙ (forget_str std_str)
 
 end category_theory.limits
 
