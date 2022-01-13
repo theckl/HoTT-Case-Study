@@ -3,13 +3,15 @@ types2      :   252
 prop_axioms :   636
 prop_logic  :   194
 sets
-  basic     :   630
+  basic     :   402
   finite    :   193
   subset    :   407
   axioms    :   340
   algebra   :   233
   quotients :   205
+  theories  :   475
 categories  
   basic     :   741
+  examples  :   624
               -----
-               4145
+               5015
