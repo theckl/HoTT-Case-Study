@@ -12,7 +12,7 @@ open hott.eq hott.is_trunc hott.trunc hott.set hott.subset
 
    As far as possible we copy the mathlib-code in [category_theory.limits]. -/
 
-namespace category_theory.limits
+namespace categories.limits
 
 set_option pp.universes false
 
@@ -210,7 +210,7 @@ def fan.mk {J : Set.{u'}} (C : Type u) [category.{v} C] {f : J → C} {P : C}
 cone.mk P (discrete.nat_trans _ _ p)
 
 @[hott, hsimp] 
-def pi.lift {J : Set.{u'}} (C : Type u) [category.{v} C] {f : J → C} [has_product f]
+def pi.lift {J : Set.{u'}} {C : Type u} [category.{v} C] {f : J → C} [has_product f]
   {P : C} (p : Π j, P ⟶ f j) : P ⟶ ∏ f :=
 (get_limit_cone (discrete.functor f)).is_limit.lift (fan.mk _ p)  
 
@@ -220,9 +220,9 @@ def pi.π {J : Set.{u'}} {C : Type u} [category.{v} C] (f : J → C) [has_produc
 (limit.cone (discrete.functor f)).π.app j 
 
 @[hott]
-def pi.hom_is_lift {J : Set.{u'}} (C : Type u) [category.{v} C] {f : J → C} 
+def pi.hom_is_lift {J : Set.{u'}} {C : Type u} [category.{v} C] {f : J → C} 
   [has_product f] {P : C} (h : P ⟶ ∏ f) : 
-  h = pi.lift C (λ j : J, h ≫ (pi.π _ j)) :=
+  h = pi.lift (λ j : J, h ≫ (pi.π _ j)) :=
 let p := λ j : J, h ≫ (pi.π f j),
     c := fan.mk _ p,
     lc := get_limit_cone (discrete.functor f) in     
@@ -235,7 +235,7 @@ end
 @[hott]
 def pi.lift_π_eq {J : Set.{u'}} (C : Type u) [category.{v} C] {f : J → C} 
   [has_product f] {P : C} (p : Π j : J, P ⟶ f j) : 
-  ∀ j : J, pi.lift C p ≫ pi.π _ j = p j :=
+  ∀ j : J, pi.lift p ≫ pi.π _ j = p j :=
 assume j, by apply is_limit.fac  
 
 /- `parallel_pair f g` is the diagram in `C` consisting of the two morphisms `f` and `g` with
@@ -404,7 +404,7 @@ def set_has_product {J : Set} (f : J -> Set) : has_product f :=
 @[hott]
 def Set_prod_sections {I : Set} {U : I -> Set} : (∏ U) = Sections U :=
 begin
-  change pred_Set {s ∈ Sections U | set_limit_pred (discrete.functor U) s} = Sections U, 
+  change pred_Set (λ s : Sections U, set_limit_pred (discrete.functor U) s) = Sections U, 
   have pred_eq : (λ s : Sections U, set_limit_pred (discrete.functor U) s) = (λ s, True), from
     begin 
       apply eq_of_homotopy, intro s, hsimp, apply prop_iff_eq, 
@@ -479,6 +479,6 @@ def subcat_has_products {C : Type u} [category.{v} C] {P : C -> trunctype.{0} -1
 ⟨λ J : Set, @subcat_has_limits_of_shape (discrete J) _ _ _ _ 
              (has_limits_of_shape_of_has_products J C) (lim_clos J)⟩
 
-end category_theory.limits
+end categories.limits
 
 end hott
