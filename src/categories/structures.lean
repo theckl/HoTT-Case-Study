@@ -1,10 +1,11 @@
-import sets.algebra init2 sets.axioms sets.theories categories.basic
+import sets.algebra init2 sets.axioms sets.theories categories.basic categories.limits
 
 universes v v' u u' w 
 hott_theory
 
 namespace hott
-open hott.eq hott.sigma hott.set hott.subset hott.is_trunc hott.is_equiv hott.equiv hott.categories 
+open hott.eq hott.sigma hott.set hott.subset hott.is_trunc hott.is_equiv hott.equiv 
+     hott.categories hott.categories.limits
 
 namespace categories
 
@@ -347,6 +348,38 @@ have idtoiso_eqv : ∀ x y : std_structure std_str, is_equiv (@idtoiso _ _ x y),
   by rwr idtoiso_eq x y at eqv; exact eqv, 
 category.mk idtoiso_eqv 
 
+/- The forgetful functor from a category of multi-sorted standard structures to the underlying 
+   category (which has products). -/
+@[hott]
+def forget_str {C : Type u} [category.{v} C] [has_products C] (std_str : std_structure_on C) :
+  (std_structure std_str) ⥤ C :=
+begin
+  fapply functor.mk,  
+  { intro str, exact @pi_obj _ _ _ str.carrier (has_product_of_has_products str.carrier) },  
+                                                                          -- map of objects
+  { intros str₁ str₂ f, exact pi.lift (λ x, (pi.π str₁.carrier x) ≫ f.1 x) },  
+                                                                         -- map of morphisms
+  { intro str, change pi.lift (λ (x : ↥(std_str.S)), pi.π str.carrier x ≫ 𝟙 (str.carrier x)) = _, 
+    have p : (λ x, pi.π str.carrier x ≫ 𝟙 (str.carrier x)) = 
+              λ x, 𝟙 (∏ str.carrier) ≫ pi.π str.carrier x, from
+      begin apply eq_of_homotopy, intro x, hsimp end, 
+    rwr p, apply eq.inverse, apply pi.hom_is_lift },  -- preserves identity morphisms
+  { intros str₁ str₂ str₃ f g, exact comp_hom_std_C f g }  -- preserves compositions of morphisms 
+end 
+
+/- The forgetful functor is faithful. -/
+@[hott]
+def forget_is_faithful {C : Type u} [category.{v} C] (std_str : std_structure_on C) :
+  is_faithful_functor _ _ (forget_str std_str) :=
+begin intros x y, exact pred_Set_map_is_inj _ end  
+
+/- The forgetful functor composed with a functor to a category of standard structures -/
+@[hott]
+def forget {J : Type.{u'}} [precategory.{v'} J] {C : Type u} [category.{v} C] 
+  {std_str : std_structure_on C} (F : J ⥤ std_structure std_str) : J ⥤ C :=
+F ⋙ (forget_str std_str)
+
+
 /- A criterion for a category of standard structures over a category with limits to have limits:
    - The limit cone of the underlying functor of a shape carries a structure.
    - The leg morphisms of this limit cone respect the structures.
@@ -418,30 +451,6 @@ def std_structure_has_limits_of_shape {J : Set.{u'}} [precategory.{v'} J] {C : T
   (lcd_F : Π F : J ⥤ (std_structure std_str), limit_cone_str_data (get_limit_cone (forget F))) : 
   has_limits_of_shape J (std_structure std_str) :=
 has_limits_of_shape.mk (λ F, str_has_limit F (lcd_F F))
-
-/- The forgetful functor from a category of standard structures to the underlying category -/
-@[hott]
-def forget_str {C : Type u} [category.{v} C] (std_str : std_structure_on C) :
-  (std_structure std_str) ⥤ C :=
-begin
-  fapply functor.mk,  
-  { exact λ x, x.carrier },  -- map of objects
-  { intros x y f, exact f.1 },  -- map of morphisms
-  { intro x, exact idhom_std_C x },  -- preserves identity morphisms
-  { intros x y z f g, exact comp_hom_std_C f g }  -- preserves compositions of morphisms 
-end 
-
-/- The forgetful functor is faithful. -/
-@[hott]
-def forget_is_faithful {C : Type u} [category.{v} C] (std_str : std_structure_on C) :
-  is_faithful_functor _ _ (forget_str std_str) :=
-begin intros x y, exact pred_Set_map_is_inj _ end  
-
-/- The forgetful functor composed with a functor to a category of standard structures -/
-@[hott]
-def forget {J : Type.{u'}} [precategory.{v'} J] {C : Type u} [category.{v} C] 
-  {std_str : std_structure_on C} (F : J ⥤ std_structure std_str) : J ⥤ C :=
-F ⋙ (forget_str std_str)
 
 
 open signature
