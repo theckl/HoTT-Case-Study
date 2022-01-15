@@ -364,18 +364,36 @@ begin
               λ x, 𝟙 (∏ str.carrier) ≫ pi.π str.carrier x, from
       begin apply eq_of_homotopy, intro x, hsimp end, 
     rwr p, apply eq.inverse, apply pi.hom_is_lift },  -- preserves identity morphisms
-  { intros str₁ str₂ str₃ f g, exact comp_hom_std_C f g }  -- preserves compositions of morphisms 
+  { intros str₁ str₂ str₃ f g, 
+    change pi.lift (λ x, pi.π str₁.carrier x ≫ (f ≫ g).fst x) = 
+           pi.lift (λ x, pi.π str₁.carrier x ≫ f.fst x) ≫ 
+                                                  pi.lift (λ x, pi.π str₂.carrier x ≫ g.fst x),
+    have p : (λ x, pi.π str₁.carrier x ≫ (f ≫ g).fst x) = 
+             (λ x, pi.lift (λ x, pi.π str₁.carrier x ≫ f.1 x) ≫ pi.π str₂.carrier x ≫ (g.1 x)), from 
+    begin 
+      apply eq_of_homotopy, intro x, change pi.π str₁.carrier x ≫ (f.1 x) ≫ (g.1 x) = _,
+      rwr <- precategory.assoc, 
+      change _ = pi.lift (λ x, pi.π str₁.carrier x ≫ f.fst x) ≫ pi.π str₂.carrier x ≫ g.fst x, 
+      rwr <- precategory.assoc, rwr pi.lift_π_eq
+    end,                       
+    rwr p, rwr pi.lift_fac (pi.lift (λ x, pi.π str₁.carrier x ≫ f.1 x)) 
+                           (λ x, pi.π str₂.carrier x ≫ g.1 x) }  
+                           -- preserves compositions of morphisms 
 end 
 
 /- The forgetful functor is faithful. -/
 @[hott]
-def forget_is_faithful {C : Type u} [category.{v} C] (std_str : std_structure_on C) :
-  is_faithful_functor _ _ (forget_str std_str) :=
-begin intros x y, exact pred_Set_map_is_inj _ end  
+def forget_is_faithful {C : Type u} [category.{v} C] [has_products C] 
+  (std_str : std_structure_on C) : is_faithful_functor _ _ (forget_str std_str) :=
+begin 
+  intros str₁ str₂ f₁ f₂ p, fapply sigma.sigma_eq, 
+  { apply eq_of_homotopy, intro x, sorry },
+  { apply pathover_of_tr_eq, exact is_prop.elim _ _ } 
+end  
 
 /- The forgetful functor composed with a functor to a category of standard structures -/
 @[hott]
-def forget {J : Type.{u'}} [precategory.{v'} J] {C : Type u} [category.{v} C] 
+def forget {J : Type.{u'}} [precategory.{v'} J] {C : Type u} [category.{v} C] [has_products C]
   {std_str : std_structure_on C} (F : J ⥤ std_structure std_str) : J ⥤ C :=
 F ⋙ (forget_str std_str)
 
@@ -388,8 +406,8 @@ F ⋙ (forget_str std_str)
    We first need to construct the underlying cone of a cone in the category of structures. -/
 @[hott, reducible]
 def str_cone_to_cone {J : Set.{u'}} [precategory.{v'} J] {C : Type u} [category.{v} C] 
-  {std_str : std_structure_on C} {F : J ⥤ (std_structure std_str)} (s : cone F) :
-  cone (forget F) :=
+  [has_products C] {std_str : std_structure_on C} {F : J ⥤ (std_structure std_str)} 
+  (s : cone F) : cone (forget F) :=
 begin 
   fapply cone.mk, 
   { exact s.X.1 },  -- vertex
@@ -404,7 +422,7 @@ end
    category at once, because we can change then easily to the most fitting construction. -/
 @[hott]
 structure limit_cone_str_data {J : Set.{u'}} [precategory.{v'} J] {C : Type u} 
-  [category.{v} C] {std_str : std_structure_on C} 
+  [category.{v} C] [has_products C] {std_str : std_structure_on C} 
   {F : J ⥤ (std_structure std_str)} (lc : limit_cone (forget F)) :=
 (lc_str : std_str.P (lc.cone.X)) 
 (lc_legs_H : Π (j : J), std_str.H lc_str ((F.obj j).str) (lc.cone.π.app j))
@@ -412,7 +430,7 @@ structure limit_cone_str_data {J : Set.{u'}} [precategory.{v'} J] {C : Type u}
 
 @[hott]
 def str_limit_cone {J : Set.{u'}} [precategory.{v'} J] {C : Type u} 
-  [category.{v} C] {std_str : std_structure_on C} 
+  [category.{v} C] [has_products C] {std_str : std_structure_on C} 
   {F : J ⥤ (std_structure.{v u w} std_str)} (lc : limit_cone (forget F))
   (lcd : limit_cone_str_data lc) : limit_cone F :=
 begin 
@@ -440,7 +458,7 @@ end
 
 @[hott]
 def str_has_limit {J : Set.{u'}} [precategory.{v'} J] {C : Type u} 
-  [category.{v} C] [has_limits_of_shape J C] {std_str : std_structure_on C} 
+  [category.{v} C] [has_products C] [has_limits_of_shape J C] {std_str : std_structure_on C} 
   (F : J ⥤ (std_structure std_str)) 
   (lcd : limit_cone_str_data (get_limit_cone (forget F))) : has_limit F :=
 has_limit.mk (str_limit_cone (get_limit_cone (forget F)) lcd)                                           
