@@ -238,6 +238,16 @@ def pi.lift_π_eq {J : Set.{u'}} (C : Type u) [category.{v} C] {f : J → C}
   ∀ j : J, pi.lift p ≫ pi.π _ j = p j :=
 assume j, by apply is_limit.fac  
 
+@[hott]
+def pi.lift_fac {J : Set.{u'}} {C : Type u} [category.{v} C] {f : J → C} 
+  [has_product f] {P Q : C} (g : Q ⟶ P) (h : Π j : J, P ⟶ f j) :
+  pi.lift (λ j, g ≫ h j) = g ≫ pi.lift h :=
+let p := λ j : J, g ≫ h j, c := fan.mk _ p, lc := get_limit_cone (discrete.functor f) in  
+begin 
+  apply eq.inverse, apply is_limit.uniq lc.is_limit c, intro j, 
+  rwr precategory.assoc, change g ≫ pi.lift h ≫ pi.π _ j = c.π.app j, rwr pi.lift_π_eq 
+end  
+
 /- `parallel_pair f g` is the diagram in `C` consisting of the two morphisms `f` and `g` with
     common domain and codomain. -/
 @[hott, hsimp]
