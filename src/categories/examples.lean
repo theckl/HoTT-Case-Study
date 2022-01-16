@@ -203,6 +203,18 @@ begin
   { intros x y z f g, hsimp, refl }
 end
 
+/- The type of functors between a small precategory and a precategory has a precategory 
+   structure: The morphisms are the natural transformations, and the type of natural 
+   transformations between two given functors is a set. -/
+@[hott, instance]
+def nat_trans_is_set [is_set C] [precategory.{v} C] [precategory.{v'} D] :
+  Π F G : C ⥤ D, is_set (F ⟹ G) :=
+sorry  
+
+@[hott, instance]
+def functor_has_hom [is_set C] [precategory.{v} C] [precategory.{v'} D] : has_hom (C ⥤ D) :=
+  has_hom.mk (λ F G : C ⥤ D, to_Set (F ⟹ G))   
+
 /- The power set `𝒫 A` of a set `A` is a precategory, with inclusions of 
    subsets as morphisms. -/
 @[hott, instance]   
