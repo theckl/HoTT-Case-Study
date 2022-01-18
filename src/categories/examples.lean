@@ -206,13 +206,23 @@ end
 /- The type of functors between a small precategory and a precategory has a precategory 
    structure: The morphisms are the natural transformations, and the type of natural 
    transformations between two given functors is a set. -/
+@[hott]
+def nat_trans_eq [precategory.{v} C] [precategory.{v'} D] {F G : C ⥤ D} {φ ψ : F ⟹ G} :
+  (φ.app = ψ.app) -> φ = ψ :=
+begin intros, hinduction φ, hinduction ψ, sorry end
+
+@[hott]
+def nat_trans_eq_eta [precategory.{v} C] [precategory.{v'} D] {F G : C ⥤ D} {φ ψ : F ⟹ G}
+  (p : φ = ψ) : nat_trans_eq (ap nat_trans.app p) = p :=
+begin hinduction p, hinduction φ, rwr ap_idp, sorry end  
+
 @[hott, instance]
 def nat_trans_is_set [is_set C] [precategory.{v} C] [precategory.{v'} D] :
   Π F G : C ⥤ D, is_set (F ⟹ G) :=
 begin 
-  intros F G, apply is_set.mk, 
-  intros s t, hinduction s with appₛ natₛ, hinduction t with appₜ natₜ, 
-  intros p q, sorry 
+  intros F G, apply is_set.mk, intros s t p q,  
+  rwr <- nat_trans_eq_eta p, rwr <- nat_trans_eq_eta q, 
+  apply ap nat_trans_eq, exact is_set.elim _ _
 end  
 
 @[hott, instance]
