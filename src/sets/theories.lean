@@ -425,10 +425,9 @@ structure sequent (sign : fo_signature) :=
 
 @[hott, hsimp]
 def sequent_eq {sign : fo_signature} {seq₁ seq₂ : sequent sign} :
-  Π (pct : seq₁.cont = seq₂.cont) (pa : seq₁.ass = seq₂.ass) (pcn : seq₁.con = seq₂.con), 
-    seq₁ = seq₂ :=
+  (seq₁.cont = seq₂.cont) -> (seq₁.ass = seq₂.ass) -> (seq₁.con = seq₂.con) -> seq₁ = seq₂ :=
 begin 
-  intros, hinduction seq₁, hinduction seq₂, apply apd000011 sequent.mk pct pa pcn, 
+  intros, hinduction seq₁, hinduction seq₂, apply apd000011 sequent.mk a a_1 a_2, 
   { apply pathover_of_tr_eq, exact is_prop.elim _ _ },
   { apply pathover_of_tr_eq, exact is_prop.elim _ _ } 
 end 
