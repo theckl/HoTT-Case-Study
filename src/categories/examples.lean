@@ -209,7 +209,11 @@ end
 @[hott, instance]
 def nat_trans_is_set [is_set C] [precategory.{v} C] [precategory.{v'} D] :
   Π F G : C ⥤ D, is_set (F ⟹ G) :=
-sorry  
+begin 
+  intros F G, apply is_set.mk, 
+  intros s t, hinduction s with appₛ natₛ, hinduction t with appₜ natₜ, 
+  intros p q, sorry 
+end  
 
 @[hott, instance]
 def functor_has_hom [is_set C] [precategory.{v} C] [precategory.{v'} D] : has_hom (C ⥤ D) :=
