@@ -209,12 +209,27 @@ end
 @[hott]
 def nat_trans_eq [precategory.{v} C] [precategory.{v'} D] {F G : C ⥤ D} {φ ψ : F ⟹ G} :
   (φ.app = ψ.app) -> φ = ψ :=
-begin intros, hinduction φ, hinduction ψ, sorry end
+begin 
+  intros, hinduction φ, hinduction ψ, apply apd011 nat_trans.mk a, 
+  apply pathover_of_tr_eq, apply eq_of_homotopy3, intros c₁ c₂ f, exact is_prop.elim _ _ 
+end
+
+@[hott]
+def nat_trans_eq_idp [precategory.{v} C] [precategory.{v'} D] {F G : C ⥤ D} (φ : F ⟹ G) :
+  @nat_trans_eq _ _ _ _ _ _ φ φ idp = idp :=
+begin 
+  hinduction φ, hsimp, 
+  change apd011 nat_trans.mk idp (pathover_idp_of_eq _ _) = _, hsimp,
+  have H : (λ (c₁ c₂ : C) (f : c₁ ⟶ c₂), is_prop.elim (naturality f) (naturality f)) =
+           λ (c₁ c₂ : C) (f : ↥(c₁ ⟶ c₂)), idp, from 
+  begin apply eq_of_homotopy3, intros c₁ c₂ f,  exact is_prop_elim_self _ end, 
+  rwr H, rwr eq_of_homotopy3_id 
+end
 
 @[hott]
 def nat_trans_eq_eta [precategory.{v} C] [precategory.{v'} D] {F G : C ⥤ D} {φ ψ : F ⟹ G}
   (p : φ = ψ) : nat_trans_eq (ap nat_trans.app p) = p :=
-begin hinduction p, hinduction φ, rwr ap_idp, sorry end  
+begin hinduction p, hinduction φ, rwr ap_idp, rwr nat_trans_eq_idp _ end  
 
 @[hott, instance]
 def nat_trans_is_set [is_set C] [precategory.{v} C] [precategory.{v'} D] :
@@ -228,6 +243,27 @@ end
 @[hott, instance]
 def functor_has_hom [is_set C] [precategory.{v} C] [precategory.{v'} D] : has_hom (C ⥤ D) :=
   has_hom.mk (λ F G : C ⥤ D, to_Set (F ⟹ G))   
+
+@[hott, instance]
+def functor_cat_struct [is_set C] [precategory.{v} C] [precategory.{v'} D] : 
+  category_struct (C ⥤ D) :=
+begin 
+  fapply category_struct.mk,
+  { intro F, fapply nat_trans.mk, 
+    { intro c, exact 𝟙 (F.obj c) },
+    { intros c c' f, hsimp } },
+  { intros F G H s t, fapply nat_trans.mk, 
+    { intro c, exact s.app c ≫ t.app c },
+    { intros c c' f, rwr <- precategory.assoc (F.map f) _ _, 
+      rwr nat_trans.naturality, rwr precategory.assoc (s.app c) _ _, 
+      rwr nat_trans.naturality, rwr precategory.assoc (s.app c) } } 
+end  
+
+@[hott, instance]
+def funct_precategory [is_set C] [precategory.{v} C] [precategory.{v'} D] :
+  precategory (C ⥤ D) :=
+sorry  
+
 
 /- The power set `𝒫 A` of a set `A` is a precategory, with inclusions of 
    subsets as morphisms. -/
