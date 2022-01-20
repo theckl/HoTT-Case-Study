@@ -238,9 +238,22 @@ infixr ` ⥤ ` :26 := functor
 attribute [hsimp] functor.map_id
 attribute [hsimp] functor.map_comp
 
+/- Functors are equal if their maps of objects and arrows are equal. -/
+@[hott]
+def functor_eq [precategory.{v} C] [precategory.{v'} D] {F G : C ⥤ D} :
+  Π (p : F.obj = G.obj), 
+    (F.map =[p; λ f : C -> D, Π (x y : C), (x ⟶ y) -> (f x ⟶ f y)] G.map) -> F = G :=
+begin 
+  hinduction F, hinduction G, hsimp, intros p, hinduction p, intro q, 
+  fapply apd01111_v2 functor.mk idp q,
+  { apply pathover_of_tr_eq, exact is_prop.elim _ _ },
+  { apply pathover_of_tr_eq, exact is_prop.elim _ _ }
+end      
+
 @[hott]
 def is_faithful_functor [precategory.{v} C] [precategory.{v'} D] (F : C ⥤ D) := 
   Π {x y : C}, is_set_injective (@functor.map C D _ _ F x y) 
+
 
 @[hott, reducible]
 def constant_functor [precategory.{v} C] [precategory.{v'} D] (d : D) : 
@@ -248,7 +261,6 @@ def constant_functor [precategory.{v} C] [precategory.{v'} D] (d : D) :
 have id_hom_eq : ∀ d : D, 𝟙 d = 𝟙 d ≫ 𝟙 d, by intro d; hsimp,  
 functor.mk (λ c : C, d) (λ c₁ c₂ f, 𝟙 d) (λ c, rfl) 
   (λ c₁ c₂ c₃ f g, (id_hom_eq d))
-
 
 @[hott]
 def constant_functor_map [precategory.{v} C] [precategory.{v'} D] (d : D) :
