@@ -260,10 +260,38 @@ begin
 end  
 
 @[hott, instance]
-def funct_precategory [is_set C] [precategory.{v} C] [precategory.{v'} D] :
+def functor_precategory [is_set C] [precategory.{v} C] [precategory.{v'} D] :
   precategory (C ⥤ D) :=
-sorry  
+begin
+  fapply precategory.mk,
+  { intros F G s, apply nat_trans_eq, apply eq_of_homotopy, intro c, 
+    change 𝟙 (F.obj c) ≫ s.app c = _, rwr precategory.id_comp },
+  { intros F G s, apply nat_trans_eq, apply eq_of_homotopy, intro c, 
+    change s.app c ≫ 𝟙 (G.obj c) = _, rwr precategory.comp_id },
+  { intros E F G H s t u, apply nat_trans_eq, apply eq_of_homotopy, intro c, 
+    change (s.app c ≫ t.app c) ≫ u.app c = s.app c ≫ t.app c ≫ u.app c, 
+    rwr precategory.assoc }
+end  
 
+@[hott]
+def functor_iso_to_isos [is_set C] [precategory.{v} C] [precategory.{v'} D] {F G : C ⥤ D} :
+  (F ≅ G) -> Π c : C, F.obj c ≅ G.obj c :=
+begin 
+  intros i c, fapply iso.mk,
+  { exact i.hom.app c },
+  { exact i.inv.app c },
+  { change (i.inv ≫ i.hom).app c = _, rwr i.r_inv },
+  { change (i.hom ≫ i.inv).app c = _, rwr i.l_inv }
+end     
+
+@[hott]
+def functor_isotoid [is_set C] [precategory.{v} C] [precategory.{v'} D] {F G : C ⥤ D} :
+  (F ≅ G) -> F = G :=
+begin
+  intro i, fapply functor_eq, 
+  { sorry },
+  { sorry }
+end    
 
 /- The power set `𝒫 A` of a set `A` is a precategory, with inclusions of 
    subsets as morphisms. -/
