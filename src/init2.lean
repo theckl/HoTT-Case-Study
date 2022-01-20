@@ -132,7 +132,15 @@ def apd01111 {A F : Type _} {B C D E : A -> Type _}
   (pE : e =[pA] e') :
   h a b c d e = h a' b' c' d' e' :=
 begin hinduction pA, hinduction pB, hinduction pC, hinduction pD,
-      hinduction pE, refl end  
+      hinduction pE, refl end 
+
+@[hott]
+def apd01111_v2 {A E : Type _} {B : A -> Type _} {C D : Π (a : A), B a -> Type _} 
+  (f : Π (a : A) (b : B a) (c : C a b) (d : D a b), E) {a₁ a₂ : A} {b₁ : B a₁} {b₂ : B a₂}
+  {c₁ : C a₁ b₁} {c₂ : C a₂ b₂} {d₁ : D a₁ b₁} {d₂ : D a₂ b₂} (pA : a₁ = a₂) 
+  (pB : b₁ =[pA] b₂) (pC : c₁ =[apd011 C pA pB; id] c₂) (pD : d₁ =[apd011 D pA pB; id] d₂) :
+  f a₁ b₁ c₁ d₁ = f a₂ b₂ c₂ d₂ :=
+begin hinduction pA, hinduction pB, hinduction pC, hinduction pD, refl end
 
 @[hott]
 def apd000011 {A B C F : Type _} {D : B -> A -> Type _} {E : C -> A -> Type _} 
