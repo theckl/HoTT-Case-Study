@@ -1,9 +1,9 @@
-init2       :   313
+init2       :   321
 types2      :   252
 prop_axioms :   636
 prop_logic  :   194
 sets
-  basic     :   402
+  basic     :   414
   finite    :   193
   subset    :   407
   axioms    :   340
@@ -15,4 +15,4 @@ categories
   examples  :   624
   limits    :   494
               -----
-               5508
+               5528
