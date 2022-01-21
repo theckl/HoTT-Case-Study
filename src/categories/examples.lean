@@ -285,12 +285,20 @@ begin
 end     
 
 @[hott]
-def functor_isotoid [is_set C] [precategory.{v} C] [precategory.{v'} D] {F G : C ⥤ D} :
+def functor_isotoid [is_set C] [precategory.{v} C] [category.{v'} D] {F G : C ⥤ D} :
   (F ≅ G) -> F = G :=
 begin
+  have Q : Π (H₂ : C -> D) (p : F.obj = H₂) (c₁ c₂ : C) (h : c₁ ⟶ c₂), 
+               (p ▸[λ H : C -> D, Π (c₁ c₂ : C) (h : c₁ ⟶ c₂), H c₁ ⟶ H c₂] F.map) c₁ c₂ h = 
+               (idtoiso (apd10 p c₁)).inv ≫ F.map h ≫ (idtoiso (apd10 p c₂)).hom, from 
+    begin intros H₂ p c₁ c₂ h, hinduction p, hsimp end,
   intro i, fapply functor_eq, 
-  { sorry },
-  { sorry }
+  { apply eq_of_homotopy, intro c, exact category.isotoid (functor_iso_to_isos i c) },
+  { apply pathover_of_tr_eq, apply eq_of_homotopy3, intros c₁ c₂ h, rwr Q, 
+    rwr homotopy_eq_rinv, 
+    change (idtoiso (idtoiso⁻¹ᶠ (functor_iso_to_isos i c₁)))⁻¹ʰ ≫ _ ≫
+           (idtoiso (idtoiso⁻¹ᶠ (functor_iso_to_isos i c₂))).hom = _, 
+    rwr category.idtoiso_rinv, rwr category.idtoiso_rinv, sorry }
 end    
 
 /- The power set `𝒫 A` of a set `A` is a precategory, with inclusions of 
