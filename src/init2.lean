@@ -217,6 +217,11 @@ def fn_ev_tr_tr_fn_ev {A : Type _} {B C : A -> Type _} {f : Π (a : A), B a -> C
 begin hinduction p, refl end  
 
 @[hott]
+def homotopy_eq_rinv {A B : Type _} {f g : A -> B} {H : f ~ g} :
+  apd10 (eq_of_homotopy H) = H :=
+@is_equiv.right_inv _ _ _ (eq_equiv_homotopy f g).to_is_equiv H  
+
+@[hott]
 def dep_eq_of_homotopy {A : Type _} {P : A -> A -> Type _} {b b' : A} (p : b = b') 
   (f : Π a : A, P b a) (f' : Π a : A, P b' a) : 
   (Π a : A, f a =[p; λ b : A, P b a] f' a) -> f =[p; λ b : A, Π a : A, P b a] f' :=
