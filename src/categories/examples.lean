@@ -285,11 +285,17 @@ begin
 end     
 
 @[hott]
+def functor_idtoiso_comp [is_set C] [precategory.{v} C] [precategory.{v'} D] {F G : C ⥤ D} 
+  (p : F = G) (c : C) : 
+  nat_trans.app (idtoiso p).hom c = (idtoiso (apd10 (ap functor.obj p) c)).hom :=
+begin hinduction p, rwr idtoiso_refl_eq end  
+
+@[hott]
 def functor_isotoid [is_set C] [precategory.{v} C] [category.{v'} D] {F G : C ⥤ D} :
   (F ≅ G) -> F = G :=
 begin
   have Q : Π (H₂ : C -> D) (p : F.obj = H₂) (c₁ c₂ : C) (h : c₁ ⟶ c₂), 
-               (p ▸[λ H : C -> D, Π (c₁ c₂ : C) (h : c₁ ⟶ c₂), H c₁ ⟶ H c₂] F.map) c₁ c₂ h = 
+            (p ▸[λ H : C -> D, Π (c₁ c₂ : C) (h : c₁ ⟶ c₂), H c₁ ⟶ H c₂] F.map) c₁ c₂ h = 
                (idtoiso (apd10 p c₁)).inv ≫ F.map h ≫ (idtoiso (apd10 p c₂)).hom, from 
     begin intros H₂ p c₁ c₂ h, hinduction p, hsimp end,
   intro i, fapply functor_eq, 
@@ -298,8 +304,23 @@ begin
     rwr homotopy_eq_rinv, 
     change (idtoiso (idtoiso⁻¹ᶠ (functor_iso_to_isos i c₁)))⁻¹ʰ ≫ _ ≫
            (idtoiso (idtoiso⁻¹ᶠ (functor_iso_to_isos i c₂))).hom = _, 
-    rwr category.idtoiso_rinv, rwr category.idtoiso_rinv, sorry }
-end    
+    rwr category.idtoiso_rinv, rwr category.idtoiso_rinv, apply eq.inverse, 
+    apply iso_move_lr, change i.hom.app c₁ ≫ _ = _ ≫ i.hom.app c₂, rwr i.hom.naturality }
+end     
+
+@[hott, instance]
+def functor_category [is_set C] [precategory.{v} C] [category.{v'} D] : category (C ⥤ D) :=
+begin
+  apply category.mk, intros F G, fapply adjointify, 
+  { exact functor_isotoid },
+  { intro i, apply hom_eq_to_iso_eq, apply nat_trans_eq, apply eq_of_homotopy, intro c, 
+    rwr functor_idtoiso_comp, 
+    change (idtoiso (@apd10 _ _ F.obj G.obj (ap functor.obj (functor_eq _ _ _ _)) c)).hom = _,
+    rwr functor_eq_obj, rwr homotopy_eq_rinv,
+    change (idtoiso (idtoiso⁻¹ᶠ (functor_iso_to_isos i c))).hom = _, 
+    rwr category.idtoiso_rinv },
+  { intro p, hinduction p, rwr idtoiso_refl_eq, sorry }
+end
 
 /- The power set `𝒫 A` of a set `A` is a precategory, with inclusions of 
    subsets as morphisms. -/
