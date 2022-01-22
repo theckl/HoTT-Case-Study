@@ -1,4 +1,4 @@
-init2       :   326
+init2       :   338
 types2      :   252
 prop_axioms :   636
 prop_logic  :   194
@@ -11,8 +11,8 @@ sets
   quotients :   205
   theories  :   474
 categories  
-  basic     :   741
+  basic     :   429
   examples  :   624
   limits    :   494
               -----
-               5533
+               5232
