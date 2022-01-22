@@ -238,17 +238,49 @@ infixr ` ⥤ ` :26 := functor
 attribute [hsimp] functor.map_id
 attribute [hsimp] functor.map_comp
 
+@[hott]
+def functor_eta [precategory.{v} C] [precategory.{v'} D] (F : C ⥤ D) : 
+  F = functor.mk F.obj F.map F.map_id F.map_comp :=
+begin hinduction F, refl end  
+
+@[hott]
+def functor_obj [precategory.{v} C] [precategory.{v'} D] (o : C -> D) :
+  Π m mi mc, functor.obj (functor.mk o m mi mc) = o := assume m mi mc, @idp _ o 
+
 /- Functors are equal if their maps of objects and arrows are equal. -/
 @[hott]
 def functor_eq [precategory.{v} C] [precategory.{v'} D] {F G : C ⥤ D} :
   Π (p : F.obj = G.obj), 
     (F.map =[p; λ f : C -> D, Π (x y : C), (x ⟶ y) -> (f x ⟶ f y)] G.map) -> F = G :=
 begin 
-  hinduction F, hinduction G, hsimp, intros p, hinduction p, intro q, 
-  fapply apd01111_v2 functor.mk idp q,
+  intros p q, rwr functor_eta C D F, rwr functor_eta C D G,  
+  fapply apd01111_v2 functor.mk p q,
   { apply pathover_of_tr_eq, exact is_prop.elim _ _ },
   { apply pathover_of_tr_eq, exact is_prop.elim _ _ }
-end      
+end  
+
+#print functor_eq
+set_option pp.implicit true
+
+@[hott]
+def functor_eq_idp [precategory.{v} C] [precategory.{v'} D] {F : C ⥤ D} :
+  functor_eq C D (@idp _ F.obj) idpo = idp :=
+begin                                         
+  rwr functor_eta C D F,  
+  change (functor_eta C D F)⁻¹ ▸ (functor_eta C D F)⁻¹ ▸ (apd01111_v2 functor.mk idp idpo 
+          (pathover_of_tr_eq (is_prop.elim _ _)) (pathover_of_tr_eq (is_prop.elim _ _))) = _,
+  sorry 
+end
+
+@[hott]
+def functor_eq_obj [precategory.{v} C] [precategory.{v'} D] {F G : C ⥤ D} :
+  Π (p : F.obj = G.obj) q, ap functor.obj (functor_eq C D p q) = p :=
+begin 
+  hinduction F, hinduction G, hsimp, intros p q, hinduction p, hinduction q, 
+  change ap functor.obj (apd01111_v2 functor.mk idp idpo 
+          (pathover_of_tr_eq (is_prop.elim _ _)) (pathover_of_tr_eq (is_prop.elim _ _))) = _,
+  rwr ap_apd01111_v2 functor.mk _ _ _ _ functor.obj (functor_obj C D)
+end    
 
 @[hott]
 def is_faithful_functor [precategory.{v} C] [precategory.{v'} D] (F : C ⥤ D) := 
