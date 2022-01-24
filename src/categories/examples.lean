@@ -284,6 +284,11 @@ begin
   { change (i.hom ≫ i.inv).app c = _, rwr i.l_inv }
 end     
 
+@[hott] 
+def functor_isoid_to_isoids [is_set C] [precategory.{v} C] [precategory.{v'} D] {F : C ⥤ D} :
+  Π (c : C), functor_iso_to_isos (id_is_iso F) c = id_is_iso (F.obj c) :=
+sorry  
+
 @[hott]
 def functor_idtoiso_comp [is_set C] [precategory.{v} C] [precategory.{v'} D] {F G : C ⥤ D} 
   (p : F = G) (c : C) : 
@@ -319,7 +324,13 @@ begin
     rwr functor_eq_obj, rwr homotopy_eq_rinv,
     change (idtoiso (idtoiso⁻¹ᶠ (functor_iso_to_isos i c))).hom = _, 
     rwr category.idtoiso_rinv },
-  { intro p, hinduction p, rwr idtoiso_refl_eq, sorry }
+  { intro p, hinduction p, rwr idtoiso_refl_eq, change functor_eq C D _ _ = idp, 
+    rwr <- functor_eq_idp, fapply apd011 (functor_eq C D), 
+    { change eq_of_homotopy (λ (c : C), category.isotoid 
+                               (@functor_iso_to_isos C _ _ _ _ _ _ (id_is_iso F) c)) = idp,
+      
+      sorry },
+    { sorry } }
 end
 
 /- The power set `𝒫 A` of a set `A` is a precategory, with inclusions of 
