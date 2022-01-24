@@ -241,7 +241,17 @@ attribute [hsimp] functor.map_comp
 @[hott]
 def functor_eta [precategory.{v} C] [precategory.{v'} D] (F : C ⥤ D) : 
   F = functor.mk F.obj F.map F.map_id F.map_comp :=
-begin hinduction F, refl end  
+begin hinduction F, refl end 
+
+@[hott]
+def functor_eta_mk [precategory.{v} C] [precategory.{v'} D] :
+  Π obj map map_id map_comp, functor_eta C D (functor.mk obj map map_id map_comp) = idp :=
+assume obj map map_id map_comp, rfl  
+
+@[hott]
+def functor_mk_obj [precategory.{v} C] [precategory.{v'} D] :
+  Π obj map map_id map_comp, @functor.obj C D _ _ (functor.mk obj map map_id map_comp) = obj :=
+assume obj map map_id map_comp, rfl   
 
 /- Functors are equal if their maps of objects and arrows are equal. -/
 @[hott]
@@ -283,10 +293,15 @@ begin hinduction F, rwr functor_eq_idp' end
 @[hott]
 def functor_eq_obj [precategory.{v} C] [precategory.{v'} D] {F G : C ⥤ D} :
   Π (p : F.obj = G.obj) q, (ap functor.obj (functor_eq C D p q)) = p :=
-begin  
-  hinduction F, hinduction G, hsimp, intros p q, hinduction p, hinduction q, 
-  
-  rwr functor_eq_idp'
+begin 
+  intros p q, 
+  change (ap _ ((functor_eta C D F) ⬝ (apd01111_v2 functor.mk p q 
+          (pathover_of_tr_eq (is_prop.elim _ _))  (pathover_of_tr_eq (is_prop.elim _ _)))
+        ⬝ (functor_eta C D G)⁻¹)) = p, 
+  rwr ap_con, rwr ap_con, hinduction F, hinduction G, 
+  rwr functor_eta_mk, rwr functor_eta_mk, rwr idp_inv, rwr ap_idp, rwr ap_idp, rwr con_idp,
+  rwr idp_con, rwr ap_apd01111_v2 _ _ _ _ _ _ (functor_mk_obj C D),  
+  change idp ⬝ p ⬝ idp⁻¹ = p, rwr idp_inv, rwr con_idp, rwr idp_con  
 end    
 
 @[hott]
