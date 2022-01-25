@@ -203,7 +203,7 @@ begin
   { intros x y z f g, hsimp, refl }
 end
 
-/- The type of functors between a small precategory and a precategory has a precategory 
+/- The type of functors between two precategories has a precategory 
    structure: The morphisms are the natural transformations, and the type of natural 
    transformations between two given functors is a set. -/
 @[hott]
@@ -232,7 +232,7 @@ def nat_trans_eq_eta [precategory.{v} C] [precategory.{v'} D] {F G : C ⥤ D} {�
 begin hinduction p, hinduction φ, rwr ap_idp, rwr nat_trans_eq_idp _ end  
 
 @[hott, instance]
-def nat_trans_is_set [is_set C] [precategory.{v} C] [precategory.{v'} D] :
+def nat_trans_is_set [precategory.{v} C] [precategory.{v'} D] :
   Π F G : C ⥤ D, is_set (F ⟹ G) :=
 begin 
   intros F G, apply is_set.mk, intros s t p q,  
@@ -241,11 +241,11 @@ begin
 end  
 
 @[hott, instance]
-def functor_has_hom [is_set C] [precategory.{v} C] [precategory.{v'} D] : has_hom (C ⥤ D) :=
+def functor_has_hom [precategory.{v} C] [precategory.{v'} D] : has_hom (C ⥤ D) :=
   has_hom.mk (λ F G : C ⥤ D, to_Set (F ⟹ G))   
 
 @[hott, instance]
-def functor_cat_struct [is_set C] [precategory.{v} C] [precategory.{v'} D] : 
+def functor_cat_struct [precategory.{v} C] [precategory.{v'} D] : 
   category_struct (C ⥤ D) :=
 begin 
   fapply category_struct.mk,
@@ -260,7 +260,7 @@ begin
 end  
 
 @[hott, instance]
-def functor_precategory [is_set C] [precategory.{v} C] [precategory.{v'} D] :
+def functor_precategory [precategory.{v} C] [precategory.{v'} D] :
   precategory (C ⥤ D) :=
 begin
   fapply precategory.mk,
@@ -273,8 +273,9 @@ begin
     rwr precategory.assoc }
 end  
 
+/- If the target of the functors is a category, the precategory of functors is a category. -/
 @[hott]
-def functor_iso_to_isos [is_set C] [precategory.{v} C] [precategory.{v'} D] {F G : C ⥤ D} :
+def functor_iso_to_isos [precategory.{v} C] [precategory.{v'} D] {F G : C ⥤ D} :
   (F ≅ G) -> Π c : C, F.obj c ≅ G.obj c :=
 begin 
   intros i c, fapply iso.mk,
@@ -285,18 +286,18 @@ begin
 end     
 
 @[hott] 
-def functor_isoid_to_isoids [is_set C] [precategory.{v} C] [precategory.{v'} D] {F : C ⥤ D} :
+def functor_isoid_to_isoids [precategory.{v} C] [precategory.{v'} D] {F : C ⥤ D} :
   Π (c : C), functor_iso_to_isos (id_is_iso F) c = id_is_iso (F.obj c) :=
-sorry  
+begin intro c, apply hom_eq_to_iso_eq, refl end  
 
 @[hott]
-def functor_idtoiso_comp [is_set C] [precategory.{v} C] [precategory.{v'} D] {F G : C ⥤ D} 
+def functor_idtoiso_comp [precategory.{v} C] [precategory.{v'} D] {F G : C ⥤ D} 
   (p : F = G) (c : C) : 
   nat_trans.app (idtoiso p).hom c = (idtoiso (apd10 (ap functor.obj p) c)).hom :=
 begin hinduction p, rwr idtoiso_refl_eq end  
 
 @[hott]
-def functor_isotoid [is_set C] [precategory.{v} C] [category.{v'} D] {F G : C ⥤ D} :
+def functor_isotoid [precategory.{v} C] [category.{v'} D] {F G : C ⥤ D} :
   (F ≅ G) -> F = G :=
 begin
   have Q : Π (H₂ : C -> D) (p : F.obj = H₂) (c₁ c₂ : C) (h : c₁ ⟶ c₂), 
@@ -314,7 +315,7 @@ begin
 end     
 
 @[hott, instance]
-def functor_category [is_set C] [precategory.{v} C] [category.{v'} D] : category (C ⥤ D) :=
+def functor_category [precategory.{v} C] [category.{v'} D] : category (C ⥤ D) :=
 begin
   apply category.mk, intros F G, fapply adjointify, 
   { exact functor_isotoid },
@@ -327,10 +328,11 @@ begin
   { intro p, hinduction p, rwr idtoiso_refl_eq, change functor_eq C D _ _ = idp, 
     rwr <- functor_eq_idp, fapply apd011 (functor_eq C D), 
     { change eq_of_homotopy (λ (c : C), category.isotoid 
-                               (@functor_iso_to_isos C _ _ _ _ _ _ (id_is_iso F) c)) = idp,
-      
-      sorry },
-    { sorry } }
+                               (@functor_iso_to_isos C _ _ _ _ _  (id_is_iso F) c)) = idpath _,
+      rwr <- eq_of_homotopy_idp, apply ap eq_of_homotopy, apply eq_of_homotopy, intro c, 
+      change category.isotoid (functor_iso_to_isos (id_is_iso F) c) = idpath (F.obj c),
+      rwr functor_isoid_to_isoids, rwr isotoid_id_refl },
+    { apply pathover_of_tr_eq, exact is_prop.elim _ _ } }
 end
 
 /- The power set `𝒫 A` of a set `A` is a precategory, with inclusions of 
