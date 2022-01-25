@@ -63,9 +63,10 @@ have f_eq : f a₁ = f a₂, from g_inj (f a₁) (f a₂) gf_eq,
 f_inj a₁ a₂ f_eq
 
 /- Maps between two given sets are sets. 
-   Looks like a HoTT-ism, but is actually a rule to construct sets from known sets. -/
+   Looks like a HoTT-ism, but is actually a rule to construct sets from known sets. 
+   The construction even works if the source of the map is just a type. -/
 @[hott, instance]
-def is_set_map {A : Set} {B : Set} : is_set (A -> B) :=
+def is_set_map {A : Type _} {B : Set} : is_set (A -> B) :=
 have H : forall (f g : A -> B) (p q : f = g), p = q, from   
   assume f g p q, 
   have eq_eqv_hom : (f = g) ≃ (f ~ g), from 
@@ -81,7 +82,7 @@ is_set.mk (A -> B) H
 
 /- The dependent version; the bundled set will yield the categorical product of sets. -/
 @[hott, instance]
-def is_set_dmap {A : Set} {B : A -> Set} : is_set (Π (a : A), B a) :=
+def is_set_dmap {A : Type _} {B : A -> Set} : is_set (Π (a : A), B a) :=
   have H : forall (f g : Π (a : A), B a) (p q : f = g), p = q, from 
     assume f g p q, 
     have eq_eqv_hom : (f = g) ≃ (f ~ g), from 
