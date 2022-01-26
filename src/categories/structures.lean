@@ -349,52 +349,37 @@ have idtoiso_eqv : ∀ x y : std_structure std_str, is_equiv (@idtoiso _ _ x y),
 category.mk idtoiso_eqv 
 
 /- The forgetful functor from a category of multi-sorted standard structures to the underlying 
-   category (which has products). -/
+   product category, with one object of the underlying category as a factor for each sort. 
+   
+   The product category is implemented as the functor category from the discrete set of sorts 
+   to the underlying category. -/
 @[hott]
-def forget_str {C : Type u} [category.{v} C] [has_products C] (std_str : std_structure_on C) :
-  (std_structure std_str) ⥤ C :=
+def forget_str {C : Type u} [category.{v} C] (std_str : std_structure_on C) :
+  (std_structure std_str) ⥤ ((discrete std_str.S) ⥤ C) :=
 begin
   fapply functor.mk,  
-  { intro str, exact @pi_obj _ _ _ str.carrier (has_product_of_has_products str.carrier) },  
-                                                                          -- map of objects
-  { intros str₁ str₂ f, exact pi.lift (λ x, (pi.π str₁.carrier x) ≫ f.1 x) },  
-                                                                         -- map of morphisms
-  { intro str, change pi.lift (λ (x : ↥(std_str.S)), pi.π str.carrier x ≫ 𝟙 (str.carrier x)) = _, 
-    have p : (λ x, pi.π str.carrier x ≫ 𝟙 (str.carrier x)) = 
-              λ x, 𝟙 (∏ str.carrier) ≫ pi.π str.carrier x, from
-      begin apply eq_of_homotopy, intro x, hsimp end, 
-    rwr p, apply eq.inverse, apply pi.hom_is_lift },  -- preserves identity morphisms
-  { intros str₁ str₂ str₃ f g, 
-    change pi.lift (λ x, pi.π str₁.carrier x ≫ (f ≫ g).fst x) = 
-           pi.lift (λ x, pi.π str₁.carrier x ≫ f.fst x) ≫ 
-                                                  pi.lift (λ x, pi.π str₂.carrier x ≫ g.fst x),
-    have p : (λ x, pi.π str₁.carrier x ≫ (f ≫ g).fst x) = 
-             (λ x, pi.lift (λ x, pi.π str₁.carrier x ≫ f.1 x) ≫ pi.π str₂.carrier x ≫ (g.1 x)), from 
-    begin 
-      apply eq_of_homotopy, intro x, change pi.π str₁.carrier x ≫ (f.1 x) ≫ (g.1 x) = _,
-      rwr <- precategory.assoc, 
-      change _ = pi.lift (λ x, pi.π str₁.carrier x ≫ f.fst x) ≫ pi.π str₂.carrier x ≫ g.fst x, 
-      rwr <- precategory.assoc, rwr pi.lift_π_eq
-    end,                       
-    rwr p, rwr pi.lift_fac (pi.lift (λ x, pi.π str₁.carrier x ≫ f.1 x)) 
-                           (λ x, pi.π str₂.carrier x ≫ g.1 x) }  
-                           -- preserves compositions of morphisms 
+  { intro str, exact discrete.functor str.carrier }, -- map of objects
+  { intros str₁ str₂ f, exact discrete.nat_trans (λ s, f.1 s) }, -- map of morphisms
+  { intro str₁, apply nat_trans_eq, refl },  -- preserves identity morphisms
+  { intros str₁ str₂ str₃ f g, apply nat_trans_eq, refl }  
+                                                     -- preserves compositions of morphisms 
 end 
 
 /- The forgetful functor is faithful. -/
 @[hott]
-def forget_is_faithful {C : Type u} [category.{v} C] [has_products C] 
-  (std_str : std_structure_on C) : is_faithful_functor _ _ (forget_str std_str) :=
+def forget_is_faithful {C : Type u} [category.{v} C] (std_str : std_structure_on C) : 
+  is_faithful_functor _ _ (forget_str std_str) :=
 begin 
   intros str₁ str₂ f₁ f₂ p, fapply sigma.sigma_eq, 
-  { apply eq_of_homotopy, intro x, sorry },
+  { apply eq_of_homotopy, intro s, exact apd10 (ap nat_trans.app p) s },
   { apply pathover_of_tr_eq, exact is_prop.elim _ _ } 
 end  
 
 /- The forgetful functor composed with a functor to a category of standard structures -/
 @[hott]
-def forget {J : Type.{u'}} [precategory.{v'} J] {C : Type u} [category.{v} C] [has_products C]
-  {std_str : std_structure_on C} (F : J ⥤ std_structure std_str) : J ⥤ C :=
+def forget {J : Type.{u'}} [precategory.{v'} J] {C : Type u} [category.{v} C] 
+  {std_str : std_structure_on C} (F : J ⥤ std_structure std_str) : 
+  J ⥤ ((discrete std_str.S) ⥤ C) :=
 F ⋙ (forget_str std_str)
 
 
@@ -406,13 +391,13 @@ F ⋙ (forget_str std_str)
    We first need to construct the underlying cone of a cone in the category of structures. -/
 @[hott, reducible]
 def str_cone_to_cone {J : Set.{u'}} [precategory.{v'} J] {C : Type u} [category.{v} C] 
-  [has_products C] {std_str : std_structure_on C} {F : J ⥤ (std_structure std_str)} 
-  (s : cone F) : cone (forget F) :=
+  {std_str : std_structure_on C} {F : J ⥤ (std_structure std_str)} (s : cone F) : 
+  cone (forget F) :=
 begin 
   fapply cone.mk, 
-  { exact s.X.1 },  -- vertex
+  { exact discrete.functor s.X.carrier },  -- vertex
   { fapply nat_trans.mk,
-    { intro j, exact (s.π.app j).1 },  --transformation of objects
+    { intro j, apply discrete.nat_trans, exact (s.π.app j).1 },  --transformation of objects
     { intros j k f, hsimp, 
       change (s.π.app k).1 = (s.π.app j).1 ≫ (F.map f).1, rwr <- comp_hom_std_C _ _,
       rwr <- ap sigma.fst (s.π.naturality f), hsimp } }  --naturality
