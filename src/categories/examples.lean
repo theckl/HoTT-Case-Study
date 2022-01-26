@@ -467,7 +467,7 @@ functor.mk f @map map_id @map_comp
 
 @[hott]
 def discrete.nat_trans {C : Type u} [category.{v} C] {J : Set.{u'}} 
-  (F G : (discrete J) ⥤ C) (app : Π j : J, F.obj j ⟶ G.obj j) :
+  {F G : (discrete J) ⥤ C} (app : Π j : J, F.obj j ⟶ G.obj j) :
   F ⟹ G :=  
 have natural : ∀ (j j' : J) (f : j ⟶ j'), 
                  (F.map f) ≫ (app j') = (app j) ≫ (G.map f), from                
