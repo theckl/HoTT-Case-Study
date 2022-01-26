@@ -207,7 +207,7 @@ abbreviation fan {J : Set.{u'}} {C : Type u} [category.{v} C] (f : J → C) :=
 @[hott, hsimp]
 def fan.mk {J : Set.{u'}} (C : Type u) [category.{v} C] {f : J → C} {P : C} 
   (p : Π j, P ⟶ f j) : fan f :=
-cone.mk P (discrete.nat_trans _ _ p)
+cone.mk P (discrete.nat_trans p)
 
 @[hott, hsimp] 
 def pi.lift {J : Set.{u'}} {C : Type u} [category.{v} C] {f : J → C} [has_product f]
