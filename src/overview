@@ -3,7 +3,7 @@ types2      :   252
 prop_axioms :   636
 prop_logic  :   194
 sets
-  basic     :   414
+  basic     :   415
   finite    :   193
   subset    :   407
   axioms    :   340
@@ -12,7 +12,7 @@ sets
   theories  :   474
 categories  
   basic     :   468
-  examples  :   624
+  examples  :   756
   limits    :   494
               -----
-               5271
+               5405
