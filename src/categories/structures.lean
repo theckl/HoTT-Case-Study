@@ -351,6 +351,13 @@ category.mk idtoiso_eqv
 /- The forgetful functor from a category of multi-sorted standard structures to the underlying 
    product category, with one object of the underlying category as a factor for each sort. 
    
+   Even if the underlying category of the standard structure has products, the forgetful 
+   functor should not map to the product of the objects corresponding to the sorts: The 
+   forgetful functor may not be faithful, as it's not clear how to get back the component 
+   morphisms from the morphisms between products - this only works if projections are epic, for
+   example if the category has a zero = initial + terminal objects. But that's not the case 
+   already for sets.
+
    The product category is implemented as the functor category from the discrete set of sorts 
    to the underlying category. -/
 @[hott]
@@ -398,34 +405,36 @@ begin
   { exact discrete.functor s.X.carrier },  -- vertex
   { fapply nat_trans.mk,
     { intro j, apply discrete.nat_trans, exact (s.π.app j).1 },  --transformation of objects
-    { intros j k f, hsimp, 
-      change (s.π.app k).1 = (s.π.app j).1 ≫ (F.map f).1, rwr <- comp_hom_std_C _ _,
-      rwr <- ap sigma.fst (s.π.naturality f), hsimp } }  --naturality
+    { intros j k f, hsimp, apply nat_trans_eq, apply eq_of_homotopy, intro x,
+      change (s.π.app k).1 x = (λ x, (s.π.app j).1 x ≫ (F.map f).1 x) x, 
+      rwr <- apd10 (comp_hom_std_C _ _) x, rwr <- ap sigma.fst (s.π.naturality f), 
+      rwr precategory.id_comp } }  --naturality
 end    
 
-/- We define the structure data of a limit cone for all limit cones of the underlying
+/- We define the structure data of a limit cone for all limit cones of the underlying product
    category at once, because we can change then easily to the most fitting construction. -/
 @[hott]
 structure limit_cone_str_data {J : Set.{u'}} [precategory.{v'} J] {C : Type u} 
-  [category.{v} C] [has_products C] {std_str : std_structure_on C} 
+  [category.{v} C] {std_str : std_structure_on C} 
   {F : J ⥤ (std_structure std_str)} (lc : limit_cone (forget F)) :=
-(lc_str : std_str.P (lc.cone.X)) 
-(lc_legs_H : Π (j : J), std_str.H lc_str ((F.obj j).str) (lc.cone.π.app j))
-(lift_H : Π (s : cone F), std_str.H s.X.str lc_str (lc.is_limit.lift (str_cone_to_cone s)))
+(lc_str : std_str.P (lc.cone.X.obj)) 
+(lc_legs_H : Π (j : J), std_str.H lc_str ((F.obj j).str) (lc.cone.π.app j).1)
+(lift_H : Π (s : cone F), std_str.H s.X.str lc_str (lc.is_limit.lift (str_cone_to_cone s)).1)
 
 @[hott]
-def str_limit_cone {J : Set.{u'}} [precategory.{v'} J] {C : Type u} 
-  [category.{v} C] [has_products C] {std_str : std_structure_on C} 
-  {F : J ⥤ (std_structure.{v u w} std_str)} (lc : limit_cone (forget F))
-  (lcd : limit_cone_str_data lc) : limit_cone F :=
+def str_limit_cone {J : Set.{u'}} [precategory.{v'} J] {C : Type u} [category.{v} C] 
+  {std_str : std_structure_on C} {F : J ⥤ (std_structure.{v u w} std_str)} 
+  (lc : limit_cone (forget F)) (lcd : limit_cone_str_data lc) : limit_cone F :=
 begin 
   fapply limit_cone.mk, 
   { fapply cone.mk, -- the limit cone 
-    { exact std_structure.mk lc.cone.X lcd.lc_str },
+    { exact std_structure.mk lc.cone.X.obj lcd.lc_str },
     { fapply nat_trans.mk, 
       { intro j, 
-        exact ⟨lc.cone.π.app j, lcd.lc_legs_H j⟩ },
-      { intros j k f, apply hom_eq_C_std, rwr comp_hom_std_C,  
+        exact ⟨(lc.cone.π.app j).1, lcd.lc_legs_H j⟩ },
+      { intros j k f, hsimp, apply hom_eq_C_std, rwr comp_hom_std_C, rwr comp_hom_std_C, 
+        apply eq_of_homotopy, intro x,
+         
         exact lc.cone.π.naturality f } } },
   { fapply is_limit.mk, -- the limit cone is a limit
     { intro s, 
