@@ -382,12 +382,20 @@ begin
   { apply pathover_of_tr_eq, exact is_prop.elim _ _ } 
 end  
 
-/- The forgetful functor composed with a functor to a category of standard structures -/
+/- A `J`-diagram of standard structures yields a tupel of `J`-diagrams in the underlying category,
+   indexed by the sorts. -/
 @[hott]
-def forget {J : Type.{u'}} [precategory.{v'} J] {C : Type u} [category.{v} C] 
-  {std_str : std_structure_on C} (F : J ⥤ std_structure std_str) : 
-  J ⥤ ((discrete std_str.S) ⥤ C) :=
-F ⋙ (forget_str std_str)
+def forget_diagram {J : Type.{u'}} [precategory.{v'} J] {C : Type u} [category.{v} C] 
+  {std_str : std_structure_on C} (F : J ⥤ std_structure std_str) : Π x : std_str.S, J ⥤ C :=
+begin
+  intro x,
+  fapply functor.mk, 
+  { intro j, exact (F.obj j).carrier x },
+  { intros j k f, exact (F.map f).1 x },
+  { intro j, change (F.map (𝟙 j)).1 x = 𝟙 ((F.obj j).carrier x), rwr functor.map_id },
+  { intros j k l f g, change (F.map (f ≫ g)).1 x  = ((F.map f).1 x) ≫ ((F.map g).1 x), 
+    rwr functor.map_comp }
+end  
 
 
 /- A criterion for a category of standard structures over a category with limits to have limits:
