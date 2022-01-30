@@ -382,7 +382,10 @@ begin
   { apply pathover_of_tr_eq, exact is_prop.elim _ _ } 
 end  
 
-/- A `J`-diagram of standard structures yields a tupel of `J`-diagrams in the underlying category,
+/- We want to construct limits of diagrams of standard structures fom the limits of the associated 
+   diagrams in the underlying ategory indexed by the sorts. In principle these diagrams can be 
+   retrieved from the forgetful functor, but it is more effective to construct them directly: 
+   A `J`-diagram of standard structures yields a tupel of `J`-diagrams in the underlying category, 
    indexed by the sorts. -/
 @[hott]
 def forget_diagram {J : Type.{u'}} [precategory.{v'} J] {C : Type u} [category.{v} C] 
@@ -397,93 +400,87 @@ begin
     rwr functor.map_comp }
 end  
 
-
-/- A criterion for a category of standard structures over a category with limits to have limits:
-   - The limit cone of the underlying functor of a shape carries a structure.
-   - The leg morphisms of this limit cone respect the structures.
-   - The lift morphisms to this limit cone respect the structures. 
-   
-   We first need to construct the underlying cone of a cone in the category of structures. -/
+/- Next, we extract cones in the underlying category indexed by the sorts from a cone of standard structures. -/
 @[hott, reducible]
-def str_cone_to_cone {J : Set.{u'}} [precategory.{v'} J] {C : Type u} [category.{v} C] 
+def str_cone_to_sort_cones {J : Set.{u'}} [precategory.{v'} J] {C : Type u} [category.{v} C] 
   {std_str : std_structure_on C} {F : J ⥤ (std_structure std_str)} (s : cone F) : 
-  cone (forget F) :=
+  Π x : std_str.S, cone (forget_diagram F x) :=
 begin 
-  fapply cone.mk, 
-  { exact discrete.functor s.X.carrier },  -- vertex
+  intro x, fapply cone.mk, 
+  { exact s.X.carrier x },  -- vertex
   { fapply nat_trans.mk,
-    { intro j, apply discrete.nat_trans, exact (s.π.app j).1 },  --transformation of objects
-    { intros j k f, hsimp, apply nat_trans_eq, apply eq_of_homotopy, intro x,
-      change (s.π.app k).1 x = (λ x, (s.π.app j).1 x ≫ (F.map f).1 x) x, 
+    { intro j, exact (s.π.app j).1 x },  --transformation of objects
+    { intros j k f, hsimp, change (s.π.app k).1 x = (λ x, (s.π.app j).1 x ≫ (F.map f).1 x) x, 
       rwr <- apd10 (comp_hom_std_C _ _) x, rwr <- ap sigma.fst (s.π.naturality f), 
       rwr precategory.id_comp } }  --naturality
-end    
+end 
 
-/- We define the structure data of a limit cone for all limit cones of the underlying product
-   category at once, because we can change then easily to the most fitting construction. -/
+/- We can construct the limit cone of a diagram of standard structures from the limit cones of the diagrams of the
+   underlying category associated to the sorts if (and only if, but we won' proof that)
+   - the tupel of vertices of the limit cones carries a structure,
+   - the tupel of leg morphisms of the limit cones associated to each diagram arrow respects the structures,
+   - the tupel of lifting morphisms from the vertices of cones associated to each sort to the vertices of the limit 
+     cones respect the structures. 
+   
+   To show this we collect the data of this criterion in a type: -/
 @[hott]
 structure limit_cone_str_data {J : Set.{u'}} [precategory.{v'} J] {C : Type u} 
-  [category.{v} C] {std_str : std_structure_on C} 
-  {F : J ⥤ (std_structure std_str)} (lc : limit_cone (forget F)) :=
-(lc_str : std_str.P (lc.cone.X.obj)) 
-(lc_legs_H : Π (j : J), std_str.H lc_str ((F.obj j).str) (lc.cone.π.app j).1)
-(lift_H : Π (s : cone F), std_str.H s.X.str lc_str (lc.is_limit.lift (str_cone_to_cone s)).1)
+  [category.{v} C] {std_str : std_structure_on C} {F : J ⥤ (std_structure std_str)} 
+  (lc : Π x : std_str.S, limit_cone (forget_diagram F x)) :=
+(lc_str : std_str.P (λ x, (lc x).cone.X)) 
+(lc_legs_H : Π (j : J), std_str.H lc_str ((F.obj j).str) (λ x, (lc x).cone.π.app j))
+(lift_H : Π (s : cone F), std_str.H s.X.str lc_str (λ x, (lc x).is_limit.lift (str_cone_to_sort_cones s x)))
 
 @[hott]
 def str_limit_cone {J : Set.{u'}} [precategory.{v'} J] {C : Type u} [category.{v} C] 
   {std_str : std_structure_on C} {F : J ⥤ (std_structure.{v u w} std_str)} 
-  (lc : limit_cone (forget F)) (lcd : limit_cone_str_data lc) : limit_cone F :=
+  (lc : Π x : std_str.S, limit_cone (forget_diagram F x)) (lcd : limit_cone_str_data lc) : limit_cone F :=
 begin 
   fapply limit_cone.mk, 
   { fapply cone.mk, -- the limit cone 
-    { exact std_structure.mk lc.cone.X.obj lcd.lc_str },
+    { exact std_structure.mk (λ x, (lc x).cone.X) lcd.lc_str },
     { fapply nat_trans.mk, 
       { intro j, 
-        exact ⟨(lc.cone.π.app j).app, lcd.lc_legs_H j⟩ },
+        exact ⟨λ x, (lc x).cone.π.app j, lcd.lc_legs_H j⟩ },
       { intros j k f, hsimp, 
-        apply @hom_eq_C_std _ _ _ (std_structure.mk lc.cone.X.obj lcd.lc_str) (F.obj k), 
-        rwr comp_hom_std_C, hsimp, apply eq_of_homotopy, intro x,
-        change (lc.cone.π.app k).app x = (lc.cone.π.app j ≫ (forget F).map f).app x, 
-        have H : lc.cone.π.app k = (𝟙 lc.cone.X) ≫ (lc.cone.π.app k), by rwr precategory.id_comp,
-        rwr H, exact apd10 (ap nat_trans.app (lc.cone.π.naturality f)) x } } },
+        apply @hom_eq_C_std _ _ _ (std_structure.mk (λ x, (lc x).cone.X) lcd.lc_str) (F.obj k), 
+        rwr comp_hom_std_C, hsimp, apply eq_of_homotopy, intro x, hsimp, 
+        have H : (lc x).cone.π.app k = (𝟙 (lc x).cone.X) ≫ (lc x).cone.π.app k, by rwr precategory.id_comp,
+        rwr H, exact (lc x).cone.π.naturality f } } },
   { fapply is_limit.mk, -- the limit cone is a limit
     { intro s, 
-      exact ⟨(lc.is_limit.lift (str_cone_to_cone s)).1, lcd.lift_H s⟩ },
+      exact ⟨λ x, (lc x).is_limit.lift (str_cone_to_sort_cones s x), lcd.lift_H s⟩ },
     { intros s j, apply hom_eq_C_std, rwr comp_hom_std_C, hsimp, apply eq_of_homotopy, intro x,
-      change (lc.is_limit.lift (str_cone_to_cone s) ≫ (lc.cone.π.app j)).app x = (s.π.app j).fst x,
-      exact apd10 (ap nat_trans.app (lc.is_limit.fac (str_cone_to_cone s) j)) x },
+      change (lc x).is_limit.lift (str_cone_to_sort_cones s x) ≫ (lc x).cone.π.app j = (s.π.app j).fst x,
+      exact (lc x).is_limit.fac (str_cone_to_sort_cones s x) j },
     { intros s m fac_m, apply hom_eq_C_std, hsimp, apply eq_of_homotopy, intro x, 
-      have fac_m1 : ∀ j : J, m.1 ≫ (lc.cone.π.app j) = 
-                                                   (str_cone_to_cone s).π.app j, from 
-        assume j, 
-        calc m.1 ≫ (lc.cone.π.app j) = (s.π.app j).1 : ap sigma.fst (fac_m j)
-             ... = (str_cone_to_cone s).π.app j : rfl,
-      exact lc.is_limit.uniq (str_cone_to_cone s) m.1 fac_m1 } }
+      have fac_m1 : ∀ j : J, m.1 x ≫ (lc x).cone.π.app j = (str_cone_to_sort_cones s x).π.app j, from 
+        begin intro j, change _ = (s.π.app j).1 x, rwr <- apd10 (ap sigma.fst (fac_m j)) x end,
+      exact (lc x).is_limit.uniq (str_cone_to_sort_cones s x) (m.1 x) fac_m1 } }
 end                
 
 @[hott]
-def str_has_limit {J : Set.{u'}} [precategory.{v'} J] {C : Type u} 
-  [category.{v} C] [has_products C] [has_limits_of_shape J C] {std_str : std_structure_on C} 
-  (F : J ⥤ (std_structure std_str)) 
-  (lcd : limit_cone_str_data (get_limit_cone (forget F))) : has_limit F :=
-has_limit.mk (str_limit_cone (get_limit_cone (forget F)) lcd)                                           
+def str_has_limit {J : Set.{u'}} [precategory.{v'} J] {C : Type u} [category.{v} C] 
+  [has_limits_of_shape J C] {std_str : std_structure_on C} (F : J ⥤ (std_structure std_str)) 
+  (lcd : limit_cone_str_data (λ x, get_limit_cone (forget_diagram F x))) : has_limit F :=
+has_limit.mk (str_limit_cone (λ x, get_limit_cone (forget_diagram F x)) lcd)                                           
 
 @[hott, instance]
 def std_structure_has_limits_of_shape {J : Set.{u'}} [precategory.{v'} J] {C : Type u} 
   [category.{v} C] [has_limits_of_shape J C] {std_str : std_structure_on C} 
-  (lcd_F : Π F : J ⥤ (std_structure std_str), limit_cone_str_data (get_limit_cone (forget F))) : 
+  (lcd_F : Π F : J ⥤ (std_structure std_str), limit_cone_str_data 
+                                                (λ x, get_limit_cone (forget_diagram  F x))) : 
   has_limits_of_shape J (std_structure std_str) :=
 has_limits_of_shape.mk (λ F, str_has_limit F (lcd_F F))
 
 
 open signature
 
-/- We define structures of a gven signature in a category `C` with products. -/
+/- We define structures of a given signature in a category `C` with products. -/
 @[hott]  
-structure Sig_structure_on (sign : fo_signature) {C : Type u} [category.{v} C] :=
-  ( car : sign.sorts -> C )
-  
-  ( ops : ∀ o : sign.ops, ((sign.ops_arity o) -> carrier) -> carrier )
+structure Sig_structure_on (sign : fo_signature) {C : Type u} [category.{v} C] [has_products C] :=
+  ( car : sign.sorts -> C )  
+  ( ops : ∀ o : sign.ops, ∏ (λ a : (sign.ops_arity o), car (sign.ops_source o a)) ⟶ car (sign.ops_target o) )
   ( rels : ∀ r : sign.rels, ((sign.rels_arity r) -> carrier) -> trunctype.{0} -1 )
 
 /- The following three lemmas should be produced automatically. -/
