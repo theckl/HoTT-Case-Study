@@ -153,7 +153,7 @@ class has_limits_of_shape (J : Set.{u'}) [precategory.{v'} J] (C : Type u) [cate
 @[hott, priority 100]
 instance has_limit_of_has_limits_of_shape
   {J : Set.{u'}} [precategory.{v'} J] (C : Type u) [category.{v} C] 
-  [H : has_limits_of_shape J C] (F : J ⥤ C) : has_limit F :=
+  [has_limits_of_shape J C] (F : J ⥤ C) : has_limit F :=
 has_limits_of_shape.has_limit F
 
 @[hott]
@@ -161,12 +161,17 @@ class has_limits (C : Type u) [category.{v} C] :=
   (has_limit_of_shape : Π (J : Set.{u'}) [precategory.{v'} J], has_limits_of_shape J C )  
 
 @[hott]
-abbreviation has_product {C : Type u} [category.{v} C] {J : Set.{u'}} 
-  (f : J -> C) := has_limit (discrete.functor f) 
+class has_product {C : Type u} [category.{v} C] {J : Set.{u'}} (f : J -> C) := 
+  (has_limit : has_limit (discrete.functor f)) 
+
+@[hott, priority 100]
+instance has_limit_of_has_product {C : Type u} [category.{v} C] {J : Set.{u'}} (f : J -> C)
+  [has_product f] : has_limit (discrete.functor f) := 
+has_product.has_limit f  
 
 @[hott]
-abbreviation pi_obj {C : Type u} [category.{v} C] {J : Set.{u'}} (f : J → C) 
-  [has_product f] := limit (discrete.functor f)
+abbreviation pi_obj {C : Type u} [category.{v} C] {J : Set.{u'}} (f : J → C) [has_product f] := 
+  limit (discrete.functor f)
 
 notation `∏ ` f:20 := pi_obj f
 
@@ -180,7 +185,7 @@ def has_limits_of_shape_of_has_products
   has_limits_of_shape (discrete J) C :=
 has_products.has_limit_of_shape C J
 
-@[hott, instance, priority 100]
+@[hott, instance]
 def has_product_of_has_products {C : Type u} [category.{v} C] 
   [has_products C] {J : Set.{u'}} (f : J -> C) : has_product f :=
 @has_limits_of_shape.has_limit _ _ _ _ 
