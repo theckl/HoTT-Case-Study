@@ -185,17 +185,17 @@ def has_limits_of_shape_of_has_products
   has_limits_of_shape (discrete J) C :=
 has_products.has_limit_of_shape C J
 
-@[hott, instance]
-def has_product_of_has_products {C : Type u} [category.{v} C] 
+@[hott]
+instance has_product_of_has_products {C : Type u} [category.{v} C] 
   [has_products C] {J : Set.{u'}} (f : J -> C) : has_product f :=
-@has_limits_of_shape.has_limit _ _ _ _ 
-       (has_products.has_limit_of_shape C J) (discrete.functor f)
+⟨@has_limits_of_shape.has_limit _ _ _ _ 
+       (has_products.has_limit_of_shape C J) (discrete.functor f)⟩
 
 @[hott, instance]
 def has_product_of_has_limits_of_shape {C : Type u} [category.{v} C] 
   {J : Set.{u'}} [has_limits_of_shape (discrete J) C] (f : J -> C) : 
   has_product f :=
-has_limits_of_shape.has_limit (discrete.functor f) 
+⟨has_limits_of_shape.has_limit (discrete.functor f)⟩ 
 
 @[hott, instance]
 def has_products_of_has_limits (C : Type u) [category.{v} C] [c : has_limits C] : 
@@ -414,7 +414,7 @@ def set_has_products : has_products Set :=
 
 @[hott, instance]
 def set_has_product {J : Set} (f : J -> Set) : has_product f :=
-  set_has_limit (discrete.functor f)
+  ⟨set_has_limit (discrete.functor f)⟩
 
 @[hott]
 def Set_prod_sections {I : Set} {U : I -> Set} : (∏ U) = Sections U :=
