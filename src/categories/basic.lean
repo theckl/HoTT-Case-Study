@@ -221,6 +221,49 @@ begin
   exact id_hom_tr_comp' (idtoiso⁻¹ᶠ i) h
 end 
 
+
+/- In a category `C` we can define a subobject of an object `c` as a monomorphism `a ⟶ c`. Two 
+   such subobjects are equal if and only if there is an isomorphism between the sources of the 
+   monomorphisms factorizing the monomorphisms. Therefore in HoTT categories, it is not necessary 
+   to define subobjects as isomorphism classes. -/
+@[hott]
+def is_mono {C : Type u} [category.{v} C] {c₁ c₂ : C} (f : c₁ ⟶ c₂) :=
+  Π {d : C} (g₁ g₂ : d ⟶ c₁), g₁ ≫ f = g₂ ≫ f -> g₁ = g₂
+
+@[hott]
+def isos_are_mono {C : Type u} [category.{v} C] {c₁ c₂ : C} (i : c₁ ≅ c₂) : is_mono i.hom :=
+begin  
+  assume d g₁ g₂ eq_comp, 
+  calc g₁ = g₁ ≫ 𝟙 c₁ : by rwr precategory.comp_id
+       ... = g₁ ≫ (i.hom ≫ i.inv) : by rwr iso.l_inv
+       ... = (g₁ ≫ i.hom) ≫ i.inv : by rwr precategory.assoc
+       ... = (g₂ ≫ i.hom) ≫ i.inv : by rwr eq_comp
+       ... = g₂ : by rwr precategory.assoc; rwr iso.l_inv; rwr precategory.comp_id 
+end  
+
+@[hott]
+structure iso_of_monos {C : Type u} [category.{v} C] {c d₁ d₂: C} {f : d₁ ⟶ c} (Hf : is_mono f)
+  {g : d₂ ⟶ c} (Hg : is_mono g) :=
+(iso_obj : d₁ ≅ d₂)
+(fac : iso_obj.hom ≫ g = f)   
+
+@[hott]
+structure subobject {C : Type u} [category.{v} C] (c : C) :=
+  (obj : C)
+  (hom : obj ⟶ c)
+  (is_mono : is_mono hom)    
+
+@[hott]
+def equal_subobj_iso_mono {C : Type u} [category.{v} C] {c : C} (s₁ s₂ : subobject c) :
+  s₁ = s₂ -> iso_of_monos s₁.is_mono s₂.is_mono :=
+begin intro p, hinduction p, fapply iso_of_monos.mk, exact (id_is_iso s₁.obj), hsimp end  
+
+@[hott]
+def iso_mono_equal_subobj {C : Type u} [category.{v} C] {c : C} (s₁ s₂ : subobject c) :
+  iso_of_monos s₁.is_mono s₂.is_mono -> s₁ = s₂ :=
+begin hinduction s₁, hinduction s₂, hsimp, sorry end  
+
+
 section
 variables (C : Type u) (D : Type u') (E : Type u'')
 
