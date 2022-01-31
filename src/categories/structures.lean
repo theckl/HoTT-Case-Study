@@ -478,9 +478,10 @@ open signature
 
 /- We define structures of a given signature in a category `C` with products. -/
 @[hott]  
-structure Sig_structure_on (sign : fo_signature) {C : Type u} [category.{v} C] [has_products C] :=
+structure Sig_structure_on (sign : fo_signature) {C : Type u} [category.{v} C] [has_products.{v u 0} C] :=
   ( car : sign.sorts -> C )  
-  ( ops : ∀ o : sign.ops, ∏ (λ a : (sign.ops_arity o), car (sign.ops_source o a)) ⟶ car (sign.ops_target o) )
+  ( ops : ∀ o : sign.ops, ∏ (λ a : (sign.ops_arity o), car (sign.ops_source o a)) ⟶ 
+                                                                        car (sign.ops_target o) )
   ( rels : ∀ r : sign.rels, ((sign.rels_arity r) -> carrier) -> trunctype.{0} -1 )
 
 /- The following three lemmas should be produced automatically. -/
