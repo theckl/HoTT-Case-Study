@@ -476,78 +476,55 @@ has_limits_of_shape.mk (λ F, str_has_limit F (lcd_F F))
 
 open signature
 
-/- We define structures of a given signature in a category `C` with products. -/
+/- We define structures of a given signature over a category `C` with products. -/
 @[hott]  
-structure Sig_structure_on (sign : fo_signature) {C : Type u} [category.{v} C] [has_products.{v u 0} C] :=
-  ( car : sign.sorts -> C )  
-  ( ops : ∀ o : sign.ops, ∏ (λ a : (sign.ops_arity o), car (sign.ops_source o a)) ⟶ 
+structure Sig_structure_on {sign : fo_signature} {C : Type u} [category.{v} C] 
+  [has_products.{v u 0} C] (car : sign.sorts -> C) :=  
+( ops : ∀ o : sign.ops, ∏ (λ a : sign.ops_arity o, car (sign.ops_source o a)) ⟶ 
                                                                         car (sign.ops_target o) )
-  ( rels : ∀ r : sign.rels, ((sign.rels_arity r) -> carrier) -> trunctype.{0} -1 )
-
-/- The following three lemmas should be produced automatically. -/
-@[hott]
-def Ω_str_eq {sign : fo_signature} {carrier : Set} 
-  {Ω_str₁ Ω_str₂ : Ω_structure_on sign carrier} : 
-  (Ω_str₁.ops = Ω_str₂.ops) -> (Ω_str₁.rels = Ω_str₂.rels) -> (Ω_str₁ = Ω_str₂) :=
-begin
-  intros p_ops p_rels, 
-  hinduction Ω_str₁ with ops₁ rels₁, hinduction Ω_str₂ with ops₂ rels₂,
-  exact ap011 Ω_structure_on.mk p_ops p_rels
-end    
+( rels : ∀ r : sign.rels, subobject (∏ (λ a : sign.rels_arity r, car (sign.rels_comp a))) )
 
 @[hott]
-def Ω_str_eq_eta {sign : fo_signature} {carrier : Set} 
-  {Ω_str₁ Ω_str₂ : Ω_structure_on sign carrier} (p : Ω_str₁ = Ω_str₂) :
-  Ω_str_eq (ap Ω_structure_on.ops p) (ap Ω_structure_on.rels p) = p := 
-begin
-  hinduction p, hinduction Ω_str₁, reflexivity
-end    
+structure is_Sig_structure_hom {sign : fo_signature} {C : Type u} [category.{v} C] 
+  [has_products.{v u 0} C] {car₁ car₂ : sign.sorts -> C} (S₁ : Sig_structure_on car₁)
+  (S₂ : Sig_structure_on car₂) (f : Π x : sign.sorts, car₁ x ⟶ car₂ x) := 
+( ops_pres : Π o : sign.ops, S₁.ops o ≫ f (sign.ops_target o) = 
+                                               (∏h (λ a, f (sign.ops_source o a))) ≫ S₂.ops o )
+( rels_pres : Π r : sign.rels, Σ h : (S₁.rels r).obj ⟶ (S₂.rels r).obj, 
+    (S₁.rels r).hom ≫ (∏h (λ a, f (sign.rels_comp a))) = h ≫ (S₂.rels r).hom )
 
 @[hott, instance]
-def is_set_Ω_structure_on (sign : fo_signature) (carrier : Set) : 
-  is_set (Ω_structure_on sign carrier) :=
+def is_prop_is_Sig_structure_hom {sign : fo_signature} {C : Type u} [category.{v} C] 
+  [has_products.{v u 0} C] {car₁ car₂ : sign.sorts -> C} {S₁ : Sig_structure_on car₁}
+  {S₂ : Sig_structure_on car₂} (f : Π x : sign.sorts, car₁ x ⟶ car₂ x) : 
+  is_prop (is_Sig_structure_hom S₁ S₂ f) :=
 begin
-  fapply is_set.mk, intros Ω_str₁ Ω_str₂ p q, 
-  rwr <- Ω_str_eq_eta p, rwr <- Ω_str_eq_eta q,
-  apply ap011 Ω_str_eq,
-  apply is_set.elim, apply is_set.elim
-end    
+  fapply is_prop.mk, intros h₁ h₂, hinduction h₁ with op₁ rp₁, hinduction h₂ with op₂ rp₂,
+  fapply ap011 is_Sig_structure_hom.mk, 
+  { apply eq_of_homotopy, intro o, exact is_prop.elim _ _ },
+  { apply eq_of_homotopy, intro r, fapply sigma.sigma_eq, 
+    { exact (S₂.rels r).is_mono (rp₁ r).1 (rp₂ r).1 ((rp₁ r).2⁻¹⬝(rp₂ r).2) },
+    { apply pathover_of_tr_eq, exact is_prop.elim _ _ } }
+end                                                         
 
 @[hott]
-structure is_Ω_structure_hom {sign : fo_signature} {A B : Set.{u}} 
-  (Ω_A : Ω_structure_on sign A) (Ω_B : Ω_structure_on sign B) (h : A -> B) :=
-( ops_pres : ∀ (o : sign.ops) (x : (sign.ops_arity o) -> A), 
-                                                     h (Ω_A.ops o x) = Ω_B.ops o (h ∘ x) ) 
-( rels_pres : ∀ (r : sign.rels) (x : (sign.rels_arity r) -> A), 
-                                                     Ω_A.rels r x -> Ω_B.rels r (h ∘ x) )                                                       
-
-@[hott, instance]
-def is_prop_is_Ω_Structure_hom {sign : fo_signature} {A B : Set.{u}} 
-  (Ω_A : Ω_structure_on sign A) (Ω_B : Ω_structure_on sign B) (h : A -> B) : 
-  is_prop (is_Ω_structure_hom Ω_A Ω_B h) :=
-begin
-  apply is_prop.mk, intros strh₁ strh₂, 
-  hinduction strh₁ with ops_pres₁ rels_pres₁, hinduction strh₂ with ops_pres₂ rels_pres₂,
-  fapply ap011 is_Ω_structure_hom.mk,
-  { exact is_prop.elim _ _ },
-  { exact is_prop.elim _ _ }
-end    
-
-@[hott]
-def std_str_of_Ω_str (sign : fo_signature) : std_structure_on Set :=
+def std_str_of_Sig_str (sign : fo_signature) {C : Type u} [category.{v} C] 
+  [has_products.{v u 0} C] : std_structure_on C :=
 begin
   fapply std_structure_on.mk,
-  { exact λ S : Set, Ω_structure_on sign S },
-  { intros S T Ω_Str_S Ω_Str_T h, 
-    exact prop_resize (to_Prop (@is_Ω_structure_hom sign _ _ Ω_Str_S Ω_Str_T h)) },
-  { intros A Ω_str_A, apply prop_to_prop_resize, fapply is_Ω_structure_hom.mk, 
-    { intros o x, refl },
-    { intros r x a, exact a } },
-  { intros A B C Ω_str_A Ω_str_B Ω_str_C f g p_Ω_hom_f p_Ω_hom_g, 
-    apply prop_to_prop_resize, fapply is_Ω_structure_hom.mk, 
-    { intros o x, change g (f (Ω_str_A.ops o x)) = Ω_str_C.ops o ((f ≫ g) ∘ x), 
-      rwr (prop_resize_to_prop p_Ω_hom_f).ops_pres o x,
-      rwr (prop_resize_to_prop p_Ω_hom_g).ops_pres o (f ∘ x) },
+  { exact sign.sorts }, --sorts
+  { exact λ car : sign.sorts -> C, Sig_structure_on car }, --structure
+  { intros x y S T h, 
+    exact prop_resize (to_Prop (is_Sig_structure_hom S T h)) }, --homomorphisms
+  { intros car S, apply prop_to_prop_resize, fapply is_Sig_structure_hom.mk, 
+    { intro o, hsimp, rwr pi_hom_id, hsimp },
+    { intro r, rwr pi_hom_id, fapply dpair, exact 𝟙 (S.rels r).obj, hsimp } }, --identity
+  { intros car₁ car₂ car₃ S T U f g is_hom_f is_hom_g, apply prop_to_prop_resize, 
+    fapply is_Sig_structure_hom.mk, 
+    { intro o, rwr <- precategory.assoc, 
+      rwr (prop_resize_to_prop is_hom_f).ops_pres o, rwr precategory.assoc,
+      rwr (prop_resize_to_prop is_hom_g).ops_pres o, rwr <- precategory.assoc,
+      sorry },
     { intros r x a, change ↥(Ω_str_C.rels r (g ∘ (f ∘ x))), 
       apply (prop_resize_to_prop p_Ω_hom_g).rels_pres r (f ∘ x), 
       apply (prop_resize_to_prop p_Ω_hom_f).rels_pres r x, exact a } },
