@@ -261,7 +261,18 @@ begin intro p, hinduction p, fapply iso_of_monos.mk, exact (id_is_iso s₁.obj),
 @[hott]
 def iso_mono_equal_subobj {C : Type u} [category.{v} C] {c : C} (s₁ s₂ : subobject c) :
   iso_of_monos s₁.is_mono s₂.is_mono -> s₁ = s₂ :=
-begin hinduction s₁, hinduction s₂, hsimp, sorry end  
+begin 
+  hinduction s₁ with obj₁ hom₁ is_mono₁, hinduction s₂ with obj₂ hom₂ is_mono₂, hsimp, 
+  intro im, fapply apd0111, 
+  { exact category.isotoid im.iso_obj },
+  { apply pathover_of_tr_eq, change idtoiso⁻¹ᶠ im.iso_obj ▸ hom₁ = hom₂, rwr iso_hom_tr_comp, 
+    calc (im.iso_obj)⁻¹ʰ ≫ hom₁ = (im.iso_obj)⁻¹ʰ ≫ im.iso_obj.hom ≫ hom₂ : by rwr im.fac
+         ... = ((im.iso_obj)⁻¹ʰ ≫ im.iso_obj.hom) ≫ hom₂ : by rwr precategory.assoc
+         ... = 𝟙 obj₂ ≫ hom₂ : by rwr iso.r_inv 
+         ... = hom₂ : by rwr precategory.id_comp },
+  { apply pathover_of_tr_eq, apply eq_of_homotopy3, intros d g₁ g₂, 
+    apply eq_of_homotopy, intro comp_eq, exact is_prop.elim _ _ } 
+end  
 
 
 section
