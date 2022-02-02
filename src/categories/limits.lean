@@ -253,6 +253,26 @@ begin
   rwr precategory.assoc, change g ≫ pi.lift h ≫ pi.π _ j = c.π.app j, rwr pi.lift_π_eq 
 end  
 
+@[hott]
+def pi_hom {J : Set.{u'}} {C : Type u} [category.{v} C] [has_products.{v u u'} C] 
+  {f g : J -> C} (h : Π j : J, f j ⟶ g j) : ∏ f ⟶ ∏ g :=
+pi.lift (λ j : J, pi.π f j ≫ h j)
+
+notation `∏h ` h:20 := pi_hom h
+
+@[hott]
+def pi_hom_id {J : Set.{u'}} {C : Type u} [category.{v} C] [has_products.{v u u'} C] (f : J -> C) : 
+  pi_hom (λ j, 𝟙 (f j)) = 𝟙 (∏ f) :=
+have H : (λ j, pi.π f j ≫ 𝟙 (f j)) = λ j, 𝟙 (∏ f) ≫ pi.π f j, from 
+  begin apply eq_of_homotopy, intro j, hsimp end,  
+begin change pi.lift (λ j, pi.π f j ≫ 𝟙 (f j)) = _, rwr H, rwr <- pi.hom_is_lift end  
+
+@[hott]
+def pi_hom_comp {J : Set.{u'}} {C : Type u} [category.{v} C] [has_products.{v u u'} C] 
+  {f g h : J -> C}  (i₁ : Π j : J, f j ⟶ g j)  (i₂ : Π j : J, g j ⟶ h j) :
+  (∏h i₁) ≫ (∏h i₂) = ∏h (λ j, i₁ j ≫ i₂ j) :=
+sorry
+
 /- `parallel_pair f g` is the diagram in `C` consisting of the two morphisms `f` and `g` with
     common domain and codomain. -/
 @[hott, hsimp]
