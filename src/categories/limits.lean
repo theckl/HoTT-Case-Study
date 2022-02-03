@@ -271,7 +271,17 @@ begin change pi.lift (λ j, pi.π f j ≫ 𝟙 (f j)) = _, rwr H, rwr <- pi.hom_
 def pi_hom_comp {J : Set.{u'}} {C : Type u} [category.{v} C] [has_products.{v u u'} C] 
   {f g h : J -> C}  (i₁ : Π j : J, f j ⟶ g j)  (i₂ : Π j : J, g j ⟶ h j) :
   (∏h i₁) ≫ (∏h i₂) = ∏h (λ j, i₁ j ≫ i₂ j) :=
-sorry
+have H : (λ j, pi.lift (λ j, pi.π f j ≫ i₁ j) ≫ pi.π g j ≫ i₂ j) = 
+                                                          λ j, pi.π f j ≫ i₁ j ≫ i₂ j, from   
+  begin 
+    apply eq_of_homotopy, intro j, change pi.lift (λ j, pi.π f j ≫ i₁ j) ≫ pi.π g j ≫ i₂ j = _,
+    rwr <- precategory.assoc, rwr pi.lift_π_eq, 
+    change (pi.π f j ≫ i₁ j) ≫ i₂ j = pi.π f j ≫ i₁ j ≫ i₂ j, rwr precategory.assoc 
+  end,
+calc pi.lift (λ j, pi.π f j ≫ i₁ j) ≫ pi.lift (λ j, pi.π g j ≫ i₂ j) = 
+           pi.lift (λ j, pi.lift (λ j, pi.π f j ≫ i₁ j) ≫ pi.π g j ≫ i₂ j) : 
+                                                                      by rwr <- pi.lift_fac
+     ... = pi.lift (λ j, pi.π f j ≫ i₁ j ≫ i₂ j) : by rwr H
 
 /- `parallel_pair f g` is the diagram in `C` consisting of the two morphisms `f` and `g` with
     common domain and codomain. -/
