@@ -485,6 +485,27 @@ structure Sig_structure_on {sign : fo_signature} {C : Type u} [category.{v} C]
 ( rels : ∀ r : sign.rels, subobject (∏ (λ a : sign.rels_arity r, car (sign.rels_comp a))) )
 
 @[hott]
+def Sig_str_eq {sign : fo_signature} {C : Type u} [category.{v} C] 
+  [has_products.{v u 0} C] {car : sign.sorts -> C} {S T : Sig_structure_on car} :
+  (S.ops = T.ops) -> (S.rels = T.rels) -> S = T :=
+sorry
+
+@[hott]
+def Sig_str_eq_eta {sign : fo_signature} {C : Type u} [category.{v} C] 
+  [has_products.{v u 0} C] {car : sign.sorts -> C} {S T : Sig_structure_on car} (p : S = T) :
+  Sig_str_eq (ap Sig_structure_on.ops p) (ap Sig_structure_on.rels p) = p :=
+sorry  
+
+@[hott, instance]
+def is_set_Sig_str_on {sign : fo_signature} {C : Type u} [category.{v} C] 
+  [has_products.{v u 0} C] (car : sign.sorts -> C) : is_set (Sig_structure_on car) :=
+begin
+  fapply is_set.mk, intros x y p q, 
+  rwr <- Sig_str_eq_eta p, rwr <- Sig_str_eq_eta q,
+  apply ap011 Sig_str_eq, apply is_set.elim, sorry --apply is_set.elim
+end   
+
+@[hott]
 structure is_Sig_structure_hom {sign : fo_signature} {C : Type u} [category.{v} C] 
   [has_products.{v u 0} C] {car₁ car₂ : sign.sorts -> C} (S₁ : Sig_structure_on car₁)
   (S₂ : Sig_structure_on car₂) (f : Π x : sign.sorts, car₁ x ⟶ car₂ x) := 
@@ -508,7 +529,17 @@ begin
 end                                                         
 
 @[hott]
-def std_str_of_Sig_str (sign : fo_signature) {C : Type u} [category.{v} C] 
+def id_is_Sig_str_hom {sign : fo_signature} {C : Type u} [category.{v} C] 
+  [has_products.{v u 0} C] {car : sign.sorts -> C} (S : Sig_structure_on car) :
+  is_Sig_structure_hom S S (λ x, 𝟙 (car x)) :=
+begin 
+  fapply is_Sig_structure_hom.mk, 
+  { intro o, rwr pi_hom_id, hsimp }, 
+  { intro r, fapply dpair, exact 𝟙 (S.rels r).obj, rwr pi_hom_id, hsimp } 
+end  
+
+@[hott]
+def std_str_of_Sig_str (sign : fo_signature) (C : Type u) [category.{v} C] 
   [has_products.{v u 0} C] : std_structure_on C :=
 begin
   fapply std_structure_on.mk,
@@ -524,51 +555,53 @@ begin
     { intro o, rwr <- precategory.assoc, 
       rwr (prop_resize_to_prop is_hom_f).ops_pres o, rwr precategory.assoc,
       rwr (prop_resize_to_prop is_hom_g).ops_pres o, rwr <- precategory.assoc,
-      sorry },
-    { intros r x a, change ↥(Ω_str_C.rels r (g ∘ (f ∘ x))), 
-      apply (prop_resize_to_prop p_Ω_hom_g).rels_pres r (f ∘ x), 
-      apply (prop_resize_to_prop p_Ω_hom_f).rels_pres r x, exact a } },
-  { intros A Ω_str_A₁ Ω_str_A₂, fapply equiv.mk, 
-    { intro Ω_str_homs, 
-      hinduction Ω_str_A₁ with ops₁ rels₁, hinduction Ω_str_A₂ with ops₂ rels₂, 
-      fapply ap011 Ω_structure_on.mk, 
-      { apply eq_of_homotopy, intro o, apply eq_of_homotopy, intro x, 
-        exact (prop_resize_to_prop Ω_str_homs.1).ops_pres o x },
-      { apply eq_of_homotopy, intro r, apply eq_of_homotopy, intro x, 
-        apply prop_iff_eq, 
-        { intro rx₁, apply (prop_resize_to_prop Ω_str_homs.1).rels_pres r x, exact rx₁ },
-        { intro rx₂, apply (prop_resize_to_prop Ω_str_homs.2).rels_pres r x, exact rx₂ } } },
+      rwr pi_hom_comp },
+    { intros r, 
+      let h₁ := ((prop_resize_to_prop is_hom_f).rels_pres r).1,
+      let p₁ := ((prop_resize_to_prop is_hom_f).rels_pres r).2,
+      let h₂ := ((prop_resize_to_prop is_hom_g).rels_pres r).1,
+      let p₂ := ((prop_resize_to_prop is_hom_g).rels_pres r).2,
+      fapply dpair,
+      { exact h₁ ≫ h₂ },
+      { rwr <- pi_hom_comp, rwr <- precategory.assoc, rwr p₁, rwr precategory.assoc, rwr p₂, 
+        rwr <- precategory.assoc } } }, --composition
+  { intros car S T, fapply equiv.mk, 
+    { intro Sig_homs, 
+      hinduction S with ops₁ rels₁, hinduction T with ops₂ rels₂, 
+      fapply ap011 Sig_structure_on.mk, 
+      { apply eq_of_homotopy, intro o, 
+        rwr <- precategory.id_comp (ops₂ o), rwr <- precategory.comp_id (ops₁ o),
+        rwr <- pi_hom_id, exact (prop_resize_to_prop Sig_homs.1).ops_pres o },
+      { apply eq_of_homotopy, intro r, apply subobject_homs_to_eq,
+        { fapply hom_of_monos.mk, 
+          { exact ((prop_resize_to_prop Sig_homs.1).rels_pres r).1 }, 
+          { let p₁ := ((prop_resize_to_prop Sig_homs.1).rels_pres r).2, rwr <- p₁, rwr pi_hom_id,
+            hsimp } }, 
+        { fapply hom_of_monos.mk, 
+          { exact ((prop_resize_to_prop Sig_homs.2).rels_pres r).1 }, 
+          { let p₂ := ((prop_resize_to_prop Sig_homs.2).rels_pres r).2, rwr <- p₂, rwr pi_hom_id,
+            hsimp } } } },
     { fapply adjointify, 
-      { intro Ω_str_eq, rwr Ω_str_eq, 
-        have Ω_str_id : is_Ω_structure_hom Ω_str_A₂ Ω_str_A₂ (𝟙 A), from 
-        begin 
-          apply is_Ω_structure_hom.mk, 
-          { intros o x, refl },
-          { intros r x rx, exact rx }
-        end,
-        exact ⟨prop_to_prop_resize Ω_str_id, prop_to_prop_resize Ω_str_id⟩ },
-      { intro b, exact @is_set.elim _ _ Ω_str_A₁ Ω_str_A₂ _ b },
-      { intro a, exact is_prop.elim _ _ } } }
+      { intro Sig_str_eq, rwr Sig_str_eq, apply pair,
+        exact prop_to_prop_resize (id_is_Sig_str_hom T), 
+        exact prop_to_prop_resize (id_is_Sig_str_hom T) },
+      { intro b, exact is_set.elim _ _ },
+      { intro a, exact is_prop.elim _ _ } } } --standard structure
 end  
 
 @[hott]
-def Ω_structure (sign : fo_signature) :=
-  std_structure (std_str_of_Ω_str sign)
+def Sig_structure (sign : fo_signature) (C : Type u) [category.{v} C] [has_products.{v u 0} C] :=
+  std_structure (std_str_of_Sig_str sign C)
 
 @[hott, instance]
-def Ω_sign_str_precategory (sign : fo_signature) : 
-  precategory (Ω_structure sign) := 
-std_str_precategory (std_str_of_Ω_str sign)
+def Sig_str_precategory (sign : fo_signature) (C : Type u) [category.{v} C] [has_products.{v u 0} C] : 
+  precategory (Sig_structure sign C) := 
+std_str_precategory (std_str_of_Sig_str sign C)
 
 @[hott, instance]
-def Ω_str_precategory (sign : fo_signature) : 
-  precategory (Ω_structure sign) := 
-std_str_precategory (std_str_of_Ω_str sign)
-
-@[hott, instance]
-def Ω_sign_str_category (sign : fo_signature) : 
-  category (Ω_structure sign) := 
-structure_identity_principle (std_str_of_Ω_str sign)
+def Sig_str_category (sign : fo_signature) (C : Type u) [category.{v} C] [has_products.{v u 0} C] : 
+  category (Sig_structure sign C) := 
+structure_identity_principle (std_str_of_Sig_str sign C)
 
 /- The category of Ω-structures on sets having a given signature is usually too large to
    capture algebraic structures: These require that particular relations involving the
