@@ -231,15 +231,19 @@ def is_mono {C : Type u} [category.{v} C] {c₁ c₂ : C} (f : c₁ ⟶ c₂) :=
   Π {d : C} (g₁ g₂ : d ⟶ c₁), g₁ ≫ f = g₂ ≫ f -> g₁ = g₂
 
 @[hott]
-def isos_are_mono {C : Type u} [category.{v} C] {c₁ c₂ : C} (i : c₁ ≅ c₂) : is_mono i.hom :=
-begin  
+def isos_are_mono {C : Type u} [category.{v} C] {c₁ c₂ : C} (i : c₁ ≅ c₂) : is_mono i.hom :=  
   assume d g₁ g₂ eq_comp, 
   calc g₁ = g₁ ≫ 𝟙 c₁ : by rwr precategory.comp_id
        ... = g₁ ≫ (i.hom ≫ i.inv) : by rwr iso.l_inv
        ... = (g₁ ≫ i.hom) ≫ i.inv : by rwr precategory.assoc
        ... = (g₂ ≫ i.hom) ≫ i.inv : by rwr eq_comp
-       ... = g₂ : by rwr precategory.assoc; rwr iso.l_inv; rwr precategory.comp_id 
-end  
+       ... = g₂ : by rwr precategory.assoc; rwr iso.l_inv; rwr precategory.comp_id   
+
+@[hott]
+structure hom_of_monos {C : Type u} [category.{v} C] {c d₁ d₂: C} {f : d₁ ⟶ c} (Hf : is_mono f)
+  {g : d₂ ⟶ c} (Hg : is_mono g) :=
+(hom_obj : d₁ ⟶ d₂)
+(fac : hom_obj ≫ g = f)
 
 @[hott]
 structure iso_of_monos {C : Type u} [category.{v} C] {c d₁ d₂: C} {f : d₁ ⟶ c} (Hf : is_mono f)
@@ -252,6 +256,13 @@ structure subobject {C : Type u} [category.{v} C] (c : C) :=
   (obj : C)
   (hom : obj ⟶ c)
   (is_mono : is_mono hom)    
+
+/- A homomorphism between subobjects compatible with the injections is itself injection. Hence,
+   homomorphisms between subobjects in both ways imply an isomorphism of subobjects and therefore
+   equality. -/
+@[hott]
+def subobject_hom {C : Type u} [category.{v} C] {c : C} (s₁ s₂ : subobject c) :=
+  hom_of_monos s₁.is_mono s₂.is_mono
 
 @[hott]
 def equal_subobj_iso_mono {C : Type u} [category.{v} C] {c : C} (s₁ s₂ : subobject c) :
@@ -273,6 +284,24 @@ begin
   { apply pathover_of_tr_eq, apply eq_of_homotopy3, intros d g₁ g₂, 
     apply eq_of_homotopy, intro comp_eq, exact is_prop.elim _ _ } 
 end  
+
+@[hott]
+def subobject_homs_to_eq {C : Type u} [category.{v} C] {c : C} (s₁ s₂ : subobject c) : 
+  (subobject_hom s₁ s₂) -> (subobject_hom s₂ s₁) -> s₁ = s₂ :=
+assume sh₁ sh₂,
+have H : iso_of_monos s₁.is_mono s₂.is_mono, from 
+  begin 
+    fapply iso_of_monos.mk, 
+    { fapply iso.mk, 
+      { exact sh₁.hom_obj },
+      { exact sh₂.hom_obj },
+      { apply s₂.is_mono (sh₂.hom_obj ≫ sh₁.hom_obj) (𝟙 s₂.obj), rwr precategory.assoc, 
+        rwr sh₁.fac, rwr sh₂.fac, hsimp },
+      { apply s₁.is_mono (sh₁.hom_obj ≫ sh₂.hom_obj) (𝟙 s₁.obj), rwr precategory.assoc, 
+        rwr sh₂.fac, rwr sh₁.fac, hsimp } },
+    { hsimp, rwr sh₁.fac } 
+  end,
+iso_mono_equal_subobj s₁ s₂ H
 
 
 section
