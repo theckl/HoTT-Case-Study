@@ -228,7 +228,7 @@ end
    to define subobjects as isomorphism classes. -/
 @[hott]
 def is_mono {C : Type u} [category.{v} C] {c₁ c₂ : C} (f : c₁ ⟶ c₂) :=
-  Π {d : C} (g₁ g₂ : d ⟶ c₁), g₁ ≫ f = g₂ ≫ f -> g₁ = g₂
+  Π (d : C) (g₁ g₂ : d ⟶ c₁), g₁ ≫ f = g₂ ≫ f -> g₁ = g₂
 
 @[hott]
 def isos_are_mono {C : Type u} [category.{v} C] {c₁ c₂ : C} (i : c₁ ≅ c₂) : is_mono i.hom :=  
@@ -245,6 +245,16 @@ structure hom_of_monos {C : Type u} [category.{v} C] {c d₁ d₂: C} {f : d₁ 
 (hom_obj : d₁ ⟶ d₂)
 (fac : hom_obj ≫ g = f)
 
+@[hott, instance]
+def is_prop_hom_of_monos {C : Type u} [category.{v} C] {c d₁ d₂: C} {f : d₁ ⟶ c} (Hf : is_mono f)
+  {g : d₂ ⟶ c} (Hg : is_mono g) : is_prop (hom_of_monos Hf Hg) :=
+begin 
+  apply is_prop.mk, intros hm₁ hm₂, hinduction hm₁ with h₁ fac₁, hinduction hm₂ with h₂ fac₂, 
+  fapply apd011 (hom_of_monos.mk Hf Hg), 
+  { apply Hg, exact fac₁ ⬝ fac₂⁻¹ },
+  { apply pathover_of_tr_eq, exact is_set.elim _ _ } 
+end  
+
 @[hott]
 structure iso_of_monos {C : Type u} [category.{v} C] {c d₁ d₂: C} {f : d₁ ⟶ c} (Hf : is_mono f)
   {g : d₂ ⟶ c} (Hg : is_mono g) :=
@@ -252,26 +262,51 @@ structure iso_of_monos {C : Type u} [category.{v} C] {c d₁ d₂: C} {f : d₁ 
 (fac : iso_obj.hom ≫ g = f)   
 
 @[hott]
+def homs_eqv_iso_of_monos {C : Type u} [category.{v} C] {c d₁ d₂: C} {f : d₁ ⟶ c} (Hf : is_mono f)
+  {g : d₂ ⟶ c} (Hg : is_mono g) : 
+  (hom_of_monos Hf Hg) × (hom_of_monos Hg Hf) ≃ iso_of_monos Hf Hg :=
+begin 
+  fapply equiv.mk, 
+  { intro homs, let sh₁ := homs.1, let sh₂ := homs.2, fapply iso_of_monos.mk, 
+    { fapply iso.mk, 
+      { exact sh₁.hom_obj },
+      { exact sh₂.hom_obj },
+      { apply Hg d₂ (sh₂.hom_obj ≫ sh₁.hom_obj) (𝟙 d₂), rwr precategory.assoc, 
+        rwr sh₁.fac, rwr sh₂.fac, hsimp },
+      { apply Hf d₁ (sh₁.hom_obj ≫ sh₂.hom_obj) (𝟙 d₁), rwr precategory.assoc, 
+        rwr sh₂.fac, rwr sh₁.fac, hsimp } },
+    { hsimp, rwr sh₁.fac } },
+  { fapply adjointify, 
+    { intro i, fapply pair, 
+      { fapply hom_of_monos.mk, exact i.iso_obj.hom, exact i.fac },
+      { fapply hom_of_monos.mk, exact i.iso_obj.inv, rwr iso_move_lr _ _ _ i.fac } },
+    { intro im, hinduction im with i fac, fapply apd011 (iso_of_monos.mk Hf Hg), 
+      { sorry },
+      { sorry } },
+    { sorry } }
+end  
+
+@[hott]
 structure subobject {C : Type u} [category.{v} C] (c : C) :=
   (obj : C)
   (hom : obj ⟶ c)
-  (is_mono : is_mono hom)    
+  (is_mono : is_mono hom) 
 
 /- A homomorphism between subobjects compatible with the injections is itself injection. Hence,
    homomorphisms between subobjects in both ways imply an isomorphism of subobjects and therefore
    equality. -/
 @[hott]
 def subobject_hom {C : Type u} [category.{v} C] {c : C} (s₁ s₂ : subobject c) :=
-  hom_of_monos s₁.is_mono s₂.is_mono
+  hom_of_monos s₁.hom s₂.hom
 
 @[hott]
 def equal_subobj_iso_mono {C : Type u} [category.{v} C] {c : C} (s₁ s₂ : subobject c) :
-  s₁ = s₂ -> iso_of_monos s₁.is_mono s₂.is_mono :=
+  s₁ = s₂ -> iso_of_monos s₁.hom s₂.hom :=
 begin intro p, hinduction p, fapply iso_of_monos.mk, exact (id_is_iso s₁.obj), hsimp end  
 
 @[hott]
 def iso_mono_equal_subobj {C : Type u} [category.{v} C] {c : C} (s₁ s₂ : subobject c) :
-  iso_of_monos s₁.is_mono s₂.is_mono -> s₁ = s₂ :=
+  iso_of_monos s₁.hom s₂.hom -> s₁ = s₂ :=
 begin 
   hinduction s₁ with obj₁ hom₁ is_mono₁, hinduction s₂ with obj₂ hom₂ is_mono₂, hsimp, 
   intro im, fapply apd0111, 
@@ -289,7 +324,7 @@ end
 def subobject_homs_to_eq {C : Type u} [category.{v} C] {c : C} (s₁ s₂ : subobject c) : 
   (subobject_hom s₁ s₂) -> (subobject_hom s₂ s₁) -> s₁ = s₂ :=
 assume sh₁ sh₂,
-have H : iso_of_monos s₁.is_mono s₂.is_mono, from 
+have H : iso_of_monos s₁.hom s₂.hom, from 
   begin 
     fapply iso_of_monos.mk, 
     { fapply iso.mk, 
