@@ -1,4 +1,4 @@
-init2       :   338
+init2       :   349
 types2      :   252
 prop_axioms :   636
 prop_logic  :   194
@@ -15,4 +15,4 @@ categories
   examples  :   756
   limits    :   529
               -----
-               5523
+               5534
