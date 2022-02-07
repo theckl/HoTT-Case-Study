@@ -200,7 +200,7 @@ is_equiv.left_inv (@idtoiso _ _ a b)
 
 @[hott]
 def isotoid_id_refl {obj : Type u} [category.{v} obj] :
-  Π {a : obj}, category.isotoid (id_is_iso a) = refl a :=
+  Π (a : obj), category.isotoid (id_is_iso a) = refl a :=
 begin intro a, rwr <- idtoiso_refl_eq a, exact category.idtoiso_linv (refl a) end 
 
 @[hott]
@@ -304,7 +304,29 @@ end
 structure subobject {C : Type u} [category.{v} C] (c : C) :=
   (obj : C)
   (hom : obj ⟶ c)
-  (is_mono : is_mono hom) 
+  (is_mono : is_mono hom)  
+
+@[hott]
+def subobject_eta {C : Type u} [category.{v} C] {c : C} (so : subobject c) :
+  so = subobject.mk so.obj so.hom so.is_mono :=
+begin hinduction so, refl end   
+
+@[hott]
+def subobject_eta_eq {C : Type u} [category.{v} C] {c : C} (obj : C) (hom : obj ⟶ c) 
+  (is_mono : is_mono hom) : subobject_eta (subobject.mk obj hom is_mono) = idp :=
+rfl  
+
+@[hott] 
+def subobject_eq_idp {C : Type u} [category.{v} C] {c : C} {s : subobject c} 
+  (p : s.obj = s.obj) (q : s.hom =[p; λ d, d ⟶ c] s.hom) 
+  (r : s.is_mono =[apd011 (λ (a : C) (b : ↥(a ⟶ c)), is_mono b) p q; id] s.is_mono) :
+  p = idp -> apd0111 subobject.mk p q r = idp :=
+begin 
+  intro Hp, 
+  --have Hq : q =[Hp] idpatho s.hom, from sorry,
+  --apply transport (λ (x : s.obj = s.obj), apd0111 subobject.mk x q r = idp) Hp, 
+  sorry 
+end   
 
 /- A homomorphism between subobjects compatible with the injections is itself injection. Hence,
    homomorphisms between subobjects in both ways imply an isomorphism of subobjects and therefore
@@ -322,28 +344,45 @@ begin
   hinduction p, hsimp 
 end  
 
+@[hott] 
+def idp_subobj_to_iso_mono {C : Type u} [category.{v} C] {c : C} (s : subobject c) :
+  equal_subobj_to_iso_mono s s idp = iso_of_monos.mk s.is_mono s.is_mono (id_is_iso s.obj) 
+                                                     (precategory.id_comp s.hom) :=
+begin apply iso_of_monos_eq, change idtoiso idp = id_is_iso s.obj, rwr idtoiso_refl_eq end                                                     
+
 @[hott]
 def iso_mono_to_equal_subobj {C : Type u} [category.{v} C] {c : C} (s₁ s₂ : subobject c) :
   iso_of_monos s₁.is_mono s₂.is_mono -> s₁ = s₂ :=
+assume im, (subobject_eta s₁) ⬝  
 begin 
-  hinduction s₁ with obj₁ hom₁ is_mono₁, hinduction s₂ with obj₂ hom₂ is_mono₂, hsimp, 
-  intro im, fapply apd0111, 
+  fapply apd0111 subobject.mk, 
   { exact category.isotoid im.iso_obj },
-  { apply pathover_of_tr_eq, change idtoiso⁻¹ᶠ im.iso_obj ▸ hom₁ = hom₂, rwr iso_hom_tr_comp, 
-    calc (im.iso_obj)⁻¹ʰ ≫ hom₁ = (im.iso_obj)⁻¹ʰ ≫ im.iso_obj.hom ≫ hom₂ : by rwr im.fac
-         ... = ((im.iso_obj)⁻¹ʰ ≫ im.iso_obj.hom) ≫ hom₂ : by rwr precategory.assoc
-         ... = 𝟙 obj₂ ≫ hom₂ : by rwr iso.r_inv 
-         ... = hom₂ : by rwr precategory.id_comp },
+  { apply pathover_of_tr_eq, 
+    change idtoiso⁻¹ᶠ im.iso_obj ▸[λ (d : C), ↥(d ⟶ c)] s₁.hom = s₂.hom, 
+    rwr iso_hom_tr_comp, 
+    calc (im.iso_obj)⁻¹ʰ ≫ s₁.hom = (im.iso_obj)⁻¹ʰ ≫ im.iso_obj.hom ≫ s₂.hom : 
+                                                                           by rwr im.fac
+         ... = ((im.iso_obj)⁻¹ʰ ≫ im.iso_obj.hom) ≫ s₂.hom : by rwr precategory.assoc
+         ... = 𝟙 s₂.obj ≫ s₂.hom : by rwr iso.r_inv 
+         ... = s₂.hom : by rwr precategory.id_comp },
   { apply pathover_of_tr_eq, apply eq_of_homotopy3, intros d g₁ g₂, 
     apply eq_of_homotopy, intro comp_eq, exact is_prop.elim _ _ } 
-end  
+end 
+⬝ (subobject_eta s₂)⁻¹  
 
 @[hott]
 def iso_mono_to_equal_subobj_iso {C : Type u} [category.{v} C] {c : C} {s₁ s₂ : subobject c} 
   (im : iso_of_monos s₁.is_mono s₂.is_mono) : 
   ap subobject.obj (iso_mono_to_equal_subobj s₁ s₂ im) = category.isotoid im.iso_obj :=
 begin
-  hinduction im with iso_obj fac, change ap subobject.obj (apd0111 _ _ _ _), sorry
+  hinduction s₁ with obj₁ hom₁ is_mono₁, hinduction s₂ with obj₂ hom₂ is_mono₂,
+  change ap subobject.obj ((subobject_eta _) ⬝ (apd0111 subobject.mk _ _ _) ⬝ _) = _, 
+  rwr subobject_eta_eq, rwr subobject_eta_eq, rwr idp_con, rwr idp_inv, rwr con_idp,
+  let HP : Π (obj : C) (hom : obj ⟶ c) (is_mono : is_mono hom), 
+                                     subobject.obj (subobject.mk obj hom is_mono) = obj := 
+      begin intros obj hom is_mono, exact idp end, 
+  rwr ap_apd0111 subobject.mk _ _ _ subobject.obj HP, 
+  change idp ⬝ category.isotoid im.iso_obj ⬝ idp⁻¹ = _, rwr idp_con   
 end    
 
 @[hott]
@@ -358,8 +397,13 @@ begin
       intro im, hinduction im with iso_obj fac, apply iso_of_monos_eq _ _, hsimp,
       change idtoiso (ap subobject.obj _) = _, rwr iso_mono_to_equal_subobj_iso,
       change idtoiso (idtoiso⁻¹ᶠ _) = _, rwr category.idtoiso_rinv },
-    { sorry } }
+    { intro p, hinduction p, --hinduction s₁ with obj₁ hom₁ is_mono₁, 
+      rwr idp_subobj_to_iso_mono, 
+      change (subobject_eta _) ⬝ (apd0111 subobject.mk (category.isotoid (id_is_iso s₁.obj)) _ _) ⬝ _ = _, 
+      apply con_eq_of_eq_con_inv, apply con_eq_of_eq_inv_con, rwr idp_con, 
+      rwr con.right_inv, apply subobject_eq_idp, rwr isotoid_id_refl } }
 end    
+
 
 section
 variables (C : Type u) (D : Type u') (E : Type u'')
