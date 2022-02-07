@@ -259,7 +259,17 @@ end
 structure iso_of_monos {C : Type u} [category.{v} C] {c d₁ d₂: C} {f : d₁ ⟶ c} (Hf : is_mono f)
   {g : d₂ ⟶ c} (Hg : is_mono g) :=
 (iso_obj : d₁ ≅ d₂)
-(fac : iso_obj.hom ≫ g = f)   
+(fac : iso_obj.hom ≫ g = f) 
+
+@[hott]
+def iso_of_monos_eq {C : Type u} [category.{v} C] {c d₁ d₂: C} {f : d₁ ⟶ c} {Hf : is_mono f}
+  {g : d₂ ⟶ c} {Hg : is_mono g} (im₁ im₂ : iso_of_monos Hf Hg) : 
+  im₁.iso_obj = im₂.iso_obj -> im₁ = im₂ :=
+begin 
+  hinduction im₁ with iso_obj₁ fac₁, hinduction im₂ with iso_obj₂ fac₂, hsimp, 
+  intro p, fapply apd011 (iso_of_monos.mk Hf Hg), assumption,
+  apply pathover_of_tr_eq, exact is_set.elim _ _ 
+end 
 
 @[hott]
 def homs_eqv_iso_of_monos {C : Type u} [category.{v} C] {c d₁ d₂: C} {f : d₁ ⟶ c} (Hf : is_mono f)
@@ -280,10 +290,14 @@ begin
     { intro i, fapply pair, 
       { fapply hom_of_monos.mk, exact i.iso_obj.hom, exact i.fac },
       { fapply hom_of_monos.mk, exact i.iso_obj.inv, rwr iso_move_lr _ _ _ i.fac } },
-    { intro im, hinduction im with i fac, fapply apd011 (iso_of_monos.mk Hf Hg), 
-      { sorry },
-      { sorry } },
-    { sorry } }
+    { intro im, hinduction im with i fac, apply iso_of_monos_eq _ _, 
+      { apply hom_eq_to_iso_eq, hsimp } },
+    { intro hm, hinduction hm with hm₁ hm₂, 
+      hinduction hm₁ with hom_obj₁ fac₁, hinduction hm₂ with hom_obj₂ fac₂, fapply prod.prod_eq,
+      { fapply apd011 (hom_of_monos.mk Hf Hg), hsimp, 
+        apply pathover_of_tr_eq, exact is_set.elim _ _ },
+      { fapply apd011 (hom_of_monos.mk Hg Hf), hsimp, 
+        apply pathover_of_tr_eq, exact is_set.elim _ _ } } }
 end  
 
 @[hott]
@@ -297,16 +311,20 @@ structure subobject {C : Type u} [category.{v} C] (c : C) :=
    equality. -/
 @[hott]
 def subobject_hom {C : Type u} [category.{v} C] {c : C} (s₁ s₂ : subobject c) :=
-  hom_of_monos s₁.hom s₂.hom
+  hom_of_monos s₁.is_mono s₂.is_mono
 
 @[hott]
-def equal_subobj_iso_mono {C : Type u} [category.{v} C] {c : C} (s₁ s₂ : subobject c) :
-  s₁ = s₂ -> iso_of_monos s₁.hom s₂.hom :=
-begin intro p, hinduction p, fapply iso_of_monos.mk, exact (id_is_iso s₁.obj), hsimp end  
+def equal_subobj_to_iso_mono {C : Type u} [category.{v} C] {c : C} (s₁ s₂ : subobject c) :
+  s₁ = s₂ -> iso_of_monos s₁.is_mono s₂.is_mono :=
+begin 
+  intro p, fapply iso_of_monos.mk, 
+  exact (idtoiso (ap subobject.obj p)), 
+  hinduction p, hsimp 
+end  
 
 @[hott]
-def iso_mono_equal_subobj {C : Type u} [category.{v} C] {c : C} (s₁ s₂ : subobject c) :
-  iso_of_monos s₁.hom s₂.hom -> s₁ = s₂ :=
+def iso_mono_to_equal_subobj {C : Type u} [category.{v} C] {c : C} (s₁ s₂ : subobject c) :
+  iso_of_monos s₁.is_mono s₂.is_mono -> s₁ = s₂ :=
 begin 
   hinduction s₁ with obj₁ hom₁ is_mono₁, hinduction s₂ with obj₂ hom₂ is_mono₂, hsimp, 
   intro im, fapply apd0111, 
@@ -321,23 +339,27 @@ begin
 end  
 
 @[hott]
-def subobject_homs_to_eq {C : Type u} [category.{v} C] {c : C} (s₁ s₂ : subobject c) : 
-  (subobject_hom s₁ s₂) -> (subobject_hom s₂ s₁) -> s₁ = s₂ :=
-assume sh₁ sh₂,
-have H : iso_of_monos s₁.hom s₂.hom, from 
-  begin 
-    fapply iso_of_monos.mk, 
-    { fapply iso.mk, 
-      { exact sh₁.hom_obj },
-      { exact sh₂.hom_obj },
-      { apply s₂.is_mono (sh₂.hom_obj ≫ sh₁.hom_obj) (𝟙 s₂.obj), rwr precategory.assoc, 
-        rwr sh₁.fac, rwr sh₂.fac, hsimp },
-      { apply s₁.is_mono (sh₁.hom_obj ≫ sh₂.hom_obj) (𝟙 s₁.obj), rwr precategory.assoc, 
-        rwr sh₂.fac, rwr sh₁.fac, hsimp } },
-    { hsimp, rwr sh₁.fac } 
-  end,
-iso_mono_equal_subobj s₁ s₂ H
+def iso_mono_to_equal_subobj_iso {C : Type u} [category.{v} C] {c : C} {s₁ s₂ : subobject c} 
+  (im : iso_of_monos s₁.is_mono s₂.is_mono) : 
+  ap subobject.obj (iso_mono_to_equal_subobj s₁ s₂ im) = category.isotoid im.iso_obj :=
+begin
+  hinduction im with iso_obj fac, change ap subobject.obj (apd0111 _ _ _ _), sorry
+end    
 
+@[hott]
+def equal_subobj_eqv_iso_mono {C : Type u} [category.{v} C] {c : C} (s₁ s₂ : subobject c) :
+  s₁ = s₂ ≃ iso_of_monos s₁.is_mono s₂.is_mono :=
+begin
+  fapply equiv.mk,
+  { exact equal_subobj_to_iso_mono s₁ s₂ },
+  { fapply adjointify,
+    { exact iso_mono_to_equal_subobj s₁ s₂ },
+    { hinduction s₁ with obj₁ hom₁ is_mono₁, hinduction s₂ with obj₂ hom₂ is_mono₂,
+      intro im, hinduction im with iso_obj fac, apply iso_of_monos_eq _ _, hsimp,
+      change idtoiso (ap subobject.obj _) = _, rwr iso_mono_to_equal_subobj_iso,
+      change idtoiso (idtoiso⁻¹ᶠ _) = _, rwr category.idtoiso_rinv },
+    { sorry } }
+end    
 
 section
 variables (C : Type u) (D : Type u') (E : Type u'')
