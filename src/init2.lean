@@ -127,6 +127,17 @@ begin
 end 
 
 @[hott]
+def apd0111_eq {A D : Type _} {B : A -> Type _} {C : Π (a : A), B a -> Type _} 
+  (f : Π (a : A) (b : B a) (c : C a b), D) {a₁ a₂ : A} {b₁ : B a₁} {b₂ : B a₂}
+  {c₁ : C a₁ b₁} {c₂ : C a₂ b₂} {pA pA': a₁ = a₂} {pB : b₁ =[pA] b₂} {pB' : b₁ =[pA'] b₂} 
+  {pC : c₁ =[apd011 C pA pB; id] c₂} {pC' : c₁ =[apd011 C pA' pB'; id] c₂}
+  (HpA : pA = pA') (HpB : pB =[HpA; λ x : a₁ = a₂, b₁ =[x] b₂] pB')
+  (HpC : pC =[apd011 (λ (x : a₁ = a₂) (y : b₁ =[x] b₂), apd011 (λ a b, C a b) x y) HpA HpB;
+                λ Hf : C a₁ b₁ = C a₂ b₂, c₁ =[Hf; id] c₂] pC') : 
+  apd0111 f pA pB pC = apd0111 f pA' pB' pC' :=
+begin hinduction HpA, hinduction HpB, hinduction HpC, refl end                 
+
+@[hott]
 def apdo0111 {A : Type _} {B C : A -> Type _} {D : Π a : A, B a -> Type _}
   (f : Π (a : A) (b : B a) (d : D a b), C a)
   {a₁ a₂ : A} {b₁ : B a₁} {b₂ : B a₂} {d₁ : D a₁ b₁} {d₂ : D a₂ b₂}
