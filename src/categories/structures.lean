@@ -488,13 +488,16 @@ structure Sig_structure_on {sign : fo_signature} {C : Type u} [category.{v} C]
 def Sig_str_eq {sign : fo_signature} {C : Type u} [category.{v} C] 
   [has_products.{v u 0} C] {car : sign.sorts -> C} {S T : Sig_structure_on car} :
   (S.ops = T.ops) -> (S.rels = T.rels) -> S = T :=
-sorry
+begin 
+  hinduction S with ops₁ rels₁, hinduction T with ops₂ rels₂, hsimp, 
+  intros ops_eq rels_eq, exact ap011 Sig_structure_on.mk ops_eq rels_eq 
+end
 
 @[hott]
 def Sig_str_eq_eta {sign : fo_signature} {C : Type u} [category.{v} C] 
   [has_products.{v u 0} C] {car : sign.sorts -> C} {S T : Sig_structure_on car} (p : S = T) :
   Sig_str_eq (ap Sig_structure_on.ops p) (ap Sig_structure_on.rels p) = p :=
-sorry  
+begin hinduction p, hinduction S, refl end  
 
 @[hott, instance]
 def is_set_Sig_str_on {sign : fo_signature} {C : Type u} [category.{v} C] 
@@ -502,7 +505,7 @@ def is_set_Sig_str_on {sign : fo_signature} {C : Type u} [category.{v} C]
 begin
   fapply is_set.mk, intros x y p q, 
   rwr <- Sig_str_eq_eta p, rwr <- Sig_str_eq_eta q,
-  apply ap011 Sig_str_eq, apply is_set.elim, sorry --apply is_set.elim
+  apply ap011 Sig_str_eq, apply is_set.elim, apply is_set.elim
 end   
 
 @[hott]
@@ -524,7 +527,7 @@ begin
   fapply ap011 is_Sig_structure_hom.mk, 
   { apply eq_of_homotopy, intro o, exact is_prop.elim _ _ },
   { apply eq_of_homotopy, intro r, fapply sigma.sigma_eq, 
-    { exact (S₂.rels r).is_mono (rp₁ r).1 (rp₂ r).1 ((rp₁ r).2⁻¹⬝(rp₂ r).2) },
+    { exact (S₂.rels r).is_mono _ (rp₁ r).1 (rp₂ r).1 ((rp₁ r).2⁻¹⬝(rp₂ r).2) },
     { apply pathover_of_tr_eq, exact is_prop.elim _ _ } }
 end                                                         
 
@@ -572,7 +575,8 @@ begin
       { apply eq_of_homotopy, intro o, 
         rwr <- precategory.id_comp (ops₂ o), rwr <- precategory.comp_id (ops₁ o),
         rwr <- pi_hom_id, exact (prop_resize_to_prop Sig_homs.1).ops_pres o },
-      { apply eq_of_homotopy, intro r, apply subobject_homs_to_eq,
+      { apply eq_of_homotopy, intro r, apply (iso_mono_to_equal_subobj _ _),
+        apply (homs_eqv_iso_of_monos _ _).to_fun, fapply pair,
         { fapply hom_of_monos.mk, 
           { exact ((prop_resize_to_prop Sig_homs.1).rels_pres r).1 }, 
           { let p₁ := ((prop_resize_to_prop Sig_homs.1).rels_pres r).2, rwr <- p₁, rwr pi_hom_id,
@@ -602,6 +606,7 @@ std_str_precategory (std_str_of_Sig_str sign C)
 def Sig_str_category (sign : fo_signature) (C : Type u) [category.{v} C] [has_products.{v u 0} C] : 
   category (Sig_structure sign C) := 
 structure_identity_principle (std_str_of_Sig_str sign C)
+
 
 /- The category of Ω-structures on sets having a given signature is usually too large to
    capture algebraic structures: These require that particular relations involving the
