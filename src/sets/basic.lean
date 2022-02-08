@@ -584,14 +584,14 @@ notation A ` × `:100 B := Prod_Set A B
 
 /- Pathover equalities of set elements are equal. -/
 @[hott]
-def set_po_eq {A : Set} {B : A -> Set} {a₁ a₂ : A} {p : a₁ = a₂} {b₁ : B a₁} {b₂ : B a₂}
+def set_po_eq {A : Type _} {B : A -> Set} {a₁ a₂ : A} {p : a₁ = a₂} {b₁ : B a₁} {b₂ : B a₂}
   (q r : b₁ =[p; λ a, B a] b₂) : q = r := 
 begin 
   rwr <- is_equiv.left_inv (pathover_equiv_tr_eq p b₁ b₂) q,
   rwr <- is_equiv.left_inv (pathover_equiv_tr_eq p b₁ b₂) r,
   apply ap (⇑(pathover_equiv_tr_eq p b₁ b₂))⁻¹ᶠ,
   exact is_set.elim _ _
-end   
+end    
 
 /- The dependent product of sets is a set. -/
 @[hott, instance]
