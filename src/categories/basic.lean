@@ -230,6 +230,11 @@ end
 def is_mono {C : Type u} [category.{v} C] {c₁ c₂ : C} (f : c₁ ⟶ c₂) :=
   Π (d : C) (g₁ g₂ : d ⟶ c₁), g₁ ≫ f = g₂ ≫ f -> g₁ = g₂
 
+@[hott, instance]
+def is_mono_is_prop {C : Type u} [category.{v} C] {c₁ c₂ : C} (f : c₁ ⟶ c₂) : 
+  is_prop (is_mono f) :=
+begin apply is_prop_dprod, intro d, apply_instance end 
+
 @[hott]
 def isos_are_mono {C : Type u} [category.{v} C] {c₁ c₂ : C} (i : c₁ ≅ c₂) : is_mono i.hom :=  
   assume d g₁ g₂ eq_comp, 
@@ -323,9 +328,19 @@ def subobject_eq_idp {C : Type u} [category.{v} C] {c : C} {s : subobject c}
   p = idp -> apd0111 subobject.mk p q r = idp :=
 begin 
   intro Hp, 
-  --have Hq : q =[Hp] idpatho s.hom, from sorry,
-  --apply transport (λ (x : s.obj = s.obj), apd0111 subobject.mk x q r = idp) Hp, 
-  sorry 
+  have Hq : q =[Hp; λ p' : s.obj = s.obj, s.hom =[p'; λ d, d ⟶ c] s.hom] idpatho s.hom, from 
+    begin apply pathover_of_tr_eq, exact set_po_eq _ _ end,
+  have H : is_prop (s.is_mono =[idp; id] s.is_mono), from 
+    begin 
+      apply is_trunc_equiv_closed_rev -1 (pathover_equiv_tr_eq _ _ _), exact is_trunc_eq -1 _ _
+     end,  
+  have Hr : r =[apd011 (λ (x : s.obj = s.obj) (y : s.hom =[x; λ d, d ⟶ c] s.hom), 
+                          apd011 (λ (obj : C) (hom : obj ⟶ c), is_mono hom) x y) Hp Hq;
+                λ Hf : is_mono s.hom = is_mono s.hom, s.is_mono =[Hf; id] s.is_mono] 
+                                                                      idpatho s.is_mono, from 
+    begin apply pathover_of_tr_eq, exact @is_prop.elim _ H _ _ end, 
+  rwr @apd0111_eq _ _ _ (λ (obj : C) (hom : obj ⟶ c), is_mono hom) _ _ _ _ _ _ _ _ _ _ _ _ _ 
+                                                                                       Hp Hq Hr 
 end   
 
 /- A homomorphism between subobjects compatible with the injections is itself injection. Hence,
@@ -399,10 +414,21 @@ begin
       change idtoiso (idtoiso⁻¹ᶠ _) = _, rwr category.idtoiso_rinv },
     { intro p, hinduction p, --hinduction s₁ with obj₁ hom₁ is_mono₁, 
       rwr idp_subobj_to_iso_mono, 
-      change (subobject_eta _) ⬝ (apd0111 subobject.mk (category.isotoid (id_is_iso s₁.obj)) _ _) ⬝ _ = _, 
+      change (subobject_eta _) ⬝ (apd0111 subobject.mk (category.isotoid (id_is_iso s₁.obj)) _ _) ⬝ 
+                                                                                              _ = _, 
       apply con_eq_of_eq_con_inv, apply con_eq_of_eq_inv_con, rwr idp_con, 
       rwr con.right_inv, apply subobject_eq_idp, rwr isotoid_id_refl } }
 end    
+
+/- The subobjects of an object in a HoTT-category form a set, so a HoTT-category is well-powered. -/
+@[hott, instance]
+def subobject_is_set {C : Type u} [category.{v} C] {c : C} : is_set (subobject c) :=
+begin 
+  apply is_trunc_succ_intro, intros s₁ s₂, 
+  apply is_trunc_equiv_closed_rev -1 (equal_subobj_eqv_iso_mono s₁ s₂), 
+  apply is_trunc_equiv_closed -1 (homs_eqv_iso_of_monos s₁.is_mono s₂.is_mono), 
+  apply_instance 
+end
 
 
 section
