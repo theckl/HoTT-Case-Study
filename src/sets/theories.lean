@@ -412,6 +412,10 @@ def context_is_set {sign : fo_signature} : is_set (context sign) :=
 begin apply Powerset_is_set end
 
 @[hott]
+def term_in_context {sign : fo_signature} (t : term sign) 
+  (cont : context sign) := (free_vars_of_term t) ⊆ cont
+
+@[hott]
 def formula_in_context {sign : fo_signature} (φ : formula sign) 
   (cont : context sign) := (free_vars φ) ⊆ cont  
 
@@ -458,9 +462,9 @@ def fo_theory (sign : fo_signature) := Subset (to_Set (sequent sign))
 def is_algebraic_seq {sign : fo_signature} : sequent sign -> Prop :=
 begin
   intro seq, hinduction seq, hinduction ass with atom_ass,  
-  { exact False },
+  { exact False }, --==assumption is True
   { hinduction con with atom_con, 
-    { hinduction atom_con, exact True, exact False },
+    { hinduction atom_con, exact True, exact False }, --conclusion is equality
     { exact False } }
 end  
 
