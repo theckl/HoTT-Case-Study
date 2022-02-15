@@ -614,7 +614,7 @@ structure_identity_principle (std_str_of_Sig_str sign C)
    
    By prescribing logical equivalences of the signature relations to such relations and
    and requesting that they are always true we can define a predicate on the objects 
-   of the Ω-structure category that gives a full subcategory. -/
+   of the Ω-structure category that gives a full subcategory. 
 @[hott]
 structure signature_laws (sign : fo_signature) :=
   (pred : Π (S : Ω_structure sign) (r : sign.rels) 
@@ -800,6 +800,7 @@ begin
     { sorry } },
   { sorry }
 end  
+-/
 
 end categories
 
