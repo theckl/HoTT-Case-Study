@@ -455,17 +455,25 @@ begin
   exact is_set.elim _ _
 end 
 
+/- We need notations for formulas and sequents. -/
+
 @[hott]
 def fo_theory (sign : fo_signature) := Subset (to_Set (sequent sign)) 
+
+@[hott]
+def is_algebraic_form {sign : fo_signature} : formula sign -> Prop :=
+begin
+  intro form, hinduction form with atom T, 
+  { hinduction atom with t₁ t₂ fun_eq rel, exact True, exact False }, --equality of terms
+  { exact False }
+end
 
 @[hott]
 def is_algebraic_seq {sign : fo_signature} : sequent sign -> Prop :=
 begin
   intro seq, hinduction seq, hinduction ass with atom_ass,  
   { exact False }, --==assumption is True
-  { hinduction con with atom_con, 
-    { hinduction atom_con, exact True, exact False }, --conclusion is equality
-    { exact False } }
+  { exact is_algebraic_form con } --conclusion is equality of terms
 end  
 
 @[hott]
