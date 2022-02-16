@@ -593,7 +593,7 @@ begin
       { intro a, exact is_prop.elim _ _ } } } --standard structure
 end  
 
-@[hott]
+@[hott, reducible]
 def Sig_structure (sign : fo_signature) (C : Type u) [category.{v} C] [has_products.{v u 0} C] :=
   std_structure (std_str_of_Sig_str sign C)
 
