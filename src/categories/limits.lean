@@ -1,4 +1,4 @@
-import sets.algebra categories.examples
+import sets.algebra categories.examples categories.diagrams
 
 universes v v' u u' w
 hott_theory
@@ -283,6 +283,40 @@ calc pi.lift (λ j, pi.π f j ≫ i₁ j) ≫ pi.lift (λ j, pi.π g j ≫ i₂ 
                                                                       by rwr <- pi.lift_fac
      ... = pi.lift (λ j, pi.π f j ≫ i₁ j ≫ i₂ j) : by rwr H
 
+/- `orthogonal_pair f g` is the diagram in `C` consisting of the two morphisms `f` and `g` with
+   common codomain. -/
+@[hott, hsimp]
+def orthogonal_pair_obj {C : Type u} [category.{v} C] {a b c: C} 
+  (f : a ⟶ c) (g : b ⟶ c) : orthogonal_wedge.{u} -> C :=
+λ s, match s with
+     | ow_node.left := a
+     | ow_node.base := c
+     | ow_node.upper := b
+     end    
+
+@[hott, hsimp]
+def orthogonal_pair_map {C : Type u} [category.{v} C] {a b c : C} 
+  (f : a ⟶ c) (g : b ⟶ c) : Π {s t : orthogonal_wedge.{u}}, 
+  (s ⟶ t) -> (orthogonal_pair_obj f g s ⟶ orthogonal_pair_obj f g t) :=
+assume s t, 
+match s, t with
+  | ow_node.left, ow_node.left := assume h, 𝟙 a --id
+  | ow_node.left, ow_node.base := assume h, f --right arrow
+  | ow_node.left, ow_node.upper := begin intro h, hinduction h end
+  | ow_node.base, ow_node.left := begin intro h, hinduction h end
+  | ow_node.base, ow_node.base := assume h, 𝟙 c --id
+  | ow_node.base, ow_node.upper := begin intro h, hinduction h end
+  | ow_node.upper, ow_node.left := begin intro h, hinduction h end
+  | ow_node.upper, ow_node.base := assume h, g --down arrow
+  | ow_node.upper, ow_node.upper := assume h, 𝟙 b --id
+end 
+
+@[hott, hsimp]
+def orthogonal_pair_map_id {C : Type u} [category.{v} C] {a b c : C} 
+  (f : a ⟶ c) (g : b ⟶ c) : ∀ s : orthogonal_wedge.{u}, 
+  orthogonal_pair_map f g (𝟙 s) = 𝟙 (orthogonal_pair_obj f g s) :=
+begin intro s, hinduction s, hsimp, hsimp, hsimp end 
+
 /- `parallel_pair f g` is the diagram in `C` consisting of the two morphisms `f` and `g` with
     common domain and codomain. -/
 @[hott, hsimp]
@@ -314,13 +348,7 @@ end
 def parallel_pair_map_id {C : Type u} [category.{v} C] {a b : C} 
   (f g : a ⟶ b) : ∀ s : walking_parallel_pair.{u}, 
   parallel_pair_map f g (𝟙 s) = 𝟙 (parallel_pair_obj f g s) :=
-by intro s; hinduction s; hsimp; hsimp  
-
-@[hott, hsimp]
-def parallel_pair_map_id' {C : Type u} [category.{v} C] {a b : C} 
-  (f g : a ⟶ b) : ∀ (s : walking_parallel_pair.{u}) (h : s ⟶ s), 
-  parallel_pair_map f g h = 𝟙 (parallel_pair_obj f g s) :=
-by intros s h; hinduction s; hsimp; hsimp  
+by intro s; hinduction s; hsimp; hsimp   
 
 @[hott, hsimp]
 def parallel_pair_map_comp {C : Type u} [category.{v} C] 
@@ -348,6 +376,43 @@ categories.functor.mk (parallel_pair_obj f g)
                            (parallel_pair_map_id f g) 
                            (@parallel_pair_map_comp _ _ _ _ f g)   
 
+/- Limits of parallel pairs are `equalizers`. -/
+@[hott]
+class has_equalizer {C : Type u} [category.{v} C] {a b : C} (f g : a ⟶ b) := 
+  (has_limit : has_limit (parallel_pair f g))
+
+@[hott, priority 100]
+instance has_limit_of_has_equalizer {C : Type u} [category.{v} C] {a b : C} (f g : a ⟶ b)
+  [has_equalizer f g] : has_limit (parallel_pair f g) := 
+has_equalizer.has_limit f g 
+
+@[hott]
+def equalizer {C : Type u} [category.{v} C] {a b : C} (f g : a ⟶ b) [has_equalizer f g] :=
+  limit (parallel_pair f g)   
+
+@[hott]
+class has_equalizers (C : Type u) [category.{v} C] := 
+  (has_limit_of_shape : has_limits_of_shape walking_parallel_pair C)
+
+@[hott]
+instance has_equalizer_of_has_equalizers {C : Type u} [category.{v} C] 
+  [has_equalizers C] {a b : C} (f g : a ⟶ b) : has_equalizer f g :=
+⟨@has_limits_of_shape.has_limit _ _ _ _ 
+       (has_equalizers.has_limit_of_shape C) (parallel_pair f g)⟩
+
+@[hott, instance]
+def has_equalizer_of_has_limits_of_shape {C : Type u} [category.{v} C] 
+  [H : has_limits_of_shape walking_parallel_pair C] {a b : C} (f g : a ⟶ b) : 
+  has_equalizer f g :=
+⟨@has_limits_of_shape.has_limit _ _ _ _ H (parallel_pair f g)⟩ 
+
+@[hott, instance]
+def has_equalizers_of_has_limits (C : Type u) [category.{v} C] [H : has_limits C] : 
+  has_equalizers C :=
+has_equalizers.mk (@has_limits.has_limit_of_shape C _ H walking_parallel_pair _)
+
+
+/- A cone over parallel pairs is called a `fork`. -/
 @[hott]
 abbreviation fork {C : Type u} [category.{v} C] {a b : C} 
   (f g : a ⟶ b) := cone (parallel_pair f g) 
