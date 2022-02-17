@@ -12,7 +12,9 @@ sets
   theories  :   486
 categories  
   basic     :   678
-  examples  :   756
+  examples  :   503
+  diagrams  :   414
   limits    :   529
+  structures:   613
               -----
-               5684
+               6458
