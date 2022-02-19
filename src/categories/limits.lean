@@ -462,12 +462,17 @@ abbreviation fork {C : Type u} [category.{v} C] {a b : C} (f g : a ⟶ b) :=
   cone (parallel_pair f g) 
 
 @[hott] 
-def fork_map {C : Type u} [category.{v} C] {a b : C} (f g : a ⟶ b) (fk : fork f g) :
-  fk.X ⟶ a := fk.π.app wp_pair.up
+def fork_map {C : Type u} [category.{v} C] {a b : C} {f g : a ⟶ b} (fk : fork f g) :
+  fk.X ⟶ a := fk.π.app wp_up
+
+@[hott]
+def fork_eq {C : Type u} [category.{v} C] {a b : C} {f g : a ⟶ b} (fk : fork f g) :
+  (fork_map fk) ≫ f = (fork_map fk) ≫ g :=
+cone.fac fk wp_left ⬝ (cone.fac fk wp_right)⁻¹   
    
 @[hott]
 def fork.of_i {C : Type u} [category.{v} C] {a b c : C} 
-  (f g : a ⟶ b) (i : c ⟶ a) (w : i ≫ f = i ≫ g) : fork f g :=
+  {f g : a ⟶ b} (i : c ⟶ a) (w : i ≫ f = i ≫ g) : fork f g :=
 have π : constant_functor ↥walking_parallel_pair C c ⟹ parallel_pair f g, from
   let app :=  @wp_pair.rec (λ x, c ⟶ (parallel_pair f g).obj x) i (i ≫ f) in
   have naturality : ∀ (x x' : walking_parallel_pair) (h : x ⟶ x'), 
@@ -504,13 +509,31 @@ def equalizer {C : Type u} [category.{v} C] {a b : C} (f g : a ⟶ b) [has_equal
 
 @[hott] 
 def equalizer_map {C : Type u} [category.{v} C] {a b : C} (f g : a ⟶ b) [has_equalizer f g] :
-  equalizer f g ⟶ a := fork_map f g (limit.cone (parallel_pair f g))    
+  equalizer f g ⟶ a := fork_map (limit.cone (parallel_pair f g))    
 
 @[hott] 
 def equalizer_eq {C : Type u} [category.{v} C] {a b : C} (f g : a ⟶ b) [has_equalizer f g] :
-  equalizer_map f g ≫ f = equalizer_map f g ≫ g :=
-sorry    
+  equalizer_map f g ≫ f = equalizer_map f g ≫ g := fork_eq (limit.cone (parallel_pair f g)) 
 
+@[hott]
+def fork_lift {C : Type u} [category.{v} C] {a b : C} {f g : a ⟶ b} [has_equalizer f g] 
+  (fk : fork f g) : fk.X ⟶ equalizer f g := 
+(get_limit_cone (parallel_pair f g)).is_limit.lift fk  
+
+@[hott]
+def fork_lift_uniq {C : Type u} [category.{v} C] {a b : C} {f g : a ⟶ b} [has_equalizer f g] 
+  (fk : fork f g) (m : fk.X ⟶ equalizer f g) : 
+  m ≫ (equalizer_map f g) = fk.π.app wp_up -> m = fork_lift fk :=
+begin 
+  intro H, apply (get_limit_cone (parallel_pair f g)).is_limit.uniq fk,
+  intro j, hinduction j, 
+  { exact H }, 
+  { change m ≫ (limit.cone (parallel_pair f g)).π.app wp_down = fk.π.app wp_down,
+    rwr <- cone.fac (limit.cone (parallel_pair f g)) wp_left, 
+    rwr <- cone.fac fk wp_left, rwr <- precategory.assoc m _ _, 
+    change (m ≫ equalizer_map f g) ≫ _ = _, rwr H }
+end  
+    
 @[hott]
 class has_equalizers (C : Type u) [category.{v} C] := 
   (has_limit_of_shape : has_limits_of_shape walking_parallel_pair C)
@@ -537,16 +560,26 @@ has_equalizers.mk (@has_limits.has_limit_of_shape C _ H walking_parallel_pair _)
 def equalizer_as_subobject {C : Type u} [category.{v} C] {a b : C} (f g : a ⟶ b) 
   [has_equalizer f g] : subobject a :=
 begin
-  let e := equalizer_map f g, 
-  have He : e ≫ f = e ≫ g, from sorry,
+  let e := equalizer_map f g, let He : e ≫ f = e ≫ g := equalizer_eq f g,
   fapply subobject.mk,
   { exact equalizer f g },
   { exact e },
   { intros d h h' Hm, 
-    have Hhe : h ≫ e ≫ f = h ≫ e ≫ g, from ap (category_struct.comp h) He,
-    have Hh'e : h' ≫ e ≫ f = h' ≫ e ≫ g, from ap (category_struct.comp h') He,
+    have Hhe : (h ≫ e) ≫ f = (h ≫ e) ≫ g, from 
+      (precategory.assoc h e f) ⬝ ap (category_struct.comp h) He ⬝ (precategory.assoc h e g)⁻¹,
+    have Hhf : h = fork_lift (fork.of_i (h ≫ e) Hhe), from 
+      fork_lift_uniq (fork.of_i (h ≫ e) Hhe) h rfl,  
+    have Hh'e : (h' ≫ e) ≫ f = (h' ≫ e) ≫ g, from
+      (precategory.assoc h' e f) ⬝ ap (category_struct.comp h') He ⬝ (precategory.assoc h' e g)⁻¹,
+    have Hh'f : h' = fork_lift (fork.of_i (h' ≫ e) Hh'e), from 
+      fork_lift_uniq (fork.of_i (h' ≫ e) Hh'e) h' rfl,
+    have Hfhh' : fork.of_i (h ≫ e) Hhe = fork.of_i (h' ≫ e) Hh'e, from 
+      begin fapply apd011 fork.of_i, exact Hm, apply pathover_of_tr_eq, exact is_set.elim _ _ end,  
+    rwr Hhf, rwr Hh'f, 
+    fapply apd011 (λ (h'': d ⟶ a) (p : h'' ≫ f = h'' ≫ g), fork_lift (fork.of_i h'' p)),
     sorry }
 end  
+
 
 /- The category of sets has all limits. 
 
