@@ -147,6 +147,10 @@ def limit {J : Set.{u'}} [precategory.{v'} J] {C : Type u} [category.{v} C]
   (F : J ⥤ C) [has_limit F] := (limit.cone F).X
 
 @[hott]
+def limit_leg {J : Set.{u'}} [precategory.{v'} J] {C : Type u} [category.{v} C]
+  (F : J ⥤ C) (j : J) [has_limit F] : limit F ⟶ F.obj j := (limit.cone F).π.app j 
+
+@[hott]
 class has_limits_of_shape (J : Set.{u'}) [precategory.{v'} J] (C : Type u) [category.{v} C] :=
   (has_limit : Π F : J ⥤ C, has_limit F)
 
@@ -317,6 +321,82 @@ def orthogonal_pair_map_id {C : Type u} [category.{v} C] {a b c : C}
   orthogonal_pair_map f g (𝟙 s) = 𝟙 (orthogonal_pair_obj f g s) :=
 begin intro s, hinduction s, hsimp, hsimp, hsimp end 
 
+@[hott, hsimp]
+def orthogonal_pair_map_comp {C : Type u} [category.{v} C] {a b c : C} 
+  (f : a ⟶ c) (g : b ⟶ c) : ∀ {s t u : orthogonal_wedge.{u}} 
+  (h : s ⟶ t) (i : t ⟶ u), orthogonal_pair_map f g (h ≫ i) = 
+                  (orthogonal_pair_map f g h) ≫ (orthogonal_pair_map f g i) :=
+begin 
+  intros s t u h i; hinduction s; hinduction t; hinduction u; 
+  hsimp; hinduction i; hinduction h 
+end
+
+@[hott]
+def orthogonal_pair {C : Type u} [category.{v} C] {a b c : C} 
+  (f : a ⟶ c) (g : b ⟶ c) : orthogonal_wedge.{u} ⥤ C :=
+categories.functor.mk (orthogonal_pair_obj f g) 
+                           (@orthogonal_pair_map _ _ _ _ _ f g) 
+                           (orthogonal_pair_map_id f g) 
+                           (@orthogonal_pair_map_comp _ _ _ _ _ f g)  
+
+/- Limits of orthogonal pairs are `pullbacks`. -/
+@[hott]
+class has_pullback {C : Type u} [category.{v} C] {a b c : C} (f : a ⟶ c) (g : b ⟶ c) := 
+  (has_limit : has_limit (orthogonal_pair f g))
+
+@[hott, priority 100]
+instance has_limit_of_has_pullback {C : Type u} [category.{v} C] {a b c : C} (f : a ⟶ c)
+  (g : b ⟶ c) [has_pullback f g] : has_limit (orthogonal_pair f g) := 
+has_pullback.has_limit f g 
+
+@[hott]
+def pullback {C : Type u} [category.{v} C] {a b c : C} (f : a ⟶ c) (g : b ⟶ c) 
+  [has_pullback f g] := limit (orthogonal_pair f g)   
+
+@[hott]
+class has_pullbacks (C : Type u) [category.{v} C] := 
+  (has_limit_of_shape : has_limits_of_shape orthogonal_wedge C)
+
+@[hott]
+instance has_pullback_of_has_pullbacks {C : Type u} [category.{v} C] 
+  [has_pullbacks C] {a b c : C} (f : a ⟶ c) (g : b ⟶ c) : has_pullback f g :=
+⟨@has_limits_of_shape.has_limit _ _ _ _ 
+       (has_pullbacks.has_limit_of_shape C) (orthogonal_pair f g)⟩
+
+@[hott, instance]
+def has_pullback_of_has_limits_of_shape {C : Type u} [category.{v} C] 
+  [H : has_limits_of_shape orthogonal_wedge C] {a b c : C} (f : a ⟶ c) (g : b ⟶ c) : 
+  has_pullback f g :=
+⟨@has_limits_of_shape.has_limit _ _ _ _ H (orthogonal_pair f g)⟩ 
+
+@[hott, instance]
+def has_pullbacks_of_has_limits (C : Type u) [category.{v} C] [H : has_limits C] : 
+  has_pullbacks C :=
+has_pullbacks.mk (@has_limits.has_limit_of_shape C _ H orthogonal_wedge _)
+
+
+/- A cone over an orthogonal pair is called a `square`. -/
+@[hott]
+abbreviation square {C : Type u} [category.{v} C] {a b c : C} 
+  (f : a ⟶ c) (g : b ⟶ c) := cone (orthogonal_pair f g) 
+
+@[hott]
+def square.of_i_j {C : Type u} [category.{v} C] {a b c d : C} 
+  (f : a ⟶ c) (g : b ⟶ c) (i : d ⟶ a) (j : d ⟶ b) (w : i ≫ f = j ≫ g) : square f g :=
+have π : constant_functor ↥orthogonal_wedge C d ⟹ orthogonal_pair f g, from
+  let app :=  @ow_node.rec (λ x, d ⟶ (orthogonal_pair f g).obj x) i (i ≫ f) j in
+  have naturality : ∀ (x x' : orthogonal_wedge) (h : x ⟶ x'), 
+          ((constant_functor ↥orthogonal_wedge C d).map h) ≫ (app x') = 
+           (app x) ≫ ((orthogonal_pair f g).map h), from 
+  begin 
+    intros x x' h; hinduction x; hinduction x'; hinduction h; hsimp,
+    { change i ≫ f = i ≫ f, refl },
+    { change i ≫ f = j ≫ g, exact w }  
+  end,           
+  nat_trans.mk app naturality,   
+cone.mk d π 
+
+
 /- `parallel_pair f g` is the diagram in `C` consisting of the two morphisms `f` and `g` with
     common domain and codomain. -/
 @[hott, hsimp]
@@ -376,47 +456,15 @@ categories.functor.mk (parallel_pair_obj f g)
                            (parallel_pair_map_id f g) 
                            (@parallel_pair_map_comp _ _ _ _ f g)   
 
-/- Limits of parallel pairs are `equalizers`. -/
+/- A cone over a parallel pair is called a `fork`. -/
 @[hott]
-class has_equalizer {C : Type u} [category.{v} C] {a b : C} (f g : a ⟶ b) := 
-  (has_limit : has_limit (parallel_pair f g))
+abbreviation fork {C : Type u} [category.{v} C] {a b : C} (f g : a ⟶ b) := 
+  cone (parallel_pair f g) 
 
-@[hott, priority 100]
-instance has_limit_of_has_equalizer {C : Type u} [category.{v} C] {a b : C} (f g : a ⟶ b)
-  [has_equalizer f g] : has_limit (parallel_pair f g) := 
-has_equalizer.has_limit f g 
-
-@[hott]
-def equalizer {C : Type u} [category.{v} C] {a b : C} (f g : a ⟶ b) [has_equalizer f g] :=
-  limit (parallel_pair f g)   
-
-@[hott]
-class has_equalizers (C : Type u) [category.{v} C] := 
-  (has_limit_of_shape : has_limits_of_shape walking_parallel_pair C)
-
-@[hott]
-instance has_equalizer_of_has_equalizers {C : Type u} [category.{v} C] 
-  [has_equalizers C] {a b : C} (f g : a ⟶ b) : has_equalizer f g :=
-⟨@has_limits_of_shape.has_limit _ _ _ _ 
-       (has_equalizers.has_limit_of_shape C) (parallel_pair f g)⟩
-
-@[hott, instance]
-def has_equalizer_of_has_limits_of_shape {C : Type u} [category.{v} C] 
-  [H : has_limits_of_shape walking_parallel_pair C] {a b : C} (f g : a ⟶ b) : 
-  has_equalizer f g :=
-⟨@has_limits_of_shape.has_limit _ _ _ _ H (parallel_pair f g)⟩ 
-
-@[hott, instance]
-def has_equalizers_of_has_limits (C : Type u) [category.{v} C] [H : has_limits C] : 
-  has_equalizers C :=
-has_equalizers.mk (@has_limits.has_limit_of_shape C _ H walking_parallel_pair _)
-
-
-/- A cone over parallel pairs is called a `fork`. -/
-@[hott]
-abbreviation fork {C : Type u} [category.{v} C] {a b : C} 
-  (f g : a ⟶ b) := cone (parallel_pair f g) 
-
+@[hott] 
+def fork_map {C : Type u} [category.{v} C] {a b : C} (f g : a ⟶ b) (fk : fork f g) :
+  fk.X ⟶ a := fk.π.app wp_pair.up
+   
 @[hott]
 def fork.of_i {C : Type u} [category.{v} C] {a b c : C} 
   (f g : a ⟶ b) (i : c ⟶ a) (w : i ≫ f = i ≫ g) : fork f g :=
@@ -439,6 +487,66 @@ have π : constant_functor ↥walking_parallel_pair C c ⟹ parallel_pair f g, f
   end,           
   nat_trans.mk app naturality,   
 cone.mk c π 
+
+/- Limits of parallel pairs are `equalizers`. -/
+@[hott]
+class has_equalizer {C : Type u} [category.{v} C] {a b : C} (f g : a ⟶ b) := 
+  (has_limit : has_limit (parallel_pair f g))
+
+@[hott, priority 100]
+instance has_limit_of_has_equalizer {C : Type u} [category.{v} C] {a b : C} (f g : a ⟶ b)
+  [has_equalizer f g] : has_limit (parallel_pair f g) := 
+has_equalizer.has_limit f g 
+
+@[hott]
+def equalizer {C : Type u} [category.{v} C] {a b : C} (f g : a ⟶ b) [has_equalizer f g] :=
+  limit (parallel_pair f g) 
+
+@[hott] 
+def equalizer_map {C : Type u} [category.{v} C] {a b : C} (f g : a ⟶ b) [has_equalizer f g] :
+  equalizer f g ⟶ a := fork_map f g (limit.cone (parallel_pair f g))    
+
+@[hott] 
+def equalizer_eq {C : Type u} [category.{v} C] {a b : C} (f g : a ⟶ b) [has_equalizer f g] :
+  equalizer_map f g ≫ f = equalizer_map f g ≫ g :=
+sorry    
+
+@[hott]
+class has_equalizers (C : Type u) [category.{v} C] := 
+  (has_limit_of_shape : has_limits_of_shape walking_parallel_pair C)
+
+@[hott]
+instance has_equalizer_of_has_equalizers {C : Type u} [category.{v} C] 
+  [has_equalizers C] {a b : C} (f g : a ⟶ b) : has_equalizer f g :=
+⟨@has_limits_of_shape.has_limit _ _ _ _ 
+       (has_equalizers.has_limit_of_shape C) (parallel_pair f g)⟩
+
+@[hott, instance]
+def has_equalizer_of_has_limits_of_shape {C : Type u} [category.{v} C] 
+  [H : has_limits_of_shape walking_parallel_pair C] {a b : C} (f g : a ⟶ b) : 
+  has_equalizer f g :=
+⟨@has_limits_of_shape.has_limit _ _ _ _ H (parallel_pair f g)⟩ 
+
+@[hott, instance]
+def has_equalizers_of_has_limits (C : Type u) [category.{v} C] [H : has_limits C] : 
+  has_equalizers C :=
+has_equalizers.mk (@has_limits.has_limit_of_shape C _ H walking_parallel_pair _)
+
+/- An equalizer is a subobject of the domain of the parallel pair. -/
+@[hott]
+def equalizer_as_subobject {C : Type u} [category.{v} C] {a b : C} (f g : a ⟶ b) 
+  [has_equalizer f g] : subobject a :=
+begin
+  let e := equalizer_map f g, 
+  have He : e ≫ f = e ≫ g, from sorry,
+  fapply subobject.mk,
+  { exact equalizer f g },
+  { exact e },
+  { intros d h h' Hm, 
+    have Hhe : h ≫ e ≫ f = h ≫ e ≫ g, from ap (category_struct.comp h) He,
+    have Hh'e : h' ≫ e ≫ f = h' ≫ e ≫ g, from ap (category_struct.comp h') He,
+    sorry }
+end  
 
 /- The category of sets has all limits. 
 
