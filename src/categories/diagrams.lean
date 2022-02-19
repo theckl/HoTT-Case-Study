@@ -166,6 +166,21 @@ def ow_hom_is_prop : Π (s t : orthogonal_wedge), is_prop (s ⟶ t) :=
        end  
 
 @[hott]
+def ow_left : orthogonal_wedge := ow_node.left
+
+@[hott]
+def ow_base : orthogonal_wedge := ow_node.base
+
+@[hott]
+def ow_upper : orthogonal_wedge := ow_node.upper
+
+@[hott]
+def ow_right : ow_left ⟶ ow_base := One.star
+
+@[hott]
+def ow_down : ow_upper ⟶ ow_base := One.star
+
+@[hott]
 def orthogonal_wedge.id : Π (s : orthogonal_wedge), s ⟶ s :=
 λ s, match s with 
      | ow_node.left := One.star
@@ -302,6 +317,18 @@ def walking_parallel_pair_hom : Π s t : walking_parallel_pair.{u}, Set.{u} :=
 @[hott, instance]
 def walking_parallel_pair_has_hom : has_hom walking_parallel_pair := 
   ⟨walking_parallel_pair_hom⟩
+
+@[hott]
+def wp_up : walking_parallel_pair := wp_pair.up
+
+@[hott]
+def wp_down : walking_parallel_pair := wp_pair.down
+
+@[hott]
+def wp_left : wp_up ⟶ wp_down := wp_pair_hom.left
+
+@[hott]
+def wp_right : wp_up ⟶ wp_down := wp_pair_hom.right
 
 @[hott]
 def walking_parallel_pair.id : Π (s : walking_parallel_pair), s ⟶ s :=
