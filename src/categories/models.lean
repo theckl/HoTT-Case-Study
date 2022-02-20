@@ -17,7 +17,7 @@ def context_in_Sig_str {sign : fo_signature} (cont : context sign)
 def interpret_of_term {sign : fo_signature} (t : term sign) {cont : context sign} 
   (tc : term_in_context t cont) (C : Type u) [category.{v} C] [has_products.{v u 0} C] 
   (Sig_str : Sig_structure sign C) : 
-  (context_in_Sig_str cont Sig_str) ⟶ (Sig_str.carrier (t.sort)) :=
+  (context_in_Sig_str cont Sig_str) ⟶ (Sig_str.carrier (t.sort)) := 
 begin 
   hinduction t, hinduction term, 
   { have g : ↥(context_in_Sig_str cont Sig_str ⟶ Sig_str.carrier v.sort), from 
@@ -32,20 +32,21 @@ begin
 end  
 
 @[hott]
-def interpret_of_form {sign : fo_signature} {cont : context sign} (φ : formula sign)  
+def interpret_of_alg_form {sign : fo_signature} {cont : context sign} (φ : formula sign)  
   (fc : formula_in_context φ cont) (af : is_algebraic_form φ) (C : Type u) [category.{v} C] 
-  [has_products.{v u 0} C] [has_equalizers C] (Sig_str : Sig_structure sign C) : 
+  [has_products.{v u 0} C] [has_equalizers.{v u u} C] (Sig_str : Sig_structure sign C) :
   subobject (context_in_Sig_str cont Sig_str) :=
 begin
   hinduction φ with atom T, 
   { hinduction atom with t₁ t₂ fun_eq rel,
-    { have tc₁ : ↥(term_in_context t₁ cont), from sorry,
-      have tc₂ : ↥(term_in_context t₂ cont), from sorry,
-      sorry },
+    { have tc₁ : ↥(term_in_context t₁ cont), from subset_trans _ _ _ (union_sset_l _ _) fc,
+      have tc₂ : ↥(term_in_context t₂ cont), from subset_trans _ _ _ (union_sset_r _ _) fc,
+      exact equalizer_as_subobject (interpret_of_term t₁ tc₁ C Sig_str) 
+              (fun_eq⁻¹ ▸[λ s, (context_in_Sig_str cont Sig_str) ⟶ (Sig_str.carrier s)] 
+                       (interpret_of_term t₂ tc₂ C Sig_str)) },
     { hinduction af } },
   { hinduction af }
 end    
-
 
 /- The category of Ω-structures on sets having a given signature is usually too large to
    capture algebraic structures: These require that particular relations involving the
