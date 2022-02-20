@@ -573,11 +573,11 @@ begin
       (precategory.assoc h' e f) ⬝ ap (category_struct.comp h') He ⬝ (precategory.assoc h' e g)⁻¹,
     have Hh'f : h' = fork_lift (fork.of_i (h' ≫ e) Hh'e), from 
       fork_lift_uniq (fork.of_i (h' ≫ e) Hh'e) h' rfl,
-    have Hfhh' : fork.of_i (h ≫ e) Hhe = fork.of_i (h' ≫ e) Hh'e, from 
-      begin fapply apd011 fork.of_i, exact Hm, apply pathover_of_tr_eq, exact is_set.elim _ _ end,  
     rwr Hhf, rwr Hh'f, 
-    fapply apd011 (λ (h'': d ⟶ a) (p : h'' ≫ f = h'' ≫ g), fork_lift (fork.of_i h'' p)),
-    sorry }
+    let F : Π (h'': d ⟶ a), (h'' ≫ f = h'' ≫ g) -> (d ⟶ equalizer f g) := 
+                                                     (λ h'' p, fork_lift (fork.of_i h'' p)),
+    change F (h ≫ e) Hhe = F (h' ≫ e) Hh'e, fapply apd011 F, 
+    exact Hm, apply pathover_of_tr_eq, exact is_set.elim _ _ }
 end  
 
 
