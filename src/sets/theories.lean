@@ -472,7 +472,7 @@ end
 def is_algebraic_seq {sign : fo_signature} : sequent sign -> Prop :=
 begin
   intro seq, hinduction seq, hinduction ass with atom_ass,  
-  { exact False }, --==assumption is True
+  { exact False }, --assumption is True
   { exact is_algebraic_form con } --conclusion is equality of terms
 end  
 
