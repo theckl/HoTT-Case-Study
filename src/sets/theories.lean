@@ -216,27 +216,74 @@ begin
   { exact iUnion ih }
 end
 
-namespace atomic
+/- Terms and later formulas and sequents should always only contain free variables from a 
+   `context`. -/
+@[hott]
+def context (sign : fo_signature) := Subset (to_Set (var sign))
+
+@[hott, instance]
+def context_is_set {sign : fo_signature} : is_set (context sign) :=
+begin apply Powerset_is_set end
 
 @[hott]
-inductive atomic_formula (sign : fo_signature)
-| eq_terms : Π (t₁ t₂ : term sign), (t₁.sort = t₂.sort) -> atomic_formula
+structure term_in_context {sign : fo_signature} (cont : context sign) := 
+  (t : term sign) 
+  (in_cont : free_vars_of_term t ⊆ cont)
+
+/- Formulas in the first-order language built upon a first-order signature, together with 
+   the free variables that they, contain are defined inductively. -/
+namespace formula
+
+@[hott]
+inductive formula (sign : fo_signature)
+| eq_terms : Π (t₁ t₂ : term sign), (t₁.sort = t₂.sort) -> formula
 | rel_terms : Π (r : sign.rels) 
-       (comp : Π (k : sign.rels_arity r), term_of_sort (sign.rels_comp k)), atomic_formula
+       (comp : Π (k : sign.rels_arity r), term_of_sort (sign.rels_comp k)), formula
+| T : formula
+| F : formula 
+| conj : formula -> formula -> formula 
+| disj : formula -> formula -> formula
+| impl : formula -> formula -> formula 
+| neg : formula -> formula
+| ex : var sign -> formula -> formula 
+| univ : var sign -> formula -> formula 
+| inf_conj : Π (I : Set), (I -> formula) -> formula 
+| inf_disj : Π (I : Set), (I -> formula) -> formula        
 
 @[hott]
 protected def code {sign : fo_signature} : 
-  atomic_formula sign -> atomic_formula sign -> Type :=
-begin
-  intro atom₁, hinduction atom₁ with term₁ term₂ p,
-  { intro atom₂, hinduction atom₂ with term₁' term₂' p', 
-    { exact (term₁ = term₁') × (term₂ = term₂') },
-    { exact Zero } },
-  { intro atom₂, hinduction atom₂, 
-    { exact Zero },
-    { exact Σ (q : r = r_1), 
-              comp =[q; λ s, Π (k : sign.rels_arity s), term_of_sort (sign.rels_comp k)] comp_1 } }
-end  
+  formula sign -> formula sign -> Type _ :=
+assume form₁ form₂, 
+match form₁, form₂ with
+| formula.eq_terms t₁ t₂ p, formula.eq_terms t₁' t₂' p' := (t₁ = t₁') × (t₂ = t₂')
+| formula.rel_terms r₁ comp₁, formula.rel_terms r₂ comp₂ :=
+  Σ (q : r₁ = r₂), comp₁ =[q; λ s, Π (k : sign.rels_arity s), 
+                                                term_of_sort (sign.rels_comp k)] comp₂
+| formula.T _, formula.T _ := One
+| formula.F _, formula.F _ := One                                                
+| _, _ := Zero   
+/- begin
+  intro form₁, hinduction form₁ with t₁ t₂ p r comp f₁ f₁',
+  { all_goals { intro form₂, hinduction form₂ with t₁' t₂' p' }, --equality of terms
+    all_goals { try { exact (t₁ = t₁') × (t₂ = t₂') } }, 
+    all_goals { exact Zero } },
+  { all_goals { intro form₂, hinduction form₂ with t₁' t₂' p' }, --relations
+    all_goals { try { exact Σ (q : r = r_1), 
+      comp =[q; λ s, Π (k : sign.rels_arity s), term_of_sort (sign.rels_comp k)] comp_1 } }, 
+    all_goals { exact Zero } },
+  { all_goals { intro form₂, hinduction form₂ with t₁' t₂' p' }, --T
+    exact Zero, exact Zero, exact One, all_goals { exact Zero } },
+  { all_goals { intro form₂, hinduction form₂ with t₁' t₂' p' }, --F
+    exact Zero, exact Zero, exact Zero, exact One, all_goals { exact Zero } }, 
+  sorry,
+  sorry,
+  sorry,
+  sorry,
+  sorry,
+  sorry,
+  sorry,
+  sorry   
+end  -/
 
 @[hott, instance]
 def code_is_prop  {sign : fo_signature} : 
@@ -311,11 +358,9 @@ begin
   { exact iUnion (λ (k : sign.rels_arity r), free_vars_of_term ⟨sign.rels_comp k, comp k⟩) } 
 end
 
-end atomic
+end formula
 
-open atomic
-
-namespace formula
+open formula
 
 /- If we need more formation rules for formulas the definition has to be extended, together 
    with the proof that the type of formulas is a set and the association of free variables. -/
@@ -404,16 +449,6 @@ end formula
 
 open formula
 
-@[hott]
-def context (sign : fo_signature) := Subset (to_Set (var sign))
-
-@[hott, instance]
-def context_is_set {sign : fo_signature} : is_set (context sign) :=
-begin apply Powerset_is_set end
-
-@[hott]
-def term_in_context {sign : fo_signature} (t : term sign) 
-  (cont : context sign) := (free_vars_of_term t) ⊆ cont
 
 @[hott]
 def formula_in_context {sign : fo_signature} (φ : formula sign) 
