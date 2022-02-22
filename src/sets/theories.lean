@@ -13,10 +13,16 @@ open hott.eq hott.set hott.subset hott.is_trunc hott.is_equiv hott.equiv
    Sec.9.8) are another example of this technique, but the more general construction also 
    allows the construction of categories of topological groups or locally ringed sheaves. 
    
-   We mainly follow the introduction to categorical model theory by [caramello14]. 
+   We mainly follow the introduction to categorical model theory by [Caramello14]. 
 
    First-order signatures prescribe the types of arguments and the arity of functions and 
-   relations in a first-order theory. -/
+   relations in a first-order theory. 
+   
+   For infinitary conjunctions and disjunctions we need index sets, which we fix to universe 
+   level 0 and only allow a choice from a set of universe level 0, to avoid universe problems.
+   The idea of a Grothendieck universe or a von Neumann universe/cumulitative hierarchy does
+   not help because we cannot quantify over a type of universe level 0 without raising the 
+   universe level to 1.-/
 namespace signature
 
 @[hott]
@@ -30,6 +36,8 @@ structure fo_signature :=
   (rels : Set.{0})
   (rels_arity : Π (r : rels), Set.{0})
   (rels_comp : Π {r : rels}, rels_arity r -> sorts)
+  (I : Set.{0})
+  (V : I -> Set.{0})
 
 @[hott]
 structure var (sign : fo_signature) :=
@@ -231,7 +239,7 @@ structure term_in_context {sign : fo_signature} (cont : context sign) :=
   (in_cont : free_vars_of_term t ⊆ cont)
 
 /- Formulas in the first-order language built upon a first-order signature, together with 
-   the free variables that they, contain are defined inductively. -/
+   the free variables that they contain, are defined inductively.   -/
 namespace formula
 
 @[hott]
@@ -247,22 +255,13 @@ inductive formula (sign : fo_signature)
 | neg : formula -> formula
 | ex : var sign -> formula -> formula 
 | univ : var sign -> formula -> formula 
-| inf_conj : Π (I : Set), (I -> formula) -> formula 
-| inf_disj : Π (I : Set), (I -> formula) -> formula        
+| inf_conj : Π (i : sign.I), (sign.V i -> formula) -> formula 
+| inf_disj : Π (i : sign.I), (sign.V i -> formula) -> formula        
 
 @[hott]
-protected def code {sign : fo_signature} : 
-  formula sign -> formula sign -> Type _ :=
-assume form₁ form₂, 
-match form₁, form₂ with
-| formula.eq_terms t₁ t₂ p, formula.eq_terms t₁' t₂' p' := (t₁ = t₁') × (t₂ = t₂')
-| formula.rel_terms r₁ comp₁, formula.rel_terms r₂ comp₂ :=
-  Σ (q : r₁ = r₂), comp₁ =[q; λ s, Π (k : sign.rels_arity s), 
-                                                term_of_sort (sign.rels_comp k)] comp₂
-| formula.T _, formula.T _ := One
-| formula.F _, formula.F _ := One                                                
-| _, _ := Zero   
-/- begin
+protected def code {sign : fo_signature} : formula sign -> formula sign -> Type :=
+/- A match-expression does not work because we need proper induction. -/  
+begin
   intro form₁, hinduction form₁ with t₁ t₂ p r comp f₁ f₁',
   { all_goals { intro form₂, hinduction form₂ with t₁' t₂' p' }, --equality of terms
     all_goals { try { exact (t₁ = t₁') × (t₂ = t₂') } }, 
@@ -275,31 +274,52 @@ match form₁, form₂ with
     exact Zero, exact Zero, exact One, all_goals { exact Zero } },
   { all_goals { intro form₂, hinduction form₂ with t₁' t₂' p' }, --F
     exact Zero, exact Zero, exact Zero, exact One, all_goals { exact Zero } }, 
-  sorry,
-  sorry,
-  sorry,
-  sorry,
-  sorry,
-  sorry,
-  sorry,
-  sorry   
-end  -/
+  { all_goals { intro form₂, hinduction form₂ with t₁' t₂' p' }, --conj
+    exact Zero, exact Zero, exact Zero, exact Zero, exact prod (ih_a a) (ih_a_1 a_1),
+    all_goals { exact Zero } },
+  { all_goals { intro form₂, hinduction form₂ with t₁' t₂' p' }, --disj
+    exact Zero, exact Zero, exact Zero, exact Zero, exact Zero, 
+    exact prod (ih_a a) (ih_a_1 a_1), all_goals { exact Zero } },
+  { all_goals { intro form₂, hinduction form₂ with t₁' t₂' p' }, --impl
+    exact Zero, exact Zero, exact Zero, exact Zero, exact Zero, exact Zero,
+    exact prod (ih_a a) (ih_a_1 a_1), all_goals { exact Zero } },  
+  { all_goals { intro form₂, hinduction form₂ with t₁' t₂' p' }, --neg
+    exact Zero, exact Zero, exact Zero, exact Zero, exact Zero, exact Zero, exact Zero,
+    exact ih a, all_goals { exact Zero } },
+  { all_goals { intro form₂, hinduction form₂ }, --ex
+    exact Zero, exact Zero, exact Zero, exact Zero, exact Zero, exact Zero, exact Zero,
+    exact Zero, exact prod (a = a_2) (ih a_3), exact Zero, exact Zero, exact Zero },
+  { all_goals { intro form₂, hinduction form₂ }, --univ
+    exact Zero, exact Zero, exact Zero, exact Zero, exact Zero, exact Zero, exact Zero,
+    exact Zero, exact Zero, exact prod (a = a_2) (ih a_3), exact Zero, exact Zero },  
+  { all_goals { intro form₂, hinduction form₂ }, --inf_conj
+    exact Zero, exact Zero, exact Zero, exact Zero, exact Zero, exact Zero, exact Zero,
+    exact Zero, exact Zero, exact Zero, 
+    exact Σ (q : i = i_1), Π v : sign.V i, ih v (a_1 (q ▸ v)), exact Zero },
+  { all_goals { intro form₂, hinduction form₂ }, --inf_disj
+    exact Zero, exact Zero, exact Zero, exact Zero, exact Zero, exact Zero, exact Zero,
+    exact Zero, exact Zero, exact Zero, exact Zero, 
+    exact Σ (q : i = i_1), Π v : sign.V i, ih v (a_1 (q ▸ v)) }   
+end  
 
 @[hott, instance]
 def code_is_prop  {sign : fo_signature} : 
-  Π atom₁ atom₂ : atomic_formula sign, is_prop (atomic.code atom₁ atom₂) :=
+  Π form₁ form₂ : formula sign, is_prop (formula.code form₁ form₂) :=
 begin
   intro atom₁, hinduction atom₁ with term₁ term₂ p, 
-  { intro atom₂, hinduction atom₂ with term₁' term₂' p', 
-    { apply is_prop.mk, intros q q', apply pair_eq, 
-      exact is_prop.elim _ _, exact is_prop.elim _ _ },
-    { apply is_prop.mk, intro q, hinduction q } },
-  { intro atom₂, hinduction atom₂ with term₁' term₂' p', 
-    { apply is_prop.mk, intro q, hinduction q },
-    { apply is_prop.mk, intros code₁ code₂, 
-      apply @sigma_Prop_eq (r = r_1) (λ q, to_Prop (comp =[q; λ s, Π (k : sign.rels_arity s), 
+  all_goals { intro atom₂, hinduction atom₂ with term₁' term₂' p' },
+  all_goals { try { exact Zero_is_prop } },
+  all_goals { try { exact One_is_prop } }, 
+  { apply is_prop.mk, intros q q', apply pair_eq, 
+      exact is_prop.elim _ _, exact is_prop.elim _ _ }, 
+  { apply is_prop.mk, intros code₁ code₂, 
+    apply @sigma_Prop_eq (r = r_1) (λ q, to_Prop (comp =[q; λ s, Π (k : sign.rels_arity s), 
                                                     term_of_sort (sign.rels_comp k)] comp_1)),
-      exact is_set.elim _ _ } }
+    exact is_set.elim _ _ },
+  { apply is_prop.mk, intros code₁ code₂, apply pair_eq, 
+    exact @is_prop.elim _ (ih_a a_2) _ _, exact @is_prop.elim _ (ih_a_1 a_3) _ _ },
+  { apply is_prop.mk, intros code₁ code₂, apply pair_eq, 
+    exact @is_prop.elim (formula.code a a_2) (ih_a a_2) code₁.1 code₂.1, exact @is_prop.elim _ (ih_a_1 a_3) _ _ },  
 end  
 
 @[hott]
