@@ -279,13 +279,13 @@ begin
     all_goals { exact Zero } },
   { all_goals { intro form₂, hinduction form₂ with t₁' t₂' p' }, --disj
     exact Zero, exact Zero, exact Zero, exact Zero, exact Zero, 
-    exact prod (ih_a a) (ih_a_1 a_1), all_goals { exact Zero } },
+    exact prod (ih_a a_2) (ih_a_1 a_3), all_goals { exact Zero } },
   { all_goals { intro form₂, hinduction form₂ with t₁' t₂' p' }, --impl
     exact Zero, exact Zero, exact Zero, exact Zero, exact Zero, exact Zero,
-    exact prod (ih_a a) (ih_a_1 a_1), all_goals { exact Zero } },  
+    exact prod (ih_a a_2) (ih_a_1 a_3), all_goals { exact Zero } },  
   { all_goals { intro form₂, hinduction form₂ with t₁' t₂' p' }, --neg
     exact Zero, exact Zero, exact Zero, exact Zero, exact Zero, exact Zero, exact Zero,
-    exact ih a, all_goals { exact Zero } },
+    exact ih a_1, all_goals { exact Zero } },
   { all_goals { intro form₂, hinduction form₂ }, --ex
     exact Zero, exact Zero, exact Zero, exact Zero, exact Zero, exact Zero, exact Zero,
     exact Zero, exact prod (a = a_2) (ih a_3), exact Zero, exact Zero, exact Zero },
@@ -306,8 +306,8 @@ end
 def code_is_prop  {sign : fo_signature} : 
   Π form₁ form₂ : formula sign, is_prop (formula.code form₁ form₂) :=
 begin
-  intro atom₁, hinduction atom₁ with term₁ term₂ p, 
-  all_goals { intro atom₂, hinduction atom₂ with term₁' term₂' p' },
+  intro form₁, hinduction form₁ with term₁ term₂ p, 
+  all_goals { intro form₂, hinduction form₂ with term₁' term₂' p' },
   all_goals { try { exact Zero_is_prop } },
   all_goals { try { exact One_is_prop } }, 
   { apply is_prop.mk, intros q q', apply pair_eq, 
@@ -316,38 +316,59 @@ begin
     apply @sigma_Prop_eq (r = r_1) (λ q, to_Prop (comp =[q; λ s, Π (k : sign.rels_arity s), 
                                                     term_of_sort (sign.rels_comp k)] comp_1)),
     exact is_set.elim _ _ },
-  { apply is_prop.mk, intros code₁ code₂, apply pair_eq, 
-    exact @is_prop.elim _ (ih_a a_2) _ _, exact @is_prop.elim _ (ih_a_1 a_3) _ _ },
-  { apply is_prop.mk, intros code₁ code₂, apply pair_eq, 
-    exact @is_prop.elim (formula.code a a_2) (ih_a a_2) code₁.1 code₂.1, exact @is_prop.elim _ (ih_a_1 a_3) _ _ },  
+  all_goals { try { apply is_prop.mk, intros code₁ code₂, apply pair_eq, 
+            exact @is_prop.elim _ (ih_a a_2) _ _, exact @is_prop.elim _ (ih_a_1 a_3) _ _ } },
+  { apply is_prop.mk, intros code₁ code₂, exact @is_prop.elim _ (ih a_1) _ _ },
+  all_goals { try { apply is_prop.mk, intros code₁ code₂, apply pair_eq, 
+              exact is_prop.elim _ _, exact @is_prop.elim _ (ih a_3) _ _ } },
+  all_goals { try { apply is_prop.mk, intros code₁ code₂, fapply sigma.sigma_eq, 
+    exact is_prop.elim _ _ , apply pathover_of_tr_eq, apply eq_of_homotopy, intro v, 
+    exact @is_prop.elim _ (ih v (a_1 (code₂.fst ▸[λ i, sign.V i] v))) _ (code₂.2 v) } }
 end  
 
 @[hott]
-protected def refl {sign : fo_signature} : Π t : atomic_formula sign, atomic.code t t :=
-  begin intro t, hinduction t, exact ⟨idp, idp⟩, exact ⟨idp, idpo⟩ end  
+protected def refl {sign : fo_signature} : Π t : formula sign, formula.code t t :=
+begin 
+  intro t, hinduction t, exact ⟨idp, idp⟩, exact ⟨idp, idpo⟩, exact One.star, exact One.star,
+  exact ⟨ih_a, ih_a_1⟩, exact ⟨ih_a, ih_a_1⟩, exact ⟨ih_a, ih_a_1⟩, exact ih, exact ⟨idp, ih⟩,
+  exact ⟨idp, ih⟩, exact ⟨idp, ih⟩, exact ⟨idp, ih⟩
+end  
 
 @[hott]
-def encode {sign : fo_signature} {atom₁ atom₂ : atomic_formula sign} 
-  (p : atom₁ = atom₂) : atomic.code atom₁ atom₂ :=
-p ▸ (atomic.refl atom₁) 
+def encode {sign : fo_signature} {form₁ form₂ : formula sign} (p : form₁ = form₂) : 
+  formula.code form₁ form₂ := p ▸ (formula.refl form₁) 
 
 @[hott, hsimp]
 def decode {sign : fo_signature} : 
-  Π {atom₁ atom₂ : atomic_formula sign}, atomic.code atom₁ atom₂ -> atom₁ = atom₂ :=
+  Π {form₁ form₂ : formula sign}, formula.code form₁ form₂ -> form₁ = form₂ :=
 begin
-  intro atom₁, hinduction atom₁,
-  { intro atom₂, hinduction atom₂, 
-    { intro atom_code, apply apd001 _ atom_code.1 atom_code.2, 
-      apply pathover_of_tr_eq, exact is_prop.elim _ _ },
-    { intro atom_code, hinduction atom_code } },
-  { intro atom₂, hinduction atom₂, 
-    { intro atom_code, hinduction atom_code },
-    { intro atom_code, exact apd011 atomic_formula.rel_terms atom_code.1 atom_code.2 } }
+  intro form₁, hinduction form₁, 
+  { intro form₂, hinduction form₂, all_goals { intro code, hinduction code }, 
+    fapply apd001, assumption, assumption, apply pathover_of_eq_tr, exact is_prop.elim _ _ },
+  { intro form₂, hinduction form₂, all_goals { intro code, hinduction code },
+    exact apd011 formula.rel_terms fst snd },
+  { intro form₂, hinduction form₂, all_goals { intro code, hinduction code }, refl },
+  { intro form₂, hinduction form₂, all_goals { intro code, hinduction code }, refl },
+  { intro form₂, hinduction form₂, all_goals { intro code, hinduction code }, 
+    exact ap011 formula.conj (ih_a fst) (ih_a_1 snd) },
+  { intro form₂, hinduction form₂, all_goals { intro code, hinduction code }, 
+    exact ap011 formula.disj (ih_a fst) (ih_a_1 snd) },
+  { intro form₂, hinduction form₂, all_goals { intro code, hinduction code }, 
+    exact ap011 formula.impl (ih_a fst) (ih_a_1 snd) }, 
+  { intro form₂, hinduction form₂, all_goals { intro code, try { hinduction code } }, 
+    exact ap formula.neg (ih code) }, 
+  { intro form₂, hinduction form₂, all_goals { intro code, try { hinduction code } }, 
+    exact ap011 formula.ex fst (ih snd) },
+  { intro form₂, hinduction form₂, all_goals { intro code, try { hinduction code } }, 
+    exact ap011 formula.univ fst (ih snd) }, 
+  { intro form₂, hinduction form₂, all_goals { intro code, try { hinduction code } },
+    fapply apd011 formula.inf_conj, exact fst, apply pathover_of_tr_eq, 
+    apply eq_of_homotopy, intro v, exact ih (fst ▸ v) (snd (fst v)) }         
 end
 
 @[hott]
-def code_is_contr_to_refl {sign : fo_signature} (atom₁ : atomic_formula sign) : 
-  Π (a_code : Σ (atom₂ : atomic_formula sign), atomic.code atom₁ atom₂), a_code = 
+def code_is_contr_to_refl {sign : fo_signature} (form₁ : formula sign) : 
+  Π (a_code : Σ (atom₂ : formula sign), formula.code atom₁ atom₂), a_code = 
                                                            ⟨atom₁, atomic.refl atom₁⟩ :=
 begin 
   intro a_code, fapply sigma.sigma_eq, 
