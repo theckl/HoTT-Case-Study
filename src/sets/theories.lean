@@ -343,122 +343,22 @@ def decode {sign : fo_signature} :
   Π {form₁ form₂ : formula sign}, formula.code form₁ form₂ -> form₁ = form₂ :=
 begin
   intro form₁, hinduction form₁, 
-  { intro form₂, hinduction form₂, all_goals { intro code, hinduction code }, 
-    fapply apd001, assumption, assumption, apply pathover_of_eq_tr, exact is_prop.elim _ _ },
-  { intro form₂, hinduction form₂, all_goals { intro code, hinduction code },
-    exact apd011 formula.rel_terms fst snd },
-  { intro form₂, hinduction form₂, all_goals { intro code, hinduction code }, refl },
-  { intro form₂, hinduction form₂, all_goals { intro code, hinduction code }, refl },
-  { intro form₂, hinduction form₂, all_goals { intro code, hinduction code }, 
-    exact ap011 formula.conj (ih_a fst) (ih_a_1 snd) },
-  { intro form₂, hinduction form₂, all_goals { intro code, hinduction code }, 
-    exact ap011 formula.disj (ih_a fst) (ih_a_1 snd) },
-  { intro form₂, hinduction form₂, all_goals { intro code, hinduction code }, 
-    exact ap011 formula.impl (ih_a fst) (ih_a_1 snd) }, 
-  { intro form₂, hinduction form₂, all_goals { intro code, try { hinduction code } }, 
-    exact ap formula.neg (ih code) }, 
-  { intro form₂, hinduction form₂, all_goals { intro code, try { hinduction code } }, 
-    exact ap011 formula.ex fst (ih snd) },
-  { intro form₂, hinduction form₂, all_goals { intro code, try { hinduction code } }, 
-    exact ap011 formula.univ fst (ih snd) }, 
-  { intro form₂, hinduction form₂, all_goals { intro code, try { hinduction code } },
-    fapply apd011 formula.inf_conj, exact fst, apply pathover_of_tr_eq, 
-    apply eq_of_homotopy, intro v, exact ih (fst ▸ v) (snd (fst v)) }         
-end
-
-@[hott]
-def code_is_contr_to_refl {sign : fo_signature} (form₁ : formula sign) : 
-  Π (a_code : Σ (atom₂ : formula sign), formula.code atom₁ atom₂), a_code = 
-                                                           ⟨atom₁, atomic.refl atom₁⟩ :=
-begin 
-  intro a_code, fapply sigma.sigma_eq, 
-  { exact (decode a_code.2)⁻¹ },
-  { apply pathover_of_tr_eq, exact is_prop.elim _ _ } 
-end
-
-@[hott, instance]
-def code_is_contr {sign : fo_signature} (atom₁ : atomic_formula sign) : 
-  is_contr (Σ (atom₂ : atomic_formula sign), atomic.code atom₁ atom₂) :=
-is_contr.mk _ (λ a_code, (code_is_contr_to_refl atom₁ a_code)⁻¹)  
-
-@[hott, instance]
-def atom_is_set {sign : fo_signature} : is_set (atomic_formula sign) :=
-begin
-  apply is_trunc_succ_intro, intros atom₁ atom₂,
-  have eqv : (atom₁ = atom₂) ≃ (atomic.code atom₁ atom₂), from 
-    equiv.mk _ (tot_space_contr_id_equiv ⟨atomic.code atom₁, atomic.refl atom₁⟩ 
-                                         (code_is_contr atom₁) atom₂), 
-  exact is_trunc_equiv_closed_rev -1 eqv (code_is_prop _ _)
-end 
-
-@[hott]
-protected def free_vars {sign : fo_signature} : atomic_formula sign -> Subset (to_Set (var sign)) :=
-begin 
-  intro atom, hinduction atom, 
-  { exact (free_vars_of_term t₁) ∪ (free_vars_of_term t₂) }, 
-  { exact iUnion (λ (k : sign.rels_arity r), free_vars_of_term ⟨sign.rels_comp k, comp k⟩) } 
-end
-
-end formula
-
-open formula
-
-/- If we need more formation rules for formulas the definition has to be extended, together 
-   with the proof that the type of formulas is a set and the association of free variables. -/
-@[hott]
-inductive formula (sign : fo_signature)   
-| atom : atomic_formula sign -> formula
-| T : formula
-
-@[hott]
-def free_vars {sign : fo_signature} : formula sign -> Subset (to_Set (var sign)) :=
-begin 
-  intro formula, hinduction formula, 
-  { exact atomic.free_vars a },
-  { exact empty_Subset _ }
-end  
-
-@[hott]
-protected def code {sign : fo_signature} : 
-  formula sign -> formula sign -> Type :=
-begin
-  intro form₁, hinduction form₁ with atom₁,
-  { intro form₂, hinduction form₂ with atom₂, 
-    { exact atom₁ = atom₂ },
-    { exact Zero } },
-  { intro form₂, hinduction form₂ with atom₂, 
-    { exact Zero },
-    { exact One } }
-end  
-
-@[hott, instance]
-def code_is_prop  {sign : fo_signature} : 
-  Π form₁ form₂ : formula sign, is_prop (formula.code form₁ form₂) :=
-begin
-  intro form₁, hinduction form₁ with atom₁, 
-  { intro form₂, hinduction form₂ with atom₂, 
-    { apply is_prop.mk, intros q q', exact is_set.elim _ _ },
-    { apply is_prop.mk, intro q, hinduction q } },
-  { intro atom₂, hinduction atom₂ with term₁' term₂' p', 
-    { apply is_prop.mk, intro q, hinduction q },
-    { apply is_prop.mk, intros code₁ code₂, exact @is_prop.elim _ One_is_prop _ _ } }
-end 
-
-@[hott]
-protected def refl {sign : fo_signature} : Π t : formula sign, formula.code t t :=
-  begin intro t, hinduction t, exact idp, exact One.star end  
-
-@[hott, hsimp]
-def decode {sign : fo_signature} : 
-  Π {form₁ form₂ : formula sign}, formula.code form₁ form₂ -> form₁ = form₂ :=
-begin
-  intro form₁, hinduction form₁ with atom₁,
-  { intro form₂, hinduction form₂ with atom₂, 
-    { intro form_code, apply ap _ form_code },
-    { intro form_code, hinduction form_code } },
-  { intro form₂, hinduction form₂ with atom₂, 
-    { intro form_code, hinduction form_code },
-    { intro form_code, exact idp } }
+  all_goals { intro form₂, hinduction form₂, all_goals { intro code, try { hinduction code } } }, 
+  { fapply apd001, assumption, assumption, apply pathover_of_eq_tr, exact is_prop.elim _ _ },
+  { exact apd011 formula.rel_terms fst snd },
+  refl, refl,
+  { exact ap011 formula.conj (ih_a fst) (ih_a_1 snd) },
+  { exact ap011 formula.disj (ih_a fst) (ih_a_1 snd) },
+  { exact ap011 formula.impl (ih_a fst) (ih_a_1 snd) }, 
+  { exact ap formula.neg (ih code) }, 
+  { exact ap011 formula.ex fst (ih snd) },
+  { exact ap011 formula.univ fst (ih snd) }, 
+  { fapply apd011 formula.inf_conj, exact fst, apply pathover_of_tr_eq, 
+    apply eq_of_homotopy, intro v, exact (tr_dep_fn_eval_tr fst v) ⬝ (ih (fst⁻¹ ▸ v) 
+                   (snd (fst⁻¹ ▸ v))) ⬝ (ap a_1 (@tr_inv_tr _ (λ i, sign.V i) _ _ fst v)) },
+  { fapply apd011 formula.inf_disj, exact fst, apply pathover_of_tr_eq, 
+    apply eq_of_homotopy, intro v, exact (tr_dep_fn_eval_tr fst v) ⬝ (ih (fst⁻¹ ▸ v) 
+                   (snd (fst⁻¹ ▸ v))) ⬝ (ap a_1 (@tr_inv_tr _ (λ i, sign.V i) _ _ fst v)) }                          
 end
 
 @[hott]
@@ -466,8 +366,8 @@ def code_is_contr_to_refl {sign : fo_signature} (form₁ : formula sign) :
   Π (f_code : Σ (form₂ : formula sign), formula.code form₁ form₂), f_code = 
                                                            ⟨form₁, formula.refl form₁⟩ :=
 begin 
-  intro f_code, fapply sigma.sigma_eq, 
-  { exact (decode f_code.2)⁻¹ },
+  intro a_code, fapply sigma.sigma_eq, 
+  { exact (decode a_code.2)⁻¹ },
   { apply pathover_of_tr_eq, exact is_prop.elim _ _ } 
 end
 
@@ -477,7 +377,7 @@ def code_is_contr {sign : fo_signature} (form₁ : formula sign) :
 is_contr.mk _ (λ f_code, (code_is_contr_to_refl form₁ f_code)⁻¹)  
 
 @[hott, instance]
-def form_is_set {sign : fo_signature} : is_set (formula sign) :=
+def atom_is_set {sign : fo_signature} : is_set (formula sign) :=
 begin
   apply is_trunc_succ_intro, intros form₁ form₂,
   have eqv : (form₁ = form₂) ≃ (formula.code form₁ form₂), from 
@@ -486,26 +386,38 @@ begin
   exact is_trunc_equiv_closed_rev -1 eqv (code_is_prop _ _)
 end 
 
-end formula
-
-open formula
-
+@[hott]
+protected def free_vars {sign : fo_signature} : formula sign -> Subset (to_Set (var sign)) :=
+begin 
+  intro form, hinduction form, 
+  { exact (free_vars_of_term t₁) ∪ (free_vars_of_term t₂) }, 
+  { exact iUnion (λ (k : sign.rels_arity r), free_vars_of_term ⟨sign.rels_comp k, comp k⟩) },
+  exact empty_Subset _, exact empty_Subset _, 
+  exact subset.union ih_a ih_a_1, exact subset.union ih_a ih_a_1, 
+  exact subset.union ih_a ih_a_1, exact ih, exact setminus ih (elem_to_Subset a),
+  exact setminus ih (elem_to_Subset a), exact iUnion ih, exact iUnion ih
+end
 
 @[hott]
-def formula_in_context {sign : fo_signature} (φ : formula sign) 
-  (cont : context sign) := (free_vars φ) ⊆ cont  
+structure formula_in_context {sign : fo_signature} (cont : context sign) := 
+(φ : formula sign) 
+(in_cont : formula.free_vars φ ⊆ cont)
+
+end formula
+
+
+open formula  
 
 @[hott]
 structure sequent (sign : fo_signature) :=
   (cont : context sign)
-  (ass : formula sign)
-  (con : formula sign)
-  (ass_in_cont : formula_in_context ass cont)
-  (con_in_cont : formula_in_context con cont)
+  (ass : formula_in_context cont)
+  (con : formula_in_context cont)
 
 @[hott, hsimp]
 def sequent_eq {sign : fo_signature} {seq₁ seq₂ : sequent sign} :
-  (seq₁.cont = seq₂.cont) -> (seq₁.ass = seq₂.ass) -> (seq₁.con = seq₂.con) -> seq₁ = seq₂ :=
+  Π (p : seq₁.cont = seq₂.cont), seq₁.ass =[p] seq₂.ass -> seq₁.con =[p] seq₂.con -> 
+                                                                         seq₁ = seq₂ :=
 begin 
   intros, hinduction seq₁, hinduction seq₂, apply apd000011 sequent.mk a a_1 a_2, 
   { apply pathover_of_tr_eq, exact is_prop.elim _ _ },
