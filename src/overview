@@ -7,7 +7,7 @@ sets
   finite    :   193
   subset    :   407
   axioms    :   340
-  algebra   :   233
+  algebra   :   237
   quotients :   205
   theories  :   486
 categories  
@@ -17,4 +17,4 @@ categories
   limits    :   735
   structures:   613
               -----
-               6691
+               6695
