@@ -219,6 +219,10 @@ begin
     exact (elem_comp_iff (f a.1) x).1 (i_el a.1) a.2 }
 end  
 
+@[hott]
+def setminus (U V : Subset A) : Subset A :=
+  λ x : A, (x ∈ U) and (x ∉ V)
+
 /- Lists of elements of a set define subsets. -/
 @[hott]
 def elem_to_Subset {S : Set} (a : S) : Subset S :=
