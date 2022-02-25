@@ -377,7 +377,7 @@ def code_is_contr {sign : fo_signature} (form₁ : formula sign) :
 is_contr.mk _ (λ f_code, (code_is_contr_to_refl form₁ f_code)⁻¹)  
 
 @[hott, instance]
-def atom_is_set {sign : fo_signature} : is_set (formula sign) :=
+def form_is_set {sign : fo_signature} : is_set (formula sign) :=
 begin
   apply is_trunc_succ_intro, intros form₁ form₂,
   have eqv : (form₁ = form₂) ≃ (formula.code form₁ form₂), from 
@@ -385,6 +385,118 @@ begin
                                          (code_is_contr form₁) form₂), 
   exact is_trunc_equiv_closed_rev -1 eqv (code_is_prop _ _)
 end 
+
+/- We use the class mechanism to implement the hierarchy of fragments in the first-order
+   language given by the signature. -/
+@[hott]
+def atomic {sign : fo_signature} (φ : formula sign) : Prop :=
+begin hinduction φ, exact True, exact True, all_goals {exact False} end
+
+@[hott]
+class is_atomic {sign : fo_signature} (φ : formula sign) :=
+  (atom : atomic φ)
+
+@[hott]
+def horn {sign : fo_signature} (φ : formula sign) : Prop :=
+begin 
+  hinduction φ, exact True, exact True, exact True, exact False, exact ih_a and ih_a_1, 
+  all_goals {exact False} 
+end
+
+@[hott]
+class is_horn {sign : fo_signature} (φ : formula sign) :=
+  (horn : horn φ)
+
+@[hott]
+def atomic_implies_horn {sign : fo_signature} (φ : formula sign) : atomic φ -> horn φ :=
+  begin hinduction φ, all_goals { intro a; try { exact a }; hinduction a } end  
+
+@[hott, instance]
+def atomic.to_horn {sign : fo_signature} (φ : formula sign) [H : is_atomic φ] : is_horn φ :=
+  begin apply is_horn.mk, exact atomic_implies_horn φ H.atom end  
+
+@[hott]
+def regular {sign : fo_signature} (φ : formula sign) : Prop :=
+begin 
+  hinduction φ, exact True, exact True, exact True, exact False, exact ih_a and ih_a_1, 
+  exact False, exact False, exact False, exact ih, all_goals {exact False} 
+end
+
+@[hott]
+class is_regular {sign : fo_signature} (φ : formula sign) :=
+  (reg : regular φ)
+
+@[hott]
+def horn_implies_regular {sign : fo_signature} (φ : formula sign) : horn φ -> regular φ :=
+  begin hinduction φ, all_goals { intro h }, exact h, exact h, exact h, exact h,  end  
+
+@[hott, instance]
+def horn.to_regular {sign : fo_signature} (φ : formula sign) [H : is_horn φ] : is_regular φ :=
+  begin apply is_regular.mk, exact horn_implies_regular φ H.horn end
+
+@[hott]
+def coherent {sign : fo_signature} (φ : formula sign) : Prop :=
+begin 
+  hinduction φ, exact True, exact True, exact True, exact True, exact True, 
+  exact True, exact False, exact False, exact True, all_goals {exact False} 
+end
+
+@[hott]
+class is_coherent {sign : fo_signature} (φ : formula sign) :=
+  (coh : coherent φ)
+
+@[hott]
+def regular_implies_coherent {sign : fo_signature} (φ : formula sign) : 
+  regular φ -> coherent φ :=
+begin hinduction φ, all_goals { intro a; try { exact a }; hinduction a } end  
+
+@[hott, instance]
+def regular.to_coherent {sign : fo_signature} (φ : formula sign) [H : is_regular φ] : 
+  is_coherent φ :=
+begin apply is_coherent.mk, exact regular_implies_coherent φ H.reg end  
+
+@[hott]
+def first_order {sign : fo_signature} (φ : formula sign) : Prop :=
+begin 
+  hinduction φ, exact True, exact True, exact True, exact True, exact True, 
+  exact True, exact True, exact True, exact True, exact True, all_goals {exact False} 
+end
+
+@[hott]
+class is_first_order {sign : fo_signature} (φ : formula sign) :=
+  (fo : first_order φ)
+
+@[hott]
+def coherent_implies_first_order {sign : fo_signature} (φ : formula sign) : 
+  coherent φ -> first_order φ :=
+begin hinduction φ, all_goals { intro a; try { exact a }; hinduction a } end  
+
+@[hott, instance]
+def coherent.to_first_order {sign : fo_signature} (φ : formula sign) [H : is_coherent φ] : 
+  is_first_order φ :=
+begin apply is_first_order.mk, exact coherent_implies_first_order φ H.coh end
+
+@[hott]
+def geometric {sign : fo_signature} (φ : formula sign) : Prop :=
+begin 
+  hinduction φ, exact True, exact True, exact True, exact True, exact True, 
+  exact True, exact False, exact False, exact True, exact False, exact False, exact True 
+end
+
+@[hott]
+class is_geometric {sign : fo_signature} (φ : formula sign) :=
+  (geom : geometric φ)
+
+@[hott]
+def coherent_implies_geometric {sign : fo_signature} (φ : formula sign) : 
+  coherent φ -> geometric φ :=
+begin hinduction φ, all_goals { intro a; try { exact a }; hinduction a } end  
+
+@[hott, instance]
+def coherent.to_geometric {sign : fo_signature} (φ : formula sign) [H : is_coherent φ] : 
+  is_geometric φ :=
+begin apply is_geometric.mk, exact coherent_implies_geometric φ H.coh end
+
 
 @[hott]
 protected def free_vars {sign : fo_signature} : formula sign -> Subset (to_Set (var sign)) :=
