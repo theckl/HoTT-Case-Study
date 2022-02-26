@@ -389,7 +389,7 @@ end
 /- We use the class mechanism to implement the hierarchy of fragments in the first-order
    language given by the signature. -/
 @[hott]
-def atomic {sign : fo_signature} (φ : formula sign) : Prop :=
+def atomic {sign : fo_signature} (φ : formula sign) : trunctype.{0} -1 :=
 begin hinduction φ, exact True, exact True, all_goals {exact False} end
 
 @[hott]
@@ -397,7 +397,7 @@ class is_atomic {sign : fo_signature} (φ : formula sign) :=
   (atom : atomic φ)
 
 @[hott]
-def horn {sign : fo_signature} (φ : formula sign) : Prop :=
+def horn {sign : fo_signature} (φ : formula sign) : trunctype.{0} -1 :=
 begin 
   hinduction φ, exact True, exact True, exact True, exact False, exact ih_a and ih_a_1, 
   all_goals {exact False} 
@@ -416,7 +416,7 @@ def atomic.to_horn {sign : fo_signature} (φ : formula sign) [H : is_atomic φ] 
   begin apply is_horn.mk, exact atomic_implies_horn φ H.atom end  
 
 @[hott]
-def regular {sign : fo_signature} (φ : formula sign) : Prop :=
+def regular {sign : fo_signature} (φ : formula sign) : trunctype.{0} -1 :=
 begin 
   hinduction φ, exact True, exact True, exact True, exact False, exact ih_a and ih_a_1, 
   exact False, exact False, exact False, exact ih, all_goals {exact False} 
@@ -428,17 +428,20 @@ class is_regular {sign : fo_signature} (φ : formula sign) :=
 
 @[hott]
 def horn_implies_regular {sign : fo_signature} (φ : formula sign) : horn φ -> regular φ :=
-  begin hinduction φ, all_goals { intro h }, exact h, exact h, exact h, exact h,  end  
+begin 
+  hinduction φ, all_goals { intro h }, exact h, exact h, exact h, exact h, 
+  exact ⟨(ih_a h.1), (ih_a_1 h.2)⟩, all_goals { hinduction h } 
+end  
 
 @[hott, instance]
 def horn.to_regular {sign : fo_signature} (φ : formula sign) [H : is_horn φ] : is_regular φ :=
   begin apply is_regular.mk, exact horn_implies_regular φ H.horn end
 
 @[hott]
-def coherent {sign : fo_signature} (φ : formula sign) : Prop :=
+def coherent {sign : fo_signature} (φ : formula sign) : trunctype.{0} -1 :=
 begin 
-  hinduction φ, exact True, exact True, exact True, exact True, exact True, 
-  exact True, exact False, exact False, exact True, all_goals {exact False} 
+  hinduction φ, exact True, exact True, exact True, exact True, exact ih_a and ih_a_1, 
+  exact ih_a and ih_a_1, exact False, exact False, exact ih, all_goals {exact False} 
 end
 
 @[hott]
@@ -448,7 +451,11 @@ class is_coherent {sign : fo_signature} (φ : formula sign) :=
 @[hott]
 def regular_implies_coherent {sign : fo_signature} (φ : formula sign) : 
   regular φ -> coherent φ :=
-begin hinduction φ, all_goals { intro a; try { exact a }; hinduction a } end  
+begin 
+  hinduction φ, all_goals { intro r }, exact r, exact r, exact r, hinduction r, 
+  exact ⟨(ih_a r.1), (ih_a_1 r.2)⟩, hinduction r, hinduction r, 
+  hinduction r, exact ih r, all_goals { hinduction r } 
+end  
 
 @[hott, instance]
 def regular.to_coherent {sign : fo_signature} (φ : formula sign) [H : is_regular φ] : 
@@ -456,10 +463,11 @@ def regular.to_coherent {sign : fo_signature} (φ : formula sign) [H : is_regula
 begin apply is_coherent.mk, exact regular_implies_coherent φ H.reg end  
 
 @[hott]
-def first_order {sign : fo_signature} (φ : formula sign) : Prop :=
+def first_order {sign : fo_signature} (φ : formula sign) : trunctype.{0} -1 :=
 begin 
-  hinduction φ, exact True, exact True, exact True, exact True, exact True, 
-  exact True, exact True, exact True, exact True, exact True, all_goals {exact False} 
+  hinduction φ, exact True, exact True, exact True, exact True, exact ih_a and ih_a_1, 
+  exact ih_a and ih_a_1, exact ih_a and ih_a_1, exact ih, exact ih, exact ih, 
+  all_goals {exact False} 
 end
 
 @[hott]
@@ -469,7 +477,11 @@ class is_first_order {sign : fo_signature} (φ : formula sign) :=
 @[hott]
 def coherent_implies_first_order {sign : fo_signature} (φ : formula sign) : 
   coherent φ -> first_order φ :=
-begin hinduction φ, all_goals { intro a; try { exact a }; hinduction a } end  
+begin 
+  hinduction φ, all_goals { intro c }, exact c, exact c, exact c, exact c, 
+  exact ⟨(ih_a c.1), (ih_a_1 c.2)⟩, exact ⟨(ih_a c.1), (ih_a_1 c.2)⟩, hinduction c,
+  hinduction c, exact ih c, all_goals { hinduction c } 
+end  
 
 @[hott, instance]
 def coherent.to_first_order {sign : fo_signature} (φ : formula sign) [H : is_coherent φ] : 
@@ -477,10 +489,11 @@ def coherent.to_first_order {sign : fo_signature} (φ : formula sign) [H : is_co
 begin apply is_first_order.mk, exact coherent_implies_first_order φ H.coh end
 
 @[hott]
-def geometric {sign : fo_signature} (φ : formula sign) : Prop :=
+def geometric {sign : fo_signature} (φ : formula sign) : trunctype.{0} -1 :=
 begin 
-  hinduction φ, exact True, exact True, exact True, exact True, exact True, 
-  exact True, exact False, exact False, exact True, exact False, exact False, exact True 
+  hinduction φ, exact True, exact True, exact True, exact True, exact ih_a and ih_a_1, 
+  exact ih_a and ih_a_1, exact False, exact False, exact ih, exact False, exact False, 
+  exact inf_disj ih 
 end
 
 @[hott]
@@ -490,12 +503,18 @@ class is_geometric {sign : fo_signature} (φ : formula sign) :=
 @[hott]
 def coherent_implies_geometric {sign : fo_signature} (φ : formula sign) : 
   coherent φ -> geometric φ :=
-begin hinduction φ, all_goals { intro a; try { exact a }; hinduction a } end  
+begin 
+  hinduction φ, all_goals { intro c }, exact c, exact c, exact c, exact c, 
+  exact ⟨(ih_a c.1), (ih_a_1 c.2)⟩, exact ⟨(ih_a c.1), (ih_a_1 c.2)⟩, hinduction c,
+  hinduction c, exact ih c, all_goals { hinduction c } 
+end   
 
 @[hott, instance]
 def coherent.to_geometric {sign : fo_signature} (φ : formula sign) [H : is_coherent φ] : 
   is_geometric φ :=
 begin apply is_geometric.mk, exact coherent_implies_geometric φ H.coh end
+
+/- Infinitary first-order formulas are just formulas and don't need a separate label. -/
 
 
 @[hott]
@@ -512,8 +531,26 @@ end
 
 @[hott]
 structure formula_in_context {sign : fo_signature} (cont : context sign) := 
-(φ : formula sign) 
-(in_cont : formula.free_vars φ ⊆ cont)
+  (φ : formula sign) 
+  (in_cont : formula.free_vars φ ⊆ cont)
+
+@[hott]
+def formula_in_context_eq {sign : fo_signature} {cont : context sign} 
+  {φ₁ φ₂ : formula_in_context cont} : 
+  Π (p : φ₁.φ = φ₂.φ), φ₁.in_cont =[p; λ φ, formula.free_vars φ ⊆ cont] φ₂.in_cont -> 
+  φ₁ = φ₂ :=
+begin intros, hinduction φ₁, hinduction φ₂, apply apdd _ p a end   
+
+@[hott]
+def formula_in_context_eq_eta {sign : fo_signature} {cont : context sign} 
+  (φ₁ φ₂ : formula_in_context cont) (p : φ₁ = φ₂) : 
+  formula_in_context_eq (ap formula_in_context.φ p) 
+    ((apo01 formula_in_context.φ (λ form : formula_in_context cont, form.in_cont) p).1 (apd formula_in_context.in_cont p))
+
+@[hott, instance]
+def formula_in_context_is_set {sign : fo_signature} (cont : context sign) :
+  is_set (formula_in_context cont) :=
+begin apply is_set.mk, intros φ₁ φ₂ p q, sorry end
 
 end formula
 
@@ -530,29 +567,23 @@ structure sequent (sign : fo_signature) :=
 def sequent_eq {sign : fo_signature} {seq₁ seq₂ : sequent sign} :
   Π (p : seq₁.cont = seq₂.cont), seq₁.ass =[p] seq₂.ass -> seq₁.con =[p] seq₂.con -> 
                                                                          seq₁ = seq₂ :=
-begin 
-  intros, hinduction seq₁, hinduction seq₂, apply apd000011 sequent.mk a a_1 a_2, 
-  { apply pathover_of_tr_eq, exact is_prop.elim _ _ },
-  { apply pathover_of_tr_eq, exact is_prop.elim _ _ } 
-end 
-
-@[hott]
-def sequent_eq_idp {sign : fo_signature} (seq : sequent sign) : 
-  @sequent_eq _ seq seq idp idp idp = idp :=
-begin hinduction seq, hsimp, rwr pathover_idp_of_id end  
+begin intros, hinduction seq₁, hinduction seq₂, apply apdd2 sequent.mk p a a_1 end 
 
 @[hott]
 def sequent_eq_eta {sign : fo_signature} {seq₁ seq₂ : sequent sign} (p : seq₁ = seq₂) :
-  sequent_eq (ap sequent.cont p) (ap sequent.ass p) (ap sequent.con p) = p := 
-begin hinduction p, hinduction seq₁, rwr ap_idp, rwr ap_idp, rwr ap_idp, rwr sequent_eq_idp _ end 
+  sequent_eq (ap sequent.cont p) 
+      ((apo01 sequent.cont (λ (a : sequent sign), a.ass) p).1 (apd sequent.ass p)) 
+      ((apo01 sequent.cont (λ (a : sequent sign), a.con) p).1 (apd sequent.con p))  = p := 
+begin hinduction p, hinduction seq₁, exact idp end 
 
 @[hott, instance]
 def sequent_is_set {sign : fo_signature} : is_set (sequent sign) :=
 begin
   fapply is_set.mk, intros seq₁ seq₂ p q, 
   rwr <- sequent_eq_eta p, rwr <- sequent_eq_eta q,
-  apply eq.ap0111 sequent_eq, exact is_set.elim _ _, exact is_set.elim _ _, 
-  exact is_set.elim _ _
+  fapply apd0111 sequent_eq, exact is_set.elim _ _, 
+  { apply pathover_of_tr_eq, exact dep_set_eq_eq _ _ _ }, 
+  { apply pathover_of_tr_eq, exact dep_set_eq_eq _ _ _ }
 end 
 
 /- We need notations for formulas and sequents. -/
