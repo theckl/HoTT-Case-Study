@@ -370,6 +370,17 @@ def Zero_is_prop : is_prop Zero :=
 def Zero_Set : Set :=
   Set.mk Zero (is_trunc_succ Zero -1)
 
+@[hott, instance]
+def is_prop_Zero_equiv (A : Type _) : is_prop (Zero ≃ A) :=
+begin 
+  apply is_prop.mk, intros eqv₁ eqv₂,
+  have H : is_prop A, from is_trunc_equiv_closed -1 eqv₁ Zero_is_prop, 
+  hinduction eqv₁ with f₁ is_eqv₁, hinduction eqv₂ with f₂ is_eqv₂,
+  fapply apd011 equiv.mk, 
+  { apply eq_of_homotopy, intro o, exact @is_prop.elim _ H _ _ },
+  { apply pathover_of_tr_eq, exact is_prop.elim _ _ } 
+end
+
 @[hott]
 inductive One : Type _  
 | star : One
