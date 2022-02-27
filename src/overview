@@ -1,6 +1,6 @@
 init2       :   360
 types2      :   252
-prop_axioms :   636
+prop_axioms :   647
 prop_logic  :   202
 sets
   basic     :   415
@@ -17,4 +17,4 @@ categories
   limits    :   735
   structures:   613
               -----
-               6703
+               6714
