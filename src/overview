@@ -9,7 +9,7 @@ sets
   axioms    :   340
   algebra   :   237
   quotients :   205
-  theories  :   486
+  theories  :   655
 categories  
   basic     :   678
   examples  :   503
@@ -17,4 +17,4 @@ categories
   limits    :   735
   structures:   613
               -----
-               6714
+               6883
