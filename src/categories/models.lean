@@ -9,6 +9,32 @@ open signature signature.term signature.formula categories.limits subset
 namespace categories
 
 @[hott]
+inductive model_properties : Type 
+| equalizer : model_properties
+| pullback : model_properties
+| fin_union : model_properties
+| stable_image : model_properties
+| all_of_fiber : model_properties
+| inf_union : model_properties
+| inf_pullback : model_properties
+
+@[hott]
+def needs_properties {sign : fo_signature} (φ : formula sign) : 
+  model_properties -> trunctype.{0} -1 :=
+begin
+  intro mp, hinduction mp, 
+  { hinduction φ, exact True, all_goals { exact False } },
+  { hinduction φ, exact False, exact True, exact False, exact False, exact True, 
+    exact ih_a or ih_a_1, exact ih_a or ih_a_1, exact ih, exact True, exact ih, 
+    sorry, sorry },
+  { hinduction φ, all_goals { exact False } },
+  { hinduction φ, exact False, exact False, exact True, all_goals { exact False } },
+  { sorry },
+  { sorry },
+  { sorry }
+end     
+
+@[hott]
 def context_in_Sig_str {sign : fo_signature} (cont : context sign) 
   {C : Type u} [category.{v} C] [has_products.{v u 0} C] (Sig_str : Sig_structure sign C) : C :=
 ∏ (λ x : pred_Set cont, Sig_str.carrier (pred_Set_map cont x).sort)   
