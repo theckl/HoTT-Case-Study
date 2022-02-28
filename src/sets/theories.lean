@@ -495,7 +495,7 @@ protected def geometric {sign : fo_signature} (φ : formula sign) : trunctype.{0
 begin 
   hinduction φ, exact True, exact True, exact True, exact True, exact ih_a and ih_a_1, 
   exact ih_a and ih_a_1, exact False, exact False, exact ih, exact False, exact False, 
-  exact inf_disj ih 
+  exact inf_conj ih 
 end
 
 @[hott]
