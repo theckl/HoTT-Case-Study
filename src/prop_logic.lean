@@ -19,6 +19,7 @@ infix `and`:50 := hott.and
 def is_prop_inf_prod {I : Type _} (B : I -> Prop) : is_prop (Π i : I, B i) :=
 begin apply is_prop.mk, intros f g, apply eq_of_homotopy, intro i, exact is_prop.elim _ _ end 
 
+/- Conjunction of arbitrarily many propositions -/
 @[hott]
 def inf_conj {I : Type _} (B : I -> Prop) : Prop :=
   Prop.mk (Π i : I, B i) (is_prop_inf_prod B)
@@ -44,6 +45,11 @@ begin
   { apply tr, exact sum.inr p }, 
   { apply tr, exact sum.inl q }
 end 
+
+/- Disjunction of arbitrarily many propositions -/
+@[hott]
+def inf_disj {I : Type _} (B : I -> Prop) : Prop :=
+  ∥Σ (i : I), B i∥
 
 /- We define `Not P` as a map from `P` to `False` in the same universe. 
    Otherwise, `Not` introduces universe levels that cannot easily be controlled. -/
