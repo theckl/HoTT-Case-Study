@@ -23,16 +23,32 @@ def needs_properties {sign : fo_signature} (φ : formula sign) :
   model_properties -> trunctype.{0} -1 :=
 begin
   intro mp, hinduction mp, 
-  { hinduction φ, exact True, all_goals { exact False } },
-  { hinduction φ, exact False, exact True, exact False, exact False, exact True, 
+  { hinduction φ, exact True, all_goals { exact False } }, --equalizer
+  { hinduction φ, exact False, exact True, exact False, exact False, exact True, --pullbacks
     exact ih_a or ih_a_1, exact ih_a or ih_a_1, exact ih, exact True, exact ih, 
-    sorry, sorry },
-  { hinduction φ, all_goals { exact False } },
-  { hinduction φ, exact False, exact False, exact True, all_goals { exact False } },
-  { sorry },
-  { sorry },
-  { sorry }
+    exact inf_disj ih, exact inf_disj ih },
+  { hinduction φ, exact False, exact False, exact False, exact True, --finite unions
+    exact ih_a or ih_a_1, exact True, exact ih_a or ih_a_1, exact True, exact ih, exact ih, 
+    exact inf_disj ih, exact inf_disj ih },
+  { hinduction φ, exact False, exact False, exact False, exact False,  --stable images
+    exact ih_a or ih_a_1, exact ih_a or ih_a_1, exact ih_a or ih_a_1, exact ih, exact True,
+    exact ih, exact inf_disj ih, exact inf_disj ih },
+  { hinduction φ, exact False, exact False, exact False, exact False,  --all of fiber
+    exact ih_a or ih_a_1, exact ih_a or ih_a_1, exact True, exact True, exact ih, exact True,
+    exact inf_disj ih, exact inf_disj ih },
+  { hinduction φ, exact False, exact False, exact False, exact False,  --arbitrary unions
+    exact ih_a or ih_a_1, exact ih_a or ih_a_1, exact ih_a or ih_a_1, exact ih, exact ih, 
+    exact ih, exact True, exact inf_disj ih },
+  { hinduction φ, exact False, exact False, exact False, exact False,  --arbitrary pullbacks
+    exact ih_a or ih_a_1, exact ih_a or ih_a_1, exact ih_a or ih_a_1, exact ih, exact ih, 
+    exact ih, exact inf_disj ih, exact True }
 end     
+
+@[hott]
+class is_interpretable_in {sign : fo_signature} (φ : formula sign) (C : Type u) 
+  [category.{v} C] [has_products.{v u 0} C] :=
+(equal : needs_properties φ model_properties.equalizer -> has_equalizers C)
+(pullback : needs_properties φ model_properties.pullback -> has_pullbacks C)  
 
 @[hott]
 def context_in_Sig_str {sign : fo_signature} (cont : context sign) 
