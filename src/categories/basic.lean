@@ -350,6 +350,11 @@ end
 def subobject_hom {C : Type u} [category.{v} C] {c : C} (s₁ s₂ : subobject c) :=
   hom_of_monos s₁.is_mono s₂.is_mono
 
+@[hott, instance]
+def subobject_hom_is_prop {C : Type u} [category.{v} C] {c : C} (s₁ s₂ : subobject c) :
+  is_prop (subobject_hom s₁ s₂) :=
+begin change is_prop (hom_of_monos s₁.is_mono s₂.is_mono), apply_instance end    
+
 @[hott]
 def equal_subobj_to_iso_mono {C : Type u} [category.{v} C] {c : C} (s₁ s₂ : subobject c) :
   s₁ = s₂ -> iso_of_monos s₁.is_mono s₂.is_mono :=
