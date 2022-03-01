@@ -498,6 +498,42 @@ def Set_category : category Set.{u} :=
     adjointify idtoiso Set_isotoid Set_id_iso_rinv Set_id_iso_linv,
   category.mk ideqviso  
 
+
+/- The subobjects of an object, together with their monomorphism-preserving homomorphisms
+   defined in [categories.basic], form a category. -/  
+@[hott, instance]
+def subobject_has_hom {C : Type u} [category.{v} C] {c : C} : has_hom (subobject c) :=
+  has_hom.mk (λ a b : subobject c, Set.mk (subobject_hom a b) (is_trunc_succ _ -1))
+
+@[hott]
+def id_subobject {C : Type u} [category.{v} C] {c : C} (a : subobject c) : subobject_hom a a :=
+  begin fapply hom_of_monos.mk a.is_mono a.is_mono, exact 𝟙 a.obj, hsimp end  
+
+@[hott] 
+def comp_subobject {C : Type u} [category.{v} C] {c : C} (a₁ a₂ a₃ : subobject c) :
+  subobject_hom a₁ a₂ -> subobject_hom a₂ a₃ -> subobject_hom a₁ a₃ :=
+begin 
+  intros f g, fapply hom_of_monos.mk a₁.is_mono a₃.is_mono, exact f.hom_obj ≫ g.hom_obj, 
+  rwr precategory.assoc, rwr g.fac, rwr f.fac 
+end  
+
+@[hott, instance]
+def subobject_cat_struct {C : Type u} [category.{v} C] {c : C} : 
+  category_struct (subobject c) :=
+category_struct.mk id_subobject comp_subobject
+
+@[hott, instance]
+def subobject_precategory {C : Type u} [category.{v} C] {c : C} : 
+  precategory (subobject c) :=
+have ic : Π (a b : subobject c) (f : a ⟶ b), 𝟙 a ≫ f = f, from 
+  assume a b f, by exact is_prop.elim _ _,
+have ci : Π (a b : subobject c) (f : a ⟶ b), f ≫ 𝟙 b = f, from 
+  assume a b f, by exact is_prop.elim _ _,
+have as : Π (a₁ a₂ a₃ a₄ : subobject c) (f : a₁ ⟶ a₂) (g : a₂ ⟶ a₃) (h : a₃ ⟶ a₄),
+             (f ≫ g) ≫ h = f ≫ (g ≫ h), from 
+  assume a₁ a₂ a₃ a₄ f g h, by exact is_prop.elim _ _,
+precategory.mk ic ci as  
+
 end categories
 
 end hott
