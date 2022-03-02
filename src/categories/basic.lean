@@ -305,6 +305,11 @@ begin
         apply pathover_of_tr_eq, exact is_set.elim _ _ } } }
 end  
 
+@[hott, instance]
+def is_prop_iso_of_monos {C : Type u} [category.{v} C] {c d₁ d₂: C} {f : d₁ ⟶ c} (Hf : is_mono f)
+  {g : d₂ ⟶ c} (Hg : is_mono g) : is_prop (iso_of_monos Hf Hg) :=
+begin apply is_trunc_equiv_closed -1 (homs_eqv_iso_of_monos Hf Hg), apply_instance end
+
 @[hott]
 structure subobject {C : Type u} [category.{v} C] (c : C) :=
   (obj : C)
