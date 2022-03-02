@@ -11,11 +11,18 @@ sets
   quotients :   205
   theories  :   655
 categories  
-  basic     :   683
+  basic     :   688
   examples  :   503
   diagrams  :   441
   limits    :   735
   colimits  :   264
   structures:   613
               -----
-               7158
+               7163
+
+
+Edited files: 
+---------------
+categories.models: is_interpretable_in class 
+categories.colimits: union of subobjects
+categories.examples: category of subobjects              
