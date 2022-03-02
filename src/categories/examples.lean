@@ -534,6 +534,50 @@ have as : Π (a₁ a₂ a₃ a₄ : subobject c) (f : a₁ ⟶ a₂) (g : a₂ �
   assume a₁ a₂ a₃ a₄ f g h, by exact is_prop.elim _ _,
 precategory.mk ic ci as  
 
+@[hott]
+def iso_of_monos_to_iso {C : Type u} [category.{v} C] {c : C} (a b : subobject c) :
+  (iso_of_monos a.is_mono b.is_mono) -> (a ≅ b) :=
+begin 
+  intro im, fapply iso.mk, 
+  { fapply hom_of_monos.mk, exact im.iso_obj.hom, exact im.fac }, 
+  { fapply hom_of_monos.mk, exact im.iso_obj.inv, apply eq.inverse, apply iso_move_lr, 
+    exact im.fac },
+  exact is_prop.elim _ _, exact is_prop.elim _ _ 
+end
+
+@[hott]
+def iso_to_iso_of_monos {C : Type u} [category.{v} C] {c : C} (a b : subobject c) :
+  (a ≅ b) -> (iso_of_monos a.is_mono b.is_mono) :=
+begin 
+  intro i, fapply iso_of_monos.mk, 
+  { fapply iso.mk, exact i.hom.hom_obj, exact i.inv.hom_obj, 
+    exact ap hom_of_monos.hom_obj i.r_inv, exact ap hom_of_monos.hom_obj i.l_inv },
+  { exact i.hom.fac }
+end    
+
+@[hott]
+def iso_of_monos_eqv_iso {C : Type u} [category.{v} C] {c : C} (a b : subobject c) :
+  (iso_of_monos a.is_mono b.is_mono) ≃ (a ≅ b) :=
+begin 
+  fapply equiv.mk,
+  { exact iso_of_monos_to_iso a b },
+  { fapply adjointify, 
+    { exact iso_to_iso_of_monos a b },
+    { intro i, apply hom_eq_to_iso_eq, exact is_prop.elim _ _ },
+    { intro i, exact is_prop.elim _ _ } }
+end  
+
+@[hott]
+def subobj_idtoiso {C : Type u} [category.{v} C] {c : C} (a b : subobject c) : 
+  @idtoiso _ _ a b = (iso_of_monos_eqv_iso a b).to_fun ∘ 
+                     (equal_subobj_eqv_iso_mono a b).to_fun :=
+begin apply eq_of_homotopy, intro p, apply hom_eq_to_iso_eq, exact is_prop.elim _ _ end                       
+
+@[hott, instance]
+def subobject_category {C : Type u} [category.{v} C] {c : C} : 
+  category (subobject c) :=
+begin apply category.mk, intros a b, rwr subobj_idtoiso a b, apply_instance end    
+
 end categories
 
 end hott
