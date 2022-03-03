@@ -259,6 +259,56 @@ def set_has_colimits_of_shape {J : Set} [precategory J] :
   has_colimits_of_shape J Set :=
 has_colimits_of_shape.mk (λ F, set_has_colimit F) 
 
+set_option pp.universes true
+
+/- Unions of subobjects of a given object in a category can be defined as colimits in the 
+   category of such subobjects. Note that this is not the colimit in the surrounding 
+   category but the image of the natural homomorphism to the containing object. Therefore,
+   having colimits in the surrounding category is not enough for the existence of unions. -/
+@[hott]
+class has_union {C : Type u} [category.{v} C] {c : C} (a b : subobject c) :=
+  (exists_union : has_colimit (@discrete.functor.{v (max u v) 0} (subobject c) _ Two_Set 
+                                                        (@Two.rec (λ n, subobject c) a b))) 
+
+@[hott]
+def subobject_union {C : Type u} [category.{v} C] {c : C} (a b : subobject c)
+  [H : has_union.{v u 0} a b] := 
+(@colimit.cocone _ _ _ _ (@discrete.functor.{v (max u v) 0} (subobject c) _ Two_Set 
+                                      (@Two.rec (λ n, subobject c) a b)) H.exists_union).X
+
+@[hott]
+class has_unions {C : Type u} [category.{v} C] (c : C) :=
+  (has_union : Π (a b : subobject c), has_union.{v u 0} a b)
+
+@[hott, instance]
+def has_union_of_has_unions {C : Type u} [category.{v} C] {c : C} [has_unions c] 
+  (a b : subobject c) : has_union.{v u 0} a b :=
+has_unions.has_union a b 
+
+/- We can unpack the colimit data that a union has to satisfy. -/
+@[hott]
+class is_union {C : Type u} [category.{v} C] {c : C} (a b d : subobject c) :=
+  (inc_a : a ⟶ d)
+  (inc_b : b ⟶ d)
+  (fac : Π e : subobject c, (a ⟶ e) -> (b ⟶ e) -> (d ⟶ e))
+
+@[hott]
+def union_is_uniq {C : Type u} [category.{v} C] {c : C} (a b d₁ d₂ : subobject c) : 
+  (is_union a b d₁) -> (is_union a b d₂) -> d₁ = d₂ :=
+begin intros u₁ u₂, sorry end 
+
+#print subobject_union
+
+@[hott]
+def subobj_union_is_union {C : Type u} [category.{v} C] {c : C} (a b : subobject c) 
+  [has_union.{v u 0} a b] : is_union a b (subobject_union a b) :=
+begin fapply is_union.mk, sorry, sorry, sorry end
+
+@[hott, instance]
+def is_union_to_has_union {C : Type u} [category.{v} C] {c : C} (a b d : subobject c) 
+  [is_union a b d] : has_union a b :=
+sorry  
+
 end category_theory.colimits
 
 end hott
