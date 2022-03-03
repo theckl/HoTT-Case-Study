@@ -578,6 +578,16 @@ def subobject_category {C : Type u} [category.{v} C] {c : C} :
   category (subobject c) :=
 begin apply category.mk, intros a b, rwr subobj_idtoiso a b, apply_instance end    
 
+@[hott]
+def subobj_antisymm {C : Type u} [category.{v} C] {c : C} (a b : subobject c) : 
+  (a ⟶ b) -> (b ⟶ a) -> (a = b) :=
+begin 
+  intros i j , 
+  have iso_ab : a ≅ b, from 
+    begin fapply iso.mk, exact i, exact j, exact is_prop.elim _ _, exact is_prop.elim _ _ end,  
+  exact category.isotoid iso_ab 
+end  
+
 end categories
 
 end hott
