@@ -273,8 +273,13 @@ class has_union {C : Type u} [category.{v} C] {c : C} (a b : subobject c) :=
 @[hott]
 def subobject_union {C : Type u} [category.{v} C] {c : C} (a b : subobject c)
   [H : has_union.{v u 0} a b] := 
-(@colimit.cocone _ _ _ _ (@discrete.functor.{v (max u v) 0} (subobject c) _ Two_Set 
-                                      (@Two.rec (λ n, subobject c) a b)) H.exists_union).X
+@colimit.cocone _ _ _ _ (@discrete.functor.{v (max u v) 0} (subobject c) _ Two_Set 
+                                      (@Two.rec (λ n, subobject c) a b)) H.exists_union
+
+@[hott]
+def subobject.union {C : Type u} [category.{v} C] {c : C} (a b : subobject c)
+  [H : has_union.{v u 0} a b] : subobject c := 
+(subobject_union a b).X
 
 @[hott]
 class has_unions {C : Type u} [category.{v} C] (c : C) :=
@@ -290,19 +295,22 @@ has_unions.has_union a b
 class is_union {C : Type u} [category.{v} C] {c : C} (a b d : subobject c) :=
   (inc_a : a ⟶ d)
   (inc_b : b ⟶ d)
-  (fac : Π e : subobject c, (a ⟶ e) -> (b ⟶ e) -> (d ⟶ e))
+  (fac : Π {e : subobject c}, (a ⟶ e) -> (b ⟶ e) -> (d ⟶ e))
 
 @[hott]
 def union_is_uniq {C : Type u} [category.{v} C] {c : C} (a b d₁ d₂ : subobject c) : 
   (is_union a b d₁) -> (is_union a b d₂) -> d₁ = d₂ :=
-begin intros u₁ u₂, sorry end 
+assume u₁ u₂, subobj_antisymm d₁ d₂ (@is_union.fac _ _ _ _ _ d₁ u₁ _ u₂.inc_a u₂.inc_b) 
+                                    (@is_union.fac _ _ _ _ _ d₂ u₂ _ u₁.inc_a u₁.inc_b) 
 
-#print subobject_union
-
-@[hott]
+@[hott, instance]
 def subobj_union_is_union {C : Type u} [category.{v} C] {c : C} (a b : subobject c) 
-  [has_union.{v u 0} a b] : is_union a b (subobject_union a b) :=
-begin fapply is_union.mk, sorry, sorry, sorry end
+  [H : has_union.{v u 0} a b] : is_union a b (subobject.union a b) :=
+begin 
+  fapply is_union.mk, 
+  exact (subobject_union a b).π.app Two.zero, exact (subobject_union a b).π.app Two.one, 
+  intros e ia ib, sorry 
+end
 
 @[hott, instance]
 def is_union_to_has_union {C : Type u} [category.{v} C] {c : C} (a b d : subobject c) 
