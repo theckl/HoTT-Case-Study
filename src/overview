@@ -12,17 +12,16 @@ sets
   theories  :   655
 categories  
   basic     :   688
-  examples  :   503
+  examples  :   593
   diagrams  :   441
   limits    :   735
   colimits  :   264
   structures:   613
               -----
-               7163
+               7253
 
 
 Edited files: 
 ---------------
 categories.models: is_interpretable_in class 
-categories.colimits: union of subobjects
-categories.examples: category of subobjects              
+categories.colimits: union of subobjects            
