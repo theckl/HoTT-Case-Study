@@ -23,5 +23,6 @@ categories
 
 Edited files: 
 ---------------
-categories.models: is_interpretable_in class 
-categories.colimits: union of subobjects            
+categories.models: is_interpretable_in-class 
+categories.examples: top subobject
+categories.colimits: bottom subobject, finite union of subobjects
