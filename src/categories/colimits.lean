@@ -158,6 +158,132 @@ def has_colimit_of_has_colimits (C : Type u) [category.{v} C] [H : has_colimits.
 have H' : has_colimits_of_shape J C, from has_colimits.has_colimit_of_shape C J,  
 @has_colimit_of_has_colimits_of_shape _ _ C _ H' F
 
+@[hott]
+class has_coproduct {C : Type u} [category.{v} C] {J : Set.{u'}} (f : J -> C) := 
+  (has_colimit : has_colimit (discrete.functor f)) 
+
+@[hott, priority 100]
+instance has_colimit_of_has_coproduct {C : Type u} [category.{v} C] {J : Set.{u'}} 
+  (f : J -> C) [has_coproduct f] : has_colimit (discrete.functor f) := 
+has_coproduct.has_colimit f  
+
+@[hott]
+abbreviation copi_obj {C : Type u} [category.{v} C] {J : Set.{u'}} (f : J → C) 
+  [has_coproduct f] := 
+colimit (discrete.functor f)
+
+notation `⨿ ` f:20 := copi_obj f
+
+@[hott]
+class has_coproducts (C : Type u) [category.{v} C] := 
+  (has_colimit_of_shape : Π J : Set.{u'}, has_colimits_of_shape (discrete J) C)
+
+@[hott, instance, priority 100]
+def has_colimits_of_shape_of_has_coproducts (J : Set.{u'}) (C : Type u) [category.{v} C] 
+  [has_coproducts.{v u u'} C] : has_colimits_of_shape (discrete J) C :=
+has_coproducts.has_colimit_of_shape C J
+
+@[hott]
+instance has_coproduct_of_has_coproducts {C : Type u} [category.{v} C] 
+  [has_coproducts C] {J : Set.{u'}} (f : J -> C) : has_coproduct f :=
+⟨@has_colimits_of_shape.has_colimit _ _ _ _ 
+       (has_coproducts.has_colimit_of_shape C J) (discrete.functor f)⟩
+
+@[hott, instance]
+def has_coproduct_of_has_climits_of_shape {C : Type u} [category.{v} C] 
+  {J : Set.{u'}} [has_colimits_of_shape (discrete J) C] (f : J -> C) : 
+  has_coproduct f :=
+⟨has_colimits_of_shape.has_colimit (discrete.functor f)⟩ 
+
+@[hott, instance]
+def has_coproducts_of_has_colimits (C : Type u) [category.{v} C] [c : has_colimits C] : 
+  has_coproducts C :=
+has_coproducts.mk (λ J, @has_colimits.has_colimit_of_shape C _ c (discrete J) _)
+
+/-- A cofan over `f : J → C` consists of a collection of maps from every `f j` to an object
+    `CP`. This is enough to determine a cocone which factorizes through the coproduct. -/
+@[hott]    
+abbreviation cofan {J : Set.{u'}} {C : Type u} [category.{v} C] (f : J → C) := 
+  cocone (discrete.functor f)
+
+@[hott, hsimp]
+def cofan.mk {J : Set.{u'}} (C : Type u) [category.{v} C] {f : J → C} {CP : C} 
+  (p : Π j, f j ⟶ CP) : cofan f :=
+cocone.mk CP (discrete.nat_trans p)
+
+@[hott, hsimp] 
+def copi.desc {J : Set.{u'}} {C : Type u} [category.{v} C] {f : J → C} [has_coproduct f]
+  {CP : C} (p : Π j, f j ⟶ CP) : ⨿ f ⟶ CP :=
+(get_colimit_cocone (discrete.functor f)).is_colimit.desc (cofan.mk _ p)  
+
+@[hott, hsimp] 
+def copi.π {J : Set.{u'}} {C : Type u} [category.{v} C] (f : J → C) [has_coproduct f] 
+  (j : J) : f j ⟶ ⨿ f :=
+(colimit.cocone (discrete.functor f)).π.app j 
+
+@[hott]
+def copi.hom_is_desc {J : Set.{u'}} {C : Type u} [category.{v} C] {f : J → C} 
+  [has_coproduct f] {CP : C} (h : ⨿ f ⟶ CP) : h = copi.desc (λ j : J, (copi.π _ j) ≫ h) :=
+let p := λ j : J, (copi.π f j) ≫ h, c := cofan.mk _ p,
+    clc := get_colimit_cocone (discrete.functor f) in     
+begin 
+  change h = clc.is_colimit.desc c, 
+  apply is_colimit.uniq clc.is_colimit c h, 
+  intro j, exact rfl, 
+end  
+
+@[hott]
+def copi.desc_π_eq {J : Set.{u'}} (C : Type u) [category.{v} C] {f : J → C} 
+  [has_coproduct f] {CP : C} (p : Π j : J, f j ⟶ CP) : 
+  ∀ j : J, (copi.π _ j) ≫ (copi.desc p) = p j :=
+assume j, by apply is_colimit.fac  
+
+@[hott]
+def copi.desc_fac {J : Set.{u'}} {C : Type u} [category.{v} C] {f : J → C} 
+  [has_coproduct f] {CP CQ : C} (g : CP ⟶ CQ) (h : Π j : J, f j ⟶ CP) :
+  copi.desc (λ j, h j ≫ g) = copi.desc h ≫ g :=
+let p := λ j : J, h j ≫ g, c := cofan.mk _ p, 
+    clc := get_colimit_cocone (discrete.functor f) in  
+begin 
+  apply eq.inverse, apply is_colimit.uniq clc.is_colimit c, intro j, 
+  change copi.π _ j ≫ copi.desc h ≫ g = c.π.app j, rwr <- precategory.assoc, 
+  rwr copi.desc_π_eq _ h
+end  
+
+@[hott]
+def copi_hom {J : Set.{u'}} {C : Type u} [category.{v} C] [has_coproducts.{v u u'} C] 
+  {f g : J -> C} (h : Π j : J, f j ⟶ g j) : ⨿ f ⟶ ⨿ g :=
+copi.desc (λ j : J, h j ≫ copi.π g j )
+
+notation `⨿h ` h:20 := copi_hom h
+
+@[hott]
+def copi_hom_id {J : Set.{u'}} {C : Type u} [category.{v} C] [has_coproducts.{v u u'} C] 
+  (f : J -> C) : copi_hom (λ j, 𝟙 (f j)) = 𝟙 (⨿ f) :=
+have H : (λ j, 𝟙 (f j) ≫ copi.π f j ) = λ j, copi.π f j ≫ 𝟙 (⨿ f), from 
+  begin apply eq_of_homotopy, intro j, hsimp end,  
+begin change copi.desc (λ j, 𝟙 (f j) ≫ copi.π f j) = _, rwr H, rwr <- copi.hom_is_desc end  
+
+@[hott]
+def copi_hom_comp {J : Set.{u'}} {C : Type u} [category.{v} C] [has_coproducts.{v u u'} C] 
+  {f g h : J -> C}  (i₁ : Π j : J, f j ⟶ g j)  (i₂ : Π j : J, g j ⟶ h j) :
+  (⨿h i₁) ≫ (⨿h i₂) = ⨿h (λ j, i₁ j ≫ i₂ j) :=
+have H : (λ j, (i₁ j ≫ copi.π g j) ≫ copi.desc (λ k, i₂ k ≫ copi.π h k)) = 
+                                                  λ j, (i₁ j ≫ i₂ j) ≫ copi.π h j, from   
+  begin 
+    apply eq_of_homotopy, intro j, 
+    change (i₁ j ≫ copi.π g j) ≫ copi.desc (λ k, i₂ k ≫ copi.π h k) = 
+                                                           (i₁ j ≫ i₂ j) ≫ copi.π h j, 
+    rwr precategory.assoc, rwr copi.desc_π_eq, rwr precategory.assoc
+  end,
+calc (⨿h i₁) ≫ (⨿h i₂) =
+     copi.desc (λ j, i₁ j ≫ copi.π g j) ≫ copi.desc (λ j, i₂ j ≫ copi.π h j) : rfl 
+     ... = copi.desc (λ j, (i₁ j ≫ copi.π g j) ≫ copi.desc (λ j, i₂ j ≫ copi.π h j)) : 
+                                                                  by rwr <- copi.desc_fac                                                             
+     ... = copi.desc (λ j, (i₁ j ≫ i₂ j) ≫ copi.π h j) : by rwr H
+     ... = ⨿h (λ j, i₁ j ≫ i₂ j) : by refl
+
+
 /- The category of sets has all colimits. 
 
    The limit cocone is constructed as the quotient of the disjoint union of the sets in the 
@@ -259,63 +385,42 @@ def set_has_colimits_of_shape {J : Set} [precategory J] :
   has_colimits_of_shape J Set :=
 has_colimits_of_shape.mk (λ F, set_has_colimit F) 
 
-set_option pp.universes true
-
 /- Unions of subobjects of a given object in a category can be defined as colimits in the 
    category of such subobjects. Note that this is not the colimit in the surrounding 
    category but the image of the natural homomorphism to the containing object. Therefore,
-   having colimits in the surrounding category is not enough for the existence of unions. -/
+   having colimits in the surrounding category is not enough for the existence of unions. 
+   
+   We also separately exhibit finite unions, for use in categorical models. -/
 @[hott]
-class has_union {C : Type u} [category.{v} C] {c : C} (a b : subobject c) :=
-  (exists_union : has_colimit (@discrete.functor.{v (max u v) 0} (subobject c) _ Two_Set 
-                                                        (@Two.rec (λ n, subobject c) a b))) 
+class has_union {C : Type u} [category.{v} C] {c : C} {J : Set} (f : J -> subobject c) :=
+  (exists_union : has_coproduct f) 
+
+@[hott, instance]
+def has_union_to_has_coproduct {C : Type u} [category.{v} C] {c : C} {J : Set} 
+  (f : J -> subobject c) [H : has_union f] : has_coproduct f := H.exists_union
 
 @[hott]
-def subobject_union {C : Type u} [category.{v} C] {c : C} (a b : subobject c)
-  [H : has_union.{v u 0} a b] := 
-@colimit.cocone _ _ _ _ (@discrete.functor.{v (max u v) 0} (subobject c) _ Two_Set 
-                                      (@Two.rec (λ n, subobject c) a b)) H.exists_union
-
-@[hott]
-def subobject.union {C : Type u} [category.{v} C] {c : C} (a b : subobject c)
-  [H : has_union.{v u 0} a b] : subobject c := 
-(subobject_union a b).X
+def subobject.union {C : Type u} [category.{v} C] {c : C} {J : Set} (f : J -> subobject c)
+  [has_union f] := ⨿ f
 
 @[hott]
 class has_unions {C : Type u} [category.{v} C] (c : C) :=
-  (has_union : Π (a b : subobject c), has_union.{v u 0} a b)
+  (has_union : Π {J : Set} (f : J -> subobject c), has_union f)
 
 @[hott, instance]
 def has_union_of_has_unions {C : Type u} [category.{v} C] {c : C} [has_unions c] 
-  (a b : subobject c) : has_union.{v u 0} a b :=
-has_unions.has_union a b 
-
-/- We can unpack the colimit data that a union has to satisfy. -/
-@[hott]
-class is_union {C : Type u} [category.{v} C] {c : C} (a b d : subobject c) :=
-  (inc_a : a ⟶ d)
-  (inc_b : b ⟶ d)
-  (fac : Π {e : subobject c}, (a ⟶ e) -> (b ⟶ e) -> (d ⟶ e))
+  {J : Set} (f : J -> subobject c) : has_union f :=
+has_unions.has_union f 
 
 @[hott]
-def union_is_uniq {C : Type u} [category.{v} C] {c : C} (a b d₁ d₂ : subobject c) : 
-  (is_union a b d₁) -> (is_union a b d₂) -> d₁ = d₂ :=
-assume u₁ u₂, subobj_antisymm d₁ d₂ (@is_union.fac _ _ _ _ _ d₁ u₁ _ u₂.inc_a u₂.inc_b) 
-                                    (@is_union.fac _ _ _ _ _ d₂ u₂ _ u₁.inc_a u₁.inc_b) 
+def union_inc {C : Type u} [category.{v} C] {c : C} {J : Set} (f : J -> subobject c)
+  [has_union f] : Π j : J, f j ⟶ subobject.union f :=
+assume j, copi.π f j
 
-@[hott, instance]
-def subobj_union_is_union {C : Type u} [category.{v} C] {c : C} (a b : subobject c) 
-  [H : has_union.{v u 0} a b] : is_union a b (subobject.union a b) :=
-begin 
-  fapply is_union.mk, 
-  exact (subobject_union a b).π.app Two.zero, exact (subobject_union a b).π.app Two.one, 
-  intros e ia ib, sorry 
-end
-
-@[hott, instance]
-def is_union_to_has_union {C : Type u} [category.{v} C] {c : C} (a b d : subobject c) 
-  [is_union a b d] : has_union a b :=
-sorry  
+@[hott]
+def union_fac {C : Type u} [category.{v} C] {c : C} {J : Set} (f : J -> subobject c)
+  [has_union f] {u : subobject c} (h : Π j, f j ⟶ u) : subobject.union f ⟶ u :=
+copi.desc h    
 
 end category_theory.colimits
 
