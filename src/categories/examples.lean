@@ -588,6 +588,16 @@ begin
   exact category.isotoid iso_ab 
 end  
 
+/- The category of subobjects always has a top element. -/
+@[hott]
+def top_subobject {C : Type u} [category.{v} C] (c : C) : subobject c := 
+  subobject.mk c (𝟙 c) (isos_are_mono (id_is_iso c))
+
+@[hott]
+def top_subobj_prop {C : Type u} [category.{v} C] {c : C} : 
+  Π (a : subobject c), a ⟶ top_subobject c := 
+begin intro a, fapply hom_of_monos.mk, exact a.hom, hsimp end   
+
 end categories
 
 end hott
