@@ -32,6 +32,10 @@ def to_Set (A : Type _) [pA : is_set A] : Set :=
 def empty_Set : Set := 
   Set.mk false (is_trunc_succ false -1)
 
+@[hott]
+def empty_map (C : Type _) : empty_Set -> C :=
+begin intro f, hinduction f end    
+
 @[hott, hsimp, reducible]
 def id_map (A : Set) : A -> A := @id A  
 
