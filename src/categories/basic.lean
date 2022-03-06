@@ -245,8 +245,8 @@ def isos_are_mono {C : Type u} [category.{v} C] {c₁ c₂ : C} (i : c₁ ≅ c�
        ... = g₂ : by rwr precategory.assoc; rwr iso.l_inv; rwr precategory.comp_id   
 
 @[hott]
-structure hom_of_monos {C : Type u} [category.{v} C] {c d₁ d₂: C} {f : d₁ ⟶ c} (Hf : is_mono f)
-  {g : d₂ ⟶ c} (Hg : is_mono g) :=
+structure hom_of_monos {C : Type u} [category.{v} C] {c d₁ d₂: C} {f : d₁ ⟶ c} 
+  (Hf : is_mono f) {g : d₂ ⟶ c} (Hg : is_mono g) :=
 (hom_obj : d₁ ⟶ d₂)
 (fac : hom_obj ≫ g = f)
 
