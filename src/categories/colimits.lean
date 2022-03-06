@@ -1,4 +1,4 @@
-import sets.algebra categories.examples categories.limits sets.quotients
+import sets.algebra categories.examples categories.limits sets.quotients sets.finite
 
 universes v u v' u' w
 hott_theory
@@ -12,7 +12,7 @@ open hott.eq hott.is_trunc hott.trunc hott.set hott.subset
 
    As far as possible we copy the mathlib-code in [category_theory.limits]. -/
 
-namespace category_theory.colimits
+namespace categories.colimits
 
 structure cocone {J : Set.{u'}} [precategory.{v'} J] {C : Type u} 
   [precategory.{v} C] (F : J ⥤ C) :=
@@ -422,6 +422,40 @@ def union_fac {C : Type u} [category.{v} C] {c : C} {J : Set} (f : J -> subobjec
   [has_union f] {u : subobject c} (h : Π j, f j ⟶ u) : subobject.union f ⟶ u :=
 copi.desc h    
 
-end category_theory.colimits
+@[hott]
+class has_fin_union {C : Type u} [category.{v} C] {c : C} {n : ℕ} 
+  (f : fin_Set n -> subobject c) :=
+(exists_union : has_union f)
+
+@[hott, instance]
+def has_union_of_has_fin_union {C : Type u} [category.{v} C] {c : C} {n : ℕ} 
+  (f : fin_Set n -> subobject c) [H : has_fin_union f] : has_union f :=
+H.exists_union
+
+@[hott]
+class has_fin_unions (C : Type u) [category.{v} C] :=
+  (has_fin_union : Π (c : C) {n : ℕ} (f : fin_Set n -> subobject c), has_fin_union f)
+
+@[hott, instance]
+def has_fin_union_of_has_fin_unions {C : Type u} [category.{v} C] [has_fin_unions C] {c : C} 
+  {n : ℕ} (f : fin_Set n -> subobject c) : has_fin_union f :=
+has_fin_unions.has_fin_union c f   
+
+/- If finite unions exist every category of subobjects also has a bottom element, produced 
+   as the empty union. -/
+@[hott]
+def bottom_subobject {C : Type u} [category.{v} C] {c : C} [has_fin_unions C] : 
+  subobject c :=
+subobject.union (empty_fin_Set_map (subobject c))
+
+@[hott] 
+def bottom_subobj_prop {C : Type u} [category.{v} C] {c : C} [has_fin_unions C] : 
+  Π (a : subobject c), bottom_subobject ⟶ a :=
+begin 
+  intro a, fapply union_fac, 
+  intro j, hinduction (inv_of_bijection (empty_is_fin).2).1 j 
+end   
+
+end categories.colimits
 
 end hott
