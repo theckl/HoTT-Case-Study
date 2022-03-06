@@ -1,10 +1,10 @@
-import categories.structures
+import categories.structures categories.colimits
 
 universes v v' u u' w 
 hott_theory
 
 namespace hott
-open signature signature.term signature.formula categories.limits subset
+open signature signature.term signature.formula categories.limits subset categories.colimits
 
 namespace categories
 
@@ -48,7 +48,8 @@ end
 class is_interpretable_in {sign : fo_signature} (φ : formula sign) (C : Type u) 
   [category.{v} C] [has_products.{v u 0} C] :=
 (equal : needs_properties φ model_properties.equalizer -> has_equalizers C)
-(pullback : needs_properties φ model_properties.pullback -> has_pullbacks C)  
+(pullback : needs_properties φ model_properties.pullback -> has_pullbacks C)
+(fin_union : needs_properties φ model_properties.fin_union -> has_fin_unions C)  
 
 @[hott]
 def context_in_Sig_str {sign : fo_signature} (cont : context sign) 
