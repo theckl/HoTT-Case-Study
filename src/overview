@@ -3,8 +3,8 @@ types2      :   252
 prop_axioms :   647
 prop_logic  :   208
 sets
-  basic     :   415
-  finite    :   193
+  basic     :   635
+  finite    :   197
   subset    :   407
   axioms    :   340
   algebra   :   237
@@ -12,17 +12,15 @@ sets
   theories  :   655
 categories  
   basic     :   688
-  examples  :   593
+  examples  :   603
   diagrams  :   441
   limits    :   735
-  colimits  :   264
+  colimits  :   461
   structures:   613
               -----
-               7253
+               7684
 
 
 Edited files: 
 ---------------
 categories.models: is_interpretable_in-class 
-categories.examples: top subobject
-categories.colimits: bottom subobject, finite union of subobjects
