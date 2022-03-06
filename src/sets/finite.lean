@@ -51,6 +51,10 @@ begin
 end
 
 @[hott]
+def empty_fin_Set_map (C : Type _) : fin_Set 0 -> C :=
+  assume f, (empty_map C) ((inv_of_bijection (empty_is_fin).2).1 f)
+
+@[hott]
 def card_of (S : Set) (fin : is_finite S) : ℕ := fin.1
 
 /- Note that inequalities in [types.nat.order] are often theorems, without need, and 
