@@ -4,7 +4,7 @@ universes u u' v w
 hott_theory
 
 namespace hott
-open hott.nat is_trunc subset hott.sigma
+open hott.nat is_trunc trunc subset hott.sigma
 
 namespace set
 
@@ -31,19 +31,23 @@ def fin_Set_lift_desc {n m : ℕ} (H1 : n ≤ m) (b : fin_Set m) (H2 : b.1 < n) 
 begin apply fin_Set_eq, refl end  
 
 /- These finte sets can be used to check whether a set is finite and to define the 
-   cardinality of finite sets. -/
+   cardinality of finite sets. 
+   
+   We can show that finiteness is a predicate on sets, so we can use it as a class. -/
 @[hott]
-def is_finite (S : Set) := Σ n : ℕ, bijection S (fin_Set n)
+class is_finite (S : Set) := 
+  (fin_bij : Σ n : ℕ, ∥bijection S (fin_Set n)∥)
 
-@[hott]
-def fin_Set_fin (n : ℕ) : is_finite (fin_Set n) := dpair n (identity (fin_Set n))
+@[hott, instance]
+def fin_Set_fin (n : ℕ) : is_finite (fin_Set n) := 
+  is_finite.mk (dpair n (tr (identity (fin_Set n))))
 
-@[hott]
+@[hott, instance]
 def empty_is_fin : is_finite empty_Set :=
 begin
-  fapply dpair,
+  apply is_finite.mk, fapply dpair,
   { exact 0 },
-  { fapply bijection.mk,
+  { apply tr, fapply bijection.mk,
     { intro f, hinduction f },
     { fapply is_set_bijective.mk,
       { intro f, hinduction f },
@@ -55,7 +59,7 @@ def empty_fin_Set_map (C : Type _) : fin_Set 0 -> C :=
   assume f, (empty_map C) ((inv_of_bijection (empty_is_fin).2).1 f)
 
 @[hott]
-def card_of (S : Set) (fin : is_finite S) : ℕ := fin.1
+def fin_card_of (S : Set) [fin : is_finite S] : ℕ := fin.fin_bij.1
 
 /- Note that inequalities in [types.nat.order] are often theorems, without need, and 
    therefore produce an error because they are assumed to be noncomputable. -/
