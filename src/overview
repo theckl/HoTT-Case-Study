@@ -24,3 +24,5 @@ categories
 Edited files: 
 ---------------
 categories.models: is_interpretable_in-class 
+categories.theories: type of context
+sets.finite: is_finite` as class
