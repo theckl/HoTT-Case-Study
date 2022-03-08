@@ -283,6 +283,10 @@ def inv_bijection_of {A : Set} {B : Set} (f : bijection A B) : bijection B A :=
   let g := (inv_of_bijection f).1, inv_f_g := (inv_of_bijection f).2 in
   has_inverse_to_bijection g f (set_inv_inv f g inv_f_g)
 
+@[hott]
+def mere_inv_bijection {A : Set} {B : Set} (f : ∥bijection A B∥) : ∥bijection B A∥ :=
+begin hinduction f with f, exact tr (inv_bijection_of f) end  
+
 @[hott, instance]
 def inv_bij_is_inv {A : Set} {B : Set} (f : bijection A B) :
   is_set_inverse_of f (inv_bijection_of f) := 
@@ -316,7 +320,11 @@ begin
                  (inv_bijection_of f) (f a) : 
                  by rwr @is_set_inverse_of.l_inv _ _ g (inv_bijection_of g) _
            ... = a : by rwr @is_set_inverse_of.l_inv _ _ f (inv_bijection_of f) _ } }
-end  
+end 
+
+@[hott]
+def mere_comp_bijection {A B C : Set} (f : ∥bijection A B∥) (g : ∥bijection B C∥) : ∥bijection A C∥ :=
+begin hinduction f with f, hinduction g with g, exact tr (comp_bijection f g) end
 
 /- The identity map is a bijection. -/
 @[hott, reducible, hsimp]
