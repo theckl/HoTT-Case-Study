@@ -56,7 +56,7 @@ end
 
 @[hott]
 def empty_fin_Set_map (C : Type _) : fin_Set 0 -> C :=
-  assume f, (empty_map C) ((inv_of_bijection (empty_is_fin).2).1 f)
+begin intro f, hinduction (not_lt_zero f.1 f.2) end
 
 @[hott]
 def fin_card_of (S : Set) [fin : is_finite S] : ℕ := fin.fin_bij.1
@@ -158,29 +158,34 @@ begin
 end
 
 @[hott]
-def fin_Set_bij : ∀ {n m : ℕ}, bijection (fin_Set n) (fin_Set m) -> n = m :=
+def fin_Set_bij : ∀ {n m : ℕ}, ∥bijection (fin_Set n) (fin_Set m)∥ -> n = m :=
 begin
   intro n, hinduction n, 
   { intro m, hinduction m with m,
     { intro bij, refl },
-    { intro bij, 
+    { intro bij, hinduction bij with bij,
       hinduction not_succ_le_zero ((inv_bijection_of bij).map ⟨0, zero_lt_succ m⟩).1 
                                   ((inv_bijection_of bij).map ⟨0, zero_lt_succ m⟩).2 } },
   { intro m, hinduction m with m, 
-    { intro bij, hinduction not_succ_le_zero (bij.map ⟨n, nat.le_refl _⟩).1 
-                                             (bij.map ⟨n, nat.le_refl _⟩).2 },
-    { intro bij, exact ap nat.succ (@ih m (fin_Set_succ_bij_bij bij)) } }
+    { intro bij, hinduction bij with bij, 
+      hinduction not_succ_le_zero (bij.map ⟨n, nat.le_refl _⟩).1 
+                                  (bij.map ⟨n, nat.le_refl _⟩).2 },
+    { intro bij, hinduction bij with bij, 
+      exact ap nat.succ (@ih m (tr (fin_Set_succ_bij_bij bij))) } }
 end    
 
 @[hott]
-def fin_card_is_uniq {S : Set} : Π (fin₁ fin₂ : is_finite S), fin₁.1 = fin₂.1 :=
-  assume fin₁ fin₂,
-  have bij : bijection (fin_Set fin₁.1) (fin_Set fin₂.1), from 
-    comp_bijection (inv_bijection_of fin₁.2) fin₂.2,
-  fin_Set_bij bij
+def is_finite_is_prop {S : Set} : is_prop (is_finite S) :=
+begin 
+  apply is_prop.mk, intros fin₁ fin₂, 
+  hinduction fin₁ with fin_bij₁, hinduction fin₂ with fin_bij₂,
+  apply ap is_finite.mk, fapply sigma_eq,
+  { apply fin_Set_bij, exact mere_comp_bijection (mere_inv_bijection fin_bij₁.2) fin_bij₂.2 },
+  { apply pathover_of_tr_eq, exact is_prop.elim _ _ }  
+end  
 
 @[hott]
-def card_fin_Set {n : ℕ} : card_of (fin_Set n) (fin_Set_fin n) = n := rfl
+def card_fin_Set {n : ℕ} : fin_card_of (fin_Set n) = n := rfl
 
 /- `fin_Set n` can be used to enumerate `n` elements of a (non-empty) set `A`, by 
    exhibiting a map `fin_Set n -> A`. To extract the kth element we construct a function 
