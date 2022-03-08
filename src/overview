@@ -3,26 +3,26 @@ types2      :   252
 prop_axioms :   647
 prop_logic  :   208
 sets
-  basic     :   635
-  finite    :   197
+  basic     :   643
+  finite    :   206
   subset    :   407
   axioms    :   340
   algebra   :   237
   quotients :   205
-  theories  :   655
+  theories  :   695
 categories  
   basic     :   688
   examples  :   603
   diagrams  :   441
   limits    :   735
-  colimits  :   461
+  colimits  :   458
   structures:   613
               -----
-               7684
+               7738
 
 
 Edited files: 
 ---------------
 categories.models: is_interpretable_in-class 
 categories.theories: type of context
-sets.finite: is_finite` as class
+
