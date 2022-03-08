@@ -451,10 +451,7 @@ subobject.union (empty_fin_Set_map (subobject c))
 @[hott] 
 def bottom_subobj_prop {C : Type u} [category.{v} C] {c : C} [has_fin_unions C] : 
   Π (a : subobject c), bottom_subobject ⟶ a :=
-begin 
-  intro a, fapply union_fac, 
-  intro j, hinduction (inv_of_bijection (empty_is_fin).2).1 j 
-end   
+begin intro a, fapply union_fac, intro j, hinduction hott.nat.not_lt_zero j.1 j.2 end   
 
 end categories.colimits
 
