@@ -22,31 +22,20 @@ open hott.eq hott.set hott.subset hott.is_trunc hott.is_equiv hott.equiv
    level 0 and only allow a choice from a set of universe level 0, to avoid universe problems.
    The idea of a Grothendieck universe or a von Neumann universe/cumulitative hierarchy does
    not help because we cannot quantify over a type of universe level 0 without raising the 
-   universe level to 1.-/
+   universe level to 1.
+   
+   We also need a restriction on contexts because too large sets of variables may not 
+   allowed to be index sets of products in interpreting categories. -/
 namespace signature
 
 @[hott]
-structure fo_signature :=
-  (sorts : Set.{0})
-  (var_labels : Set.{0})
-  (ops : Set.{0}) 
-  (ops_arity : Π (o : ops), Set.{0})
-  (ops_source : Π (o : ops), ops_arity o -> sorts)
-  (ops_target : Π (o : ops), sorts)
-  (rels : Set.{0})
-  (rels_arity : Π (r : rels), Set.{0})
-  (rels_comp : Π {r : rels}, rels_arity r -> sorts)
-  (I : Set.{0})
-  (V : I -> Set.{0})
-
-@[hott]
-structure var (sign : fo_signature) :=
-  (label : sign.var_labels)
-  (sort : sign.sorts) 
+structure var (labels : Set.{0}) (sorts : Set.{0}) :=
+  (label : labels)
+  (sort : sorts) 
 
 /- The following three lemmas should be produced automatically. -/
 @[hott]
-def var_eq {sign : fo_signature} {v₁ v₂ : var sign} : 
+def var_eq {labels : Set.{0}} {sorts : Set.{0}} {v₁ v₂ : var labels sorts} : 
   (v₁.label = v₂.label) -> (v₁.sort = v₂.sort) -> (v₁ = v₂) :=
 begin
   intros p_label p_sort, 
@@ -55,21 +44,38 @@ begin
 end    
 
 @[hott]
-def var_eq_eta {sign : fo_signature} {v₁ v₂ : var sign} (p : v₁ = v₂) :
+def var_eq_eta {labels : Set.{0}} {sorts : Set.{0}} {v₁ v₂ : var labels sorts} (p : v₁ = v₂) :
   var_eq (ap var.label p) (ap var.sort p) = p := 
 begin hinduction p, hinduction v₁, reflexivity end    
     
 @[hott, instance]
-def var_is_set {sign : fo_signature} : is_set (var sign) :=
+def var_is_set {labels : Set.{0}} {sorts : Set.{0}}  : is_set (var labels sorts) :=
 begin
   fapply is_set.mk, intros x y p q, 
   rwr <- var_eq_eta p, rwr <- var_eq_eta q,
   apply ap011 var_eq, apply is_set.elim, apply is_set.elim
 end   
 
+@[hott]
+structure fo_signature :=
+  (sorts : Set.{0})
+  (var_labels : Set.{0})
+  (cont_pred : Subset (to_Set (var var_labels sorts)) -> trunctype.{0} -1)
+                       -- This prescribes which sets of variables are allowed as contexts
+  (ops : Set.{0}) 
+  (ops_arity : Π (o : ops), Set.{0})
+  (ops_source : Π (o : ops), ops_arity o -> sorts)
+  (ops_target : Π (o : ops), sorts)
+  (rels : Set.{0})
+  (rels_arity : Π (r : rels), Set.{0})
+  (rels_comp : Π {r : rels}, rels_arity r -> sorts)
+  (I : Set.{0})
+  (V : I -> Set.{0}) --sets over which infinite dis/conjunction can be taken, indexed by `I`
+
 @[hott] 
 inductive term_of_sort {sign : fo_signature} : sign.sorts -> Type
-| var : Π (s : sign.sorts) (v : var sign), (v.sort = s) -> term_of_sort s
+| var : Π (s : sign.sorts) (v : var sign.var_labels sign.sorts), (v.sort = s) -> 
+                                                                          term_of_sort s
 | op : Π (s : sign.sorts) (f : sign.ops) (p : sign.ops_target f = s)
          (args : Π (k : sign.ops_arity f), term_of_sort (sign.ops_source f k)), 
          term_of_sort s
@@ -217,26 +223,59 @@ begin apply is_trunc_equiv_closed_rev 0 (term_of_sort_of_term s), apply_instance
 
 /- To define formulas we need the free variables of a term. -/
 @[hott]
-def free_vars_of_term {sign : fo_signature} : term sign -> Subset (to_Set (var sign)) :=
+def free_vars_of_term {sign : fo_signature} : term sign -> 
+  Subset (to_Set (var sign.var_labels sign.sorts)) :=
 begin 
   intro t, hinduction t, hinduction term, 
   { exact elem_to_Subset v }, 
   { exact iUnion ih }
 end
 
+
 /- Terms and later formulas and sequents should always only contain free variables from a 
    `context`. -/
 @[hott]
-def context (sign : fo_signature) := Subset (to_Set (var sign))
+structure context (sign : fo_signature) := 
+  (vars : Subset (to_Set (var sign.var_labels sign.sorts)))
+  (pred : sign.cont_pred vars)
+
+@[hott]
+def context_eq {sign : fo_signature} {cont₁ cont₂ : context sign} : 
+  (cont₁.vars = cont₂.vars) -> (cont₁ = cont₂) :=
+begin
+  intro p_vars, 
+  hinduction cont₁ with vars₁ pred₁, hinduction cont₂ with vars₂ pred₂,
+  apply apd011 context.mk p_vars, apply pathover_of_tr_eq, exact is_prop.elim _ _
+end    
+
+@[hott]
+def context_eq_refl {sign : fo_signature} (cont : context sign) : 
+  context_eq (@idp _ (cont.vars)) = (@idp _ cont) :=
+begin 
+  hinduction cont, hsimp, change apd011 context.mk (@idp _ vars) _ = _, 
+  have H' : is_prop.elim ((@idp _ vars) ▸[λ v, sign.cont_pred v] pred) pred = idp, from 
+    is_set.elim _ _,
+  rwr H' 
+end 
+
+@[hott]
+def context_eq_eta {sign : fo_signature} {cont₁ cont₂ : context sign} (p : cont₁ = cont₂) :
+  context_eq (ap context.vars p) = p := 
+begin hinduction p, hsimp, exact context_eq_refl cont₁ end 
 
 @[hott, instance]
 def context_is_set {sign : fo_signature} : is_set (context sign) :=
-begin apply Powerset_is_set end
+begin 
+  fapply is_set.mk, intros x y p q, 
+  rwr <- context_eq_eta p, rwr <- context_eq_eta q,
+  apply ap context_eq, apply is_set.elim
+end
 
 @[hott]
 structure term_in_context {sign : fo_signature} (cont : context sign) := 
   (t : term sign) 
-  (in_cont : free_vars_of_term t ⊆ cont)
+  (in_cont : free_vars_of_term t ⊆ cont.vars)
+
 
 /- Formulas in the first-order language built upon a first-order signature, together with 
    the free variables that they contain, are defined inductively.   -/
@@ -253,8 +292,8 @@ inductive formula (sign : fo_signature)
 | disj : formula -> formula -> formula
 | impl : formula -> formula -> formula 
 | neg : formula -> formula
-| ex : var sign -> formula -> formula 
-| univ : var sign -> formula -> formula 
+| ex : var sign.var_labels sign.sorts -> formula -> formula 
+| univ : var sign.var_labels sign.sorts -> formula -> formula 
 | inf_conj : Π (i : sign.I), (sign.V i -> formula) -> formula 
 | inf_disj : Π (i : sign.I), (sign.V i -> formula) -> formula        
 
@@ -520,7 +559,8 @@ begin apply is_geometric.mk, exact coherent_implies_geometric φ H.coh end
 
 
 @[hott]
-protected def free_vars {sign : fo_signature} : formula sign -> Subset (to_Set (var sign)) :=
+protected def free_vars {sign : fo_signature} : 
+  formula sign -> Subset (to_Set (var sign.var_labels sign.sorts)) :=
 begin 
   intro form, hinduction form, 
   { exact (free_vars_of_term t₁) ∪ (free_vars_of_term t₂) }, 
@@ -534,12 +574,12 @@ end
 @[hott]
 structure formula_in_context {sign : fo_signature} (cont : context sign) := 
   (φ : formula sign) 
-  (in_cont : formula.free_vars φ ⊆ cont)
+  (in_cont : formula.free_vars φ ⊆ cont.vars)
 
 @[hott]
 def formula_in_context_eq {sign : fo_signature} {cont : context sign} 
   {φ₁ φ₂ : formula_in_context cont} : 
-  Π (p : φ₁.φ = φ₂.φ), φ₁.in_cont =[p; λ φ, formula.free_vars φ ⊆ cont] φ₂.in_cont -> 
+  Π (p : φ₁.φ = φ₂.φ), φ₁.in_cont =[p; λ φ, formula.free_vars φ ⊆ cont.vars] φ₂.in_cont -> 
   φ₁ = φ₂ :=
 begin intros, hinduction φ₁, hinduction φ₂, apply apdd _ p a end   
 
@@ -547,7 +587,7 @@ begin intros, hinduction φ₁, hinduction φ₂, apply apdd _ p a end
 def formula_in_context_eq_eta {sign : fo_signature} {cont : context sign} 
   {φ₁ φ₂ : formula_in_context cont} (p : φ₁ = φ₂) : 
   formula_in_context_eq (ap formula_in_context.φ p) ((@apo01 _ _ 
-     (λ f, formula.free_vars f⊆cont) formula_in_context.φ (λ f, f.in_cont) _ _ p).1 
+     (λ f, formula.free_vars f⊆cont.vars) formula_in_context.φ (λ f, f.in_cont) _ _ p).1 
      (apd formula_in_context.in_cont p)) = p :=
 begin hinduction p, hinduction φ₁, exact idp end                 
 
