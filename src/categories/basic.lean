@@ -440,7 +440,6 @@ begin
   apply_instance 
 end
 
-
 section
 variables (C : Type u) (D : Type u') (E : Type u'')
 
