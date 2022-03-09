@@ -8,6 +8,42 @@ open signature signature.term signature.formula categories.limits subset categor
 
 namespace categories
 
+/- Interpreting terms and formulas requires the construction of products in the model
+   categories. Sometimes, these categories do not have arbitrary products, so it is 
+   necessary to specify the kind of products which a model category of a theory must have, in
+   more details. Since all the index sets of such products are already determined by the 
+   signature, namely the arity of operations and relations and the admissible contexts,
+   we can define a class listing the existence of products over all such sets. -/
+@[hott]
+class has_sign_products (sign : fo_signature) (C : Type u) [category.{v} C] :=
+  (has_arg_products : Π (o : sign.ops), has_limits_of_shape (discrete (sign.ops_arity o)) C)   
+  (has_comp_products : Π (r : sign.rels), 
+                                       has_limits_of_shape (discrete (sign.rels_arity r)) C)
+  (has_cont_products : Π (cont : context sign), 
+                                    has_limits_of_shape (discrete (pred_Set (cont.vars))) C)                                     
+
+/- We need instances of `has_product` to construct the interpreting objects in the model 
+   category deduced from `has_sign_products`. -/
+@[hott, instance]
+def has_term_product {sign : fo_signature} {C : Type u} [category.{v} C] {o : sign.ops} 
+  [H : has_sign_products sign C] (f : sign.ops_arity o -> C) : has_product f :=
+@has_product_of_has_limits_of_shape _ _ _ (has_sign_products.has_arg_products C o) f
+
+@[hott, instance]
+def has_rels_product {sign : fo_signature} {C : Type u} [category.{v} C] {r : sign.rels} 
+  [H : has_sign_products sign C] (f : sign.rels_arity r -> C) : has_product f :=
+@has_product_of_has_limits_of_shape _ _ _ (has_sign_products.has_comp_products C r) f
+
+@[hott, instance]
+def has_cont_product {sign : fo_signature} {C : Type u} [category.{v} C] 
+  {cont : context sign} [H : has_sign_products sign C] (f : pred_Set (cont.vars) -> C) : 
+  has_product f :=
+@has_product_of_has_limits_of_shape _ _ _ (has_sign_products.has_cont_products C cont) f
+
+/- Next we list the properties needed to interpret particularly constructed formulas in a 
+   model category, then attach these properties to the different inductive construction
+   steps of formulas and then define a class mapping each construction step to the class
+   of these properties. -/
 @[hott]
 inductive model_properties : Type 
 | equalizer : model_properties
