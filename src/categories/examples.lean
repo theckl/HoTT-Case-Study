@@ -598,6 +598,27 @@ def top_subobj_prop {C : Type u} [category.{v} C] {c : C} :
   Π (a : subobject c), a ⟶ top_subobject c := 
 begin intro a, fapply hom_of_monos.mk, exact a.hom, hsimp end   
 
+/- We can define images of homomorphisms as subobjects of their codomain satisfying a 
+   minimal property. Note that the factoring homomorphism is unique as the inclusion 
+   homomorphism is a monomorphism. -/
+@[hott]
+structure homo_image {C : Type u} [category.{v} C] {c d : C} (f : c ⟶ d) :=
+  (subobj : subobject d)
+  (univ : Π (a : subobject d), (Σ f' : c ⟶ a.obj, f' ≫ a.hom = f) -> (subobj ⟶ a))
+
+@[hott]
+class has_image {C : Type u} [category.{v} C] {c d : C} (f : c ⟶ d) :=
+  (exists_im : ∥homo_image f∥)
+
+@[hott]
+class has_images (C : Type u) [category.{v} C] :=
+  (has_im : Π {c d : C} (f : c ⟶ d), has_image f)
+
+@[hott, instance]
+def has_image_of_has_images {C : Type u} [category.{v} C] [has_images C] {c d : C} 
+  (f : c ⟶ d) : has_image f :=
+has_images.has_im f
+
 end categories
 
 end hott
