@@ -12,17 +12,18 @@ sets
   theories  :   695
 categories  
   basic     :   688
-  examples  :   603
+  examples  :   624
   diagrams  :   441
-  limits    :   735
+  limits    :   626
+  pullbacks :   133
   colimits  :   458
   structures:   613
               -----
-               7738
+               7783
 
 
 Edited files: 
 ---------------
-categories.models: is_interpretable_in-class 
-categories.theories: type of context
+categories.models: is_interpretable_in-class
+categories.pullbacks: pullback of monos
 
