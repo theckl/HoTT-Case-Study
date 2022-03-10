@@ -25,5 +25,5 @@ categories
 Edited files: 
 ---------------
 categories.models: is_interpretable_in-class
-categories.pullbacks: pullback of monos
+categories.pullbacks: pullback of monos, pullback square
 
