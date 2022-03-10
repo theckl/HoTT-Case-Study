@@ -127,6 +127,46 @@ have π : constant_functor ↥orthogonal_wedge C d ⟹ orthogonal_pair f g, from
   nat_trans.mk app naturality,   
 cone.mk d π 
 
+@[hott]
+def square_left {C : Type u} [category.{v} C] {a b c : C} {f : a ⟶ c} {g : b ⟶ c}
+  (S : square f g) : S.X ⟶ a := S.π.app ow_left
+
+@[hott]
+def square_top {C : Type u} [category.{v} C] {a b c : C} {f : a ⟶ c} {g : b ⟶ c}
+  (S : square f g) : S.X ⟶ b := S.π.app ow_upper
+
+@[hott]
+def square_eq {C : Type u} [category.{v} C] {a b c : C} {f : a ⟶ c} {g : b ⟶ c}
+  (S : square f g) : (square_left S) ≫ f = (square_top S) ≫ g :=
+calc (square_left S) ≫ f = (S.π.app ow_left) ≫ (orthogonal_pair f g).map ow_right : rfl 
+     ... = S.π.app ow_base : by rwr cone.fac S ow_right 
+     ... = (S.π.app ow_upper) ≫ (orthogonal_pair f g).map ow_down : 
+           by rwr cone.fac S ow_down
+     ... = (square_top S) ≫ g : rfl
+
+@[hott] 
+def pullback_eq {C : Type u} [category.{v} C] {a b c : C} {f : a ⟶ c} {g : b ⟶ c} 
+  [has_pullback f g] : pullback_homo_l f g ≫ f = pullback_homo_t f g ≫ g :=
+square_eq (limit.cone (orthogonal_pair f g))  
+
+@[hott]
+def mono_is_stable {C : Type u} [category.{v} C] {a b c : C} (f : a ⟶ c) (g : b ⟶ c) 
+  (H : is_mono g) [has_pullback f g] : is_mono (pullback_homo_l f g) :=
+begin 
+  intros d h₁ h₂ ph, 
+  have ph' : (h₁ ≫ (pullback_homo_t f g)) ≫ g = (h₂ ≫ (pullback_homo_t f g)) ≫ g, from 
+    calc (h₁ ≫ (pullback_homo_t f g)) ≫ g 
+             = h₁ ≫ (pullback_homo_t f g) ≫ g : by rwr precategory.assoc
+         ... = h₁ ≫ (pullback_homo_l f g) ≫ f : by rwr pullback_eq
+         ... = (h₁ ≫ (pullback_homo_l f g)) ≫ f : by rwr precategory.assoc
+         ... = (h₂ ≫ (pullback_homo_l f g)) ≫ f : by rwr ph
+         ... = h₂ ≫ (pullback_homo_l f g) ≫ f : by rwr precategory.assoc
+         ... = h₂ ≫ (pullback_homo_t f g) ≫ g : by rwr pullback_eq
+         ... = (h₂ ≫ (pullback_homo_t f g)) ≫ g : by rwr precategory.assoc,
+  have ph'' : h₁ ≫ (pullback_homo_t f g) = h₂ ≫ (pullback_homo_t f g), from H _ _ _ ph',
+  calc h₁ = h₂ : sorry 
+end  
+
 
 end categories.pullbacks
 
