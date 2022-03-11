@@ -113,7 +113,7 @@ abbreviation square {C : Type u} [category.{v} C] {a b c : C}
 
 @[hott]
 def square.of_i_j {C : Type u} [category.{v} C] {a b c d : C} 
-  (f : a ⟶ c) (g : b ⟶ c) (i : d ⟶ a) (j : d ⟶ b) (w : i ≫ f = j ≫ g) : square f g :=
+  {f : a ⟶ c} {g : b ⟶ c} {i : d ⟶ a} {j : d ⟶ b} (w : i ≫ f = j ≫ g) : square f g :=
 have π : constant_functor ↥orthogonal_wedge C d ⟹ orthogonal_pair f g, from
   let app :=  @ow_node.rec (λ x, d ⟶ (orthogonal_pair f g).obj x) i (i ≫ f) j in
   have naturality : ∀ (x x' : orthogonal_wedge) (h : x ⟶ x'), 
@@ -150,6 +150,30 @@ def pullback_eq {C : Type u} [category.{v} C] {a b c : C} {f : a ⟶ c} {g : b �
 square_eq (limit.cone (orthogonal_pair f g))  
 
 @[hott]
+def pullback_lift {C : Type u} [category.{v} C] {a b c : C} {f : a ⟶ c} {g : b ⟶ c}
+  (S : square f g) [has_pullback f g] : S.X ⟶ pullback f g :=
+(get_limit_cone (orthogonal_pair f g)).is_limit.lift S 
+
+@[hott]
+def pullback_uniq {C : Type u} [category.{v} C] {a b c : C} {f : a ⟶ c} {g : b ⟶ c}
+  (S : square f g) [has_pullback f g] : Π (h : S.X ⟶ pullback f g), 
+  h ≫ pullback_homo_l f g = square_left S -> h ≫ pullback_homo_t f g = square_top S ->
+  h = pullback_lift S :=
+assume h pl pt,
+have w : Π (ow : orthogonal_wedge), h ≫ (limit.cone (orthogonal_pair f g)).π.app ow =
+                                    S.π.app ow, from  
+  begin 
+    intro ow, hinduction ow, 
+    { exact pl }, 
+    { change h ≫ (limit.cone (orthogonal_pair f g)).π.app ow_base = S.π.app ow_base, 
+      rwr <- cone.fac S ow_right, 
+      rwr <- cone.fac (limit.cone (orthogonal_pair f g)) ow_right, 
+      rwr <- precategory.assoc, change (h ≫ pullback_homo_l f g) ≫ _ = _, rwr pl }, 
+    { exact pt }
+  end,
+(get_limit_cone (orthogonal_pair f g)).is_limit.uniq S h w   
+
+@[hott]
 def mono_is_stable {C : Type u} [category.{v} C] {a b c : C} (f : a ⟶ c) (g : b ⟶ c) 
   (H : is_mono g) [has_pullback f g] : is_mono (pullback_homo_l f g) :=
 begin 
@@ -164,9 +188,30 @@ begin
          ... = h₂ ≫ (pullback_homo_t f g) ≫ g : by rwr pullback_eq
          ... = (h₂ ≫ (pullback_homo_t f g)) ≫ g : by rwr precategory.assoc,
   have ph'' : h₁ ≫ (pullback_homo_t f g) = h₂ ≫ (pullback_homo_t f g), from H _ _ _ ph',
-  calc h₁ = h₂ : sorry 
+  have ph₁ : (h₁ ≫ (pullback_homo_l f g)) ≫ f = (h₁ ≫ (pullback_homo_t f g)) ≫ g, by
+    rwr precategory.assoc; rwr pullback_eq; rwr <- precategory.assoc,   
+  have ph₂ : (h₂ ≫ (pullback_homo_l f g)) ≫ f = (h₂ ≫ (pullback_homo_t f g)) ≫ g, by
+    rwr precategory.assoc; rwr pullback_eq; rwr <- precategory.assoc,  
+  let S₁ : square f g := square.of_i_j ph₁, let S₂ : square f g := square.of_i_j ph₂,
+  have sl₁ : h₁ ≫ pullback_homo_l f g = square_left S₁, from idp,
+  have st₁ : h₁ ≫ pullback_homo_t f g = square_top S₁, from idp,
+  have sl₂ : h₂ ≫ pullback_homo_l f g = square_left S₁, from ph⁻¹ ⬝ sl₁,
+  have st₂ : h₂ ≫ pullback_homo_t f g = square_top S₁, from ph''⁻¹ ⬝ st₁,
+  calc h₁ = pullback_lift S₁ : pullback_uniq S₁ h₁ sl₁ st₁
+       ... = h₂ : (pullback_uniq S₁ h₂ sl₂ st₂)⁻¹ 
 end  
 
+@[hott]
+def pullback_subobject  {C : Type u} [category.{v} C] {a c : C} (f : a ⟶ c) 
+  (b : subobject c) [has_pullback f b.hom] : subobject a :=
+subobject.mk (pullback f b.hom) (pullback_homo_l f b.hom) 
+                                (mono_is_stable f b.hom b.is_mono)
+
+@[hott]
+def image_is_stable {C : Type u} [category.{v} C] {a b c : C} (f : a ⟶ c) (g : b ⟶ c)
+  [has_images C] [has_pullbacks C] : 
+  (homo_image (pullback_homo_l f g)).subobj = pullback_homo_l f (homo_image g).subobj.hom :=
+sorry  
 
 end categories.pullbacks
 
