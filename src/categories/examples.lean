@@ -4,7 +4,8 @@ universes v v' u u' w
 hott_theory
 
 namespace hott
-open hott.eq hott.set hott.subset hott.is_trunc hott.is_equiv hott.equiv hott.categories 
+open hott.eq hott.set hott.subset hott.is_trunc hott.is_equiv hott.equiv hott.categories
+     hott.trunc 
 
 namespace categories
 
@@ -602,13 +603,33 @@ begin intro a, fapply hom_of_monos.mk, exact a.hom, hsimp end
    minimal property. Note that the factoring homomorphism is unique as the inclusion 
    homomorphism is a monomorphism. -/
 @[hott]
-structure homo_image {C : Type u} [category.{v} C] {c d : C} (f : c ⟶ d) :=
+structure cat_image {C : Type u} [category.{v} C] {c d : C} (f : c ⟶ d) :=
   (subobj : subobject d)
   (univ : Π (a : subobject d), (Σ f' : c ⟶ a.obj, f' ≫ a.hom = f) -> (subobj ⟶ a))
 
 @[hott]
 class has_image {C : Type u} [category.{v} C] {c d : C} (f : c ⟶ d) :=
-  (exists_im : ∥homo_image f∥)
+  (exists_im : ∥cat_image f∥)
+
+@[hott]
+def cat_image_is_unique {C : Type u} [category.{v} C] {c d : C} (f : c ⟶ d) :
+  Π im₁ im₂ : cat_image f, im₁ = im₂ :=
+begin
+  intros im₁ im₂, hinduction im₁ with subobj₁ univ₁, hinduction im₂ with subobj₂ univ₂, 
+  fapply apd011 cat_image.mk, 
+  { sorry },
+  { sorry }
+end  
+
+@[hott, instance]
+def cat_image_is_prop {C : Type u} [category.{v} C] {c d : C} (f : c ⟶ d) : 
+  is_prop (cat_image f) :=
+is_prop.mk (cat_image_is_unique f)  
+
+@[hott]
+def hom.image {C : Type u} [category.{v} C] {c d : C} (f : c ⟶ d) [has_image f] : 
+  subobject d :=  
+(untrunc_of_is_trunc (has_image.exists_im f)).subobj
 
 @[hott]
 class has_images (C : Type u) [category.{v} C] :=
