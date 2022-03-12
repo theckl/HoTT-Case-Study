@@ -26,4 +26,5 @@ Edited files:
 ---------------
 categories.models: is_interpretable_in-class
 categories.pullbacks: pullback of monos, pullback square
+categories.examples: categorical images
 
