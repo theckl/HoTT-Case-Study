@@ -210,7 +210,7 @@ subobject.mk (pullback f b.hom) (pullback_homo_l f b.hom)
 @[hott]
 def image_is_stable {C : Type u} [category.{v} C] {a b c : C} (f : a ⟶ c) (g : b ⟶ c)
   [has_images C] [has_pullbacks C] : 
-  (homo_image (pullback_homo_l f g)).subobj = pullback_homo_l f (homo_image g).subobj.hom :=
+  homo_image.subobj (pullback_homo_l f g) = pullback_subobject f (homo_image.subobj g) :=
 sorry  
 
 end categories.pullbacks
