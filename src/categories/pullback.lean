@@ -8,6 +8,8 @@ open hott.categories hott.categories.limits
 
 namespace categories.pullbacks
 
+set_option pp.universes true
+
 /- `orthogonal_pair f g` is the diagram in `C` consisting of the two morphisms `f` and `g` with
    common codomain. -/
 @[hott, hsimp]
@@ -207,11 +209,13 @@ def pullback_subobject  {C : Type u} [category.{v} C] {a c : C} (f : a ⟶ c)
 subobject.mk (pullback f b.hom) (pullback_homo_l f b.hom) 
                                 (mono_is_stable f b.hom b.is_mono)
 
+set_option trace.class_instances true
+
 @[hott]
 def image_is_stable {C : Type u} [category.{v} C] {a b c : C} (f : a ⟶ c) (g : b ⟶ c)
   [has_images C] [has_pullbacks C] : 
-  homo_image.subobj (pullback_homo_l f g) = pullback_subobject f (homo_image.subobj g) :=
-sorry  
+  hom.image (pullback_homo_l f g) = pullback_subobject f (hom.image g) :=
+begin sorry end 
 
 end categories.pullbacks
 
