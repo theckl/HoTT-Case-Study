@@ -605,7 +605,22 @@ begin intro a, fapply hom_of_monos.mk, exact a.hom, hsimp end
 @[hott]
 structure cat_image {C : Type u} [category.{v} C] {c d : C} (f : c ⟶ d) :=
   (subobj : subobject d)
+  (fac : Σ f' : c ⟶ subobj.obj, f' ≫ subobj.hom = f)
   (univ : Π (a : subobject d), (Σ f' : c ⟶ a.obj, f' ≫ a.hom = f) -> (subobj ⟶ a))
+
+@[hott] 
+def subobject_fac_is_unique {C : Type u} [category.{v} C] {c d : C} (f : c ⟶ d) 
+  (a : subobject d) : Π fac₁ fac₂ : (Σ (f' : c ⟶ a.obj), f' ≫ a.hom = f), fac₁ = fac₂ :=
+begin 
+  intros fac₁ fac₂, fapply sigma.sigma_eq, 
+  { fapply a.is_mono, exact fac₁.2 ⬝ fac₂.2⁻¹ }, 
+  { apply pathover_of_tr_eq, exact is_prop.elim _ _ } 
+end
+
+@[hott, instance] 
+def subobject_fac_is_prop {C : Type u} [category.{v} C] {c d : C} (f : c ⟶ d) 
+  (a : subobject d) : is_prop (Σ f' : c ⟶ a.obj, f' ≫ a.hom = f) :=
+is_prop.mk (subobject_fac_is_unique f a)  
 
 @[hott]
 class has_image {C : Type u} [category.{v} C] {c d : C} (f : c ⟶ d) :=
@@ -615,10 +630,12 @@ class has_image {C : Type u} [category.{v} C] {c d : C} (f : c ⟶ d) :=
 def cat_image_is_unique {C : Type u} [category.{v} C] {c d : C} (f : c ⟶ d) :
   Π im₁ im₂ : cat_image f, im₁ = im₂ :=
 begin
-  intros im₁ im₂, hinduction im₁ with subobj₁ univ₁, hinduction im₂ with subobj₂ univ₂, 
-  fapply apd011 cat_image.mk, 
-  { sorry },
-  { sorry }
+  intros im₁ im₂, 
+  hinduction im₁ with subobj₁ fac₁ univ₁, hinduction im₂ with subobj₂ fac₂ univ₂, 
+  fapply apdd2 cat_image.mk, 
+  { fapply subobj_antisymm, exact univ₁ subobj₂ fac₂, exact univ₂ subobj₁ fac₁ },
+  { apply pathover_of_tr_eq, exact is_prop.elim _ _ },
+  { apply pathover_of_tr_eq, exact is_prop.elim _ _ }
 end  
 
 @[hott, instance]
