@@ -11,19 +11,20 @@ sets
   quotients :   205
   theories  :   695
 categories  
-  basic     :   688
+  basic     :   691
   examples  :   662
   diagrams  :   441
+  adjoints  :    24
   limits    :   626
-  pullbacks :   133
+  pullbacks :   231
   colimits  :   458
   structures:   613
               -----
-               7821
+               7946
 
 
 Edited files: 
 ---------------
 categories.models: is_interpretable_in-class
-categories.pullbacks: pullback of monos, pullback square
+categories.adjoint: definition of adjoints
 
