@@ -538,7 +538,11 @@ functor.mk (λ c : C, d) (λ c₁ c₂ f, 𝟙 d) (λ c, rfl)
 @[hott]
 def constant_functor_map [precategory.{v} C] [precategory.{v'} D] (d : D) :
   ∀ {c₁ c₂ : C} (h : c₁ ⟶ c₂), (constant_functor C D d).map h = 𝟙 d :=
-assume c₁ c₂ h, rfl   
+assume c₁ c₂ h, rfl  
+
+@[hott]
+def id_functor [precategory.{v} C] : C ⥤ C :=
+  functor.mk (λ c : C, c) (λ c₁ c₂ f, f) (λ c, idp) (λ c₁ c₂ c₃ f g, idp)  
 
 
 @[hott]
