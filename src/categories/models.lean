@@ -1,10 +1,11 @@
-import categories.structures categories.colimits
+import categories.structures categories.colimits categories.pullback
 
 universes v v' u u' w 
 hott_theory
 
 namespace hott
-open signature signature.term signature.formula categories.limits subset categories.colimits
+open signature signature.term signature.formula categories.limits subset 
+     categories.colimits categories.pullbacks
 
 namespace categories
 
@@ -51,6 +52,7 @@ inductive model_properties : Type
 | fin_union : model_properties
 | stable_image : model_properties
 | all_of_fiber : model_properties
+| complement : model_properties
 | inf_union : model_properties
 | inf_pullback : model_properties
 
@@ -72,6 +74,9 @@ begin
   { hinduction φ, exact False, exact False, exact False, exact False,  --all of fiber
     exact ih_a or ih_a_1, exact ih_a or ih_a_1, exact True, exact True, exact ih, exact True,
     exact inf_disj ih, exact inf_disj ih },
+  { hinduction φ, exact False, exact False, exact False, exact False,  --complement
+    exact ih_a or ih_a_1, exact ih_a or ih_a_1, exact ih_a or ih_a_1, exact True, 
+    exact ih, exact ih, exact inf_disj ih, exact inf_disj ih},  
   { hinduction φ, exact False, exact False, exact False, exact False,  --arbitrary unions
     exact ih_a or ih_a_1, exact ih_a or ih_a_1, exact ih_a or ih_a_1, exact ih, exact ih, 
     exact ih, exact True, exact inf_disj ih },
@@ -85,7 +90,8 @@ class is_interpretable_in {sign : fo_signature} (φ : formula sign) (C : Type u)
   [category.{v} C] [has_products.{v u 0} C] :=
 (equal : needs_properties φ model_properties.equalizer -> has_equalizers C)
 (pullback : needs_properties φ model_properties.pullback -> has_pullbacks C)
-(fin_union : needs_properties φ model_properties.fin_union -> has_fin_unions C)  
+(fin_union : needs_properties φ model_properties.fin_union -> has_fin_unions C) 
+(stable_im : needs_properties φ model_properties.stable_image -> has_stable_images C) 
 
 @[hott]
 def context_in_Sig_str {sign : fo_signature} (cont : context sign) 
