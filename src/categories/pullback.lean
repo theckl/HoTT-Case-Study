@@ -8,8 +8,6 @@ open hott.categories hott.categories.limits
 
 namespace categories.pullbacks
 
-set_option pp.universes true
-
 /- `orthogonal_pair f g` is the diagram in `C` consisting of the two morphisms `f` and `g` with
    common codomain. -/
 @[hott, hsimp]
@@ -209,13 +207,24 @@ def pullback_subobject  {C : Type u} [category.{v} C] {a c : C} (f : a ⟶ c)
 subobject.mk (pullback f b.hom) (pullback_homo_l f b.hom) 
                                 (mono_is_stable f b.hom b.is_mono)
 
-set_option trace.class_instances true
-
 @[hott]
 def image_is_stable {C : Type u} [category.{v} C] {a b c : C} (f : a ⟶ c) (g : b ⟶ c)
-  [has_images C] [has_pullbacks C] : 
-  hom.image (pullback_homo_l f g) = pullback_subobject f (hom.image g) :=
-begin sorry end 
+  [has_images C] [has_pullbacks.{v u u} C] := 
+  hom.image (pullback_homo_l f g) = pullback_subobject f (hom.image g) 
+
+@[hott]
+class has_stable_images (C : Type u) [category.{v} C] :=
+  (has_im : has_images C)
+  (has_pb : has_pullbacks.{v u u} C)
+  (stable_im : Π (a b c : C) (f : a ⟶ c) (g : b ⟶ c), image_is_stable f g)
+
+@[hott, instance]
+def has_images_of_has_stable_images {C : Type u} [category.{v} C] 
+  [H : has_stable_images C] : has_images C := H.has_im
+
+@[hott, instance]
+def has_pullbacks_of_has_stable_images {C : Type u} [category.{v} C] 
+  [H : has_stable_images C] : has_pullbacks C := H.has_pb
 
 end categories.pullbacks
 
