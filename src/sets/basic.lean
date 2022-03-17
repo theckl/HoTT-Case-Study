@@ -293,6 +293,16 @@ def inv_bij_is_inv {A : Set} {B : Set} (f : bijection A B) :
 (inv_of_bijection f).2
 
 @[hott]
+def inv_bij_r_inv {A : Set} {B : Set} (f : bijection A B) :
+  Π b : B, f ((inv_bijection_of f) b) = b :=
+assume b, @is_set_inverse_of.r_inv _ _ _ _ (inv_bij_is_inv f) b  
+
+@[hott]
+def inv_bij_l_inv {A : Set} {B : Set} (f : bijection A B) :
+  Π a : A, (inv_bijection_of f) (f a) = a :=
+assume a, @is_set_inverse_of.l_inv _ _ _ _ (inv_bij_is_inv f) a  
+
+@[hott]
 def bij_is_inv_of_bij_inv {A : Set} {B : Set} (f : bijection A B) :
   f = inv_bijection_of (inv_bijection_of f) :=
 begin 
@@ -347,6 +357,12 @@ have map_inv_id_id : inv_bij = id_map A, from
   inv_is_unique (id_map A) inv_bij (id_map A) 
                 (inv_of_bijection (identity A)).2 (id_is_inv_to_id A), 
 bijection_eq_from_map_eq (inv_bijection_of (identity A)) (identity A) map_inv_id_id
+
+/- Moving around bijections in equalities -/
+@[hott]
+def bijection_l_to_r {A : Set} {B : Set} (f : bijection A B) :
+  Π {a : A} {b : B}, f a = b -> a = inv_bijection_of f b :=
+assume a b p, (inv_bij_l_inv f a)⁻¹ ⬝ ap (inv_bijection_of f) p    
 
 /- Equalities between two sets correspond to bijections between the two sets. 
    To make the construction of the equivalence more transparent we split off some 
