@@ -3,7 +3,7 @@ types2      :   252
 prop_axioms :   647
 prop_logic  :   208
 sets
-  basic     :   643
+  basic     :   659
   finite    :   206
   subset    :   407
   axioms    :   340
@@ -14,17 +14,18 @@ categories
   basic     :   691
   examples  :   662
   diagrams  :   441
-  adjoints  :    24
+  adjoints  :   115
   limits    :   626
   pullbacks :   231
   colimits  :   458
   structures:   613
               -----
-               7946
+               8053
 
 
 Edited files: 
 ---------------
 categories.models: is_interpretable_in-class
-categories.adjoint: definition of adjoints
+categories.adjoints : left adjoint for pullback of subobjects
+categories.pullbacks : pullback functor of subobjects
 
