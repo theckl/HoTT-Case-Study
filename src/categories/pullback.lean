@@ -1,10 +1,10 @@
-import categories.limits
+import categories.limits categories.adjoints
 
 universes v v' u u' w
 hott_theory
 
 namespace hott
-open hott.categories hott.categories.limits
+open hott.categories hott.categories.limits hott.is_trunc categories.adjoints
 
 namespace categories.pullbacks
 
@@ -155,6 +155,18 @@ def pullback_lift {C : Type u} [category.{v} C] {a b c : C} {f : a ⟶ c} {g : b
 (get_limit_cone (orthogonal_pair f g)).is_limit.lift S 
 
 @[hott]
+def pb_lift_eq_l {C : Type u} [category.{v} C] {a b c : C} {f : a ⟶ c} {g : b ⟶ c}
+  (S : square f g) [has_pullback f g] : 
+  pullback_lift S ≫ pullback_homo_l f g = square_left S :=
+(get_limit_cone (orthogonal_pair f g)).is_limit.fac S ow_left  
+
+@[hott]
+def pb_lift_eq_t {C : Type u} [category.{v} C] {a b c : C} {f : a ⟶ c} {g : b ⟶ c}
+  (S : square f g) [has_pullback f g] : 
+  pullback_lift S ≫ pullback_homo_t f g = square_top S :=
+(get_limit_cone (orthogonal_pair f g)).is_limit.fac S ow_upper  
+
+@[hott]
 def pullback_uniq {C : Type u} [category.{v} C] {a b c : C} {f : a ⟶ c} {g : b ⟶ c}
   (S : square f g) [has_pullback f g] : Π (h : S.X ⟶ pullback f g), 
   h ≫ pullback_homo_l f g = square_left S -> h ≫ pullback_homo_t f g = square_top S ->
@@ -207,6 +219,30 @@ def pullback_subobject  {C : Type u} [category.{v} C] {a c : C} (f : a ⟶ c)
 subobject.mk (pullback f b.hom) (pullback_homo_l f b.hom) 
                                 (mono_is_stable f b.hom b.is_mono)
 
+def pullback_subobject_hom  {C : Type u} [category.{v} C] {a c : C} (f : a ⟶ c) 
+  {b₁ b₂ : subobject c} [has_pullback f b₁.hom] [has_pullback f b₂.hom] 
+  (i : b₁ ⟶ b₂) : pullback_subobject f b₁ ⟶ pullback_subobject f b₂ :=
+begin
+  have w : (pullback_subobject f b₁).hom ≫ f = 
+                              (pullback_homo_t f b₁.hom ≫ i.hom_obj) ≫ b₂.hom, from 
+    begin 
+      change pullback_homo_l f b₁.hom ≫ f = _, rwr pullback_eq, 
+      rwr precategory.assoc, rwr i.fac 
+    end, 
+  fapply hom_of_monos.mk, 
+  { exact pullback_lift (square.of_i_j w) }, 
+  { exact pb_lift_eq_l (square.of_i_j w) } 
+end   
+
+@[hott]
+def pb_subobj_functor {C : Type u} [category.{v} C] {a c : C} (f : a ⟶ c) 
+  [has_pullbacks.{v u u} C] : subobject c ⥤ subobject a :=
+categories.functor.mk (λ b : subobject c, pullback_subobject f b)
+                      (λ b₁ b₂ i, pullback_subobject_hom f i)
+                      (λ b, is_prop.elim _ _)
+                      (λ b₁ b₂ b₃ i₁ i₂, is_prop.elim _ _) 
+
+
 @[hott]
 def image_is_stable {C : Type u} [category.{v} C] {a b c : C} (f : a ⟶ c) (g : b ⟶ c)
   [has_images C] [has_pullbacks.{v u u} C] := 
@@ -225,6 +261,10 @@ def has_images_of_has_stable_images {C : Type u} [category.{v} C]
 @[hott, instance]
 def has_pullbacks_of_has_stable_images {C : Type u} [category.{v} C] 
   [H : has_stable_images C] : has_pullbacks C := H.has_pb
+
+
+/- The pullback functors of subobjects has a left adjoint. -/
+
 
 end categories.pullbacks
 
