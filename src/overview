@@ -26,6 +26,4 @@ categories
 Edited files: 
 ---------------
 categories.models: is_interpretable_in-class
-categories.adjoints : left adjoint for pullback of subobjects
-categories.pullbacks : pullback functor of subobjects
-
+categories.pullbacks : left adjoint for pullback of subobjects
