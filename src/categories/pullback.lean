@@ -4,7 +4,7 @@ universes v v' u u' w
 hott_theory
 
 namespace hott
-open hott.categories hott.categories.limits hott.is_trunc categories.adjoints
+open hott.categories hott.categories.limits hott.is_trunc categories.adjoints hott.set
 
 namespace categories.pullbacks
 
@@ -243,6 +243,8 @@ categories.functor.mk (λ b : subobject c, pullback_subobject f b)
                       (λ b₁ b₂ b₃ i₁ i₂, is_prop.elim _ _) 
 
 
+/- The pullback functor of subobjects has adjoints if the category has images stable
+   under pullbacks. -/
 @[hott]
 def image_is_stable {C : Type u} [category.{v} C] {a b c : C} (f : a ⟶ c) (g : b ⟶ c)
   [has_images C] [has_pullbacks.{v u u} C] := 
@@ -260,11 +262,47 @@ def has_images_of_has_stable_images {C : Type u} [category.{v} C]
 
 @[hott, instance]
 def has_pullbacks_of_has_stable_images {C : Type u} [category.{v} C] 
-  [H : has_stable_images C] : has_pullbacks C := H.has_pb
+  [H : has_stable_images C] : has_pullbacks.{v u u} C := H.has_pb
 
+/- Now we can construct the left adjoint of pullback functors of subobjects. -/
+@[hott]
+def fib_ex {C : Type u} [category.{v} C] [has_stable_images C] {a b : C} (f : a ⟶ b) :
+  subobject a ⥤ subobject b :=
+begin 
+  fapply categories.functor.mk, 
+  { exact λ c : subobject a, hom.image (c.hom ≫ f) },
+  { intros c d i, 
+    have H : hom.image (c.hom ≫ f) = hom.image (i.hom_obj ≫ d.hom ≫ f), from
+      ap (λ h : c.obj ⟶ a, hom.image (h ≫ f)) i.fac⁻¹ ⬝ 
+                                    ap (λ h, hom.image h) (precategory.assoc _ _ _),
+    exact H⁻¹ ▸[λ e : subobject b, e ⟶ hom.image (d.hom ≫ f)] 
+                                                   im_incl i.hom_obj (d.hom ≫ f) },
+  { exact λ c, is_prop.elim _ _ },
+  { exact λ c₁ c₂ c₃ i₁ i₂, is_prop.elim _ _ }
+end  
 
-/- The pullback functors of subobjects has a left adjoint. -/
-
+@[hott]
+def fib_ex_left_adj_pb_subobj {C : Type u} [category.{v} C] [has_stable_images C] 
+  {a b : C} (f : a ⟶ b) : adjoint_functors_on_hom (fib_ex f) (pb_subobj_functor f) :=
+begin
+  fapply adjoint_functors_on_hom.mk, 
+  { intros c d, fapply has_inverse_to_bijection,
+    { intro i, fapply hom_of_monos.mk, 
+      { have w : c.hom ≫ f = (hom_to_image (c.hom ≫ f) ≫ i.hom_obj) ≫ d.hom, from 
+          begin 
+            apply eq.concat (hom_to_image_eq (c.hom ≫ f))⁻¹, rwr precategory.assoc, 
+            exact ap (λ h : (hom.image (c.hom ≫ f)).obj ⟶ b, 
+                                             hom_to_image (c.hom ≫ f) ≫ h) i.fac⁻¹         
+          end,
+        exact pullback_lift (square.of_i_j w) }, 
+      { change pullback_lift _ ≫ pullback_homo_l _ _ = _, rwr pb_lift_eq_l } },
+    { intro j, fapply hom_image_univ (c.hom ≫ f) d (j.hom_obj ≫ (pullback_homo_t _ _)), 
+      rwr precategory.assoc, rwr <- pullback_eq, rwr <- precategory.assoc, 
+      change (_ ≫ ((pb_subobj_functor f).obj d).hom) ≫ _ = _, rwr j.fac },
+    { fapply is_set_inverse_of.mk, all_goals { intro h, exact is_prop.elim _ _ } } },
+  { intros _ _ _ _ _, exact is_prop.elim _ _ },
+  { intros _ _ _ _ _, exact is_prop.elim _ _ }
+end  
 
 end categories.pullbacks
 
