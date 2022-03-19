@@ -643,10 +643,46 @@ def cat_image_is_prop {C : Type u} [category.{v} C] {c d : C} (f : c ⟶ d) :
   is_prop (cat_image f) :=
 is_prop.mk (cat_image_is_unique f)  
 
-@[hott]
+@[hott, reducible]
 def hom.image {C : Type u} [category.{v} C] {c d : C} (f : c ⟶ d) [has_image f] : 
   subobject d :=  
 (untrunc_of_is_trunc (has_image.exists_im f)).subobj
+
+@[hott, reducible]
+def hom_to_image {C : Type u} [category.{v} C] {c d : C} (f : c ⟶ d) [has_image f] :
+  c ⟶ (hom.image f).obj := 
+(untrunc_of_is_trunc (has_image.exists_im f)).fac.1  
+
+@[hott]
+def hom_to_image_eq {C : Type u} [category.{v} C] {c d : C} (f : c ⟶ d) [has_image f] :
+  hom_to_image f ≫ (hom.image f).hom = f := 
+(untrunc_of_is_trunc (has_image.exists_im f)).fac.2 
+
+@[hott]
+def hom_image_univ {C : Type u} [category.{v} C] {c d : C} (f : c ⟶ d) [has_image f] :
+  Π (a : subobject d) (f' : c ⟶ a.obj), f' ≫ a.hom = f -> (hom.image f ⟶ a) :=
+assume a f' p, (untrunc_of_is_trunc (has_image.exists_im f)).univ a ⟨f', p⟩ 
+
+@[hott, instance]
+def subobj_has_im {C : Type u} [category.{v} C] {c : C} (b : subobject c) :
+  has_image b.hom :=
+have im_b : cat_image b.hom, from 
+  cat_image.mk b (sigma.mk (𝟙 b.obj) (precategory.id_comp b.hom)) 
+               (λ a m, hom_of_monos.mk _ _ m.1 m.2),  
+has_image.mk (tr im_b)
+
+@[hott]
+def subobj_is_im {C : Type u} [category.{v} C] {c : C} (b : subobject c) :
+  hom.image b.hom = b := idp  
+
+@[hott]
+def im_incl {C : Type u} [category.{v} C] {a b c : C} (f : a ⟶ b) (g : b ⟶ c) 
+  [has_image (f ≫ g)] [has_image g] : hom.image (f ≫ g) ⟶ hom.image g :=
+begin 
+  fapply cat_image.univ, fapply sigma.mk, 
+  { exact f ≫ hom_to_image g }, 
+  { rwr precategory.assoc, rwr hom_to_image_eq g }
+end  
 
 @[hott]
 class has_images (C : Type u) [category.{v} C] :=
