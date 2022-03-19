@@ -32,9 +32,9 @@ structure adjoint_functors {C : Type u} {D : Type u'} [precategory.{v} C]
 structure adjoint_functors_on_hom {C : Type u} {D : Type u'} [precategory.{v} C] 
   [precategory.{v'} D] (L : C ⥤ D) (R : D ⥤ C) :=
 (hom_bij : Π (c : C) (d : D), bijection (L.obj c ⟶ d) (c ⟶ R.obj d)) 
-(nat_L : Π (c : C) (d : D) (c' : C) (h : c' ⟶ c) (f : L.obj c ⟶ d), 
+(nat_L : Π {c : C} {d : D} {c' : C} (h : c' ⟶ c) (f : L.obj c ⟶ d), 
            hom_bij c' d (L.map h ≫ f) = h ≫ hom_bij c d f)
-(nat_R : Π (c : C) (d : D) (d' : D) (g : d ⟶ d') (f : L.obj c ⟶ d), 
+(nat_R : Π {c : C} {d : D} {d' : D} (g : d ⟶ d') (f : L.obj c ⟶ d), 
            hom_bij c d' (f ≫ g) = hom_bij c d f ≫ R.map g)                                               
 
 @[hott]
@@ -81,25 +81,25 @@ begin
     { intros c c' f, 
       calc _ = f ≫ adj.hom_bij c' (L.obj c') (𝟙 (L.obj c')) : idp
            ... = adj.hom_bij c (L.obj c') (L.map f ≫ (𝟙 (L.obj c'))) :
-                 by rwr <- adj.nat_L c' (L.obj c') c f (𝟙 (L.obj c'))
+                 by rwr <- adj.nat_L f (𝟙 (L.obj c'))
            ... = adj.hom_bij c (L.obj c') ((L.map f) ≫ 𝟙 (L.obj c')) : idp
            ... = adj.hom_bij c (L.obj c') (L.map f) : by rwr precategory.comp_id
            ... = adj.hom_bij c (L.obj c') (𝟙 (L.obj c) ≫ L.map f) : by rwr precategory.id_comp
-           ... = _ : by rwr adj.nat_R c _ _ (L.map f) (𝟙 (L.obj c)) } },
+           ... = _ : by rwr adj.nat_R (L.map f) (𝟙 (L.obj c)) } },
   { intros c d f, let g := inv_bijection_of (adj.hom_bij c d) f,  --hom
     have p : f = adj.hom_bij c d g, from (inv_bij_r_inv (adj.hom_bij c d) f)⁻¹,
     fapply sigma.mk, 
     { exact g },
     { change f = adj.hom_bij c (L.obj c) (𝟙 (L.obj c)) ≫ R.map g, rwr p, 
       calc _ = (adj.hom_bij c d) (𝟙 (L.obj c) ≫ g) : by rwr precategory.id_comp
-           ... = _ : by rwr adj.nat_R c _ _ g (𝟙 (L.obj c)) } },
+           ... = _ : by rwr adj.nat_R g (𝟙 (L.obj c)) } },
   { intros c d f g, 
     change f = adj.hom_bij c (L.obj c) (𝟙 (L.obj c)) ≫ R.map g ->   --uniq
                                  g = inv_bijection_of (adj.hom_bij c d) f, intro p,
     apply bijection_l_to_r (adj.hom_bij c d),
     calc _ = (adj.hom_bij c d) (𝟙 (L.obj c) ≫ g) : by rwr precategory.id_comp
          ... = adj.hom_bij c (L.obj c) (𝟙 (L.obj c)) ≫ R.map g :
-               by rwr adj.nat_R c _ _ g (𝟙 (L.obj c))
+               by rwr adj.nat_R g (𝟙 (L.obj c))
          ... = _ : by rwr <- p }  
 end       
 
