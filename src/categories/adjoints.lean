@@ -8,21 +8,12 @@ open hott.set hott.categories
 
 namespace categories.adjoints
 
-/- It would be nice to denote these pullbacks by `f*` and `f_*`, but these notations
-   would clash with others. -/
-@[hott]
-def pb_comp_hom {C : Type u} [precategory.{v} C] {c c' d : C} (f : c' ⟶ c) :
-  (c ⟶ d) -> (c' ⟶ d) := λ h : c ⟶ d, f ≫ h
-
-@[hott]
-def pf_comp_hom {C : Type u} [precategory.{v} C] {c d d' : C} (f : d ⟶ d') :
-  (c ⟶ d) -> (c ⟶ d') := λ h : c ⟶ d, h ≫ f
-
 /- There are two equivalent characterizations of adjoint functors. -/
 @[hott]
 structure adjoint_functors {C : Type u} {D : Type u'} [precategory.{v} C] 
   [precategory.{v'} D] (L : C ⥤ D) (R : D ⥤ C) :=
-(trafo : id_functor C ⟹ L ⋙ R)
+(unit : id_functor C ⟹ L ⋙ R)
+(counit : R ⋙ L ⟹ id_functor D)
 (hom : Π {c : C} {d : D} (f : c ⟶ R.obj d), 
                                 Σ (g : L.obj c ⟶ d), f = trafo.app c ≫ R.map g)
 (uniq : Π {c : C} {d : D} (f : c ⟶ R.obj d) (g : L.obj c ⟶ d), 
