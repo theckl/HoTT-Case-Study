@@ -572,6 +572,85 @@ end
 
 infixr ` ⋙ `:25 := functor_comp 
 
+/- Whiskering of natural transformations with functors: [HoTT-Book, Def.9.2.7] -/
+@[hott]
+def tr_whisk_l [precategory.{v} C] [precategory.{v'} D] [precategory.{v''} E]
+  {F : D ⥤ E} {G : D ⥤ E} (α : F ⟹ G) (H : C ⥤ D) : H ⋙ F ⟹ H ⋙ G :=
+begin
+  fapply nat_trans.mk,
+  { intro c, exact α.app (H.obj c) },
+  { intros c c' f, 
+    change F.map (H.map f) ≫ α.app (H.obj c') = α.app (H.obj c) ≫ G.map (H.map f),
+    rwr α.naturality }
+end  
+
+@[hott]
+def tr_whisk_r [precategory.{v} C] [precategory.{v'} D] [precategory.{v''} E]
+  {F : C ⥤ D} {G : C ⥤ D} (α : F ⟹ G) (H : D ⥤ E) : F ⋙ H ⟹ G ⋙ H :=
+begin
+  fapply nat_trans.mk,
+  { intro c, exact H.map (α.app c) },
+  { intros c c' f, 
+    change H.map (F.map f) ≫ H.map (α.app c') = H.map (α.app c) ≫ H.map (G.map f),
+    rwr <- H.map_comp, rwr <- H.map_comp, rwr α.naturality }
+end
+
+/- The first step to construct the category of functors between to (pre-)categories is
+   to show that the natural transformations between two such functors form a set. -/
+@[hott] 
+def nat_trans_eq [precategory.{v} C] [precategory.{v'} D] {F : C ⥤ D} {G : C ⥤ D} :
+  Π {α β : F ⟹ G} (p : α.app = β.app), 
+  (α.naturality =[p; λ γ : Π c : C, F.obj c ⟶ G.obj c, Π (c c' : C) (f : c ⟶ c'), 
+                      (F.map f) ≫ γ c' = γ c ≫ (G.map f)] β.naturality) -> α = β :=
+begin 
+  intros α β p q, hinduction α with app₁ nat₁, hinduction β with app₂ nat₂, 
+  exact apd011 nat_trans.mk p q
+end                      
+
+@[hott]
+def naturality_eq_is_inhabited [precategory.{v} C] [precategory.{v'} D] {F : C ⥤ D} 
+  {G : C ⥤ D} {α β : F ⟹ G} (p : α = β) :
+  (α.naturality =[ap nat_trans.app p; λ γ : Π c : C, F.obj c ⟶ G.obj c, 
+     Π (c c' : C) (f : c ⟶ c'), (F.map f) ≫ γ c' = γ c ≫ (G.map f)] β.naturality) :=
+begin apply pathover_of_tr_eq, exact is_prop.elim _ _ end     
+
+@[hott]
+def naturality_eq_is_idpo [precategory.{v} C] [precategory.{v'} D] {F : C ⥤ D} 
+  {G : C ⥤ D} {α : F ⟹ G} : naturality_eq_is_inhabited (@idp _ α) = idpo :=
+begin exact is_prop.elim _ _ end 
+
+@[hott] 
+def nat_trans_eq_eta [precategory.{v} C] [precategory.{v'} D] {F : C ⥤ D} {G : C ⥤ D} 
+  {α β : F ⟹ G} (p : α = β) : 
+  nat_trans_eq (ap nat_trans.app p) (naturality_eq_is_inhabited p) = p :=
+begin hinduction p, hinduction α, hsimp, rwr naturality_eq_is_idpo end               
+
+@[hott, instance]
+def nat_trans_is_set [precategory.{v} C] [precategory.{v'} D] (F : C ⥤ D) 
+  (G : C ⥤ D) : is_set (F ⟹ G) := 
+begin 
+  fapply is_set.mk, intros α β, 
+  hinduction α with app₁ nat₁, hinduction β with app₂ nat₂,
+  intros p q, rwr <- nat_trans_eq_eta p, rwr <- nat_trans_eq_eta q,
+  fapply apd011 nat_trans_eq, 
+  exact is_set.elim _ _, apply pathover_of_tr_eq, exact is_prop.elim _ _
+end      
+
+/- Natural transformations can serve as homomorphisms between two functors. -/
+@[hott, instance]
+def nat_trans_has_hom [precategory.{v} C] [precategory.{v'} D] (F : C ⥤ D) 
+  (G : C ⥤ D) : has_hom (C ⥤ D) :=
+has_hom.mk (λ F G : C ⥤ D, Set.mk (F ⟹ G) (nat_trans_is_set F G))  
+
+@[hott]
+def nat_trans_comp [precategory.{v} C] [precategory.{v'} D] {F G H : C ⥤ D} 
+  (α : F ⟹ G) (β : G ⟹ H) : F ⟹ H :=
+begin 
+  fapply nat_trans.mk, intro c, 
+  { exact α.app c ≫ β.app c }, 
+  { sorry } 
+end  
+
 end 
 
 /- The fully embedded category of a type injectively mapped to a category. 
