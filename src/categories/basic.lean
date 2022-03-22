@@ -597,33 +597,29 @@ end
 
 /- The first step to construct the category of functors between to (pre-)categories is
    to show that the natural transformations between two such functors form a set. -/
-@[hott] 
+@[hott, reducible] 
 def nat_trans_eq [precategory.{v} C] [precategory.{v'} D] {F : C ⥤ D} {G : C ⥤ D} :
-  Π {α β : F ⟹ G} (p : α.app = β.app), 
-  (α.naturality =[p; λ γ : Π c : C, F.obj c ⟶ G.obj c, Π (c c' : C) (f : c ⟶ c'), 
-                      (F.map f) ≫ γ c' = γ c ≫ (G.map f)] β.naturality) -> α = β :=
+  Π {α β : F ⟹ G} (p : α.app = β.app), α = β := 
 begin 
-  intros α β p q, hinduction α with app₁ nat₁, hinduction β with app₂ nat₂, 
-  exact apd011 nat_trans.mk p q
-end                      
+  intros α β p, hinduction α with app₁ nat₁, hinduction β with app₂ nat₂, 
+  exact apd011 nat_trans.mk p (pathover_of_tr_eq (is_prop.elim _ _))
+end  
 
 @[hott]
-def naturality_eq_is_inhabited [precategory.{v} C] [precategory.{v'} D] {F : C ⥤ D} 
-  {G : C ⥤ D} {α β : F ⟹ G} (p : α = β) :
-  (α.naturality =[ap nat_trans.app p; λ γ : Π c : C, F.obj c ⟶ G.obj c, 
-     Π (c c' : C) (f : c ⟶ c'), (F.map f) ≫ γ c' = γ c ≫ (G.map f)] β.naturality) :=
-begin apply pathover_of_tr_eq, exact is_prop.elim _ _ end     
-
-@[hott]
-def naturality_eq_is_idpo [precategory.{v} C] [precategory.{v'} D] {F : C ⥤ D} 
-  {G : C ⥤ D} {α : F ⟹ G} : naturality_eq_is_inhabited (@idp _ α) = idpo :=
-begin exact is_prop.elim _ _ end 
+def nat_trans_eq_idp_app [precategory.{v} C] [precategory.{v'} D] {F : C ⥤ D} 
+  {G : C ⥤ D} : Π (α : F ⟹ G), nat_trans_eq (@idp _ α.app) = idp :=
+begin 
+  intro α, hinduction α with app nat, change apd011 nat_trans.mk idp _ = _, 
+    have q : is_prop.elim ((@idp _ app) ▸[λ a : Π (c : C), 
+                (F.obj c ⟶ G.obj c), Π c c' f, F.map f ≫ a c' = a c ≫ G.map f] 
+                @nat) @nat = idp, from is_set.elim _ _, 
+  exact ap (λ r, apd011 nat_trans.mk idp (pathover_of_tr_eq r)) q
+end    
 
 @[hott] 
 def nat_trans_eq_eta [precategory.{v} C] [precategory.{v'} D] {F : C ⥤ D} {G : C ⥤ D} 
-  {α β : F ⟹ G} (p : α = β) : 
-  nat_trans_eq (ap nat_trans.app p) (naturality_eq_is_inhabited p) = p :=
-begin hinduction p, hinduction α, hsimp, rwr naturality_eq_is_idpo end               
+  {α β : F ⟹ G} (p : α = β) : nat_trans_eq (ap nat_trans.app p) = p :=
+begin hinduction p, hinduction α, hsimp, exact nat_trans_eq_idp_app _ end               
 
 @[hott, instance]
 def nat_trans_is_set [precategory.{v} C] [precategory.{v'} D] (F : C ⥤ D) 
@@ -632,23 +628,45 @@ begin
   fapply is_set.mk, intros α β, 
   hinduction α with app₁ nat₁, hinduction β with app₂ nat₂,
   intros p q, rwr <- nat_trans_eq_eta p, rwr <- nat_trans_eq_eta q,
-  fapply apd011 nat_trans_eq, 
-  exact is_set.elim _ _, apply pathover_of_tr_eq, exact is_prop.elim _ _
+  fapply ap nat_trans_eq, exact is_set.elim _ _
 end      
 
 /- Natural transformations can serve as homomorphisms between two functors. -/
 @[hott, instance]
-def nat_trans_has_hom [precategory.{v} C] [precategory.{v'} D] (F : C ⥤ D) 
-  (G : C ⥤ D) : has_hom (C ⥤ D) :=
+def nat_trans_has_hom [precategory.{v} C] [precategory.{v'} D] : has_hom (C ⥤ D) :=
 has_hom.mk (λ F G : C ⥤ D, Set.mk (F ⟹ G) (nat_trans_is_set F G))  
 
-@[hott]
+@[hott, reducible, hsimp]
+def id_nat_trans [precategory.{v} C] [precategory.{v'} D] (F : C ⥤ D) : F ⟹ F :=
+  nat_trans.mk (λ c : C, 𝟙 (F.obj c)) 
+               (λ c c' f, (precategory.comp_id _) ⬝ (precategory.id_comp _)⁻¹)
+
+@[hott, reducible, hsimp]
 def nat_trans_comp [precategory.{v} C] [precategory.{v'} D] {F G H : C ⥤ D} 
   (α : F ⟹ G) (β : G ⟹ H) : F ⟹ H :=
 begin 
   fapply nat_trans.mk, intro c, 
   { exact α.app c ≫ β.app c }, 
-  { sorry } 
+  { intros c c' f, rwr precategory.assoc, rwr <- precategory.assoc,
+    rwr α.naturality, rwr precategory.assoc, rwr β.naturality } 
+end  
+
+@[hott, instance]
+def nat_trans_cat_str [precategory.{v} C] [precategory.{v'} D] : 
+  category_struct (C ⥤ D) :=
+category_struct.mk (λ F, id_nat_trans F) (λ F G H α β, nat_trans_comp α β)   
+
+@[hott, instance] 
+def nat_trans_precat [precategory.{v} C] [precategory.{v'} D] : 
+  precategory (C ⥤ D) :=
+begin
+  fapply precategory.mk,
+  { intros F G α, apply nat_trans_eq, apply eq_of_homotopy, intro c, 
+    change 𝟙 (F.obj c) ≫ _ = _, rwr precategory.id_comp },
+  { intros F G α, apply nat_trans_eq, apply eq_of_homotopy, intro c, 
+    change _ ≫ 𝟙 (G.obj c) = _, rwr precategory.comp_id },
+  { intros F G H I α β γ, apply nat_trans_eq, apply eq_of_homotopy, intro c, 
+    change (_ ≫ _) ≫ _ = _ ≫ _ ≫ _, rwr precategory.assoc }
 end  
 
 end 
