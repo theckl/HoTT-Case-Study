@@ -57,7 +57,21 @@ structure iso {C : Type u} [precategory.{v} C] (a b : C) :=
 postfix `⁻¹ʰ`:std.prec.max_plus := iso.inv
 
 infix ` ≅ `:25 := iso
- 
+
+@[hott]
+structure is_iso {C : Type u} [precategory.{v} C] {a b : C} (f : a ⟶ b) :=
+  (inv : b ⟶ a)
+  (r_inv : inv ≫ f = 𝟙 b)
+  (l_inv : f ≫ inv = 𝟙 a)
+
+@[hott]
+def is_iso_to_iso {C : Type u} [precategory.{v} C] {a b : C} (f : a ⟶ b) 
+  (H : is_iso f) : a ≅ b := iso.mk f H.inv H.r_inv H.l_inv
+
+@[hott]
+def iso_to_is_iso {C : Type u} [precategory.{v} C] {a b : C} (f : a ≅ b) : 
+  is_iso f.hom := is_iso.mk f.inv f.r_inv f.l_inv  
+
 @[hott]
 def iso.eta {C : Type u} [precategory.{v} C] {a b : C} (i : a ≅ b) : 
   i = iso.mk i.hom i.inv i.r_inv i.l_inv :=
@@ -165,6 +179,7 @@ def id_inv_iso_inv {C : Type u} [precategory.{v} C] {c₁ c₂ : C} (p : c₁ = 
   idtoiso p⁻¹ = inv_iso (idtoiso p) := 
 begin hinduction p, refl end 
 
+/- The next two facts correspond to [HoTT-Book, Lem.9.1.9]. -/
 @[hott]
 def id_hom_tr_comp {C : Type u} [precategory.{v} C] {c₁ c₂ d : C} (p : c₁ = c₂)
   (h : c₁ ⟶ d) : p ▸ h = (idtoiso p)⁻¹ʰ ≫ h :=
@@ -645,8 +660,8 @@ def id_nat_trans [precategory.{v} C] [precategory.{v'} D] (F : C ⥤ D) : F ⟹ 
 def nat_trans_comp [precategory.{v} C] [precategory.{v'} D] {F G H : C ⥤ D} 
   (α : F ⟹ G) (β : G ⟹ H) : F ⟹ H :=
 begin 
-  fapply nat_trans.mk, intro c, 
-  { exact α.app c ≫ β.app c }, 
+  fapply nat_trans.mk, 
+  { intro c, exact α.app c ≫ β.app c }, 
   { intros c c' f, rwr precategory.assoc, rwr <- precategory.assoc,
     rwr α.naturality, rwr precategory.assoc, rwr β.naturality } 
 end  
@@ -668,6 +683,57 @@ begin
   { intros F G H I α β γ, apply nat_trans_eq, apply eq_of_homotopy, intro c, 
     change (_ ≫ _) ≫ _ = _ ≫ _ ≫ _, rwr precategory.assoc }
 end  
+
+/- Natural isomorphisms consist of componentwise isomorphisms [HoTT-Book, Lem.9.2.4]. -/
+@[hott]
+def nat_iso_to_comp_iso [precategory.{v} C] [precategory.{v'} D] {F G : C ⥤ D} :
+  (F ≅ G) -> Π (c : C), F.obj c ≅ G.obj c :=
+begin
+  intro γ_iso, let γ := γ_iso.hom, let δ := γ_iso.inv, intro c, fapply iso.mk,
+  { exact γ.app c }, 
+  { exact δ.app c }, 
+  { change (δ ≫ γ).app c = nat_trans.app (𝟙 G) c, rwr γ_iso.r_inv }, 
+  { change (γ ≫ δ).app c = nat_trans.app (𝟙 F) c, rwr γ_iso.l_inv }
+end   
+
+@[hott]
+def comp_iso_to_nat_iso [precategory.{v} C] [precategory.{v'} D] {F G : C ⥤ D} 
+  (γ : F ⟹ G) : (Π (c : C), is_iso (γ.app c)) -> (F ≅ G) :=
+begin
+  intro comp_iso, fapply iso.mk, 
+  { exact γ },
+  { fapply nat_trans.mk, 
+    { intro c, exact (comp_iso c).inv },
+    { intros c c' f, 
+      calc _ = 𝟙 (G.obj c) ≫ G.map f ≫ (comp_iso c').inv : by rwr precategory.id_comp
+           ... = ((comp_iso c).inv ≫ (γ.app c)) ≫ G.map f ≫ (comp_iso c').inv : 
+                 by rwr (comp_iso c).r_inv
+           ... = (comp_iso c).inv ≫ (γ.app c ≫ G.map f) ≫ (comp_iso c').inv :
+                 by rwr precategory.assoc; rwr precategory.assoc
+           ... = (comp_iso c).inv ≫ (F.map f ≫ γ.app c') ≫ (comp_iso c').inv :
+                 by rwr γ.naturality             
+           ... = _ : by rwr precategory.assoc; rwr (comp_iso c').l_inv; 
+                        rwr precategory.comp_id } },
+  { apply nat_trans_eq, apply eq_of_homotopy, intro c, 
+    change (comp_iso c).inv ≫ γ.app c = 𝟙 (G.obj c), exact (comp_iso c).r_inv },
+  { apply nat_trans_eq, apply eq_of_homotopy, intro c, 
+    change γ.app c ≫ (comp_iso c).inv  = 𝟙 (F.obj c), exact (comp_iso c).l_inv }
+end   
+
+/- Functor precategories are categories if the functor target is a category 
+   [HoTT-Book, Thm.9.2.5]-/
+@[hott, instance]
+def nat_trans_cat [precategory.{v} C] [category.{v'} D] : 
+  category (C ⥤ D) :=
+begin
+  fapply category.mk, intros F G, fapply adjointify, 
+  { intro γ_iso, let γ := γ_iso.hom, fapply functor_eq, 
+    { apply eq_of_homotopy, intro c, 
+      exact (category.isotoid (nat_iso_to_comp_iso γ_iso c)) },
+    { sorry } },
+  { sorry },
+  { sorry}
+end
 
 end 
 
