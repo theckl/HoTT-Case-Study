@@ -1,4 +1,4 @@
-init2       :   360
+init2       :   372
 types2      :   252
 prop_axioms :   647
 prop_logic  :   208
@@ -20,7 +20,7 @@ categories
   colimits  :   458
   structures:   613
               -----
-               8089
+               8101
 
 
 Edited files: 
@@ -30,3 +30,4 @@ categories.pullbacks : right adjoint for pullback of subobjects
 categories.adjoints : uniqueness of right adjoint functors
 categories.adjoints : properties and definition of adjoints
 categories.basic : category of functors
+init2 : dependent multiple homotopy
