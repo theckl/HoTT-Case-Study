@@ -266,6 +266,18 @@ begin
 end  
 
 @[hott]
+def dep_eq_of_homotopy3 {A B C : Type _} {D : Π (b : B) (c : C), Type _} 
+  {P : A -> B -> C -> Type _} {a a' : A} (p : a = a') 
+  (f : Π (b : B) (c : C), D b c ->P a b c) (f' : Π (b : B) (c : C), D b c -> P a' b c) : 
+  (Π (b : B) (c : C) (d : D b c), f b c d =[p; λ a'' : A, P a'' b c] f' b c d) -> 
+                      f =[p; λ a'' : A, Π (b : B) (c : C), D b c -> P a'' b c] f' :=
+begin 
+  hinduction p, 
+  intro htp, apply pathover_idp_of_eq, apply eq_of_homotopy3, 
+  intros b c d, exact eq_of_pathover_idp (htp b c d) 
+end 
+
+@[hott]
 def dep_set_eq_eq {A : Type _} {B : A -> Type _} {a a' : A} [is_set (B a')]
   (p : a = a') {b : B a} {b' : B a'} (f f' : b =[p] b') : f = f' :=
 have tr_eq : tr_eq_of_pathover f = tr_eq_of_pathover f', from is_set.elim _ _,
