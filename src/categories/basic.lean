@@ -730,7 +730,7 @@ begin
   { intro γ_iso, let γ := γ_iso.hom, fapply functor_eq, 
     { apply eq_of_homotopy, intro c, 
       exact (category.isotoid (nat_iso_to_comp_iso γ_iso c)) },
-    { sorry } },
+    { apply dep_eq_of_homotopy3, intros c c' h, sorry } },
   { sorry },
   { sorry}
 end
