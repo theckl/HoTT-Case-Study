@@ -685,7 +685,7 @@ begin
 end  
 
 /- Natural isomorphisms consist of componentwise isomorphisms [HoTT-Book, Lem.9.2.4]. -/
-@[hott]
+@[hott, reducible]
 def nat_iso_to_comp_iso [precategory.{v} C] [precategory.{v'} D] {F G : C ⥤ D} :
   (F ≅ G) -> Π (c : C), F.obj c ≅ G.obj c :=
 begin
@@ -695,6 +695,15 @@ begin
   { change (δ ≫ γ).app c = nat_trans.app (𝟙 G) c, rwr γ_iso.r_inv }, 
   { change (γ ≫ δ).app c = nat_trans.app (𝟙 F) c, rwr γ_iso.l_inv }
 end   
+
+@[hott]
+def comp_iso_eq_to_nat_iso_eq [precategory.{v} C] [precategory.{v'} D] {F G : C ⥤ D}
+  (γ₁ γ₂ : F ≅ G) : 
+  (Π (c : C), nat_iso_to_comp_iso γ₁ c = nat_iso_to_comp_iso γ₂ c) -> γ₁ = γ₂ :=
+begin 
+  intro comp_eq, apply hom_eq_to_iso_eq, apply nat_trans_eq, apply eq_of_homotopy,
+  intro c, exact ap iso.hom (comp_eq c) 
+end                    
 
 @[hott]
 def comp_iso_to_nat_iso [precategory.{v} C] [precategory.{v'} D] {F G : C ⥤ D} 
@@ -720,6 +729,7 @@ begin
     change γ.app c ≫ (comp_iso c).inv  = 𝟙 (F.obj c), exact (comp_iso c).l_inv }
 end   
 
+
 /- Functor precategories are categories if the functor target is a category 
    [HoTT-Book, Thm.9.2.5]-/
 @[hott, instance]
@@ -730,8 +740,18 @@ begin
   { intro γ_iso, let γ := γ_iso.hom, fapply functor_eq, 
     { apply eq_of_homotopy, intro c, 
       exact (category.isotoid (nat_iso_to_comp_iso γ_iso c)) },
-    { apply dep_eq_of_homotopy3, intros c c' h, sorry } },
-  { sorry },
+    { apply dep_eq_of_homotopy3, intros c c' h, 
+      apply @po_homotopy_of_tr_eq2 _ _ _ _ (@eq_of_homotopy C (λ c'' : C, D) F.obj 
+              G.obj (λ (c'' : C), category.isotoid (nat_iso_to_comp_iso γ_iso c''))) 
+              (λ d₁ d₂, d₁ ⟶ d₂) _ _ (F.map h) (G.map h), 
+      rwr apd10_eq_of_homotopy, rwr id_hom_tr_comp, rwr id_hom_tr_comp', 
+      change ((idtoiso (idtoiso⁻¹ᶠ (nat_iso_to_comp_iso γ_iso c)))⁻¹ʰ ≫ F.map h) ≫ 
+              (idtoiso (idtoiso⁻¹ᶠ (nat_iso_to_comp_iso γ_iso c'))).hom = _,
+      rwr category.idtoiso_rinv, rwr category.idtoiso_rinv, rwr precategory.assoc,
+      apply eq.inverse, apply iso_move_lr, apply eq.inverse, 
+      change _ ≫ γ.app c' = γ.app c ≫ _, rwr γ.naturality } },
+  { intro γ_iso,  
+    apply comp_iso_eq_to_nat_iso_eq, intro c, sorry },
   { sorry}
 end
 
