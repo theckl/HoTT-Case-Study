@@ -302,6 +302,13 @@ begin
   rwr q, intro po_apd, apply pathover_idp_of_eq, exact eq_of_pathover_idp po_apd 
 end
 
+@[hott]
+def po_homotopy_of_tr_eq2 {A B : Type _} {f g : A -> B} (p : f = g) 
+  {Q : B -> B -> Type _} {a₁ a₂ : A} (hf : Q (f a₁) (f a₂)) (hg : Q (g a₁) (g a₂)) :
+  (apd10 p a₂) ▸[λ b, Q (g a₁) b] ((apd10 p a₁) ▸[λ b, Q b (f a₂)] hf) = hg -> 
+  hf =[p; λ f' : A -> B, Q (f' a₁) (f' a₂)] hg :=
+begin hinduction p, hsimp, intro H, apply pathover_idp_of_eq, exact H end  
+
 /- Some facts involving equivalences -/
 @[hott]
 def dep_cast {A B : Type _} (e : A ≃ B) (P : B -> Type _) :
