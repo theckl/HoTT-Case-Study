@@ -703,7 +703,18 @@ def comp_iso_eq_to_nat_iso_eq [precategory.{v} C] [precategory.{v'} D] {F G : C 
 begin 
   intro comp_eq, apply hom_eq_to_iso_eq, apply nat_trans_eq, apply eq_of_homotopy,
   intro c, exact ap iso.hom (comp_eq c) 
-end                    
+end  
+
+@[hott]
+def nat_idiso_to_comp_idiso [precategory.{v} C] [precategory.{v'} D] {F : C ⥤ D} :
+  Π c : C, nat_iso_to_comp_iso (id_is_iso F) c = id_is_iso (F.obj c) :=
+begin intro c, apply hom_eq_to_iso_eq, exact idp end
+
+@[hott]
+def nat_idtoiso_to_comp_idtoiso [precategory.{v} C] [precategory.{v'} D] {F G : C ⥤ D} 
+  (p : F = G) : Π c : C, nat_iso_to_comp_iso (idtoiso p) c = 
+                               idtoiso (ap (λ F' : C ⥤ D, F'.obj c) p) :=
+begin hinduction p, intro c, rwr idtoiso_refl_eq, rwr nat_idiso_to_comp_idiso c end                               
 
 @[hott]
 def comp_iso_to_nat_iso [precategory.{v} C] [precategory.{v'} D] {F G : C ⥤ D} 
@@ -729,7 +740,6 @@ begin
     change γ.app c ≫ (comp_iso c).inv  = 𝟙 (F.obj c), exact (comp_iso c).l_inv }
 end   
 
-
 /- Functor precategories are categories if the functor target is a category 
    [HoTT-Book, Thm.9.2.5]-/
 @[hott, instance]
@@ -750,9 +760,19 @@ begin
       rwr category.idtoiso_rinv, rwr category.idtoiso_rinv, rwr precategory.assoc,
       apply eq.inverse, apply iso_move_lr, apply eq.inverse, 
       change _ ≫ γ.app c' = γ.app c ≫ _, rwr γ.naturality } },
-  { intro γ_iso,  
-    apply comp_iso_eq_to_nat_iso_eq, intro c, sorry },
-  { sorry}
+  { intro γ_iso, apply comp_iso_eq_to_nat_iso_eq, intro c, 
+    rwr nat_idtoiso_to_comp_idtoiso, 
+    rwr <- ap_compose'(λ h : C -> D, h c) (λ F' : C ⥤ D, F'.obj), rwr functor_eq_obj,
+    rwr <- apd10_eq_ap_eval, rwr apd10_eq_of_homotopy,
+    change idtoiso (idtoiso⁻¹ᶠ (nat_iso_to_comp_iso γ_iso c)) = _, 
+    rwr category.idtoiso_rinv },
+  { intro p, hinduction p, change _ = @idp _ F, rwr <- functor_eq_idp, 
+    fapply apd011 (functor_eq C D), 
+    { rwr idtoiso_refl_eq, change _ = idpath _, rwr <- eq_of_homotopy_idp, 
+      apply ap eq_of_homotopy, apply eq_of_homotopy, intro c, 
+      change category.isotoid (nat_iso_to_comp_iso (id_is_iso F) c) = idp,
+      rwr nat_idiso_to_comp_idiso c, rwr isotoid_id_refl (F.obj c) },
+    { apply pathover_of_tr_eq, exact is_prop.elim _ _ } }
 end
 
 end 
