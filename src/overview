@@ -11,7 +11,7 @@ sets
   quotients :   205
   theories  :   695
 categories  
-  basic     :   691
+  basic     :   894
   examples  :   698
   diagrams  :   441
   adjoints  :   115
@@ -20,7 +20,7 @@ categories
   colimits  :   458
   structures:   613
               -----
-               8109
+               8312
 
 
 Edited files: 
@@ -29,5 +29,3 @@ categories.models : is_interpretable_in-class
 categories.pullbacks : right adjoint for pullback of subobjects
 categories.adjoints : uniqueness of right adjoint functors
 categories.adjoints : properties and definition of adjoints
-categories.basic : category of functors
-init2 : path over function identity
