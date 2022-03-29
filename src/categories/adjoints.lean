@@ -14,10 +14,8 @@ structure adjoint_functors {C : Type u} {D : Type u'} [precategory.{v} C]
   [precategory.{v'} D] (L : C ⥤ D) (R : D ⥤ C) :=
 (unit : id_functor C ⟹ L ⋙ R)
 (counit : R ⋙ L ⟹ id_functor D)
-(hom : Π {c : C} {d : D} (f : c ⟶ R.obj d), 
-                                Σ (g : L.obj c ⟶ d), f = trafo.app c ≫ R.map g)
-(uniq : Π {c : C} {d : D} (f : c ⟶ R.obj d) (g : L.obj c ⟶ d), 
-                                f = trafo.app c ≫ R.map g -> g = (hom f).1)                                      
+(zigzag_L : tr_whisk_r unit L ≫ tr_whisk_l L counit = 𝟙 L)
+(zigzag_R : tr_whisk_l R unit ≫ tr_whisk_r counit R = 𝟙 R)                                      
 
 @[hott]
 structure adjoint_functors_on_hom {C : Type u} {D : Type u'} [precategory.{v} C] 
