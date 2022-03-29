@@ -555,7 +555,7 @@ def constant_functor_map [precategory.{v} C] [precategory.{v'} D] (d : D) :
   ∀ {c₁ c₂ : C} (h : c₁ ⟶ c₂), (constant_functor C D d).map h = 𝟙 d :=
 assume c₁ c₂ h, rfl  
 
-@[hott]
+@[hott, reducible]
 def id_functor [precategory.{v} C] : C ⥤ C :=
   functor.mk (λ c : C, c) (λ c₁ c₂ f, f) (λ c, idp) (λ c₁ c₂ c₃ f g, idp)  
 
@@ -574,7 +574,7 @@ section
 variables {C : Type u} {D : Type u'} {E : Type u''}
 
 /- The composition of functors -/
-@[hott]
+@[hott, reducible]
 def functor_comp [precategory.{v} C] [precategory.{v'} D] [precategory.{v''} E]
   (F : C ⥤ D) (G : D ⥤ E) : C ⥤ E := 
 begin
@@ -586,194 +586,6 @@ begin
 end  
 
 infixr ` ⋙ `:25 := functor_comp 
-
-/- Whiskering of natural transformations with functors: [HoTT-Book, Def.9.2.7] -/
-@[hott]
-def tr_whisk_l [precategory.{v} C] [precategory.{v'} D] [precategory.{v''} E]
-  {F : D ⥤ E} {G : D ⥤ E} (α : F ⟹ G) (H : C ⥤ D) : H ⋙ F ⟹ H ⋙ G :=
-begin
-  fapply nat_trans.mk,
-  { intro c, exact α.app (H.obj c) },
-  { intros c c' f, 
-    change F.map (H.map f) ≫ α.app (H.obj c') = α.app (H.obj c) ≫ G.map (H.map f),
-    rwr α.naturality }
-end  
-
-@[hott]
-def tr_whisk_r [precategory.{v} C] [precategory.{v'} D] [precategory.{v''} E]
-  {F : C ⥤ D} {G : C ⥤ D} (α : F ⟹ G) (H : D ⥤ E) : F ⋙ H ⟹ G ⋙ H :=
-begin
-  fapply nat_trans.mk,
-  { intro c, exact H.map (α.app c) },
-  { intros c c' f, 
-    change H.map (F.map f) ≫ H.map (α.app c') = H.map (α.app c) ≫ H.map (G.map f),
-    rwr <- H.map_comp, rwr <- H.map_comp, rwr α.naturality }
-end
-
-/- The first step to construct the category of functors between to (pre-)categories is
-   to show that the natural transformations between two such functors form a set. -/
-@[hott, reducible] 
-def nat_trans_eq [precategory.{v} C] [precategory.{v'} D] {F : C ⥤ D} {G : C ⥤ D} :
-  Π {α β : F ⟹ G} (p : α.app = β.app), α = β := 
-begin 
-  intros α β p, hinduction α with app₁ nat₁, hinduction β with app₂ nat₂, 
-  exact apd011 nat_trans.mk p (pathover_of_tr_eq (is_prop.elim _ _))
-end  
-
-@[hott]
-def nat_trans_eq_idp_app [precategory.{v} C] [precategory.{v'} D] {F : C ⥤ D} 
-  {G : C ⥤ D} : Π (α : F ⟹ G), nat_trans_eq (@idp _ α.app) = idp :=
-begin 
-  intro α, hinduction α with app nat, change apd011 nat_trans.mk idp _ = _, 
-    have q : is_prop.elim ((@idp _ app) ▸[λ a : Π (c : C), 
-                (F.obj c ⟶ G.obj c), Π c c' f, F.map f ≫ a c' = a c ≫ G.map f] 
-                @nat) @nat = idp, from is_set.elim _ _, 
-  exact ap (λ r, apd011 nat_trans.mk idp (pathover_of_tr_eq r)) q
-end    
-
-@[hott] 
-def nat_trans_eq_eta [precategory.{v} C] [precategory.{v'} D] {F : C ⥤ D} {G : C ⥤ D} 
-  {α β : F ⟹ G} (p : α = β) : nat_trans_eq (ap nat_trans.app p) = p :=
-begin hinduction p, hinduction α, hsimp, exact nat_trans_eq_idp_app _ end               
-
-@[hott, instance]
-def nat_trans_is_set [precategory.{v} C] [precategory.{v'} D] (F : C ⥤ D) 
-  (G : C ⥤ D) : is_set (F ⟹ G) := 
-begin 
-  fapply is_set.mk, intros α β, 
-  hinduction α with app₁ nat₁, hinduction β with app₂ nat₂,
-  intros p q, rwr <- nat_trans_eq_eta p, rwr <- nat_trans_eq_eta q,
-  fapply ap nat_trans_eq, exact is_set.elim _ _
-end      
-
-/- Natural transformations can serve as homomorphisms between two functors. -/
-@[hott, instance]
-def nat_trans_has_hom [precategory.{v} C] [precategory.{v'} D] : has_hom (C ⥤ D) :=
-has_hom.mk (λ F G : C ⥤ D, Set.mk (F ⟹ G) (nat_trans_is_set F G))  
-
-@[hott, reducible, hsimp]
-def id_nat_trans [precategory.{v} C] [precategory.{v'} D] (F : C ⥤ D) : F ⟹ F :=
-  nat_trans.mk (λ c : C, 𝟙 (F.obj c)) 
-               (λ c c' f, (precategory.comp_id _) ⬝ (precategory.id_comp _)⁻¹)
-
-@[hott, reducible, hsimp]
-def nat_trans_comp [precategory.{v} C] [precategory.{v'} D] {F G H : C ⥤ D} 
-  (α : F ⟹ G) (β : G ⟹ H) : F ⟹ H :=
-begin 
-  fapply nat_trans.mk, 
-  { intro c, exact α.app c ≫ β.app c }, 
-  { intros c c' f, rwr precategory.assoc, rwr <- precategory.assoc,
-    rwr α.naturality, rwr precategory.assoc, rwr β.naturality } 
-end  
-
-@[hott, instance]
-def nat_trans_cat_str [precategory.{v} C] [precategory.{v'} D] : 
-  category_struct (C ⥤ D) :=
-category_struct.mk (λ F, id_nat_trans F) (λ F G H α β, nat_trans_comp α β)   
-
-@[hott, instance] 
-def nat_trans_precat [precategory.{v} C] [precategory.{v'} D] : 
-  precategory (C ⥤ D) :=
-begin
-  fapply precategory.mk,
-  { intros F G α, apply nat_trans_eq, apply eq_of_homotopy, intro c, 
-    change 𝟙 (F.obj c) ≫ _ = _, rwr precategory.id_comp },
-  { intros F G α, apply nat_trans_eq, apply eq_of_homotopy, intro c, 
-    change _ ≫ 𝟙 (G.obj c) = _, rwr precategory.comp_id },
-  { intros F G H I α β γ, apply nat_trans_eq, apply eq_of_homotopy, intro c, 
-    change (_ ≫ _) ≫ _ = _ ≫ _ ≫ _, rwr precategory.assoc }
-end  
-
-/- Natural isomorphisms consist of componentwise isomorphisms [HoTT-Book, Lem.9.2.4]. -/
-@[hott, reducible]
-def nat_iso_to_comp_iso [precategory.{v} C] [precategory.{v'} D] {F G : C ⥤ D} :
-  (F ≅ G) -> Π (c : C), F.obj c ≅ G.obj c :=
-begin
-  intro γ_iso, let γ := γ_iso.hom, let δ := γ_iso.inv, intro c, fapply iso.mk,
-  { exact γ.app c }, 
-  { exact δ.app c }, 
-  { change (δ ≫ γ).app c = nat_trans.app (𝟙 G) c, rwr γ_iso.r_inv }, 
-  { change (γ ≫ δ).app c = nat_trans.app (𝟙 F) c, rwr γ_iso.l_inv }
-end   
-
-@[hott]
-def comp_iso_eq_to_nat_iso_eq [precategory.{v} C] [precategory.{v'} D] {F G : C ⥤ D}
-  (γ₁ γ₂ : F ≅ G) : 
-  (Π (c : C), nat_iso_to_comp_iso γ₁ c = nat_iso_to_comp_iso γ₂ c) -> γ₁ = γ₂ :=
-begin 
-  intro comp_eq, apply hom_eq_to_iso_eq, apply nat_trans_eq, apply eq_of_homotopy,
-  intro c, exact ap iso.hom (comp_eq c) 
-end  
-
-@[hott]
-def nat_idiso_to_comp_idiso [precategory.{v} C] [precategory.{v'} D] {F : C ⥤ D} :
-  Π c : C, nat_iso_to_comp_iso (id_is_iso F) c = id_is_iso (F.obj c) :=
-begin intro c, apply hom_eq_to_iso_eq, exact idp end
-
-@[hott]
-def nat_idtoiso_to_comp_idtoiso [precategory.{v} C] [precategory.{v'} D] {F G : C ⥤ D} 
-  (p : F = G) : Π c : C, nat_iso_to_comp_iso (idtoiso p) c = 
-                               idtoiso (ap (λ F' : C ⥤ D, F'.obj c) p) :=
-begin hinduction p, intro c, rwr idtoiso_refl_eq, rwr nat_idiso_to_comp_idiso c end                               
-
-@[hott]
-def comp_iso_to_nat_iso [precategory.{v} C] [precategory.{v'} D] {F G : C ⥤ D} 
-  (γ : F ⟹ G) : (Π (c : C), is_iso (γ.app c)) -> (F ≅ G) :=
-begin
-  intro comp_iso, fapply iso.mk, 
-  { exact γ },
-  { fapply nat_trans.mk, 
-    { intro c, exact (comp_iso c).inv },
-    { intros c c' f, 
-      calc _ = 𝟙 (G.obj c) ≫ G.map f ≫ (comp_iso c').inv : by rwr precategory.id_comp
-           ... = ((comp_iso c).inv ≫ (γ.app c)) ≫ G.map f ≫ (comp_iso c').inv : 
-                 by rwr (comp_iso c).r_inv
-           ... = (comp_iso c).inv ≫ (γ.app c ≫ G.map f) ≫ (comp_iso c').inv :
-                 by rwr precategory.assoc; rwr precategory.assoc
-           ... = (comp_iso c).inv ≫ (F.map f ≫ γ.app c') ≫ (comp_iso c').inv :
-                 by rwr γ.naturality             
-           ... = _ : by rwr precategory.assoc; rwr (comp_iso c').l_inv; 
-                        rwr precategory.comp_id } },
-  { apply nat_trans_eq, apply eq_of_homotopy, intro c, 
-    change (comp_iso c).inv ≫ γ.app c = 𝟙 (G.obj c), exact (comp_iso c).r_inv },
-  { apply nat_trans_eq, apply eq_of_homotopy, intro c, 
-    change γ.app c ≫ (comp_iso c).inv  = 𝟙 (F.obj c), exact (comp_iso c).l_inv }
-end   
-
-/- Functor precategories are categories if the functor target is a category 
-   [HoTT-Book, Thm.9.2.5]-/
-@[hott, instance]
-def nat_trans_cat [precategory.{v} C] [category.{v'} D] : 
-  category (C ⥤ D) :=
-begin
-  fapply category.mk, intros F G, fapply adjointify, 
-  { intro γ_iso, let γ := γ_iso.hom, fapply functor_eq, 
-    { apply eq_of_homotopy, intro c, 
-      exact (category.isotoid (nat_iso_to_comp_iso γ_iso c)) },
-    { apply dep_eq_of_homotopy3, intros c c' h, 
-      apply @po_homotopy_of_tr_eq2 _ _ _ _ (@eq_of_homotopy C (λ c'' : C, D) F.obj 
-              G.obj (λ (c'' : C), category.isotoid (nat_iso_to_comp_iso γ_iso c''))) 
-              (λ d₁ d₂, d₁ ⟶ d₂) _ _ (F.map h) (G.map h), 
-      rwr apd10_eq_of_homotopy, rwr id_hom_tr_comp, rwr id_hom_tr_comp', 
-      change ((idtoiso (idtoiso⁻¹ᶠ (nat_iso_to_comp_iso γ_iso c)))⁻¹ʰ ≫ F.map h) ≫ 
-              (idtoiso (idtoiso⁻¹ᶠ (nat_iso_to_comp_iso γ_iso c'))).hom = _,
-      rwr category.idtoiso_rinv, rwr category.idtoiso_rinv, rwr precategory.assoc,
-      apply eq.inverse, apply iso_move_lr, apply eq.inverse, 
-      change _ ≫ γ.app c' = γ.app c ≫ _, rwr γ.naturality } },
-  { intro γ_iso, apply comp_iso_eq_to_nat_iso_eq, intro c, 
-    rwr nat_idtoiso_to_comp_idtoiso, 
-    rwr <- ap_compose'(λ h : C -> D, h c) (λ F' : C ⥤ D, F'.obj), rwr functor_eq_obj,
-    rwr <- apd10_eq_ap_eval, rwr apd10_eq_of_homotopy,
-    change idtoiso (idtoiso⁻¹ᶠ (nat_iso_to_comp_iso γ_iso c)) = _, 
-    rwr category.idtoiso_rinv },
-  { intro p, hinduction p, change _ = @idp _ F, rwr <- functor_eq_idp, 
-    fapply apd011 (functor_eq C D), 
-    { rwr idtoiso_refl_eq, change _ = idpath _, rwr <- eq_of_homotopy_idp, 
-      apply ap eq_of_homotopy, apply eq_of_homotopy, intro c, 
-      change category.isotoid (nat_iso_to_comp_iso (id_is_iso F) c) = idp,
-      rwr nat_idiso_to_comp_idiso c, rwr isotoid_id_refl (F.obj c) },
-    { apply pathover_of_tr_eq, exact is_prop.elim _ _ } }
-end
 
 end 
 
