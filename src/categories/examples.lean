@@ -1,6 +1,6 @@
 import sets.algebra init2 sets.axioms sets.theories categories.basic
 
-universes v v' u u' w 
+universes v v' v'' v''' u u' u'' u''' w 
 hott_theory
 
 namespace hott
@@ -11,7 +11,7 @@ namespace categories
 
 /- To construct the opposite category, we use the mathlib-trick in [data.opposite]
    that allows the elaborator to do most of the work. -/  
-variables {C : Type u} {D : Type u'}  
+variables {C : Type u} {D : Type u'} {E : Type u''} {F : Type u'''}
 
 @[hott]
 def opposite : Type u := C 
@@ -333,6 +333,79 @@ begin
       rwr functor_isoid_to_isoids, rwr isotoid_id_refl },
     { apply pathover_of_tr_eq, exact is_prop.elim _ _ } }
 end
+
+/- Whiskering of natural transformations with functors: [HoTT-Book, Def.9.2.7] -/
+@[hott]
+def tr_whisk_l [precategory.{v} C] [precategory.{v'} D] [precategory.{v''} E]
+  {F : D ⥤ E} {G : D ⥤ E} (H : C ⥤ D) (α : F ⟹ G) : H ⋙ F ⟶ H ⋙ G :=
+begin
+  fapply nat_trans.mk,
+  { intro c, exact α.app (H.obj c) },
+  { intros c c' f, 
+    change F.map (H.map f) ≫ α.app (H.obj c') = α.app (H.obj c) ≫ G.map (H.map f),
+    rwr α.naturality }
+end  
+
+@[hott]
+def tr_whisk_r [precategory.{v} C] [precategory.{v'} D] [precategory.{v''} E]
+  {F : C ⥤ D} {G : C ⥤ D} (α : F ⟹ G) (H : D ⥤ E) : F ⋙ H ⟶ G ⋙ H :=
+begin
+  fapply nat_trans.mk,
+  { intro c, exact H.map (α.app c) },
+  { intros c c' f, 
+    change H.map (F.map f) ≫ H.map (α.app c') = H.map (α.app c) ≫ H.map (G.map f),
+    rwr <- H.map_comp, rwr <- H.map_comp, rwr α.naturality }
+end
+
+/- The composition of functors has left and right neutral and is associative. 
+   We construct these equalities from natural isomorphisms. -/
+@[hott]
+def l_neutral_funct_iso [precategory.{v} C] [precategory.{v'} D] (F : C ⥤ D) :
+  (id_functor C ⋙ F) ≅ F :=
+begin 
+  fapply iso.mk,
+  { fapply nat_trans.mk, 
+    { intro c, exact 𝟙 (F.obj c) },
+    { intros c c' f, hsimp } },
+  { fapply nat_trans.mk, 
+    { intro c, exact 𝟙 (F.obj c) },
+    { intros c c' f, hsimp } },
+  { apply nat_trans_eq, apply eq_of_homotopy, intro c, 
+    change (nat_trans.mk _ _).app c ≫ (nat_trans.mk _ _).app c = _, hsimp, exact idp },
+  { apply nat_trans_eq, apply eq_of_homotopy, intro c, 
+    change (nat_trans.mk _ _).app c ≫ (nat_trans.mk _ _).app c = _, hsimp, exact idp } 
+end  
+
+set_option pp.universes true
+set_option trace.class_instances true
+
+@[hott]
+def l_neutral_funct [precategory.{v} C] [precategory.{v'} D] (F : C ⥤ D) :
+  (id_functor C ⋙ F) = F :=
+category.isotoid (l_neutral_funct_iso F)
+
+@[hott]
+def r_neutral_funct_iso [precategory.{v} C] [precategory.{v'} D] (F : C ⥤ D) :
+  (F ⋙ id_functor D) ≅ F :=
+begin 
+  fapply iso.mk,
+  { sorry },
+  { sorry },
+  { sorry },
+  { sorry } 
+end 
+
+@[hott]
+def assoc_funct_iso [precategory.{v} C] [precategory.{v'} D] [precategory.{v''} E]
+  [precategory.{v'''} F] (G : C ⥤ D) (H : D ⥤ E) (I : E ⥤ F) : 
+  ((G ⋙ H) ⋙ I) ≅ (G ⋙ (H ⋙ I)) :=
+begin
+  fapply iso.mk,
+  { sorry },
+  { sorry },
+  { sorry },
+  { sorry } 
+end   
 
 /- The power set `𝒫 A` of a set `A` is a precategory, with inclusions of 
    subsets as morphisms. -/
