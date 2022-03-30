@@ -357,6 +357,18 @@ begin
     rwr <- H.map_comp, rwr <- H.map_comp, rwr α.naturality }
 end
 
+/- Horizontal composition of natural transformations can be defined in two ways that 
+   are (propositionally) equal [HoTT-Book, Lem.9.2.8]. -/
+@[hott]
+def horiz_comp_eq [precategory.{v} C] [precategory.{v'} D] [precategory.{v''} E]
+  {F : C ⥤ D} {G : C ⥤ D} {H : D ⥤ E} {K : D ⥤ E} (γ : F ⟹ G) (δ : H ⟹ K) :
+  tr_whisk_r γ H ≫ tr_whisk_l G δ = tr_whisk_l F δ ≫ tr_whisk_r γ K :=
+begin 
+  apply nat_trans_eq, apply eq_of_homotopy, intro c, 
+  change H.map (γ.app c) ≫ δ.app (G.obj c) = δ.app (F.obj c) ≫ K.map (γ.app c),
+  rwr δ.naturality 
+end      
+
 /- The composition of functors has left and right neutral and is associative. 
    We construct these equalities from natural isomorphisms. -/
 @[hott]
@@ -376,11 +388,8 @@ begin
     change (nat_trans.mk _ _).app c ≫ (nat_trans.mk _ _).app c = _, hsimp, exact idp } 
 end  
 
-set_option pp.universes true
-set_option trace.class_instances true
-
 @[hott]
-def l_neutral_funct [precategory.{v} C] [precategory.{v'} D] (F : C ⥤ D) :
+def l_neutral_funct [precategory.{v} C] [category.{v'} D] (F : C ⥤ D) :
   (id_functor C ⋙ F) = F :=
 category.isotoid (l_neutral_funct_iso F)
 
@@ -389,11 +398,22 @@ def r_neutral_funct_iso [precategory.{v} C] [precategory.{v'} D] (F : C ⥤ D) :
   (F ⋙ id_functor D) ≅ F :=
 begin 
   fapply iso.mk,
-  { sorry },
-  { sorry },
-  { sorry },
-  { sorry } 
+  { fapply nat_trans.mk, 
+    { intro c, exact 𝟙 (F.obj c) },
+    { intros c c' f, hsimp } },
+  { fapply nat_trans.mk, 
+    { intro c, exact 𝟙 (F.obj c) },
+    { intros c c' f, hsimp } },
+  { apply nat_trans_eq, apply eq_of_homotopy, intro c, 
+    change (nat_trans.mk _ _).app c ≫ (nat_trans.mk _ _).app c = _, hsimp, exact idp },
+  { apply nat_trans_eq, apply eq_of_homotopy, intro c, 
+    change (nat_trans.mk _ _).app c ≫ (nat_trans.mk _ _).app c = _, hsimp, exact idp } 
 end 
+
+@[hott]
+def r_neutral_funct [precategory.{v} C] [category.{v'} D] (F : C ⥤ D) :
+  (F ⋙ id_functor D) = F :=
+category.isotoid (r_neutral_funct_iso F)
 
 @[hott]
 def assoc_funct_iso [precategory.{v} C] [precategory.{v'} D] [precategory.{v''} E]
@@ -401,11 +421,24 @@ def assoc_funct_iso [precategory.{v} C] [precategory.{v'} D] [precategory.{v''} 
   ((G ⋙ H) ⋙ I) ≅ (G ⋙ (H ⋙ I)) :=
 begin
   fapply iso.mk,
-  { sorry },
-  { sorry },
-  { sorry },
-  { sorry } 
+  { fapply nat_trans.mk,
+    { intro c, exact 𝟙 (I.obj (H.obj (G.obj c))) },
+    { intros c c' f, hsimp } },
+  { fapply nat_trans.mk,
+    { intro c, exact 𝟙 (I.obj (H.obj (G.obj c))) },
+    { intros c c' f, hsimp } },
+  { apply nat_trans_eq, apply eq_of_homotopy, intro c, 
+    change (nat_trans.mk _ _).app c ≫ (nat_trans.mk _ _).app c = _, hsimp, exact idp },
+  { apply nat_trans_eq, apply eq_of_homotopy, intro c, 
+    change (nat_trans.mk _ _).app c ≫ (nat_trans.mk _ _).app c = _, hsimp, exact idp } 
 end   
+
+@[hott]
+def assoc_funct [precategory.{v} C] [precategory.{v'} D] [precategory.{v''} E]
+  [category.{v'''} F] (G : C ⥤ D) (H : D ⥤ E) (I : E ⥤ F) : 
+  ((G ⋙ H) ⋙ I) = (G ⋙ (H ⋙ I)) := 
+category.isotoid (assoc_funct_iso G H I)
+
 
 /- The power set `𝒫 A` of a set `A` is a precategory, with inclusions of 
    subsets as morphisms. -/
