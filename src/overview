@@ -12,7 +12,7 @@ sets
   theories  :   695
 categories  
   basic     :   706
-  examples  :   721
+  examples  :   804
   diagrams  :   441
   adjoints  :   115
   limits    :   626
@@ -20,7 +20,7 @@ categories
   colimits  :   458
   structures:   613
               -----
-               8147
+               8230
 
 
 Edited files: 
@@ -29,4 +29,4 @@ categories.models : is_interpretable_in-class
 categories.pullbacks : right adjoint for pullback of subobjects
 categories.adjoints : uniqueness of right adjoint functors
 categories.adjoints : properties and definition of adjoints
-categories.examples : category structure on categories
+categories.examples : horizontal composition of functors
