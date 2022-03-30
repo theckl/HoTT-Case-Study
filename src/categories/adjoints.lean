@@ -4,22 +4,55 @@ universes v v' u u' w
 hott_theory
 
 namespace hott
-open hott.set hott.categories
+open hott.is_trunc hott.set hott.categories
 
 namespace categories.adjoints
 
 /- There are two equivalent characterizations of adjoint functors. -/
 @[hott]
-structure adjoint_functors {C : Type u} {D : Type u'} [precategory.{v} C] 
-  [precategory.{v'} D] (L : C ⥤ D) (R : D ⥤ C) :=
+structure adjoint_functors {C : Type u} {D : Type u'} [category.{v} C] 
+  [category.{v'} D] (L : C ⥤ D) (R : D ⥤ C) :=
 (unit : id_functor C ⟹ L ⋙ R)
 (counit : R ⋙ L ⟹ id_functor D)
-(zigzag_L : tr_whisk_r unit L ≫ tr_whisk_l L counit = 𝟙 L)
-(zigzag_R : tr_whisk_l R unit ≫ tr_whisk_r counit R = 𝟙 R)                                      
+(zigzag_L : tr_whisk_r unit L ≫ (assoc_funct_iso L R L).hom ≫ tr_whisk_l L counit = 
+            (l_neutral_funct_iso L).hom ≫ 𝟙 L ≫ (r_neutral_funct_iso L).inv)
+(zigzag_R : tr_whisk_l R unit ≫ (assoc_funct_iso R L R).inv ≫ tr_whisk_r counit R = 
+            (l_neutral_funct_iso R).hom ≫ 𝟙 R ≫ (r_neutral_funct_iso R).inv)                                      
 
 @[hott]
-structure adjoint_functors_on_hom {C : Type u} {D : Type u'} [precategory.{v} C] 
-  [precategory.{v'} D] (L : C ⥤ D) (R : D ⥤ C) :=
+structure is_left_adjoint {C : Type u} {D : Type u'} [category.{v} C] 
+  [category.{v'} D] (L : C ⥤ D) := 
+(R : D ⥤ C)  
+(adj : adjoint_functors L R) 
+
+@[hott]
+structure is_right_adjoint {C : Type u} {D : Type u'} [category.{v} C] 
+  [category.{v'} D] (R : C ⥤ D) := 
+(L : D ⥤ C)  
+(adj : adjoint_functors L R)
+
+@[hott]
+def right_adj_is_unique {C : Type u} {D : Type u'} [category.{v} C] 
+  [category.{v'} D] (L : C ⥤ D) : is_prop (is_left_adjoint L) :=
+begin 
+  apply is_prop.mk, intros R_adj R_adj', 
+  hinduction R_adj with R adj, hinduction R_adj' with R' adj', 
+  hinduction adj with η ε zzL zzR, hinduction adj' with η' ε' zzL' zzR', fapply apd011, 
+  { apply category.isotoid, fapply iso.mk, 
+    { exact (r_neutral_funct_iso R).inv ≫ tr_whisk_l R η' ≫ 
+            (assoc_funct_iso R L R').inv ≫ tr_whisk_r ε R' ≫ 
+            (l_neutral_funct_iso R').hom },
+    { exact (r_neutral_funct_iso R').inv ≫ tr_whisk_l R' η ≫ 
+            (assoc_funct_iso R' L R).inv ≫ tr_whisk_r ε' R ≫ 
+            (l_neutral_funct_iso R).hom },
+    { sorry },
+    { sorry } },
+  { sorry }
+end    
+
+@[hott]
+structure adjoint_functors_on_hom {C : Type u} {D : Type u'} [category.{v} C] 
+  [category.{v'} D] (L : C ⥤ D) (R : D ⥤ C) :=
 (hom_bij : Π (c : C) (d : D), bijection (L.obj c ⟶ d) (c ⟶ R.obj d)) 
 (nat_L : Π {c : C} {d : D} {c' : C} (h : c' ⟶ c) (f : L.obj c ⟶ d), 
            hom_bij c' d (L.map h ≫ f) = h ≫ hom_bij c d f)
@@ -27,8 +60,8 @@ structure adjoint_functors_on_hom {C : Type u} {D : Type u'} [precategory.{v} C]
            hom_bij c d' (f ≫ g) = hom_bij c d f ≫ R.map g)                                               
 
 @[hott]
-def adjoint_to_adjoint_hom {C : Type u} {D : Type u'} [precategory.{v} C] 
-  [precategory.{v'} D] {L : C ⥤ D} {R : D ⥤ C} : 
+def adjoint_to_adjoint_hom {C : Type u} {D : Type u'} [category.{v} C] 
+  [category.{v'} D] {L : C ⥤ D} {R : D ⥤ C} : 
   adjoint_functors L R -> adjoint_functors_on_hom L R :=
 begin 
   intro adj, fapply adjoint_functors_on_hom.mk, 
@@ -60,8 +93,8 @@ def adjoint_to_adjoint_hom_eq (C : Type u) (D : Type u') [precategory.{v} C]
   (adjoint_to_adjoint_hom adj).hom_bij c d g = adj.trafo.app c ≫ R.map g := idp 
 
 @[hott]
-def adjoint_hom_to_adjoint {C : Type u} {D : Type u'} [precategory.{v} C] 
-  [precategory.{v'} D] {L : C ⥤ D} {R : D ⥤ C} : adjoint_functors_on_hom L R ->
+def adjoint_hom_to_adjoint {C : Type u} {D : Type u'} [category.{v} C] 
+  [category.{v'} D] {L : C ⥤ D} {R : D ⥤ C} : adjoint_functors_on_hom L R ->
   adjoint_functors L R :=
 begin 
   intro adj, fapply adjoint_functors.mk,
