@@ -243,20 +243,22 @@ end
 def functor_has_hom [precategory.{v} C] [precategory.{v'} D] : has_hom (C ⥤ D) :=
   has_hom.mk (λ F G : C ⥤ D, to_Set (F ⟹ G))   
 
+@[hott, reducible]
+def nat_trans_id [precategory.{v} C] [precategory.{v'} D] (F : C ⥤ D) : F ⟹ F :=
+  nat_trans.mk (λ c : C, 𝟙 (F.obj c)) (λ (c c' : C) (f : c ⟶ c'), by hsimp) 
+
+@[hott, reducible]
+def nat_trans_comp [precategory.{v} C] [precategory.{v'} D] (F G H : C ⥤ D) 
+  (α : F ⟹ G) (β : G ⟹ H) : F ⟹ H :=
+nat_trans.mk (λ c, α.app c ≫ β.app c) 
+             (λ (c c' : C) (f : c ⟶ c'), by rwr <- precategory.assoc (F.map f) _ _; 
+                      rwr nat_trans.naturality; rwr precategory.assoc (α.app c) _ _; 
+                      rwr nat_trans.naturality; rwr precategory.assoc (α.app c))  
+
 @[hott, instance]
 def functor_cat_struct [precategory.{v} C] [precategory.{v'} D] : 
   category_struct (C ⥤ D) :=
-begin 
-  fapply category_struct.mk,
-  { intro F, fapply nat_trans.mk, 
-    { intro c, exact 𝟙 (F.obj c) },
-    { intros c c' f, hsimp } },
-  { intros F G H s t, fapply nat_trans.mk, 
-    { intro c, exact s.app c ≫ t.app c },
-    { intros c c' f, rwr <- precategory.assoc (F.map f) _ _, 
-      rwr nat_trans.naturality, rwr precategory.assoc (s.app c) _ _, 
-      rwr nat_trans.naturality, rwr precategory.assoc (s.app c) } } 
-end  
+category_struct.mk (λ F, nat_trans_id F) (λ F G H α β, nat_trans_comp F G H α β)
 
 @[hott, instance]
 def functor_precategory [precategory.{v} C] [precategory.{v'} D] :
@@ -371,7 +373,7 @@ end
 
 /- The composition of functors has left and right neutral and is associative. 
    We construct these equalities from natural isomorphisms. -/
-@[hott]
+@[hott, reducible]
 def l_neutral_funct_iso [precategory.{v} C] [precategory.{v'} D] (F : C ⥤ D) :
   (id_functor C ⋙ F) ≅ F :=
 begin 
@@ -393,7 +395,7 @@ def l_neutral_funct [precategory.{v} C] [category.{v'} D] (F : C ⥤ D) :
   (id_functor C ⋙ F) = F :=
 category.isotoid (l_neutral_funct_iso F)
 
-@[hott]
+@[hott, reducible]
 def r_neutral_funct_iso [precategory.{v} C] [precategory.{v'} D] (F : C ⥤ D) :
   (F ⋙ id_functor D) ≅ F :=
 begin 
@@ -415,7 +417,7 @@ def r_neutral_funct [precategory.{v} C] [category.{v'} D] (F : C ⥤ D) :
   (F ⋙ id_functor D) = F :=
 category.isotoid (r_neutral_funct_iso F)
 
-@[hott]
+@[hott, reducible]
 def assoc_funct_iso [precategory.{v} C] [precategory.{v'} D] [precategory.{v''} E]
   [precategory.{v'''} F] (G : C ⥤ D) (H : D ⥤ E) (I : E ⥤ F) : 
   ((G ⋙ H) ⋙ I) ≅ (G ⋙ (H ⋙ I)) :=
