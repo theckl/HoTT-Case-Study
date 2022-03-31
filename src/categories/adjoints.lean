@@ -8,16 +8,27 @@ open hott.is_trunc hott.set hott.categories
 
 namespace categories.adjoints
 
-/- There are two equivalent characterizations of adjoint functors. -/
+/- There are two equivalent characterizations of adjoint functors. 
+
+   The first definition relies on natural transformations of compositions of two
+   functors to and from identity functors compatible by the zigzag equalities;
+   the latter can be seen as equalities of natural transformation if we add 
+   associativity and neutrality on the level of transformations at suitable places. 
+   But this makes the formulas unwieldy and therefore we just record what the zigzag 
+   relations look like on the level of homomorphisms. -/
 @[hott]
 structure adjoint_functors {C : Type u} {D : Type u'} [category.{v} C] 
   [category.{v'} D] (L : C ⥤ D) (R : D ⥤ C) :=
 (unit : id_functor C ⟹ L ⋙ R)
 (counit : R ⋙ L ⟹ id_functor D)
-(zigzag_L : tr_whisk_r unit L ≫ (assoc_funct_iso L R L).hom ≫ tr_whisk_l L counit = 
-            (l_neutral_funct_iso L).hom ≫ 𝟙 L ≫ (r_neutral_funct_iso L).inv)
-(zigzag_R : tr_whisk_l R unit ≫ (assoc_funct_iso R L R).inv ≫ tr_whisk_r counit R = 
-            (l_neutral_funct_iso R).hom ≫ 𝟙 R ≫ (r_neutral_funct_iso R).inv)                                      
+(zigzag_L : Π c : C, (tr_whisk_r unit L).app c ≫ (tr_whisk_l L counit).app c = 
+                                                                         𝟙 (L.obj c))
+            --tr_whisk_r unit L ≫ (assoc_funct_iso L R L).hom ≫ tr_whisk_l L counit = 
+            --(l_neutral_funct_iso L).hom ≫ 𝟙 L ≫ (r_neutral_funct_iso L).inv)
+(zigzag_R : Π d : D, (tr_whisk_l R unit).app d ≫ (tr_whisk_r counit R).app d = 
+                                                                         𝟙 (R.obj d))
+            --tr_whisk_l R unit ≫ (assoc_funct_iso R L R).inv ≫ tr_whisk_r counit R = 
+            --(l_neutral_funct_iso R).hom ≫ 𝟙 R ≫ (r_neutral_funct_iso R).inv)                                      
 
 @[hott]
 structure is_left_adjoint {C : Type u} {D : Type u'} [category.{v} C] 
@@ -45,7 +56,21 @@ begin
     { exact (r_neutral_funct_iso R').inv ≫ tr_whisk_l R' η ≫ 
             (assoc_funct_iso R' L R).inv ≫ tr_whisk_r ε' R ≫ 
             (l_neutral_funct_iso R).hom },
-    { sorry },
+    { apply nat_trans_eq, apply eq_of_homotopy, intro d,  
+      change (𝟙 (R'.obj d) ≫ η.app (R'.obj d) ≫ 𝟙 (R.obj (L.obj (R'.obj d))) ≫ 
+             R.map (ε'.app d) ≫ 𝟙 (R.obj d)) ≫ (𝟙 (R.obj d) ≫ η'.app (R.obj d) ≫ 
+             𝟙 (R'.obj (L.obj (R.obj d))) ≫ R'.map (ε.app d) ≫ 𝟙 (R'.obj d)) = 
+             𝟙 (R'.obj d), 
+      repeat { rwr precategory.id_comp }, repeat { rwr precategory.comp_id },
+      rwr <- precategory.assoc, rwr precategory.assoc (η.app (R'.obj d)), 
+      change (_ ≫ (id_functor C).map (R.map (ε'.app d)) ≫ 
+                   η'.app (R.obj ((id_functor D).obj d))) ≫ _ = _, 
+      change (_ ≫ (tr_whisk_r (tr_whisk_r ε' R) (id_functor C)).app d ≫ 
+                    (tr_whisk_l (id_functor D) (tr_whisk_l R η')).app d) ≫ _ = _,
+      change (_ ≫ (tr_whisk_r (tr_whisk_r ε' R) (id_functor C) ≫ 
+                    tr_whisk_l (id_functor D) (tr_whisk_l R η')).app d) ≫ _ = _,              
+      rwr horiz_comp_eq (tr_whisk_r ε' R) (tr_whisk_l R η'),           
+      sorry },
     { sorry } },
   { sorry }
 end    
