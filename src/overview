@@ -29,4 +29,3 @@ categories.models : is_interpretable_in-class
 categories.pullbacks : right adjoint for pullback of subobjects
 categories.adjoints : uniqueness of right adjoint functors
 categories.adjoints : properties and definition of adjoints
-categories.examples : horizontal composition of functors
