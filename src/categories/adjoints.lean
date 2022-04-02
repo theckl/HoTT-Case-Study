@@ -82,19 +82,30 @@ begin
 end  
 
 @[hott]
+def unit_tr_R {C : Type u} {D : Type u'} [category.{v} C] 
+  [category.{v'} D] {L : C ⥤ D} {R R' : D ⥤ C} (p : R = R') 
+  (η : id_functor C ⟶ L ⋙ R) : 
+  p ▸[λ S, id_functor C ⟶ L ⋙ S] η = η ≫ (tr_whisk_l L (idtoiso p).hom) :=
+begin hinduction p, hsimp, rwr tr_whisk_l_id, rwr precategory.comp_id η end  
+
+@[hott]
 def right_adj_is_unique {C : Type u} {D : Type u'} [category.{v} C] 
   [category.{v'} D] (L : C ⥤ D) : is_prop (is_left_adjoint L) :=
 begin 
   apply is_prop.mk, intros R_adj R_adj', 
   hinduction R_adj with R adj, hinduction R_adj' with R' adj', 
   fapply apd011, 
-  { apply category.isotoid, fapply iso.mk, 
-    { exact right_adjoint_iso L R R' adj adj' },
-    { exact right_adjoint_iso L R' R adj' adj },
-    { exact right_adjoint_iso_inv L R' R adj' adj },
-    { exact right_adjoint_iso_inv L R R' adj adj' } },
+  { exact category.isotoid (iso.mk (right_adjoint_iso L R R' adj adj')
+                                   (right_adjoint_iso L R' R adj' adj)
+                                   (right_adjoint_iso_inv L R' R adj' adj)
+                                   (right_adjoint_iso_inv L R R' adj adj')) },
   { hinduction adj with η ε zzL zzR, hinduction adj' with η' ε' zzL' zzR', 
-    sorry }
+    fapply apdo011111 (@adjoint_functors.mk _ _ _ _ L) _, 
+    { change η =[_; λ S, id_functor C ⟶ L ⋙ S] η', apply pathover_of_tr_eq, 
+      rwr unit_tr_R, change _ ≫ tr_whisk_l L (idtoiso (category.isotoid _)).hom = _ },
+    { sorry },
+    { sorry },
+    { sorry } }
 end    
 
 @[hott]
