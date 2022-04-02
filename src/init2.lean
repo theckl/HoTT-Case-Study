@@ -39,6 +39,13 @@ def ap0111 {A : Type u} {B : Type v} {C D : A -> B -> Type _} {E : Type _}
   f a₁ b₁ c₁ d₁ = f a₂ b₂ c₂ d₂ := 
 begin hinduction p₁, hinduction p₂, hinduction p₃, hinduction p₄, refl end  
 
+@[hott] 
+def apd0111' {A : Type _} {B C : A -> Type _} {D : Type _} 
+  (f : Π (a : A), B a -> C a → D) {a₁ a₂ : A} {b₁ : B a₁} {b₂ : B a₂} {c₁ : C a₁} 
+  {c₂ : C a₂} (Ha : a₁ = a₂) (Hb : b₁ =[Ha] b₂) (Hc : c₁ =[Ha] c₂) :
+  f a₁ b₁ c₁ = f a₂ b₂ c₂ :=
+  begin hinduction Hb, hinduction Hc, refl end
+
 @[hott]
 def apd001 {A B D : Type _} {C : A -> B -> Type _} (f : Π (a : A) (b : B), C a b -> D) 
   {a₁ a₂ : A} {b₁ b₂ : B} {c₁ : C a₁ b₁} {c₂ : C a₂ b₂} 
@@ -209,6 +216,16 @@ def apdo01111 {A : Type _} {B E : A -> Type _} {C D : Π a : A, B a -> Type _}
   (r₂ : d₁ =[apd011 D p q; id] d₂) :
   f a₁ b₁ c₁ d₁ =[p] f a₂ b₂ c₂ d₂ :=
 begin hinduction p, hinduction q, hinduction r₁, hinduction r₂, refl end 
+
+@[hott]
+def apdo011111 {A : Type _} {B C F : A -> Type _} {D E : Π a : A, B a -> C a -> Type _}
+  (f : Π (a : A) (b : B a) (c : C a), D a b c -> E a b c -> F a)
+  {a₁ a₂ : A} {b₁ : B a₁} {b₂ : B a₂} {c₁ : C a₁} {c₂ : C a₂} {d₁ : D a₁ b₁ c₁} 
+  {d₂ : D a₂ b₂ c₂} {e₁ : E a₁ b₁ c₁} {e₂ : E a₂ b₂ c₂}(p : a₁ = a₂) (q₁ : b₁ =[p] b₂)
+  (q₂ : c₁ =[p] c₂) (r₁ : d₁ =[apd0111' D p q₁ q₂; id] d₂) 
+  (r₂ : e₁ =[apd0111' E p q₁ q₂; id] e₂) :
+  f a₁ b₁ c₁ d₁ e₁ =[p] f a₂ b₂ c₂ d₂ e₂ :=
+begin hinduction p, hinduction q₁, hinduction q₂, hinduction r₁, hinduction r₂, refl end 
 
 @[hott]
 def tr_fn_tr_eval {A B : Type _} {C : A -> B -> Type _} {a₁ a₂ : A}
