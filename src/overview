@@ -1,4 +1,4 @@
-init2       :   379
+init2       :   396
 types2      :   252
 prop_axioms :   647
 prop_logic  :   208
@@ -12,7 +12,7 @@ sets
   theories  :   695
 categories  
   basic     :   706
-  examples  :   806
+  examples  :   820
   diagrams  :   441
   adjoints  :   115
   limits    :   626
@@ -20,7 +20,7 @@ categories
   colimits  :   458
   structures:   613
               -----
-               8232
+               8263
 
 
 Edited files: 
