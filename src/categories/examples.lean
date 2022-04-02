@@ -349,6 +349,11 @@ begin
 end  
 
 @[hott]
+def tr_whisk_l_id [precategory.{v} C] [precategory.{v'} D] [precategory.{v''} E]
+  (H : C ⥤ D) (F : D ⥤ E) : tr_whisk_l H (𝟙 F) = 𝟙 (H ⋙ F) :=
+begin apply nat_trans_eq, apply eq_of_homotopy, intro c, exact idp end  
+
+@[hott]
 def tr_whisk_r [precategory.{v} C] [precategory.{v'} D] [precategory.{v''} E]
   {F : C ⥤ D} {G : C ⥤ D} (α : F ⟹ G) (H : D ⥤ E) : F ⋙ H ⟶ G ⋙ H :=
 begin
@@ -357,6 +362,15 @@ begin
   { intros c c' f, 
     change H.map (F.map f) ≫ H.map (α.app c') = H.map (α.app c) ≫ H.map (G.map f),
     rwr <- H.map_comp, rwr <- H.map_comp, rwr α.naturality }
+end
+
+@[hott]
+def tr_whisk_r_id [precategory.{v} C] [precategory.{v'} D] [precategory.{v''} E]
+  (F : C ⥤ D) (H : D ⥤ E) : tr_whisk_r (𝟙 F) H = 𝟙 (F ⋙ H) :=
+begin 
+  apply nat_trans_eq, apply eq_of_homotopy, intro c, 
+  change H.map (𝟙 (F.obj c)) = 𝟙 (H.obj (F.obj c)), 
+  rwr functor.map_id 
 end
 
 /- Horizontal composition of natural transformations can be defined in two ways that 
