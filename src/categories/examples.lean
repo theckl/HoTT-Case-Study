@@ -339,7 +339,7 @@ end
 /- Whiskering of natural transformations with functors: [HoTT-Book, Def.9.2.7] -/
 @[hott]
 def tr_whisk_l [precategory.{v} C] [precategory.{v'} D] [precategory.{v''} E]
-  {F : D ⥤ E} {G : D ⥤ E} (H : C ⥤ D) (α : F ⟹ G) : H ⋙ F ⟶ H ⋙ G :=
+  {F : D ⥤ E} {G : D ⥤ E} (H : C ⥤ D) (α : F ⟶ G) : H ⋙ F ⟶ H ⋙ G :=
 begin
   fapply nat_trans.mk,
   { intro c, exact α.app (H.obj c) },
@@ -355,7 +355,7 @@ begin apply nat_trans_eq, apply eq_of_homotopy, intro c, exact idp end
 
 @[hott]
 def tr_whisk_r [precategory.{v} C] [precategory.{v'} D] [precategory.{v''} E]
-  {F : C ⥤ D} {G : C ⥤ D} (α : F ⟹ G) (H : D ⥤ E) : F ⋙ H ⟶ G ⋙ H :=
+  {F : C ⥤ D} {G : C ⥤ D} (α : F ⟶ G) (H : D ⥤ E) : F ⋙ H ⟶ G ⋙ H :=
 begin
   fapply nat_trans.mk,
   { intro c, exact H.map (α.app c) },
@@ -377,7 +377,7 @@ end
    are (propositionally) equal [HoTT-Book, Lem.9.2.8]. -/
 @[hott]
 def horiz_comp_eq [precategory.{v} C] [precategory.{v'} D] [precategory.{v''} E]
-  {F : C ⥤ D} {G : C ⥤ D} {H : D ⥤ E} {K : D ⥤ E} (γ : F ⟹ G) (δ : H ⟹ K) :
+  {F : C ⥤ D} {G : C ⥤ D} {H : D ⥤ E} {K : D ⥤ E} (γ : F ⟶ G) (δ : H ⟶ K) :
   tr_whisk_r γ H ≫ tr_whisk_l G δ = tr_whisk_l F δ ≫ tr_whisk_r γ K :=
 begin 
   apply nat_trans_eq, apply eq_of_homotopy, intro c, 
