@@ -213,6 +213,16 @@ def category.idtoiso_linv {obj : Type u} [category.{v} obj] {a b : obj} :
   ∀ p : a = b, idtoiso⁻¹ᶠ (idtoiso p) = p :=
 is_equiv.left_inv (@idtoiso _ _ a b) 
 
+@[hott, hsimp]
+def category.idtoiso_rinv' {obj : Type u} [category.{v} obj] {a b : obj} :
+  ∀ i : a ≅ b, idtoiso (category.isotoid i) = i :=
+is_equiv.right_inv (@idtoiso _ _ a b) 
+
+@[hott, hsimp]
+def category.idtoiso_linv' {obj : Type u} [category.{v} obj] {a b : obj} :
+  ∀ p : a = b, category.isotoid (idtoiso p) = p :=
+is_equiv.left_inv (@idtoiso _ _ a b) 
+
 @[hott]
 def isotoid_id_refl {obj : Type u} [category.{v} obj] :
   Π (a : obj), category.isotoid (id_is_iso a) = refl a :=
