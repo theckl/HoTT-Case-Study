@@ -42,12 +42,52 @@ structure is_right_adjoint {C : Type u} {D : Type u'} [category.{v} C]
 (adj : adjoint_functors L R)
 
 @[hott]
+def left_adjoint_iso {C : Type u} {D : Type u'} [category.{v} C] 
+  [category.{v'} D] (L L' : C ⥤ D) (R : D ⥤ C) (adj : adjoint_functors L R)
+  (adj' : adjoint_functors L' R) : L ⟶ L' :=
+(l_neutral_funct_iso L).inv ≫ tr_whisk_r adj'.unit L ≫ 
+  (assoc_funct_iso L' R L).hom ≫ tr_whisk_l L' adj.counit ≫ 
+  (r_neutral_funct_iso L').hom
+
+@[hott]
 def right_adjoint_iso {C : Type u} {D : Type u'} [category.{v} C] 
   [category.{v'} D] (L : C ⥤ D) (R R' : D ⥤ C) (adj : adjoint_functors L R)
   (adj' : adjoint_functors L R') : R ⟶ R' :=
 (r_neutral_funct_iso R).inv ≫ tr_whisk_l R adj'.unit ≫ 
   (assoc_funct_iso R L R').inv ≫ tr_whisk_r adj.counit R' ≫ 
   (l_neutral_funct_iso R').hom  
+
+@[hott]
+def left_adjoint_iso_inv {C : Type u} {D : Type u'} [category.{v} C] 
+  [category.{v'} D] (L L' : C ⥤ D) (R : D ⥤ C) (adj : adjoint_functors L R)
+  (adj' : adjoint_functors L' R) : 
+  left_adjoint_iso L L' R adj adj' ≫ left_adjoint_iso L' L R adj' adj = 𝟙 L :=   
+begin
+  let η := adj.unit, let η' := adj'.unit, let ε := adj.counit, let ε' := adj'.counit,
+  apply nat_trans_eq, apply eq_of_homotopy, intro c,  
+  change (𝟙 (L.obj c) ≫ L.map (η'.app c) ≫ 𝟙 (L.obj (R.obj (L'.obj c))) ≫ 
+         (ε.app (L'.obj c)) ≫ 𝟙 (L'.obj c)) ≫ (𝟙 (L'.obj c) ≫ L'.map (η.app c) ≫ 
+          𝟙 (L'.obj (R.obj (L.obj c))) ≫ ε'.app (L.obj c) ≫ 𝟙 (L.obj c)) = 
+          𝟙 (L.obj c), 
+  repeat { rwr precategory.id_comp }, repeat { rwr precategory.comp_id },
+  rwr <- precategory.assoc, rwr precategory.assoc (L.map (η'.app c)), 
+  change (_ ≫ ε.app (L'.obj ((id_functor C).obj c)) ≫ 
+               (id_functor D).map (L'.map (η.app c))) ≫ _ = _, 
+  change (_ ≫ (tr_whisk_l (id_functor C) (tr_whisk_l L' ε) ≫ 
+                tr_whisk_r η (L' ⋙ (id_functor D))).app c) ≫ _ = _,              
+  rwr <- horiz_comp_eq η (tr_whisk_l L' ε),
+  change (L.map (η'.app ((id_functor C).obj c)) ≫ L.map (R.map (L'.map (η.app c))) ≫
+         ε.app (L'.obj (R.obj (L.obj c)))) ≫ (id_functor D).map (ε'.app (L.obj c)) = _,           
+  rwr <- precategory.assoc (L.map (η'.app ((id_functor C).obj c))), rwr precategory.assoc, 
+  rwr <- L.map_comp,
+  change L.map ((tr_whisk_l (id_functor C) η' ≫ tr_whisk_r η (L' ⋙ R)).app c) ≫
+         (tr_whisk_l (R ⋙ L') ε ≫ tr_whisk_r ε' (id_functor D)).app (L.obj c) = _,
+  rwr <- horiz_comp_eq η η', rwr <- horiz_comp_eq ε' ε, 
+  change L.map (η.app c ≫ η'.app (R.obj (L.obj c))) ≫ 
+         L.map (R.map (ε'.app (L.obj c))) ≫ ε.app (L.obj c) = _,
+  rwr <- precategory.assoc, rwr <- L.map_comp, rwr precategory.assoc (η.app c), 
+  rwr adj'.zigzag_R, rwr precategory.comp_id, rwr adj.zigzag_L
+end  
 
 @[hott]
 def right_adjoint_iso_inv {C : Type u} {D : Type u'} [category.{v} C] 
@@ -83,6 +123,13 @@ begin
 end  
 
 @[hott]
+def unit_tr_L {C : Type u} {D : Type u'} [category.{v} C] 
+  [category.{v'} D] {L L' : C ⥤ D} {R : D ⥤ C} (p : L = L') 
+  (η : id_functor C ⟶ L ⋙ R) : 
+  p ▸[λ S, id_functor C ⟶ S ⋙ R] η = η ≫ (tr_whisk_r (idtoiso p).hom R) :=
+begin hinduction p, hsimp, rwr tr_whisk_r_id, rwr precategory.comp_id η end 
+
+@[hott]
 def unit_tr_R {C : Type u} {D : Type u'} [category.{v} C] 
   [category.{v'} D] {L : C ⥤ D} {R R' : D ⥤ C} (p : R = R') 
   (η : id_functor C ⟶ L ⋙ R) : 
@@ -90,11 +137,58 @@ def unit_tr_R {C : Type u} {D : Type u'} [category.{v} C]
 begin hinduction p, hsimp, rwr tr_whisk_l_id, rwr precategory.comp_id η end  
 
 @[hott]
+def counit_tr_L {C : Type u} {D : Type u'} [category.{v} C] 
+  [category.{v'} D] {L L' : C ⥤ D} {R : D ⥤ C} (p : L = L') 
+  (ε : R ⋙ L ⟶ id_functor D) : 
+  p ▸[λ S, R ⋙ S ⟶ id_functor D] ε = (tr_whisk_l R (idtoiso p).inv) ≫ ε :=
+begin hinduction p, hsimp, rwr tr_whisk_l_id, rwr precategory.id_comp ε end
+
+@[hott]
 def counit_tr_R {C : Type u} {D : Type u'} [category.{v} C] 
   [category.{v'} D] {L : C ⥤ D} {R R' : D ⥤ C} (p : R = R') 
   (ε : R ⋙ L ⟶ id_functor D) : 
   p ▸[λ S, S ⋙ L ⟶ id_functor D] ε = (tr_whisk_r (idtoiso p).inv L) ≫ ε :=
 begin hinduction p, hsimp, rwr tr_whisk_r_id, rwr precategory.id_comp ε end 
+
+@[hott]
+def left_adj_is_unique {C : Type u} {D : Type u'} [category.{v} C] 
+  [category.{v'} D] (R : D ⥤ C) : is_prop (is_right_adjoint R) :=
+begin 
+  apply is_prop.mk, intros R_adj R_adj', 
+  hinduction R_adj with L adj, hinduction R_adj' with L' adj', 
+  fapply apd011, 
+  { exact category.isotoid (iso.mk (left_adjoint_iso L L' R adj adj')
+                                   (left_adjoint_iso L' L R adj' adj)
+                                   (left_adjoint_iso_inv L' L R adj' adj)
+                                   (left_adjoint_iso_inv L L' R adj adj')) },
+  { hinduction adj with η ε zzL zzR, hinduction adj' with η' ε' zzL' zzR', 
+    fapply apdo011111 (λ L, @adjoint_functors.mk _ _ _ _ L R) _, 
+    { apply pathover_of_tr_eq, rwr unit_tr_L, rwr category.idtoiso_rinv', 
+      apply nat_trans_eq, apply eq_of_homotopy, intro c,
+      change η.app c ≫ R.map (𝟙 (L.obj c) ≫ L.map (η'.app c) ≫ 𝟙 (L.obj (R.obj (L'.obj c))) ≫ 
+         (ε.app (L'.obj c)) ≫ 𝟙 (L'.obj c)) = _, 
+      repeat { rwr precategory.id_comp }, repeat { rwr precategory.comp_id }, 
+      rwr R.map_comp, rwr <- precategory.assoc, 
+      change (η.app ((id_functor C).obj c) ≫ (L ⋙ R).map (η'.app c)) ≫ _ = _, 
+      change (tr_whisk_l (id_functor C) η ≫ tr_whisk_r η' (L ⋙ R)).app c ≫ _ = _,
+      rwr <- horiz_comp_eq η' η, 
+      change (η'.app c ≫ η.app (R.obj (L'.obj c))) ≫ _ = _,
+      rwr precategory.assoc, rwr zzR, rwr precategory.comp_id },
+    { apply pathover_of_tr_eq, rwr counit_tr_L, rwr category.idtoiso_rinv', 
+      apply nat_trans_eq, apply eq_of_homotopy, intro d, 
+      change (𝟙 (L'.obj (R.obj d)) ≫ L'.map (η.app (R.obj d)) ≫ 
+             𝟙 (L'.obj (R.obj (L.obj (R.obj d)))) ≫ ε'.app (L.obj (R.obj d)) ≫ 
+             𝟙 (L.obj (R.obj d))) ≫ ε.app d = _,
+      repeat { rwr precategory.id_comp }, repeat { rwr precategory.comp_id },        
+      rwr precategory.assoc,    
+      change _ ≫ ε'.app ((R ⋙ L).obj d) ≫ (id_functor D).map (ε.app d) = _,
+      change _ ≫ (tr_whisk_l (R ⋙ L) ε' ≫ tr_whisk_r ε (id_functor D)).app d = _,
+      rwr <- horiz_comp_eq ε ε',
+      change _ ≫ L'.map (R.map (ε.app d)) ≫ ε'.app d = _, rwr <- precategory.assoc,
+      rwr <- L'.map_comp, rwr zzR, rwr L'.map_id, rwr precategory.id_comp },
+    { apply pathover_of_tr_eq, exact is_prop.elim _ _ },
+    { apply pathover_of_tr_eq, exact is_prop.elim _ _ } }
+end   
 
 @[hott]
 def right_adj_is_unique {C : Type u} {D : Type u'} [category.{v} C] 
