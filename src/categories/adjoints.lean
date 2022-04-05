@@ -232,6 +232,62 @@ begin
 end    
 
 @[hott]
+class has_right_adjoint {C : Type u} {D : Type u'} [category.{v} C] 
+  [category.{v'} D] (L : C ⥤ D) :=
+(l_adj : is_left_adjoint L)
+
+@[hott]
+def right_adjoint_of {C : Type u} {D : Type u'} [category.{v} C] 
+  [category.{v'} D] (L : C ⥤ D) [H : has_right_adjoint L] : D ⥤ C :=
+H.l_adj.R  
+
+@[hott]
+class has_left_adjoint {C : Type u} {D : Type u'} [category.{v} C] 
+  [category.{v'} D] (R : D ⥤ C) :=
+(r_adj : is_right_adjoint R)
+
+@[hott]
+def left_adjoint_of {C : Type u} {D : Type u'} [category.{v} C] 
+  [category.{v'} D] (R : D ⥤ C) [H : has_left_adjoint R] : C ⥤ D :=
+H.r_adj.L 
+
+@[hott]
+class has_right_adjoints (C : Type u) (D : Type u') [category.{v} C] 
+  [category.{v'} D] :=
+(has_r_adj : Π L : C ⥤ D, has_right_adjoint L)
+
+@[hott, instance]
+def has_right_adj_of_has_right_adjs {C : Type u} {D : Type u'} [category.{v} C] 
+  [category.{v'} D] [H : has_right_adjoints C D] (L : C ⥤ D) : has_right_adjoint L :=
+has_right_adjoints.has_r_adj L  
+
+@[hott]
+class has_left_adjoints (C : Type u) (D : Type u') [category.{v} C] 
+  [category.{v'} D] :=
+(has_l_adj : Π R : D ⥤ C, has_left_adjoint R)
+
+@[hott, instance]
+def has_left_adj_of_has_left_adjs {C : Type u} {D : Type u'} [category.{v} C] 
+  [category.{v'} D] [H : has_left_adjoints C D] (R : D ⥤ C) : has_left_adjoint R :=
+has_left_adjoints.has_l_adj R 
+
+
+/- Adjointness can also be characterized by bijections between sets of homomorphisms. 
+   We first construct these bijections and their naturality from adjoint functors, 
+   then we show how these bijections imply adjointness when they are natural. -/
+@[hott]
+def right_adj_hom {C : Type u} {D : Type u'} [category.{v} C] 
+  [category.{v'} D] {L : C ⥤ D} {R : D ⥤ C} (adj : adjoint_functors L R) 
+  {c : C} {d : D} (f : c ⟶ R.obj d) : L.obj c ⟶ d :=
+L.map f ≫ adj.counit.app d    
+
+@[hott]
+def left_adj_hom {C : Type u} {D : Type u'} [category.{v} C] 
+  [category.{v'} D] {L : C ⥤ D} {R : D ⥤ C} (adj : adjoint_functors L R) 
+  {c : C} {d : D} (g : L.obj c ⟶ d) : c ⟶ R.obj d :=
+adj.unit.app c ≫ R.map g  
+
+@[hott]
 structure adjoint_functors_on_hom {C : Type u} {D : Type u'} [category.{v} C] 
   [category.{v'} D] (L : C ⥤ D) (R : D ⥤ C) :=
 (hom_bij : Π (c : C) (d : D), bijection (L.obj c ⟶ d) (c ⟶ R.obj d)) 
@@ -247,7 +303,7 @@ def adjoint_to_adjoint_hom {C : Type u} {D : Type u'} [category.{v} C]
 begin 
   intro adj, fapply adjoint_functors_on_hom.mk, 
   { intros c d, fapply bijection.mk,                  --hom_bij
-    { intro g, exact adj.trafo.app c ≫ R.map g },
+    { intro g, exact adj.unit.app c ≫ R.map g },
     { fapply is_set_bijective.mk, 
       { intros g₁ g₂ p, rwr adj.uniq (adj.trafo.app c ≫ R.map g₂) g₁ p⁻¹,
         exact (adj.uniq (adj.trafo.app c ≫ R.map g₂) g₂ idp)⁻¹ },
