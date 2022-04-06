@@ -271,21 +271,38 @@ def has_left_adj_of_has_left_adjs {C : Type u} {D : Type u'} [category.{v} C]
   [category.{v'} D] [H : has_left_adjoints C D] (R : D ⥤ C) : has_left_adjoint R :=
 has_left_adjoints.has_l_adj R 
 
+@[hott]
+class is_adjoint_functors {C : Type u} {D : Type u'} [category.{v} C] 
+  [category.{v'} D] (L : C ⥤ D) (R : D ⥤ C) := 
+(is_adj : adjoint_functors L R) 
+
+@[hott, instance]
+def is_adj_of_has_right_adj {C : Type u} {D : Type u'} [category.{v} C] 
+  [category.{v'} D] (L : C ⥤ D) [H : has_right_adjoint L] : 
+  is_adjoint_functors L H.l_adj.R :=
+is_adjoint_functors.mk H.l_adj.adj
+
+@[hott, instance]
+def is_adj_of_has_left_adj {C : Type u} {D : Type u'} [category.{v} C] 
+  [category.{v'} D] (R : D ⥤ C) [H : has_left_adjoint R] : 
+  is_adjoint_functors H.r_adj.L R :=
+is_adjoint_functors.mk H.r_adj.adj
+
 
 /- Adjointness can also be characterized by bijections between sets of homomorphisms. 
    We first construct these bijections and their naturality from adjoint functors, 
    then we show how these bijections imply adjointness when they are natural. -/
 @[hott]
 def right_adj_hom {C : Type u} {D : Type u'} [category.{v} C] 
-  [category.{v'} D] {L : C ⥤ D} {R : D ⥤ C} (adj : adjoint_functors L R) 
+  [category.{v'} D] {L : C ⥤ D} {R : D ⥤ C} [H : is_adjoint_functors L R] 
   {c : C} {d : D} (f : c ⟶ R.obj d) : L.obj c ⟶ d :=
-L.map f ≫ adj.counit.app d    
+L.map f ≫ H.is_adj.counit.app d    
 
 @[hott]
 def left_adj_hom {C : Type u} {D : Type u'} [category.{v} C] 
-  [category.{v'} D] {L : C ⥤ D} {R : D ⥤ C} (adj : adjoint_functors L R) 
+  [category.{v'} D] {L : C ⥤ D} {R : D ⥤ C} [H : is_adjoint_functors L R] 
   {c : C} {d : D} (g : L.obj c ⟶ d) : c ⟶ R.obj d :=
-adj.unit.app c ≫ R.map g  
+H.is_adj.unit.app c ≫ R.map g  
 
 @[hott]
 structure adjoint_functors_on_hom {C : Type u} {D : Type u'} [category.{v} C] 
@@ -302,40 +319,45 @@ def adjoint_to_adjoint_hom {C : Type u} {D : Type u'} [category.{v} C]
   adjoint_functors L R -> adjoint_functors_on_hom L R :=
 begin 
   intro adj, fapply adjoint_functors_on_hom.mk, 
-  { intros c d, fapply bijection.mk,                  --hom_bij
+  { intros c d, fapply has_inverse_to_bijection,    --hom_bij
     { intro g, exact adj.unit.app c ≫ R.map g },
-    { fapply is_set_bijective.mk, 
-      { intros g₁ g₂ p, rwr adj.uniq (adj.trafo.app c ≫ R.map g₂) g₁ p⁻¹,
-        exact (adj.uniq (adj.trafo.app c ≫ R.map g₂) g₂ idp)⁻¹ },
-      { intro f, fapply image.mk, exact (adj.hom f).1, exact (adj.hom f).2⁻¹ } } },
+    { intro f, exact L.map f ≫ adj.counit.app d },
+    { fapply is_set_inverse_of.mk, 
+      { intro f, hsimp, rwr <- precategory.assoc, rwr <- adj.unit.naturality, 
+        rwr precategory.assoc, rwr adj.zigzag_R, rwr precategory.comp_id },
+      { intro g, hsimp, rwr adj.counit.naturality, rwr <- precategory.assoc, 
+        rwr adj.zigzag_L, rwr precategory.id_comp } } },
   { intros c d c' h f,       --nat_L
-    calc _ = adj.trafo.app c' ≫ R.map (L.map h ≫ f) : idp
-         ... = adj.trafo.app c' ≫ R.map (L.map h) ≫ R.map f : by rwr R.map_comp
-         ... = (adj.trafo.app c' ≫ R.map (L.map h)) ≫ R.map f : by rwr precategory.assoc
-         ... = (adj.trafo.app c' ≫ (L ⋙ R).map h) ≫ R.map f : idp
-         ... = (h ≫ adj.trafo.app c) ≫ R.map f : by rwr <- adj.trafo.naturality h
-         ... = h ≫ adj.trafo.app c ≫ R.map f : by rwr precategory.assoc
+    calc _ = adj.unit.app c' ≫ R.map (L.map h ≫ f) : idp
+         ... = adj.unit.app c' ≫ R.map (L.map h) ≫ R.map f : by rwr R.map_comp
+         ... = (adj.unit.app c' ≫ R.map (L.map h)) ≫ R.map f : by rwr precategory.assoc
+         ... = (adj.unit.app c' ≫ (L ⋙ R).map h) ≫ R.map f : idp
+         ... = (h ≫ adj.unit.app c) ≫ R.map f : by rwr <- adj.unit.naturality h
+         ... = h ≫ adj.unit.app c ≫ R.map f : by rwr precategory.assoc
          ... = _ : idp },
   { intros c d d' g f,   --nat_R
-    calc _ = adj.trafo.app c ≫ R.map (f ≫ g) : idp
-         ... = adj.trafo.app c ≫ R.map f ≫ R.map g : by rwr R.map_comp
-         ... = (adj.trafo.app c ≫ R.map f) ≫ R.map g : by rwr precategory.assoc
+    calc _ = adj.unit.app c ≫ R.map (f ≫ g) : idp
+         ... = adj.unit.app c ≫ R.map f ≫ R.map g : by rwr R.map_comp
+         ... = (adj.unit.app c ≫ R.map f) ≫ R.map g : by rwr precategory.assoc
          ... = _ : idp } 
 end
-
-@[hott]
-def adjoint_to_adjoint_hom_eq (C : Type u) (D : Type u') [precategory.{v} C] 
-  [precategory.{v'} D] {L : C ⥤ D} {R : D ⥤ C} (adj : adjoint_functors L R) {c : C} 
-  {d : D} (g : L.obj c ⟶ d) : 
-  (adjoint_to_adjoint_hom adj).hom_bij c d g = adj.trafo.app c ≫ R.map g := idp 
 
 @[hott]
 def adjoint_hom_to_adjoint {C : Type u} {D : Type u'} [category.{v} C] 
   [category.{v'} D] {L : C ⥤ D} {R : D ⥤ C} : adjoint_functors_on_hom L R ->
   adjoint_functors L R :=
 begin 
-  intro adj, fapply adjoint_functors.mk,
-  { fapply nat_trans.mk,      --trafo
+  intro adj, 
+  have nat_L' : Π {c : C} {d : D} (f : c ⟶ R.obj d),
+                    inv_bijection_of (adj.hom_bij c d) f = L.map f ≫ 
+                    inv_bijection_of (adj.hom_bij (R.obj d) d) (𝟙 (R.obj d)), from
+      sorry,               
+    have nat_R' : Π {c : C} {d d' : D} (g : d ⟶ d') (f : c ⟶ R.obj d), 
+                    inv_bijection_of (adj.hom_bij c d) f ≫ g = 
+                    inv_bijection_of (adj.hom_bij c d') (f ≫ R.map g), from
+      sorry, 
+  fapply adjoint_functors.mk,
+  { fapply nat_trans.mk,      --unit
     { intro c, exact adj.hom_bij c (L.obj c) (𝟙 (L.obj c)) },
     { intros c c' f, 
       calc _ = f ≫ adj.hom_bij c' (L.obj c') (𝟙 (L.obj c')) : idp
@@ -345,29 +367,18 @@ begin
            ... = adj.hom_bij c (L.obj c') (L.map f) : by rwr precategory.comp_id
            ... = adj.hom_bij c (L.obj c') (𝟙 (L.obj c) ≫ L.map f) : by rwr precategory.id_comp
            ... = _ : by rwr adj.nat_R (L.map f) (𝟙 (L.obj c)) } },
-  { intros c d f, let g := inv_bijection_of (adj.hom_bij c d) f,  --hom
-    have p : f = adj.hom_bij c d g, from (inv_bij_r_inv (adj.hom_bij c d) f)⁻¹,
-    fapply sigma.mk, 
-    { exact g },
-    { change f = adj.hom_bij c (L.obj c) (𝟙 (L.obj c)) ≫ R.map g, rwr p, 
-      calc _ = (adj.hom_bij c d) (𝟙 (L.obj c) ≫ g) : by rwr precategory.id_comp
-           ... = _ : by rwr adj.nat_R g (𝟙 (L.obj c)) } },
-  { intros c d f g, 
-    change f = adj.hom_bij c (L.obj c) (𝟙 (L.obj c)) ≫ R.map g ->   --uniq
-                                 g = inv_bijection_of (adj.hom_bij c d) f, intro p,
-    apply bijection_l_to_r (adj.hom_bij c d),
-    calc _ = (adj.hom_bij c d) (𝟙 (L.obj c) ≫ g) : by rwr precategory.id_comp
-         ... = adj.hom_bij c (L.obj c) (𝟙 (L.obj c)) ≫ R.map g :
-               by rwr adj.nat_R g (𝟙 (L.obj c))
-         ... = _ : by rwr <- p }  
+  { fapply nat_trans.mk,      --counit
+    { intro d, exact inv_bijection_of (adj.hom_bij (R.obj d) d) (𝟙 (R.obj d)) },
+    { intros d d' g, rwr nat_R', rwr precategory.id_comp, 
+      change L.map (R.map g) ≫ _ = _, rwr <- nat_L' (R.map g) } },         
+  { intro c, change L.map (adj.hom_bij c (L.obj c) (𝟙 (L.obj c))) ≫    --zigzag_L
+        inv_bijection_of (adj.hom_bij (R.obj (L.obj c)) (L.obj c)) (𝟙 (R.obj _)) = _, 
+    rwr <- nat_L', rwr inv_bij_l_inv }, 
+  { intro d, sorry }  --zigzag_R 
 end       
 
-@[hott]
-def adjoint_to_adjunction_eq {C : Type u} {D : Type u'} [precategory.{v} C] 
-  [precategory.{v'} D] {L : C ⥤ D} {R : D ⥤ C} (adj : adjoint_functors_on_hom L R) 
-  (c : C) : 
-  (adjoint_hom_to_adjoint adj).trafo.app c = adj.hom_bij c (L.obj c) (𝟙 (L.obj c)) := 
-idp
+/- `adjoint_functors_on_hom` is also a proposition, so the two ways of defining adjoint
+   functors are logically equivalent. -/
 
 end categories.adjoints
 
