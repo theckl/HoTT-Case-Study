@@ -14,18 +14,16 @@ categories
   basic     :   716
   examples  :   820
   diagrams  :   441
-  adjoints  :   115
+  adjoints  :   398
   limits    :   626
-  pullbacks :   231
+  pullbacks :   343
   colimits  :   458
   structures:   613
               -----
-               8273
+               8667
 
 
 Edited files: 
 ---------------
 categories.models : is_interpretable_in-class
-categories.pullbacks : right adjoint for pullback of subobjects
-categories.adjoints : uniqueness of right adjoint functors
-categories.adjoints : properties and definition of adjoints
+categories.pullbacks : left adjoint for pullback of subobjects, instance
