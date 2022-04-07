@@ -309,43 +309,20 @@ end
 /- The existence of a right adjoint to the pullback functor for subobjects must be 
    assumed independently of other categorical properties. -/
 @[hott]
-structure r_adj_of_pb_subobj {C : Type u} [category.{v} C] [has_pullbacks.{v u u} C] 
-  {a b : C} (f : a ⟶ b) :=
-(functor : subobject a ⥤ subobject b)
-(right_adj : adjoint_functors_on_hom (pb_subobj_functor f) functor)  
-
-@[hott]
-def r_adj_of_pb_subobj_is_unique {C : Type u} [category.{v} C] [has_pullbacks.{v u u} C] 
-  {a b : C} (f : a ⟶ b) : Π R₁ R₂ : r_adj_of_pb_subobj f, R₁ = R₂ :=
-begin
-  intros RA₁ RA₂, hinduction RA₁ with R₁ r_adj₁, hinduction RA₂ with R₂ r_adj₂, 
-  fapply apd011 r_adj_of_pb_subobj.mk, 
-  { fapply functor_eq, 
-    { apply eq_of_homotopy, intro c, sorry }, 
-    { sorry } },
-  { sorry }
-end 
+class has_all_of_fiber {C : Type u} [category.{v} C] [has_pullbacks.{v u u} C] 
+  {a b : C} (f : a ⟶ b) := 
+(fib_all : has_right_adjoint (pb_subobj_functor f))  
 
 @[hott, instance]
-def r_adj_of_pb_subobj_is_prop {C : Type u} [category.{v} C] [has_pullbacks.{v u u} C] 
-  {a b : C} (f : a ⟶ b) : is_prop (r_adj_of_pb_subobj f) :=
-is_prop.mk (r_adj_of_pb_subobj_is_unique f)
-
-@[hott]
-class has_all_of_fiber {C : Type u} [category.{v} C] [has_pullbacks.{v u u} C] 
-  {a b : C} (f : a ⟶ b) :=
-(has_all_fib : ∥r_adj_of_pb_subobj f∥) 
+def has_r_adj_of_has_all_fib {C : Type u} [category.{v} C] [has_pullbacks.{v u u} C] 
+  {a b : C} (f : a ⟶ b) [H : has_all_of_fiber f] : 
+  has_right_adjoint (pb_subobj_functor f) :=
+H.fib_all
 
 @[hott]
 def fib_all {C : Type u} [category.{v} C] [has_pullbacks.{v u u} C] {a b : C} 
   (f : a ⟶ b) [has_all_of_fiber f] : subobject a ⥤ subobject b :=
-(untrunc_of_is_trunc (has_all_of_fiber.has_all_fib f)).functor 
-
-@[hott]
-def fib_all_is_r_adj {C : Type u} [category.{v} C] [has_pullbacks.{v u u} C] {a b : C} 
-  (f : a ⟶ b) [has_all_of_fiber f] : 
-  adjoint_functors_on_hom (pb_subobj_functor f) (fib_all f) :=
- (untrunc_of_is_trunc (has_all_of_fiber.has_all_fib f)).right_adj 
+right_adjoint_of (pb_subobj_functor f) 
 
 @[hott]
 class has_all_of_fibers (C : Type u) [category.{v} C] :=
