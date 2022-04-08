@@ -7,23 +7,31 @@ sets
   finite    :   206
   subset    :   407
   axioms    :   340
-  algebra   :   237
+  algebra   :   239
   quotients :   205
   theories  :   695
 categories  
-  basic     :   716
-  examples  :   820
+  basic     :   723
+  examples  :   825
   diagrams  :   441
   adjoints  :   398
   limits    :   626
-  pullbacks :   343
+  pullbacks :   403
   colimits  :   458
   structures:   613
               -----
-               8667
+               8741
 
 
 Edited files: 
 ---------------
 categories.models : is_interpretable_in-class
-categories.pullbacks : left adjoint for pullback of subobjects, instance
+categories.pullbacks : complements, instance
+categories.pullbacks : Heyting property
+categories.pullbacks : implication of subobjects
+categories.pullbacks : symmetry of intersection of subobjects
+categories.pullbacks : symmetry of pullbacks
+categories.diagrams : isomorphism of wedge diagram
+categories.limits : natural equivalences of diagrams induce isomorphisms of limits
+
+
