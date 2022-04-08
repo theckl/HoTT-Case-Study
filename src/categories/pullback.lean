@@ -186,6 +186,9 @@ have w : Π (ow : orthogonal_wedge), h ≫ (limit.cone (orthogonal_pair f g)).π
   end,
 (get_limit_cone (orthogonal_pair f g)).is_limit.uniq S h w   
 
+
+/- The stability of monomorphisms under pullbacks can be used to construct pullbacks 
+   of subobjects. -/
 @[hott]
 def mono_is_stable {C : Type u} [category.{v} C] {a b c : C} (f : a ⟶ c) (g : b ⟶ c) 
   (H : is_mono g) [has_pullback f g] : is_mono (pullback_homo_l f g) :=
@@ -236,6 +239,25 @@ begin
 end   
 
 @[hott]
+def subobj_intersect {C : Type u} [category.{v} C] {c : C} (a b : subobject c) 
+  [has_pullback a.hom b.hom] : subobject c :=
+subobj_trans a (pullback_subobject a.hom b)  
+
+@[hott, instance]
+def subobj_has_inter {C : Type u} [category.{v} C] {c : C} [has_pullbacks.{v u u} C] :
+  has_inter (subobject c) :=
+has_inter.mk (λ a b, subobj_intersect a b) 
+
+@[hott]
+def subobj_inter_symm {C : Type u} [category.{v} C] {c : C} [has_pullbacks.{v u u} C]
+  (a b : subobject c) : a ∩ b = b ∩ a :=
+begin 
+  fapply iso_mono_to_equal_subobj, fapply iso_of_monos.mk, 
+  { change pullback a.hom b.hom ≅ pullback b.hom a.hom, sorry },
+  { sorry }
+end  
+
+@[hott]
 def pb_subobj_functor {C : Type u} [category.{v} C] {a c : C} (f : a ⟶ c) 
   [has_pullbacks.{v u u} C] : subobject c ⥤ subobject a :=
 categories.functor.mk (λ b : subobject c, pullback_subobject f b)
@@ -262,13 +284,45 @@ def has_images_of_has_stable_images {C : Type u} [category.{v} C]
   [H : has_stable_images C] : has_images C := H.has_im
 
 @[hott, instance]
-def has_pullbacks_of_has_stable_images {C : Type u} [category.{v} C] 
+def has_pullbacks_of_has_stable_images (C : Type u) [category.{v} C] 
   [H : has_stable_images C] : has_pullbacks.{v u u} C := H.has_pb
 
-/- Now we can construct the left adjoint of pullback functors of subobjects. -/
+
+/- The existence of a left adjoint to the pullback functor for subobjects can be deduced
+   from the existence of pullbacks and the stability of images under puillbacks -/
 @[hott]
-def fib_ex {C : Type u} [category.{v} C] [has_stable_images C] {a b : C} (f : a ⟶ b) :
-  subobject a ⥤ subobject b :=
+class has_ex_in_fiber {C : Type u} [category.{v} C] [has_pullbacks.{v u u} C] 
+  {a b : C} (f : a ⟶ b) := 
+(ex_in : has_left_adjoint (pb_subobj_functor f))  
+
+@[hott, instance]
+def has_l_adj_of_has_ex_fib {C : Type u} [category.{v} C] [has_pullbacks.{v u u} C] 
+  {a b : C} (f : a ⟶ b) [H : has_ex_in_fiber f] : 
+  has_left_adjoint (pb_subobj_functor f) :=
+H.ex_in
+
+@[hott]
+def ex_fib {C : Type u} [category.{v} C] [has_pullbacks.{v u u} C] {a b : C} 
+  (f : a ⟶ b) [has_ex_in_fiber f] : subobject a ⥤ subobject b :=
+left_adjoint_of (pb_subobj_functor f) 
+
+@[hott]
+class has_ex_in_fibers (C : Type u) [category.{v} C] :=
+  (has_pb : has_pullbacks.{v u u} C)
+  (has_ex_fib : Π {a b : C} (f : a ⟶ b), has_ex_in_fiber f)
+
+@[hott, instance]
+def has_pullbacks_of_has_ex_fibs {C : Type u} [category.{v} C] [has_ex_in_fibers C] :
+  has_pullbacks C := has_ex_in_fibers.has_pb C
+
+@[hott, instance]
+def has_ex_fib_of_has_ex_fibs {C : Type u} [category.{v} C] [has_ex_in_fibers C]
+  {a b : C} (f : a ⟶ b) : has_ex_in_fiber f := 
+has_ex_in_fibers.has_ex_fib f
+
+@[hott]
+def ex_fib_of_stable_im {C : Type u} [category.{v} C] [has_stable_images C] {a b : C} 
+  (f : a ⟶ b) : subobject a ⥤ subobject b :=
 begin 
   fapply categories.functor.mk, 
   { exact λ c : subobject a, hom.image (c.hom ≫ f) },
@@ -284,9 +338,10 @@ end
 
 @[hott]
 def fib_ex_left_adj_pb_subobj {C : Type u} [category.{v} C] [has_stable_images C] 
-  {a b : C} (f : a ⟶ b) : adjoint_functors_on_hom (fib_ex f) (pb_subobj_functor f) :=
+  {a b : C} (f : a ⟶ b) : 
+  adjoint_functors (ex_fib_of_stable_im f) (pb_subobj_functor f) :=
 begin
-  fapply adjoint_functors_on_hom.mk, 
+  apply adjoint_hom_to_adjoint, fapply adjoint_functors_on_hom.mk, 
   { intros c d, fapply has_inverse_to_bijection,
     { intro i, fapply hom_of_monos.mk, 
       { have w : c.hom ≫ f = (hom_to_image (c.hom ≫ f) ≫ i.hom_obj) ≫ d.hom, from 
@@ -305,6 +360,13 @@ begin
   { intros _ _ _ _ _, exact is_prop.elim _ _ }
 end  
 
+@[hott, instance]
+def has_ex_fibs_of_has_stable_ims {C : Type u} [category.{v} C] [has_stable_images C] :
+  has_ex_in_fibers C :=
+has_ex_in_fibers.mk (has_pullbacks_of_has_stable_images C) 
+  (λ a b f, has_ex_in_fiber.mk (has_left_adjoint.mk 
+        (is_right_adjoint.mk (ex_fib_of_stable_im f) (fib_ex_left_adj_pb_subobj f))))
+                                                
 
 /- The existence of a right adjoint to the pullback functor for subobjects must be 
    assumed independently of other categorical properties. -/
@@ -337,6 +399,46 @@ def has_pullbacks_of_has_all_fibs {C : Type u} [category.{v} C] [has_all_of_fibe
 def has_all_fib_of_has_all_fibs {C : Type u} [category.{v} C] [has_all_of_fibers C]
   {a b : C} (f : a ⟶ b) : has_all_of_fiber f := 
 has_all_of_fibers.has_all_fib f     
+
+/- The fiberwise forall quantifier allows to define implications of subobjects. -/
+@[hott]
+structure implication {C : Type u} [category.{v} C] {c : C} [has_pullbacks.{v u u} C] 
+  (a b : subobject c) :=
+  (impl : subobject c)
+  (cond : impl ∩ a ⟶ b)
+  (max : ∀ d : subobject c, (d ∩ a ⟶ b) -> (d ⟶ impl))
+
+@[hott]
+class has_implication {C : Type u} [category.{v} C] {c : C} (a b : subobject c) := 
+  (has_pb : has_pullbacks.{v u u} C)
+  (has_impl : implication a b)
+
+@[hott, instance]
+def has_pb_of_has_impl {C : Type u} [category.{v} C] {c : C} (a b : subobject c) 
+  [H : has_implication a b] : has_pullbacks.{v u u} C :=
+H.has_pb  
+
+@[hott] 
+def impl_subobj {C : Type u} [category.{v} C] {c : C} (a b : subobject c) 
+  [H : has_implication a b] : subobject c :=
+H.has_impl.impl     
+
+infixl ` ⇒ `:10 := impl_subobj 
+
+@[hott]
+def implications_of_all_fibs {C : Type u} [category.{v} C] {c : C} 
+  [has_all_of_fibers C] (a b : subobject c) : implication a b :=
+begin
+  fapply implication.mk,
+  { exact (fib_all a.hom).obj (pullback_subobject a.hom b) },
+  { sorry },
+  { sorry }
+end    
+
+@[hott, instance]
+def has_impl_of_all_fibs {C : Type u} [category.{v} C] {c : C} 
+  [has_all_of_fibers C] (a b : subobject c) : has_implication a b :=
+has_implication.mk _ (implications_of_all_fibs a b)  
 
 end categories.pullbacks
 
