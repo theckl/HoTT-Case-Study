@@ -711,6 +711,11 @@ begin
   exact category.isotoid iso_ab 
 end  
 
+@[hott]
+def subobj_trans {C : Type u} [category.{v} C] {c : C} (a : subobject c) 
+  (b : subobject a.obj) : subobject c :=
+subobject.mk b.obj (b.hom ≫ a.hom) (is_mono_is_trans b.is_mono a.is_mono) 
+
 /- The category of subobjects always has a top element. -/
 @[hott]
 def top_subobject {C : Type u} [category.{v} C] (c : C) : subobject c := 
