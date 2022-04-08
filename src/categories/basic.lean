@@ -261,6 +261,13 @@ def is_mono_is_prop {C : Type u} [category.{v} C] {c₁ c₂ : C} (f : c₁ ⟶ 
 begin apply is_prop_dprod, intro d, apply_instance end 
 
 @[hott]
+def is_mono_is_trans {C : Type u} [category.{v} C] {c₁ c₂ c₃ : C} {f : c₁ ⟶ c₂} 
+  {g : c₂ ⟶ c₃} : is_mono f -> is_mono g -> is_mono (f ≫ g) :=
+begin 
+  intros Hf Hg d h₁ h₂, rwr <- precategory.assoc, rwr <- precategory.assoc, 
+  intro H, exact Hf d h₁ h₂ (Hg d (h₁ ≫ f) (h₂ ≫ f) H) end  
+
+@[hott]
 def isos_are_mono {C : Type u} [category.{v} C] {c₁ c₂ : C} (i : c₁ ≅ c₂) : is_mono i.hom :=  
   assume d g₁ g₂ eq_comp, 
   calc g₁ = g₁ ≫ 𝟙 c₁ : by rwr precategory.comp_id
