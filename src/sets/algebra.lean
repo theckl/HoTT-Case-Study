@@ -31,7 +31,9 @@ variables {A : Set.{u}}
 protected def inter (S₁ S₂ : Subset A) : Subset A :=
   λ a : A, a ∈ S₁ and a ∈ S₂
 
-hott_theory_cmd "local infixl  ` ∩ `:80      := hott.subset.inter"
+@[hott, instance]
+def subsets_have_inter : has_inter (Subset A) :=
+  has_inter.mk (λ B C, hott.subset.inter B C) 
 
 @[hott]
 def elem_inter_iff (U V : Subset A) : 
