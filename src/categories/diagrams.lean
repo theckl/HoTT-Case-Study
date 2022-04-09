@@ -8,6 +8,34 @@ open hott.eq hott.set hott.subset hott.is_trunc hott.is_equiv hott.equiv hott.ca
 
 namespace categories
 
+/- Diagrams are small precategories, that is precategories whose type of objects is a
+   set. In [HoTT-Book,Ch.9.6] they are called `strict categories`. We don't insist on 
+   the precategories being categories, becuase we allow diagrams with loops, that is 
+   cycles of homomorphisms that always yield the identity homomorphism when composed. 
+  
+   Diagrams together with functors between them form a category. In particular, 
+   equality of functors between diagrams is unique. -/
+@[hott]
+structure small_precategory :=
+  (obj : Set.{u})
+  (precat : precategory.{v} obj)
+
+attribute [instance] small_precategory.precat
+
+@[hott, instance]
+def precategory_is_set (D : Set.{u}) : is_set (precategory.{v} D) :=
+  sorry
+
+@[hott, instance]
+def functors_of_small_precat_is_set (D₁ D₂ : small_precategory) : 
+  is_set (D₁.obj ⥤ D₂.obj) :=
+sorry  
+
+@[hott, instance]
+def small_precat_has_hom : has_hom (small_precategory) :=
+  has_hom.mk (λ D₁ D₂ : small_precategory, Set.mk (D₁.obj ⥤ D₂.obj) 
+                                            (functors_of_small_precat_is_set D₁ D₂))     
+
 /- We define the discrete precategory structure on a set, whose morphisms are
    only equalities. 
    
