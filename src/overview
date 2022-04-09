@@ -32,6 +32,7 @@ categories.pullbacks : implication of subobjects
 categories.pullbacks : symmetry of intersection of subobjects
 categories.pullbacks : symmetry of pullbacks
 categories.diagrams : isomorphism of wedge diagram
-categories.limits : natural equivalences of diagrams induce isomorphisms of limits
+categories.limits : isomorphisms of diagrams induce isomorphisms of limits
+categories.diagrams : category of small precategories
 
 
