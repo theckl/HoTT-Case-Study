@@ -306,7 +306,7 @@ begin
   exact po_tr_eq
 end  
 
-/- Facts on combinations of pathovers and versions of `ap`. -/
+/- Facts on combinations of pathovers and versions of `ap` and `apd`. -/
 @[hott]
 def po_of_po_apd100 {A : Type _} {B : A -> Type _} {C : Π (a : A), B a -> Type _}
   {a₀ : A} {b₀ : B a₀} {D : C a₀ b₀ -> Type _} 
