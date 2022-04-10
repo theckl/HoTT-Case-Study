@@ -556,6 +556,25 @@ begin
 end    
 
 @[hott]
+def functor_eq_change_path [precategory.{v} C] [precategory.{v'} D] {F G : C ⥤ D} 
+  {p p' : F.obj = G.obj} (q : p = p')
+  (r : (F.map =[p; λ f : C -> D, Π (x y : C), (x ⟶ y) -> (f x ⟶ f y)] G.map)) :
+  functor_eq C D p' (change_path q r) = functor_eq C D p r :=
+begin hinduction q, rwr change_path_idp end  
+
+@[hott]
+def functor_eq_eta [precategory.{v} C] [precategory.{v'} D] {F G : C ⥤ D} (p : F = G) :
+  functor_eq C D (ap functor.obj p) 
+                 (pathover_ap (λ f : C -> D, Π (x y : C), (x ⟶ y) -> (f x ⟶ f y)) 
+                              functor.obj (apd functor.map p)) = p :=
+begin 
+  hinduction p, rwr apd_idp, 
+  change functor_eq C D (ap functor.obj (refl F)) 
+                        (change_path (ap_idp F functor.obj)⁻¹ idpo) = _, 
+  rwr functor_eq_change_path, rwr functor_eq_idp
+end  
+
+@[hott]
 def is_faithful_functor [precategory.{v} C] [precategory.{v'} D] (F : C ⥤ D) := 
   Π {x y : C}, is_set_injective (@functor.map C D _ _ F x y) 
 
