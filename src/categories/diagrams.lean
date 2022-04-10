@@ -23,13 +23,22 @@ structure small_precategory :=
 attribute [instance] small_precategory.precat
 
 @[hott, instance]
-def precategory_is_set (D : Set.{u}) : is_set (precategory.{v} D) :=
-  sorry
-
-@[hott, instance]
 def functors_of_small_precat_is_set (D₁ D₂ : small_precategory) : 
   is_set (D₁.obj ⥤ D₂.obj) :=
-sorry  
+begin 
+  fapply is_set.mk, intros F G p q, 
+  rwr <- functor_eq_eta D₁.obj D₂.obj p, rwr <- functor_eq_eta D₁.obj D₂.obj q, 
+  fapply apd011 (functor_eq D₁.obj D₂.obj), 
+  { apply is_set.elim _ _, exact is_set_map },
+  { apply pathover_of_tr_eq, 
+    apply @set_po_eq (D₁.obj -> D₂.obj) 
+                     (λ f, Set.mk (Π (x y : D₁.obj), (x ⟶ y) → (f x ⟶ f y)) _)
+                     _ _ (ap functor.obj q) _ _ _ _, 
+    change is_trunc 0 (Π (x : D₁.obj), Set.mk (Π (y : D₁.obj), (x ⟶ y) → (f x ⟶ f y)) _), 
+    apply is_set_dmap, 
+    change is_trunc 0 (Π (y : D₁.obj), Set.mk ((x ⟶ y) → (f x ⟶ f y)) _),
+    apply is_set_dmap, exact is_set_map }
+end    
 
 @[hott, instance]
 def small_precat_has_hom : has_hom (small_precategory) :=
