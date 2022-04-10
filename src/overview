@@ -11,7 +11,7 @@ sets
   quotients :   205
   theories  :   695
 categories  
-  basic     :   723
+  basic     :   742
   examples  :   825
   diagrams  :   441
   adjoints  :   398
@@ -20,7 +20,7 @@ categories
   colimits  :   458
   structures:   613
               -----
-               8741
+               8760
 
 
 Edited files: 
