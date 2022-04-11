@@ -1,6 +1,6 @@
 import sets.algebra init2 types2 sets.axioms
 
-universes v v' v'' u u' u'' w 
+universes v v' v'' v''' u u' u'' u''' w 
 hott_theory
 
 namespace hott
@@ -607,7 +607,7 @@ infixr ` ⟹ `:10 := nat_trans _ _
 end
 
 section
-variables {C : Type u} {D : Type u'} {E : Type u''}
+variables {B : Type u'''} {C : Type u} {D : Type u'} {E : Type u''}
 
 /- The composition of functors -/
 @[hott, reducible]
@@ -622,6 +622,40 @@ begin
 end  
 
 infixr ` ⋙ `:25 := functor_comp 
+
+@[hott]
+def funct_id_comp [precategory.{v} C] [precategory.{v'} D] (F : C ⥤ D) : 
+  (id_functor C ⋙ F) = F :=
+begin 
+  fapply functor_eq, 
+  { apply eq_of_homotopy, intro c, hsimp },
+  { hsimp, change F.map =[eq_of_homotopy (λ c : C, idp); 
+                    λ f : C -> D, Π (x y : C), (x ⟶ y) → (f x ⟶ f y)] F.map, 
+    rwr eq_of_homotopy_idp } 
+end  
+
+@[hott]
+def funct_comp_id [precategory.{v} C] [precategory.{v'} D] (F : C ⥤ D) : 
+  (F ⋙ id_functor D) = F :=
+begin 
+  fapply functor_eq, 
+  { apply eq_of_homotopy, intro c, hsimp },
+  { hsimp, change F.map =[eq_of_homotopy (λ c : C, idp); 
+                    λ f : C -> D, Π (x y : C), (x ⟶ y) → (f x ⟶ f y)] F.map, 
+    rwr eq_of_homotopy_idp } 
+end 
+
+@[hott]
+def funct_comp_assoc [precategory.{v'''} B] [precategory.{v} C] [precategory.{v'} D] 
+  [precategory.{v''} E] (F : C ⥤ D) (G : D ⥤ E) (H : E ⥤ B) : 
+  ((F ⋙ G) ⋙ H) = (F ⋙ (G ⋙ H)) :=
+begin
+  fapply functor_eq, 
+  { apply eq_of_homotopy, intro c, hsimp },
+  { change _ =[eq_of_homotopy (λ c : C, idp); 
+                    λ f : C -> B, Π (x y : C), (x ⟶ y) → (f x ⟶ f y)] _, 
+    rwr eq_of_homotopy_idp }
+end  
 
 end 
 
