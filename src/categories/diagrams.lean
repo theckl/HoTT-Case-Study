@@ -45,6 +45,17 @@ def small_precat_has_hom : has_hom (small_precategory) :=
   has_hom.mk (λ D₁ D₂ : small_precategory, Set.mk (D₁.obj ⥤ D₂.obj) 
                                             (functors_of_small_precat_is_set D₁ D₂))     
 
+@[hott, instance]
+def small_precat_cat_str : category_struct small_precategory :=
+  category_struct.mk (λ D, id_functor D.obj) (λ D₁ D₂ D₃ F G, functor_comp F G)
+
+@[hott, instance]
+def small_precat_precat : precategory small_precategory :=
+precategory.mk (λ D₁ D₂ F, funct_id_comp F) 
+               (λ D₁ D₂ F, funct_comp_id F) 
+               (λ D₁ D₂ D₃ D₄ F G H, funct_comp_assoc F G H)
+                    
+
 /- We define the discrete precategory structure on a set, whose morphisms are
    only equalities. 
    
