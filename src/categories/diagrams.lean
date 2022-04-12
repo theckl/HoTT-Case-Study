@@ -22,6 +22,34 @@ structure small_precategory :=
 
 attribute [instance] small_precategory.precat
 
+@[hott]
+def small_precat_eq {D₁ D₂ : small_precategory} : Π (Pₒ : D₁.obj = D₂.obj) 
+  (Pₕ : Π a b : D₁.obj, (a ⟶ b) = (Pₒ ▸ a ⟶ Pₒ ▸ b)), 
+  (Π a : D₁.obj, (Pₕ a a) ▸ 𝟙 a = 𝟙 (Pₒ ▸ a)) -> 
+  (Π (a b c : D₁.obj) (f : a ⟶ b) (g : b ⟶ c), (Pₕ a c) ▸ (f ≫ g) = 
+                            ((Pₕ a b) ▸ f) ≫ ((Pₕ b c) ▸ g)) -> D₁ = D₂ :=
+begin
+  hinduction D₁ with obj₁ precat₁, hinduction D₂ with obj₂ precat₂, hsimp, 
+  intros Pₒ Pₕ id_eq comp_eq, 
+  hinduction Pₒ, fapply apd011 small_precategory.mk, 
+  { exact idp },
+  { apply pathover_idp_of_eq, 
+    hinduction precat₁ with cat_struct₁ id_comp₁ comp_id₁ comp_assoc₁, 
+    hinduction precat₂ with cat_struct₂ id_comp₂ comp_id₂ comp_assoc₂,
+    fapply apd01111' (@precategory.mk obj₁), 
+    { hinduction cat_struct₁ with has_hom₁ id₁ comp₁, 
+      hinduction cat_struct₂ with has_hom₂ id₂ comp₂,
+      fapply apd0111' (@category_struct.mk obj₁),
+      { hinduction has_hom₁ with hom₁, hinduction has_hom₂ with hom₂, 
+        apply ap has_hom.mk, apply eq_of_homotopy2, 
+        intros a b, exact Pₕ a b },
+      { sorry },
+      { sorry } },
+    { sorry },
+    { sorry },
+    { sorry } }
+end  
+
 @[hott, instance]
 def functors_of_small_precat_is_set (D₁ D₂ : small_precategory) : 
   is_set (D₁.obj ⥤ D₂.obj) :=
@@ -54,7 +82,22 @@ def small_precat_precat : precategory small_precategory :=
 precategory.mk (λ D₁ D₂ F, funct_id_comp F) 
                (λ D₁ D₂ F, funct_comp_id F) 
                (λ D₁ D₂ D₃ D₄ F G H, funct_comp_assoc F G H)
-                    
+
+@[hott]
+def small_precat_isotoid : Π {D₁ D₂ : small_precategory}, (D₁ ≅ D₂) -> (D₁ = D₂) :=
+begin  
+  intros D₁ D₂ iD, sorry
+end    
+
+@[hott, instance]
+def small_precat_cat : category small_precategory :=
+begin
+  apply category.mk, intros D₁ D₂, fapply adjointify,
+  { exact small_precat_isotoid },
+  { sorry },
+  { sorry }
+end                 
+
 
 /- We define the discrete precategory structure on a set, whose morphisms are
    only equalities. 
