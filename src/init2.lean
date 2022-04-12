@@ -163,6 +163,14 @@ def apd01111 {A F : Type _} {B C D E : A -> Type _}
 begin hinduction pA, hinduction pB, hinduction pC, hinduction pD,
       hinduction pE, refl end 
 
+@[hott, hsimp, reducible]
+def apd01111' {A F : Type _} {B C D : A -> Type _} 
+  (h : Π a : A, B a -> C a -> D a  -> F) {a a' : A} 
+  {b : B a} {b' : B a'} {c : C a} {c' : C a'} {d : D a} {d' : D a'}  
+  (pA : a = a') (pB : b =[pA] b') (pC : c =[pA] c') (pD : d =[pA] d') :
+  h a b c d = h a' b' c' d' :=
+begin hinduction pA, hinduction pB, hinduction pC, hinduction pD, refl end
+
 @[hott]
 def apd01111_v2 {A E : Type _} {B : A -> Type _} {C D : Π (a : A), B a -> Type _} 
   (f : Π (a : A) (b : B a) (c : C a b) (d : D a b), E) {a₁ a₂ : A} {b₁ : B a₁} {b₂ : B a₂}
