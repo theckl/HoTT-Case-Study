@@ -30,6 +30,14 @@ begin hinduction q, rwr idp_tr, rwr idp_inv, rwr idp_con end
 def pathover_idp_of_id {A : Type _} : Π a : A, pathover_idp_of_eq id (@idp _ a) = idpo := 
   assume a, rfl
 
+@[reducible,hott]
+def ap100 {A B C : Type _} {f g : A → B -> C} (H : f = g) : f ~2 g := apd100 H
+
+@[hott]
+def ap100_eq_of_hty2_inv {A B C : Type _} {f g : A → B -> C} (H : f ~2 g) :
+  ap100 (eq_of_homotopy2 H) = H :=
+is_equiv.left_inv (funext.is_equiv_apd100 f g).inv H 
+
 @[hott]
 def ap0111 {A : Type u} {B : Type v} {C D : A -> B -> Type _} {E : Type _}
   (f : Π (a : A) (b : B), C a b -> D a b -> E)
@@ -250,6 +258,19 @@ begin hinduction p, refl end
 def tr_dep_fn_eval_tr {A C : Type _} {B : A -> Type _}  
   {a₁ a₂ : A} {f : B a₁ -> C} (p : a₁ = a₂) (b : B a₂) : (p ▸ f) b = f (p⁻¹ ▸ b) :=
 begin hinduction p, refl end  
+
+@[hott]
+def ap100_tr {A B C : Type _} {F G : A -> B -> C} {D : C -> Type _} 
+  (p : F = G) {a : A} {b : B} (f : D (F a b)) :
+  (ap100 p a b ▸[λ c : C, D c] f) = (p ▸[λ H : A -> B -> C, D (H a b)] f) :=
+begin hinduction p, refl end
+
+@[hott]
+def ap100_tr_comp {A C : Type _} {F G : A -> A -> C} {D : C -> Type _} 
+  (p : F = G) {a b c : A} (f : D (F a b) -> D (F b c) -> D (F a c)) (dab : D (G a b)) 
+  (dbc : D (G b c)) : (ap100 p a c ▸[λ c : C, D c] (f (p⁻¹ ▸ dab) (p⁻¹ ▸ dbc))) = 
+          ((p ▸[λ H : A -> A -> C, D (H a b) -> D (H b c) -> D (H a c)] f) dab dbc) :=
+begin hinduction p, refl end
 
 @[hott] 
 def tr_ap011 {A B C : Type _} {x₁ y₁ : A} {x₂ y₂ : B} {P : C → C -> Type _} (f : A -> B -> C) 
