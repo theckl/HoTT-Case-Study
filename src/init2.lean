@@ -267,9 +267,11 @@ begin hinduction p, refl end
 
 @[hott]
 def ap100_tr_comp {A C : Type _} {F G : A -> A -> C} {D : C -> Type _} 
-  (p : F = G) {a b c : A} (f : D (F a b) -> D (F b c) -> D (F a c)) (dab : D (G a b)) 
-  (dbc : D (G b c)) : (ap100 p a c ▸[λ c : C, D c] (f (p⁻¹ ▸ dab) (p⁻¹ ▸ dbc))) = 
-          ((p ▸[λ H : A -> A -> C, D (H a b) -> D (H b c) -> D (H a c)] f) dab dbc) :=
+  (p : F = G) {a b c : A} (f : Π  b c : A, D (F a b) -> D (F b c) -> D (F a c)) 
+  (dab : D (G a b)) (dbc : D (G b c)) : 
+  (ap100 p a c ▸[λ c : C, D c] (f b c ((ap100 p a b)⁻¹ ▸ dab) ((ap100 p b c)⁻¹ ▸ dbc))) = 
+          ((p ▸[λ H : A -> A -> C, Π b c : A, D (H a b) -> D (H b c) -> D (H a c)] f) 
+                                                                         b c dab dbc) :=
 begin hinduction p, refl end
 
 @[hott] 
