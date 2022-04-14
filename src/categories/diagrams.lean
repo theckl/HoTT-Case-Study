@@ -1,4 +1,4 @@
-import sets.algebra init2 sets.axioms sets.theories categories.basic
+import sets.algebra init2 sets.axioms sets.theories categories.basic categories.examples
 
 universes v v' u u' w 
 hott_theory
@@ -47,16 +47,15 @@ begin
         rwr <- ap100_tr (eq_of_homotopy2 (λ (a b : ↥obj₁), Pₕ a b)) (id₁ a), 
         rwr ap100_eq_of_hty2_inv, exact id_eq a },
       { apply pathover_ap,         
-        apply pathover_of_tr_eq, apply eq_of_homotopy3, intros a' b' c', rwr tr_fn_tr_eval,
-        apply eq_of_homotopy2, intros f g,  
-        change (eq_of_homotopy2 (λ (a b : ↥obj₁), Pₕ a b) 
-                                   ▸ comp₁) f g = _, 
-        --rwr <- ap100_tr_comp (eq_of_homotopy2 (λ (a b : ↥obj₁), Pₕ a b)) (@comp₁ a b c) f g, 
-        --rwr ap100_eq_of_hty2_inv, 
-        sorry } },
-    { sorry },
-    { sorry },
-    { sorry } }
+        apply pathover_of_tr_eq, apply eq_of_homotopy3, intros a b c, rwr tr_fn_tr_eval,
+        apply eq_of_homotopy2, intros f g,   
+        rwr <- ap100_tr_comp (eq_of_homotopy2 (λ (a b : ↥obj₁), Pₕ a b)) (@comp₁ a) f g, 
+        rwr ap100_eq_of_hty2_inv, rwr comp_eq a b c, rwr tr_inv_tr, rwr tr_inv_tr } },
+    { apply pathover_of_tr_eq, apply eq_of_homotopy3, intros a b f, exact is_set.elim _ _ },
+    { apply pathover_of_tr_eq, apply eq_of_homotopy3, intros a b f, exact is_set.elim _ _ },
+    { apply pathover_of_tr_eq, apply eq_of_homotopy3, intros a b c, 
+      apply eq_of_homotopy3, intros d f g, apply eq_of_homotopy, intro h, 
+      exact is_set.elim _ _ } }
 end  
 
 @[hott, instance]
@@ -93,9 +92,40 @@ precategory.mk (λ D₁ D₂ F, funct_id_comp F)
                (λ D₁ D₂ D₃ D₄ F G H, funct_comp_assoc F G H)
 
 @[hott]
+def small_precat_iso_to_obj_iso : 
+  Π {D₁ D₂ : small_precategory}, (D₁ ≅ D₂) -> (D₁.obj ≅ D₂.obj) :=
+assume D₁ D₂ iD, iso.mk iD.hom.obj  iD.inv.obj (ap functor.obj iD.r_inv) 
+                                               (ap functor.obj iD.l_inv)
+
+@[hott]
+def small_precat_iso_to_hom_iso : Π {D₁ D₂ : small_precategory} (iD : D₁ ≅ D₂), 
+  Π (a b : D₁.obj), (a ⟶ b) ≅ ((small_precat_iso_to_obj_iso iD).hom a ⟶ 
+                               (small_precat_iso_to_obj_iso iD).hom b) :=
+begin
+  intros D₁ D₂ iD a b, 
+  fapply iso.mk, 
+  { exact @functor.map _ _ _ _ iD.hom a b },
+  { let F := @functor.map _ _ _ _ iD.inv ((small_precat_iso_to_obj_iso iD).hom a) 
+                                         ((small_precat_iso_to_obj_iso iD).hom b),
+    have H : Π a : D₁.obj, iD⁻¹ʰ.obj ((small_precat_iso_to_obj_iso iD).hom a) = a, from 
+    begin 
+      intro a, change ((small_precat_iso_to_obj_iso iD).hom ≫ 
+                                           (small_precat_iso_to_obj_iso iD).inv) a = a,
+      rwr (small_precat_iso_to_obj_iso iD).l_inv 
+    end,                                      
+    rwr H at F, rwr H at F, exact F },
+  { sorry },
+  { sorry}
+end
+
+@[hott]
 def small_precat_isotoid : Π {D₁ D₂ : small_precategory}, (D₁ ≅ D₂) -> (D₁ = D₂) :=
 begin  
-  intros D₁ D₂ iD, sorry
+  intros D₁ D₂ iD, fapply small_precat_eq, 
+  { exact category.isotoid (small_precat_iso_to_obj_iso iD) },
+  { sorry },
+  { sorry },
+  { sorry }
 end    
 
 @[hott, instance]
