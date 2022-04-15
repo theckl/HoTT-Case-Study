@@ -24,7 +24,8 @@ attribute [instance] small_precategory.precat
 
 @[hott]
 def small_precat_eq {D₁ D₂ : small_precategory} : Π (Pₒ : D₁.obj = D₂.obj) 
-  (Pₕ : Π a b : D₁.obj, (a ⟶ b) = (Pₒ ▸ a ⟶ Pₒ ▸ b)), 
+  (Pₕ : Π a b : D₁.obj, (a ⟶ b) = (Pₒ ▸[(λ (A : Set), A.carrier)] a ⟶ 
+                                                 Pₒ ▸[(λ (A : Set), A.carrier)] b)), 
   (Π a : D₁.obj, (Pₕ a a) ▸ 𝟙 a = 𝟙 (Pₒ ▸ a)) -> 
   (Π (a b c : D₁.obj) (f : a ⟶ b) (g : b ⟶ c), (Pₕ a c) ▸ (f ≫ g) = 
                             ((Pₕ a b) ▸ f) ≫ ((Pₕ b c) ▸ g)) -> D₁ = D₂ :=
@@ -99,22 +100,19 @@ assume D₁ D₂ iD, iso.mk iD.hom.obj  iD.inv.obj (ap functor.obj iD.r_inv)
 
 @[hott]
 def small_precat_iso_to_hom_iso : Π {D₁ D₂ : small_precategory} (iD : D₁ ≅ D₂), 
-  Π (a b : D₁.obj), (a ⟶ b) ≅ ((small_precat_iso_to_obj_iso iD).hom a ⟶ 
-                               (small_precat_iso_to_obj_iso iD).hom b) :=
+  Π (a b : D₁.obj), (a ⟶ b) ≅ (functor.obj iD.hom a ⟶ functor.obj iD.hom b) :=
 begin
   intros D₁ D₂ iD a b, 
   fapply iso.mk, 
-  { exact @functor.map _ _ _ _ iD.hom a b },
-  { let F := @functor.map _ _ _ _ iD.inv ((small_precat_iso_to_obj_iso iD).hom a) 
-                                         ((small_precat_iso_to_obj_iso iD).hom b),
-    have H : Π a : D₁.obj, iD⁻¹ʰ.obj ((small_precat_iso_to_obj_iso iD).hom a) = a, from 
+  { exact λ f : a ⟶ b, functor.map iD.hom f },
+  { let F := λ g : functor.obj iD.hom a ⟶ functor.obj iD.hom b, functor.map iD.inv g,
+    have H : Π a : D₁.obj, iD⁻¹ʰ.obj (functor.obj iD.hom a) = a, from 
     begin 
-      intro a, change ((small_precat_iso_to_obj_iso iD).hom ≫ 
-                                           (small_precat_iso_to_obj_iso iD).inv) a = a,
-      rwr (small_precat_iso_to_obj_iso iD).l_inv 
+      intro a, change functor.obj (iD.hom ≫ iD.inv) a = a,
+      rwr ap functor.obj iD.l_inv 
     end,                                      
     rwr H at F, rwr H at F, exact F },
-  { sorry },
+  { apply eq_of_homotopy, intro f, change iD.hom.map _ = f, sorry },
   { sorry}
 end
 
@@ -122,8 +120,10 @@ end
 def small_precat_isotoid : Π {D₁ D₂ : small_precategory}, (D₁ ≅ D₂) -> (D₁ = D₂) :=
 begin  
   intros D₁ D₂ iD, fapply small_precat_eq, 
-  { exact category.isotoid (small_precat_iso_to_obj_iso iD) },
-  { sorry },
+  { exact Set_isotoid (small_precat_iso_to_obj_iso iD) },
+  { intros a b, rwr Set_isotoid_eq_hom (small_precat_iso_to_obj_iso iD) a, 
+    rwr Set_isotoid_eq_hom (small_precat_iso_to_obj_iso iD) b,
+    exact Set_isotoid (small_precat_iso_to_hom_iso iD a b) },
   { sorry },
   { sorry }
 end    
