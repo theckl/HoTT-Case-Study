@@ -133,7 +133,19 @@ def small_precat_cat : category small_precategory :=
 begin
   apply category.mk, intros D₁ D₂, fapply adjointify,
   { exact small_precat_isotoid },
-  { sorry },
+  { intro b, change small_precat_isotoid b ▸ (id_is_iso D₁) = b, apply hom_eq_to_iso_eq,
+    rwr fn2_tr_tr_ev (@iso.hom _ _), 
+    change small_precat_isotoid b ▸[λ D : small_precategory, D₁.obj ⥤ D.obj] 
+                                                                    id_functor D₁.obj = _,  
+    fapply functor_eq, 
+    { change (λ D : small_precategory, @functor.obj D₁.obj D.obj _ _) D₂ 
+                (small_precat_isotoid b ▸[λ D : small_precategory, D₁.obj ⥤ D.obj] 
+                id_functor (D₁.obj)) = _,
+      rwr fn_tr_tr_ev (λ D : small_precategory, @functor.obj D₁.obj D.obj _ _), 
+      change small_precat_isotoid b ▸[λ D: small_precategory, D₁.obj -> D.obj] 
+                                                (id_functor ↥(D₁.obj)).obj = b.hom.obj,
+      sorry },
+    { sorry } },
   { sorry }
 end                 
 
