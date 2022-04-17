@@ -59,6 +59,20 @@ begin
       exact is_set.elim _ _ } }
 end  
 
+@[hott]
+def small_precat_eq_obj_eta {D₁ D₂ : small_precategory} (Pₒ : D₁.obj = D₂.obj) 
+  (Pₕ : Π a b : D₁.obj, (a ⟶ b) = (Pₒ ▸[(λ (A : Set), A.carrier)] a ⟶ 
+                                                 Pₒ ▸[(λ (A : Set), A.carrier)] b)) 
+  (Pᵢ : Π a : D₁.obj, (Pₕ a a) ▸ 𝟙 a = 𝟙 (Pₒ ▸ a)) 
+  (Pc : Π (a b c : D₁.obj) (f : a ⟶ b) (g : b ⟶ c), (Pₕ a c) ▸ (f ≫ g) = 
+                            ((Pₕ a b) ▸ f) ≫ ((Pₕ b c) ▸ g)) : 
+  ap small_precategory.obj (small_precat_eq Pₒ Pₕ Pᵢ Pc) = Pₒ :=
+begin
+  hinduction D₁ with obj₁ precat₁, hinduction D₂ with obj₂ precat₂, 
+  change obj₁ = obj₂ at Pₒ, hinduction Pₒ, 
+  change ap small_precategory.obj (apd011 small_precategory.mk (refl obj₁) _) = _, sorry
+end                              
+  
 @[hott, instance]
 def functors_of_small_precat_is_set (D₁ D₂ : small_precategory) : 
   is_set (D₁.obj ⥤ D₂.obj) :=
@@ -116,7 +130,7 @@ begin
   { sorry}
 end
 
-@[hott]
+@[hott, reducible]
 def small_precat_isotoid : Π {D₁ D₂ : small_precategory}, (D₁ ≅ D₂) -> (D₁ = D₂) :=
 begin  
   intros D₁ D₂ iD, fapply small_precat_eq, 
@@ -144,7 +158,8 @@ begin
       rwr fn_tr_tr_ev (λ D : small_precategory, @functor.obj D₁.obj D.obj _ _), 
       change small_precat_isotoid b ▸[λ D: small_precategory, D₁.obj -> D.obj] 
                                                 (id_functor ↥(D₁.obj)).obj = b.hom.obj,
-      sorry },
+      apply tr_eq_of_pathover, apply pathover_of_pathover_ap (λ D : Set, D₁.obj -> D), 
+      apply pathover_of_tr_eq, sorry },
     { sorry } },
   { sorry }
 end                 
