@@ -131,6 +131,13 @@ def apdd2_inj_eq {A : Type _} {B C : A -> Type _} {D : Type _}
 begin intro e, hinduction e, hsimp end        
 
 @[hott]
+def ap_apd011 {A C : Type _} {B : A -> Type _} (f : Π (a : A), B a -> C) {a₁ a₂ : A} 
+  {b₁ : B a₁} {b₂ : B a₂} (pA : a₁ = a₂) (pB : b₁ =[pA] b₂) (g : C -> A) 
+  (HP : Π a b, g (f a b) = a) : 
+  ap g (apd011 f pA pB) = (HP a₁ b₁) ⬝ pA ⬝ (HP a₂ b₂)⁻¹ :=
+begin hinduction pA, hinduction pB, rwr con_idp, rwr con.right_inv end 
+
+@[hott]
 def ap_apd0111 {A D : Type _} {B : A -> Type _} {C : Π (a : A), B a -> Type _} 
   (f : Π (a : A) (b : B a) (c : C a b), D) {a₁ a₂ : A} {b₁ : B a₁} {b₂ : B a₂}
   {c₁ : C a₁ b₁} {c₂ : C a₂ b₂} (pA : a₁ = a₂) 
