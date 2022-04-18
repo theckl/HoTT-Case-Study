@@ -70,7 +70,11 @@ def small_precat_eq_obj_eta {D₁ D₂ : small_precategory} (Pₒ : D₁.obj = D
 begin
   hinduction D₁ with obj₁ precat₁, hinduction D₂ with obj₂ precat₂, 
   change obj₁ = obj₂ at Pₒ, hinduction Pₒ, 
-  change ap small_precategory.obj (apd011 small_precategory.mk (refl obj₁) _) = _, sorry
+  change ap small_precategory.obj (apd011 small_precategory.mk (refl obj₁) _) = _, 
+  let H : Π obj precat, (small_precategory.mk obj precat).obj = obj, 
+    by intros obj precat; exact idp, 
+  have H' : Π obj precat, H obj precat = idp, from begin intros obj precat; exact idp end,   
+  rwr ap_apd011 small_precategory.mk _ _ small_precategory.obj H
 end                              
   
 @[hott, instance]
@@ -159,8 +163,11 @@ begin
       change small_precat_isotoid b ▸[λ D: small_precategory, D₁.obj -> D.obj] 
                                                 (id_functor ↥(D₁.obj)).obj = b.hom.obj,
       apply tr_eq_of_pathover, apply pathover_of_pathover_ap (λ D : Set, D₁.obj -> D), 
-      apply pathover_of_tr_eq, sorry },
-    { sorry } },
+      apply pathover_of_tr_eq, rwr small_precat_eq_obj_eta, 
+      change idtoiso⁻¹ᶠ (small_precat_iso_to_obj_iso b) ▸[λ D : Set, D₁.obj ⟶ D] 
+                                                      (id_functor ↥(D₁.obj)).obj = _, 
+      rwr iso_hom_tr_comp' },
+    { apply pathover_of_tr_eq, apply eq_of_homotopy2, intros d₁ d₁', sorry } },
   { sorry }
 end                 
 
