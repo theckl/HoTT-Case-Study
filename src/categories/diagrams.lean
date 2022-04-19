@@ -102,7 +102,7 @@ def small_precat_has_hom : has_hom (small_precategory) :=
 
 @[hott, instance]
 def small_precat_cat_str : category_struct small_precategory :=
-  category_struct.mk (λ D, id_functor D.obj) (λ D₁ D₂ D₃ F G, functor_comp F G)
+  category_struct.mk (λ D, id_functor D.obj) (λ D₁ D₂ D₃ F G, F ⋙ G)
 
 @[hott, instance]
 def small_precat_precat : precategory small_precategory :=
@@ -146,6 +146,24 @@ begin
   { sorry }
 end    
 
+@[hott]
+def small_precat_isotoid_idfunct_obj {D₁ D₂ : small_precategory} (i : D₁ ≅ D₂) : 
+  (small_precat_isotoid i ▸[λ D : small_precategory, D₁.obj ⥤ D.obj] 
+                                               id_functor ↥(D₁.obj)).obj = i.hom.obj :=
+begin
+  change (λ D : small_precategory, @functor.obj D₁.obj D.obj _ _) D₂ 
+                (small_precat_isotoid i ▸[λ D : small_precategory, D₁.obj ⥤ D.obj] 
+                id_functor (D₁.obj)) = _,
+  rwr fn_tr_tr_ev (λ D : small_precategory, @functor.obj D₁.obj D.obj _ _), 
+  change small_precat_isotoid i ▸[λ D: small_precategory, D₁.obj -> D.obj] 
+                                                (id_functor ↥(D₁.obj)).obj = i.hom.obj,
+  apply tr_eq_of_pathover, apply pathover_of_pathover_ap (λ D : Set, D₁.obj -> D), 
+  apply pathover_of_tr_eq, rwr small_precat_eq_obj_eta, 
+  change idtoiso⁻¹ᶠ (small_precat_iso_to_obj_iso i) ▸[λ D : Set, D₁.obj ⟶ D] 
+                                                      (id_functor ↥(D₁.obj)).obj = _, 
+  rwr iso_hom_tr_comp'
+end                                                 
+
 @[hott, instance]
 def small_precat_cat : category small_precategory :=
 begin
@@ -156,18 +174,8 @@ begin
     change small_precat_isotoid b ▸[λ D : small_precategory, D₁.obj ⥤ D.obj] 
                                                                     id_functor D₁.obj = _,  
     fapply functor_eq, 
-    { change (λ D : small_precategory, @functor.obj D₁.obj D.obj _ _) D₂ 
-                (small_precat_isotoid b ▸[λ D : small_precategory, D₁.obj ⥤ D.obj] 
-                id_functor (D₁.obj)) = _,
-      rwr fn_tr_tr_ev (λ D : small_precategory, @functor.obj D₁.obj D.obj _ _), 
-      change small_precat_isotoid b ▸[λ D: small_precategory, D₁.obj -> D.obj] 
-                                                (id_functor ↥(D₁.obj)).obj = b.hom.obj,
-      apply tr_eq_of_pathover, apply pathover_of_pathover_ap (λ D : Set, D₁.obj -> D), 
-      apply pathover_of_tr_eq, rwr small_precat_eq_obj_eta, 
-      change idtoiso⁻¹ᶠ (small_precat_iso_to_obj_iso b) ▸[λ D : Set, D₁.obj ⟶ D] 
-                                                      (id_functor ↥(D₁.obj)).obj = _, 
-      rwr iso_hom_tr_comp' },
-    { apply pathover_of_tr_eq, apply eq_of_homotopy2, intros d₁ d₁', sorry } },
+    { exact small_precat_isotoid_idfunct_obj b },
+    { apply pathover_of_tr_eq, apply eq_of_homotopy3, intros d₁ d₁' h, sorry } },
   { sorry }
 end                 
 
