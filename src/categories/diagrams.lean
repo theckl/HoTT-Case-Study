@@ -117,21 +117,30 @@ assume D₁ D₂ iD, iso.mk iD.hom.obj  iD.inv.obj (ap functor.obj iD.r_inv)
                                                (ap functor.obj iD.l_inv)
 
 @[hott]
+def small_precat_iso_to_rinv_iso : 
+  Π {D₁ D₂ : small_precategory} (iD : D₁ ≅ D₂), (iD.inv ⋙ iD.hom) ≅ id_functor D₂.obj :=
+assume D₁ D₂ iD, idtoiso iD.r_inv
+
+@[hott]
+def small_precat_iso_to_linv_iso : 
+  Π {D₁ D₂ : small_precategory} (iD : D₁ ≅ D₂), (iD.hom ⋙ iD.inv) ≅ id_functor D₁.obj :=
+assume D₁ D₂ iD, idtoiso iD.l_inv  
+
+@[hott]
 def small_precat_iso_to_hom_iso : Π {D₁ D₂ : small_precategory} (iD : D₁ ≅ D₂), 
   Π (a b : D₁.obj), (a ⟶ b) ≅ (functor.obj iD.hom a ⟶ functor.obj iD.hom b) :=
 begin
   intros D₁ D₂ iD a b, 
   fapply iso.mk, 
   { exact λ f : a ⟶ b, functor.map iD.hom f },
-  { let F := λ g : functor.obj iD.hom a ⟶ functor.obj iD.hom b, functor.map iD.inv g,
-    have H : Π a : D₁.obj, iD⁻¹ʰ.obj (functor.obj iD.hom a) = a, from 
-    begin 
-      intro a, change functor.obj (iD.hom ≫ iD.inv) a = a,
-      rwr ap functor.obj iD.l_inv 
-    end,                                      
-    rwr H at F, rwr H at F, exact F },
-  { apply eq_of_homotopy, intro f, change iD.hom.map _ = f, sorry },
-  { sorry}
+  { let h₁ := (small_precat_iso_to_linv_iso iD).inv.app a, hsimp at h₁,
+    let h₂ := (small_precat_iso_to_linv_iso iD).hom.app b, hsimp at h₂,
+    intro g, exact h₁ ≫ iD.inv.map g ≫ h₂ },
+  { apply eq_of_homotopy, intro f, 
+    change iD.hom.map ((idp ▸ _) ≫ (id_functor D₁.obj).map (iD⁻¹ʰ.map f) ≫ (idp ▸ _)) = f, 
+    rwr idp_tr, rwr idp_tr, --rwr (small_precat_iso_to_linv_iso iD).inv.naturality,
+    sorry },
+  { sorry }
 end
 
 @[hott, reducible]
