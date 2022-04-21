@@ -1,4 +1,4 @@
-import sets.algebra init2 sets.axioms sets.theories categories.basic categories.examples
+import sets.algebra init2 sets.axioms sets.theories categories.basic categories.adjoints
 
 universes v v' u u' w 
 hott_theory
@@ -110,11 +110,21 @@ precategory.mk (λ D₁ D₂ F, funct_id_comp F)
                (λ D₁ D₂ F, funct_comp_id F) 
                (λ D₁ D₂ D₃ D₄ F G H, funct_comp_assoc F G H)
 
+/- In the [HoTT-Book], three types of equivalences between (pre)categories are discussed :
+   equivalences of (pre)categories [Def.9.4.1], isomorphisms of (pre)categories [Def.9.4.8]
+   and equalities. They only are equivalent types if the precategories are categories 
+   [Lem.9.4.15/16]. 
+   
+   However, from an isomorphism in the category of small precategories we can deduce an 
+   isomorphism of (small) precategories in the sense of [Def.9.4.8], and this allows us to 
+   construct `isotoid` making `idtoiso` an equivalence in the precategory of small 
+   precategories. -/
 @[hott]
-def small_precat_iso_to_obj_iso : 
-  Π {D₁ D₂ : small_precategory}, (D₁ ≅ D₂) -> (D₁.obj ≅ D₂.obj) :=
-assume D₁ D₂ iD, iso.mk iD.hom.obj  iD.inv.obj (ap functor.obj iD.r_inv) 
-                                               (ap functor.obj iD.l_inv)
+def small_precat_iso_to_obj_eqv : 
+  Π {D₁ D₂ : small_precategory}, (D₁ ≅ D₂) -> (D₁.obj ≃ D₂.obj) :=
+assume D₁ D₂ iD, equiv.mk iD.hom.obj (adjointify iD.hom.obj iD.inv.obj 
+                                                (homotopy_of_eq (ap functor.obj iD.r_inv)) 
+                                                (homotopy_of_eq (ap functor.obj iD.l_inv)))
 
 @[hott]
 def small_precat_iso_to_rinv_iso : 
@@ -123,8 +133,8 @@ assume D₁ D₂ iD, idtoiso iD.r_inv
 
 @[hott]
 def small_precat_iso_to_linv_iso : 
-  Π {D₁ D₂ : small_precategory} (iD : D₁ ≅ D₂), (iD.hom ⋙ iD.inv) ≅ id_functor D₁.obj :=
-assume D₁ D₂ iD, idtoiso iD.l_inv  
+  Π {D₁ D₂ : small_precategory} (iD : D₁ ≅ D₂), id_functor D₁.obj ≅ (iD.hom ⋙ iD.inv) :=
+assume D₁ D₂ iD, inv_iso (idtoiso iD.l_inv)  
 
 @[hott]
 def small_precat_iso_to_hom_iso : Π {D₁ D₂ : small_precategory} (iD : D₁ ≅ D₂), 
