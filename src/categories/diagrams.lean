@@ -22,6 +22,48 @@ structure small_precategory :=
 
 attribute [instance] small_precategory.precat
 
+@[hott, instance]
+def functors_of_small_precat_is_set (D₁ D₂ : small_precategory) : 
+  is_set (D₁.obj ⥤ D₂.obj) :=
+begin 
+  fapply is_set.mk, intros F G p q, 
+  rwr <- functor_eq_eta D₁.obj D₂.obj p, rwr <- functor_eq_eta D₁.obj D₂.obj q, 
+  fapply apd011 (functor_eq D₁.obj D₂.obj), 
+  { apply is_set.elim _ _, exact is_set_map },
+  { apply pathover_of_tr_eq, 
+    apply @set_po_eq (D₁.obj -> D₂.obj) 
+                     (λ f, Set.mk (Π (x y : D₁.obj), (x ⟶ y) → (f x ⟶ f y)) _)
+                     _ _ (ap functor.obj q) _ _ _ _, 
+    change is_trunc 0 (Π (x : D₁.obj), Set.mk (Π (y : D₁.obj), (x ⟶ y) → (f x ⟶ f y)) _), 
+    apply is_set_dmap, 
+    change is_trunc 0 (Π (y : D₁.obj), Set.mk ((x ⟶ y) → (f x ⟶ f y)) _),
+    apply is_set_dmap, exact is_set_map }
+end    
+
+@[hott, instance]
+def small_precat_has_hom : has_hom (small_precategory) :=
+  has_hom.mk (λ D₁ D₂ : small_precategory, Set.mk (D₁.obj ⥤ D₂.obj) 
+                                            (functors_of_small_precat_is_set D₁ D₂))     
+
+@[hott, instance]
+def small_precat_cat_str : category_struct small_precategory :=
+  category_struct.mk (λ D, id_functor D.obj) (λ D₁ D₂ D₃ F G, F ⋙ G)
+
+@[hott, instance]
+def small_precat_precat : precategory small_precategory :=
+precategory.mk (λ D₁ D₂ F, funct_id_comp F) 
+               (λ D₁ D₂ F, funct_comp_id F) 
+               (λ D₁ D₂ D₃ D₄ F G H, funct_comp_assoc F G H)
+
+/- In the [HoTT-Book], three types of equivalences between (pre)categories are discussed :
+   equivalences of (pre)categories [Def.9.4.1], isomorphisms of (pre)categories [Def.9.4.8]
+   and equalities. They only are equivalent types if the precategories are categories 
+   [Lem.9.4.15/16]. 
+   
+   However, from an isomorphism in the category of small precategories we can deduce an 
+   isomorphism of (small) precategories in the sense of [Def.9.4.8], and this allows us to 
+   construct `isotoid` making `idtoiso` an equivalence in the precategory of small 
+   precategories. -/
 @[hott]
 def small_precat_eq {D₁ D₂ : small_precategory} : Π (Pₒ : D₁.obj = D₂.obj) 
   (Pₕ : Π a b : D₁.obj, (a ⟶ b) = (Pₒ ▸[(λ (A : Set), A.carrier)] a ⟶ 
@@ -77,48 +119,8 @@ begin
   rwr ap_apd011 small_precategory.mk _ _ small_precategory.obj H
 end                              
   
-@[hott, instance]
-def functors_of_small_precat_is_set (D₁ D₂ : small_precategory) : 
-  is_set (D₁.obj ⥤ D₂.obj) :=
-begin 
-  fapply is_set.mk, intros F G p q, 
-  rwr <- functor_eq_eta D₁.obj D₂.obj p, rwr <- functor_eq_eta D₁.obj D₂.obj q, 
-  fapply apd011 (functor_eq D₁.obj D₂.obj), 
-  { apply is_set.elim _ _, exact is_set_map },
-  { apply pathover_of_tr_eq, 
-    apply @set_po_eq (D₁.obj -> D₂.obj) 
-                     (λ f, Set.mk (Π (x y : D₁.obj), (x ⟶ y) → (f x ⟶ f y)) _)
-                     _ _ (ap functor.obj q) _ _ _ _, 
-    change is_trunc 0 (Π (x : D₁.obj), Set.mk (Π (y : D₁.obj), (x ⟶ y) → (f x ⟶ f y)) _), 
-    apply is_set_dmap, 
-    change is_trunc 0 (Π (y : D₁.obj), Set.mk ((x ⟶ y) → (f x ⟶ f y)) _),
-    apply is_set_dmap, exact is_set_map }
-end    
-
-@[hott, instance]
-def small_precat_has_hom : has_hom (small_precategory) :=
-  has_hom.mk (λ D₁ D₂ : small_precategory, Set.mk (D₁.obj ⥤ D₂.obj) 
-                                            (functors_of_small_precat_is_set D₁ D₂))     
-
-@[hott, instance]
-def small_precat_cat_str : category_struct small_precategory :=
-  category_struct.mk (λ D, id_functor D.obj) (λ D₁ D₂ D₃ F G, F ⋙ G)
-
-@[hott, instance]
-def small_precat_precat : precategory small_precategory :=
-precategory.mk (λ D₁ D₂ F, funct_id_comp F) 
-               (λ D₁ D₂ F, funct_comp_id F) 
-               (λ D₁ D₂ D₃ D₄ F G H, funct_comp_assoc F G H)
-
-/- In the [HoTT-Book], three types of equivalences between (pre)categories are discussed :
-   equivalences of (pre)categories [Def.9.4.1], isomorphisms of (pre)categories [Def.9.4.8]
-   and equalities. They only are equivalent types if the precategories are categories 
-   [Lem.9.4.15/16]. 
-   
-   However, from an isomorphism in the category of small precategories we can deduce an 
-   isomorphism of (small) precategories in the sense of [Def.9.4.8], and this allows us to 
-   construct `isotoid` making `idtoiso` an equivalence in the precategory of small 
-   precategories. -/
+/- Next, we adjointify the two natural transformations given by an isomorphism of two 
+   precategories. This gives an equivalence of precategories. -/
 @[hott]
 def small_precat_iso_to_obj_eqv : 
   Π {D₁ D₂ : small_precategory}, (D₁ ≅ D₂) -> (D₁.obj ≃ D₂.obj) :=
@@ -127,14 +129,36 @@ assume D₁ D₂ iD, equiv.mk iD.hom.obj (adjointify iD.hom.obj iD.inv.obj
                                                 (homotopy_of_eq (ap functor.obj iD.l_inv)))
 
 @[hott]
-def small_precat_iso_to_rinv_iso : 
-  Π {D₁ D₂ : small_precategory} (iD : D₁ ≅ D₂), (iD.inv ⋙ iD.hom) ≅ id_functor D₂.obj :=
-assume D₁ D₂ iD, idtoiso iD.r_inv
+def small_precat_iso_to_unit_iso : 
+  Π {D₁ D₂ : small_precategory} (iD : D₁ ≅ D₂), (iD.hom ⋙ iD.inv) ≅ id_functor D₁.obj :=
+assume D₁ D₂ iD, idtoiso iD.l_inv
 
 @[hott]
-def small_precat_iso_to_linv_iso : 
-  Π {D₁ D₂ : small_precategory} (iD : D₁ ≅ D₂), id_functor D₁.obj ≅ (iD.hom ⋙ iD.inv) :=
-assume D₁ D₂ iD, inv_iso (idtoiso iD.l_inv)  
+def small_precat_iso_to_counit_iso_hom : 
+  Π {D₁ D₂ : small_precategory} (iD : D₁ ≅ D₂), id_functor D₂.obj ⟹ (iD.inv ⋙ iD.hom) :=
+begin
+  intros D₁ D₂ iD, 
+  let η := small_precat_iso_to_unit_iso iD, let ε := inv_iso (idtoiso iD.r_inv),
+  fapply nat_trans.mk, 
+  { intro d₂, exact ε.hom.app d₂ ≫ iD.hom.map (η⁻¹ʰ.app (iD⁻¹ʰ.obj d₂)) ≫ 
+                    ε⁻¹ʰ.app (iD.hom.obj (iD⁻¹ʰ.obj (d₂))) },
+  { intros d₂ d₂' g, hsimp,
+    calc _ = (_ ≫ _) ≫ (_ ≫ _) : by rwr <- precategory.assoc
+         ... = _ : sorry }
+end  
+
+@[hott]
+def small_precat_iso_to_counit_iso : 
+  Π {D₁ D₂ : small_precategory} (iD : D₁ ≅ D₂), id_functor D₂.obj ≅ (iD.inv ⋙ iD.hom) :=
+begin
+  intros D₁ D₂ iD, 
+  let η := small_precat_iso_to_unit_iso iD, let ε := inv_iso (idtoiso iD.r_inv),
+  fapply iso.mk, 
+  { exact small_precat_iso_to_counit_iso_hom iD },
+  { sorry },
+  { sorry },
+  { sorry }
+end  
 
 @[hott]
 def small_precat_iso_to_hom_iso : Π {D₁ D₂ : small_precategory} (iD : D₁ ≅ D₂), 
