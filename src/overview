@@ -23,7 +23,7 @@ categories
                8843
 
 
-Edited files: 
+Files to edit : 
 ---------------
 categories.models : is_interpretable_in-class
 categories.pullbacks : complements, instance
@@ -31,8 +31,10 @@ categories.pullbacks : Heyting property
 categories.pullbacks : implication of subobjects
 categories.pullbacks : symmetry of intersection of subobjects
 categories.pullbacks : symmetry of pullbacks
-categories.diagrams : isomorphism of wedge diagram
+categories.colimits : isomorphisms of diagrams induce isomorphisms of colimits
 categories.limits : isomorphisms of diagrams induce isomorphisms of limits
+categories.diagrams : isomorphism of infinite (co)wedge diagrams
+categories.diagrams : infinte wedge, infinite cowedge, cowedge
 categories.diagrams : category of small precategories
 
 
