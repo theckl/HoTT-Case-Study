@@ -138,14 +138,81 @@ def small_precat_iso_to_counit_iso_hom :
   Π {D₁ D₂ : small_precategory} (iD : D₁ ≅ D₂), id_functor D₂.obj ⟹ (iD.inv ⋙ iD.hom) :=
 begin
   intros D₁ D₂ iD, 
-  let η := small_precat_iso_to_unit_iso iD, let ε := inv_iso (idtoiso iD.r_inv),
+  let η := small_precat_iso_to_unit_iso iD, 
+  let ε : id_functor ↥(D₂.obj) ≅ iD⁻¹ʰ ≫ iD.hom := inv_iso (idtoiso iD.r_inv),
   fapply nat_trans.mk, 
   { intro d₂, exact ε.hom.app d₂ ≫ iD.hom.map (η⁻¹ʰ.app (iD⁻¹ʰ.obj d₂)) ≫ 
                     ε⁻¹ʰ.app (iD.hom.obj (iD⁻¹ʰ.obj (d₂))) },
-  { intros d₂ d₂' g, hsimp,
-    calc _ = (_ ≫ _) ≫ (_ ≫ _) : by rwr <- precategory.assoc
-         ... = _ : sorry }
-end  
+  { intros d₂ d₂' g,
+    calc (id_functor ↥(D₂.obj)).map g ≫ ε.hom.app d₂' ≫ 
+          iD.hom.map (η⁻¹ʰ.app (iD⁻¹ʰ.obj d₂')) ≫ ε⁻¹ʰ.app (iD.hom.obj (iD⁻¹ʰ.obj d₂')) = 
+               ((id_functor ↥(D₂.obj)).map g ≫ ε.hom.app d₂') ≫ 
+                 iD.hom.map (η⁻¹ʰ.app (iD⁻¹ʰ.obj d₂')) ≫ 
+                 ε⁻¹ʰ.app (iD.hom.obj (iD⁻¹ʰ.obj d₂')) : by rwr <- precategory.assoc
+         ... = (ε.hom.app d₂ ≫ iD.hom.map (iD⁻¹ʰ.map g)) ≫ 
+                iD.hom.map (η⁻¹ʰ.app (iD⁻¹ʰ.obj d₂')) ≫ 
+                ε⁻¹ʰ.app (iD.hom.obj (iD⁻¹ʰ.obj d₂')) : by rwr ε.hom.naturality
+         ... = ε.hom.app d₂ ≫ iD.hom.map (iD⁻¹ʰ.map g) ≫ 
+               iD.hom.map (η⁻¹ʰ.app (iD⁻¹ʰ.obj d₂')) ≫ 
+               ε⁻¹ʰ.app (iD.hom.obj (iD⁻¹ʰ.obj d₂')) : by rwr precategory.assoc;       
+                                                          rwr precategory.assoc
+         ... = ε.hom.app d₂ ≫ iD.hom.map ((id_functor ↥(D₁.obj)).map (iD⁻¹ʰ.map g) ≫ 
+               η⁻¹ʰ.app (iD⁻¹ʰ.obj d₂')) ≫ _ : by hsimp
+         ... = _ ≫ iD.hom.map (η⁻¹ʰ.app (iD⁻¹ʰ.obj d₂) ≫ 
+                   iD⁻¹ʰ.map (iD.hom.map (iD⁻¹ʰ.map g))) ≫ _ : by rwr η⁻¹ʰ.naturality
+         ... = _ ≫ (iD.hom.map (η⁻¹ʰ.app (iD⁻¹ʰ.obj d₂)) ≫ 
+                    iD.hom.map (iD⁻¹ʰ.map (iD.hom.map (iD⁻¹ʰ.map g)))) ≫ _ : by hsimp
+         ... = _ ≫ _ ≫ iD.hom.map (iD⁻¹ʰ.map (iD.hom.map (iD⁻¹ʰ.map g))) ≫ 
+                        ε⁻¹ʰ.app (iD.hom.obj (iD⁻¹ʰ.obj d₂')) : by rwr precategory.assoc
+         ... = _ ≫ _ ≫ (iD⁻¹ʰ ≫ iD.hom).map (iD.hom.map (iD⁻¹ʰ.map g)) ≫ 
+                        ε⁻¹ʰ.app (iD.hom.obj (iD⁻¹ʰ.obj d₂')) : idp                
+         ... = _ ≫ _ ≫ ε⁻¹ʰ.app (iD.hom.obj (iD⁻¹ʰ.obj d₂)) ≫ iD.hom.map (iD⁻¹ʰ.map g) :                        
+               by rwr ε⁻¹ʰ.naturality
+         ... = (ε.hom.app d₂ ≫ iD.hom.map (η⁻¹ʰ.app (iD⁻¹ʰ.obj d₂)) ≫ 
+                ε⁻¹ʰ.app (iD.hom.obj (iD⁻¹ʰ.obj d₂))) ≫ (iD⁻¹ʰ ⋙ iD.hom).map g : 
+                by rwr <- precategory.assoc; rwr <- precategory.assoc;
+                   rwr precategory.assoc (ε.hom.app d₂)               }
+end 
+
+@[hott]
+def small_precat_iso_to_counit_iso_inv : 
+  Π {D₁ D₂ : small_precategory} (iD : D₁ ≅ D₂), (iD.inv ⋙ iD.hom) ⟹ id_functor D₂.obj :=
+begin
+  intros D₁ D₂ iD, 
+  let η := small_precat_iso_to_unit_iso iD, 
+  let ε : id_functor ↥(D₂.obj) ≅ iD⁻¹ʰ ≫ iD.hom := inv_iso (idtoiso iD.r_inv),
+  fapply nat_trans.mk, 
+  { intro d₂, exact ε.hom.app (iD.hom.obj (iD⁻¹ʰ.obj d₂)) ≫ 
+                    iD.hom.map (η.hom.app (iD⁻¹ʰ.obj d₂)) ≫ ε⁻¹ʰ.app d₂ },
+  { intros d₂ d₂' g,
+    calc (iD⁻¹ʰ ⋙ iD.hom).map g ≫ ε.hom.app (iD.hom.obj (iD⁻¹ʰ.obj (d₂'))) ≫ 
+                    iD.hom.map (η.hom.app (iD⁻¹ʰ.obj d₂')) ≫ ε⁻¹ʰ.app d₂' = 
+               ((iD⁻¹ʰ ⋙ iD.hom).map g ≫ ε.hom.app (iD.hom.obj (iD⁻¹ʰ.obj (d₂')))) ≫ 
+                 iD.hom.map (η.hom.app (iD⁻¹ʰ.obj d₂')) ≫ 
+                 ε⁻¹ʰ.app d₂' : by rwr <- precategory.assoc
+         ... = (ε.hom.app d₂ ≫ (id_functor ↥(D₂.obj)).map g) ≫ 
+                iD.hom.map (η.hom.app (iD⁻¹ʰ.obj d₂')) ≫ ε⁻¹ʰ.app d₂' : by rwr ε.hom.naturality
+         ... = ε.hom.app d₂ ≫ iD.hom.map (iD⁻¹ʰ.map g) ≫ 
+               iD.hom.map (η⁻¹ʰ.app (iD⁻¹ʰ.obj d₂')) ≫ 
+               ε⁻¹ʰ.app (iD.hom.obj (iD⁻¹ʰ.obj d₂')) : by rwr precategory.assoc;       
+                                                          rwr precategory.assoc
+         ... = ε.hom.app d₂ ≫ iD.hom.map ((id_functor ↥(D₁.obj)).map (iD⁻¹ʰ.map g) ≫ 
+               η⁻¹ʰ.app (iD⁻¹ʰ.obj d₂')) ≫ _ : by hsimp
+         ... = _ ≫ iD.hom.map (η⁻¹ʰ.app (iD⁻¹ʰ.obj d₂) ≫ 
+                   iD⁻¹ʰ.map (iD.hom.map (iD⁻¹ʰ.map g))) ≫ _ : by rwr η⁻¹ʰ.naturality
+         ... = _ ≫ (iD.hom.map (η⁻¹ʰ.app (iD⁻¹ʰ.obj d₂)) ≫ 
+                    iD.hom.map (iD⁻¹ʰ.map (iD.hom.map (iD⁻¹ʰ.map g)))) ≫ _ : by hsimp
+         ... = _ ≫ _ ≫ iD.hom.map (iD⁻¹ʰ.map (iD.hom.map (iD⁻¹ʰ.map g))) ≫ 
+                        ε⁻¹ʰ.app (iD.hom.obj (iD⁻¹ʰ.obj d₂')) : by rwr precategory.assoc
+         ... = _ ≫ _ ≫ (iD⁻¹ʰ ≫ iD.hom).map (iD.hom.map (iD⁻¹ʰ.map g)) ≫ 
+                        ε⁻¹ʰ.app (iD.hom.obj (iD⁻¹ʰ.obj d₂')) : idp                
+         ... = _ ≫ _ ≫ ε⁻¹ʰ.app (iD.hom.obj (iD⁻¹ʰ.obj d₂)) ≫ iD.hom.map (iD⁻¹ʰ.map g) :                        
+               by rwr ε⁻¹ʰ.naturality
+         ... = (ε.hom.app d₂ ≫ iD.hom.map (η⁻¹ʰ.app (iD⁻¹ʰ.obj d₂)) ≫ 
+                ε⁻¹ʰ.app (iD.hom.obj (iD⁻¹ʰ.obj d₂))) ≫ (iD⁻¹ʰ ⋙ iD.hom).map g : 
+                by rwr <- precategory.assoc; rwr <- precategory.assoc;
+                   rwr precategory.assoc (ε.hom.app d₂)               }
+end 
 
 @[hott]
 def small_precat_iso_to_counit_iso : 
