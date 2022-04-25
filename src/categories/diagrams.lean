@@ -222,8 +222,18 @@ begin
   fapply iso.mk, 
   { exact small_precat_iso_to_counit_iso_hom iD },
   { exact small_precat_iso_to_counit_iso_inv iD },
-  { sorry },
-  { sorry }
+  { apply nat_trans_eq, apply eq_of_homotopy, intro d₂,
+    change (ε.hom.app (iD.hom.obj (iD⁻¹ʰ.obj d₂)) ≫ iD.hom.map (η.hom.app (iD⁻¹ʰ.obj d₂)) 
+           ≫ ε⁻¹ʰ.app d₂) ≫ (ε.hom.app d₂ ≫ iD.hom.map (η⁻¹ʰ.app (iD⁻¹ʰ.obj d₂)) ≫ 
+          ε⁻¹ʰ.app (iD.hom.obj (iD⁻¹ʰ.obj (d₂)))) = 𝟙 (iD.hom.obj (iD⁻¹ʰ.obj d₂)), 
+    rwr precategory.assoc, rwr <- precategory.assoc _ (ε.hom.app d₂) _, 
+    rwr precategory.assoc _ _ (ε.hom.app d₂), sorry },
+  { apply nat_trans_eq, apply eq_of_homotopy, intro d₂,
+    change (ε.hom.app d₂ ≫ iD.hom.map (η⁻¹ʰ.app (iD⁻¹ʰ.obj d₂)) ≫ 
+          ε⁻¹ʰ.app (iD.hom.obj (iD⁻¹ʰ.obj (d₂)))) ≫ (ε.hom.app (iD.hom.obj (iD⁻¹ʰ.obj d₂)) ≫ iD.hom.map (η.hom.app (iD⁻¹ʰ.obj d₂)) 
+           ≫ ε⁻¹ʰ.app d₂) = 𝟙 d₂, 
+    rwr precategory.assoc, rwr <- precategory.assoc _ (ε.hom.app _) _, 
+    rwr precategory.assoc _ _ (ε.hom.app _), sorry }
 end  
 
 @[hott]
