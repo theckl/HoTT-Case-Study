@@ -17,8 +17,8 @@ namespace categories.adjoints
    But this makes the formulas unwieldy and therefore we just record what the zigzag 
    relations look like on the level of homomorphisms. -/
 @[hott]
-structure adjoint_functors {C : Type u} {D : Type u'} [category.{v} C] 
-  [category.{v'} D] (L : C ⥤ D) (R : D ⥤ C) :=
+structure adjoint_functors {C : Type u} {D : Type u'} [precategory.{v} C] 
+  [precategory.{v'} D] (L : C ⥤ D) (R : D ⥤ C) :=
 (unit : id_functor C ⟶ L ⋙ R)
 (counit : R ⋙ L ⟶ id_functor D)
 (zigzag_L : Π c : C, L.map (nat_trans.app unit c) ≫ 
@@ -30,36 +30,36 @@ structure adjoint_functors {C : Type u} {D : Type u'} [category.{v} C]
             --(l_neutral_funct_iso R).hom ≫ 𝟙 R ≫ (r_neutral_funct_iso R).inv)                                      
 
 @[hott]
-structure is_left_adjoint {C : Type u} {D : Type u'} [category.{v} C] 
-  [category.{v'} D] (L : C ⥤ D) := 
+structure is_left_adjoint {C : Type u} {D : Type u'} [precategory.{v} C] 
+  [precategory.{v'} D] (L : C ⥤ D) := 
 (R : D ⥤ C)  
 (adj : adjoint_functors L R) 
 
 @[hott]
-structure is_right_adjoint {C : Type u} {D : Type u'} [category.{v} C] 
-  [category.{v'} D] (R : C ⥤ D) := 
+structure is_right_adjoint {C : Type u} {D : Type u'} [precategory.{v} C] 
+  [precategory.{v'} D] (R : C ⥤ D) := 
 (L : D ⥤ C)  
 (adj : adjoint_functors L R)
 
 @[hott]
-def left_adjoint_iso {C : Type u} {D : Type u'} [category.{v} C] 
-  [category.{v'} D] (L L' : C ⥤ D) (R : D ⥤ C) (adj : adjoint_functors L R)
+def left_adjoint_iso {C : Type u} {D : Type u'} [precategory.{v} C] 
+  [precategory.{v'} D] (L L' : C ⥤ D) (R : D ⥤ C) (adj : adjoint_functors L R)
   (adj' : adjoint_functors L' R) : L ⟶ L' :=
 (l_neutral_funct_iso L).inv ≫ tr_whisk_r adj'.unit L ≫ 
   (assoc_funct_iso L' R L).hom ≫ tr_whisk_l L' adj.counit ≫ 
   (r_neutral_funct_iso L').hom
 
 @[hott]
-def right_adjoint_iso {C : Type u} {D : Type u'} [category.{v} C] 
-  [category.{v'} D] (L : C ⥤ D) (R R' : D ⥤ C) (adj : adjoint_functors L R)
+def right_adjoint_iso {C : Type u} {D : Type u'} [precategory.{v} C] 
+  [precategory.{v'} D] (L : C ⥤ D) (R R' : D ⥤ C) (adj : adjoint_functors L R)
   (adj' : adjoint_functors L R') : R ⟶ R' :=
 (r_neutral_funct_iso R).inv ≫ tr_whisk_l R adj'.unit ≫ 
   (assoc_funct_iso R L R').inv ≫ tr_whisk_r adj.counit R' ≫ 
   (l_neutral_funct_iso R').hom  
 
 @[hott]
-def left_adjoint_iso_inv {C : Type u} {D : Type u'} [category.{v} C] 
-  [category.{v'} D] (L L' : C ⥤ D) (R : D ⥤ C) (adj : adjoint_functors L R)
+def left_adjoint_iso_inv {C : Type u} {D : Type u'} [precategory.{v} C] 
+  [precategory.{v'} D] (L L' : C ⥤ D) (R : D ⥤ C) (adj : adjoint_functors L R)
   (adj' : adjoint_functors L' R) : 
   left_adjoint_iso L L' R adj adj' ≫ left_adjoint_iso L' L R adj' adj = 𝟙 L :=   
 begin
@@ -90,8 +90,8 @@ begin
 end  
 
 @[hott]
-def right_adjoint_iso_inv {C : Type u} {D : Type u'} [category.{v} C] 
-  [category.{v'} D] (L : C ⥤ D) (R R' : D ⥤ C) (adj : adjoint_functors L R)
+def right_adjoint_iso_inv {C : Type u} {D : Type u'} [precategory.{v} C] 
+  [precategory.{v'} D] (L : C ⥤ D) (R R' : D ⥤ C) (adj : adjoint_functors L R)
   (adj' : adjoint_functors L R') : 
   right_adjoint_iso L R R' adj adj' ≫ right_adjoint_iso L R' R adj' adj = 𝟙 R :=   
 begin
@@ -123,35 +123,35 @@ begin
 end  
 
 @[hott]
-def unit_tr_L {C : Type u} {D : Type u'} [category.{v} C] 
-  [category.{v'} D] {L L' : C ⥤ D} {R : D ⥤ C} (p : L = L') 
+def unit_tr_L {C : Type u} {D : Type u'} [precategory.{v} C] 
+  [precategory.{v'} D] {L L' : C ⥤ D} {R : D ⥤ C} (p : L = L') 
   (η : id_functor C ⟶ L ⋙ R) : 
   p ▸[λ S, id_functor C ⟶ S ⋙ R] η = η ≫ (tr_whisk_r (idtoiso p).hom R) :=
 begin hinduction p, hsimp, rwr tr_whisk_r_id, rwr precategory.comp_id η end 
 
 @[hott]
-def unit_tr_R {C : Type u} {D : Type u'} [category.{v} C] 
-  [category.{v'} D] {L : C ⥤ D} {R R' : D ⥤ C} (p : R = R') 
+def unit_tr_R {C : Type u} {D : Type u'} [precategory.{v} C] 
+  [precategory.{v'} D] {L : C ⥤ D} {R R' : D ⥤ C} (p : R = R') 
   (η : id_functor C ⟶ L ⋙ R) : 
   p ▸[λ S, id_functor C ⟶ L ⋙ S] η = η ≫ (tr_whisk_l L (idtoiso p).hom) :=
 begin hinduction p, hsimp, rwr tr_whisk_l_id, rwr precategory.comp_id η end  
 
 @[hott]
-def counit_tr_L {C : Type u} {D : Type u'} [category.{v} C] 
-  [category.{v'} D] {L L' : C ⥤ D} {R : D ⥤ C} (p : L = L') 
+def counit_tr_L {C : Type u} {D : Type u'} [precategory.{v} C] 
+  [precategory.{v'} D] {L L' : C ⥤ D} {R : D ⥤ C} (p : L = L') 
   (ε : R ⋙ L ⟶ id_functor D) : 
   p ▸[λ S, R ⋙ S ⟶ id_functor D] ε = (tr_whisk_l R (idtoiso p).inv) ≫ ε :=
 begin hinduction p, hsimp, rwr tr_whisk_l_id, rwr precategory.id_comp ε end
 
 @[hott]
-def counit_tr_R {C : Type u} {D : Type u'} [category.{v} C] 
-  [category.{v'} D] {L : C ⥤ D} {R R' : D ⥤ C} (p : R = R') 
+def counit_tr_R {C : Type u} {D : Type u'} [precategory.{v} C] 
+  [precategory.{v'} D] {L : C ⥤ D} {R R' : D ⥤ C} (p : R = R') 
   (ε : R ⋙ L ⟶ id_functor D) : 
   p ▸[λ S, S ⋙ L ⟶ id_functor D] ε = (tr_whisk_r (idtoiso p).inv L) ≫ ε :=
 begin hinduction p, hsimp, rwr tr_whisk_r_id, rwr precategory.id_comp ε end 
 
 @[hott]
-def left_adj_is_unique {C : Type u} {D : Type u'} [category.{v} C] 
+def left_adj_is_unique {C : Type u} {D : Type u'} [precategory.{v} C] 
   [category.{v'} D] (R : D ⥤ C) : is_prop (is_right_adjoint R) :=
 begin 
   apply is_prop.mk, intros R_adj R_adj', 
@@ -192,7 +192,7 @@ end
 
 @[hott]
 def right_adj_is_unique {C : Type u} {D : Type u'} [category.{v} C] 
-  [category.{v'} D] (L : C ⥤ D) : is_prop (is_left_adjoint L) :=
+  [precategory.{v'} D] (L : C ⥤ D) : is_prop (is_left_adjoint L) :=
 begin 
   apply is_prop.mk, intros R_adj R_adj', 
   hinduction R_adj with R adj, hinduction R_adj' with R' adj', 
@@ -232,59 +232,59 @@ begin
 end    
 
 @[hott]
-class has_right_adjoint {C : Type u} {D : Type u'} [category.{v} C] 
-  [category.{v'} D] (L : C ⥤ D) :=
+class has_right_adjoint {C : Type u} {D : Type u'} [precategory.{v} C] 
+  [precategory.{v'} D] (L : C ⥤ D) :=
 (l_adj : is_left_adjoint L)
 
 @[hott]
-def right_adjoint_of {C : Type u} {D : Type u'} [category.{v} C] 
-  [category.{v'} D] (L : C ⥤ D) [H : has_right_adjoint L] : D ⥤ C :=
+def right_adjoint_of {C : Type u} {D : Type u'} [precategory.{v} C] 
+  [precategory.{v'} D] (L : C ⥤ D) [H : has_right_adjoint L] : D ⥤ C :=
 H.l_adj.R  
 
 @[hott]
-class has_left_adjoint {C : Type u} {D : Type u'} [category.{v} C] 
-  [category.{v'} D] (R : D ⥤ C) :=
+class has_left_adjoint {C : Type u} {D : Type u'} [precategory.{v} C] 
+  [precategory.{v'} D] (R : D ⥤ C) :=
 (r_adj : is_right_adjoint R)
 
 @[hott]
-def left_adjoint_of {C : Type u} {D : Type u'} [category.{v} C] 
-  [category.{v'} D] (R : D ⥤ C) [H : has_left_adjoint R] : C ⥤ D :=
+def left_adjoint_of {C : Type u} {D : Type u'} [precategory.{v} C] 
+  [precategory.{v'} D] (R : D ⥤ C) [H : has_left_adjoint R] : C ⥤ D :=
 H.r_adj.L 
 
 @[hott]
-class has_right_adjoints (C : Type u) (D : Type u') [category.{v} C] 
-  [category.{v'} D] :=
+class has_right_adjoints (C : Type u) (D : Type u') [precategory.{v} C] 
+  [precategory.{v'} D] :=
 (has_r_adj : Π L : C ⥤ D, has_right_adjoint L)
 
 @[hott, instance]
-def has_right_adj_of_has_right_adjs {C : Type u} {D : Type u'} [category.{v} C] 
-  [category.{v'} D] [H : has_right_adjoints C D] (L : C ⥤ D) : has_right_adjoint L :=
+def has_right_adj_of_has_right_adjs {C : Type u} {D : Type u'} [precategory.{v} C] 
+  [precategory.{v'} D] [H : has_right_adjoints C D] (L : C ⥤ D) : has_right_adjoint L :=
 has_right_adjoints.has_r_adj L  
 
 @[hott]
-class has_left_adjoints (C : Type u) (D : Type u') [category.{v} C] 
-  [category.{v'} D] :=
+class has_left_adjoints (C : Type u) (D : Type u') [precategory.{v} C] 
+  [precategory.{v'} D] :=
 (has_l_adj : Π R : D ⥤ C, has_left_adjoint R)
 
 @[hott, instance]
-def has_left_adj_of_has_left_adjs {C : Type u} {D : Type u'} [category.{v} C] 
-  [category.{v'} D] [H : has_left_adjoints C D] (R : D ⥤ C) : has_left_adjoint R :=
+def has_left_adj_of_has_left_adjs {C : Type u} {D : Type u'} [precategory.{v} C] 
+  [precategory.{v'} D] [H : has_left_adjoints C D] (R : D ⥤ C) : has_left_adjoint R :=
 has_left_adjoints.has_l_adj R 
 
 @[hott]
-class is_adjoint_functors {C : Type u} {D : Type u'} [category.{v} C] 
-  [category.{v'} D] (L : C ⥤ D) (R : D ⥤ C) := 
+class is_adjoint_functors {C : Type u} {D : Type u'} [precategory.{v} C] 
+  [precategory.{v'} D] (L : C ⥤ D) (R : D ⥤ C) := 
 (is_adj : adjoint_functors L R) 
 
 @[hott, instance]
-def is_adj_of_has_right_adj {C : Type u} {D : Type u'} [category.{v} C] 
-  [category.{v'} D] (L : C ⥤ D) [H : has_right_adjoint L] : 
+def is_adj_of_has_right_adj {C : Type u} {D : Type u'} [precategory.{v} C] 
+  [precategory.{v'} D] (L : C ⥤ D) [H : has_right_adjoint L] : 
   is_adjoint_functors L H.l_adj.R :=
 is_adjoint_functors.mk H.l_adj.adj
 
 @[hott, instance]
-def is_adj_of_has_left_adj {C : Type u} {D : Type u'} [category.{v} C] 
-  [category.{v'} D] (R : D ⥤ C) [H : has_left_adjoint R] : 
+def is_adj_of_has_left_adj {C : Type u} {D : Type u'} [precategory.{v} C] 
+  [precategory.{v'} D] (R : D ⥤ C) [H : has_left_adjoint R] : 
   is_adjoint_functors H.r_adj.L R :=
 is_adjoint_functors.mk H.r_adj.adj
 
@@ -293,20 +293,20 @@ is_adjoint_functors.mk H.r_adj.adj
    We first construct these bijections and their naturality from adjoint functors, 
    then we show how these bijections imply adjointness when they are natural. -/
 @[hott]
-def right_adj_hom {C : Type u} {D : Type u'} [category.{v} C] 
-  [category.{v'} D] {L : C ⥤ D} {R : D ⥤ C} [H : is_adjoint_functors L R] 
+def right_adj_hom {C : Type u} {D : Type u'} [precategory.{v} C] 
+  [precategory.{v'} D] {L : C ⥤ D} {R : D ⥤ C} [H : is_adjoint_functors L R] 
   {c : C} {d : D} (f : c ⟶ R.obj d) : L.obj c ⟶ d :=
 L.map f ≫ H.is_adj.counit.app d    
 
 @[hott]
-def left_adj_hom {C : Type u} {D : Type u'} [category.{v} C] 
-  [category.{v'} D] {L : C ⥤ D} {R : D ⥤ C} [H : is_adjoint_functors L R] 
+def left_adj_hom {C : Type u} {D : Type u'} [precategory.{v} C] 
+  [precategory.{v'} D] {L : C ⥤ D} {R : D ⥤ C} [H : is_adjoint_functors L R] 
   {c : C} {d : D} (g : L.obj c ⟶ d) : c ⟶ R.obj d :=
 H.is_adj.unit.app c ≫ R.map g  
 
 @[hott]
-structure adjoint_functors_on_hom {C : Type u} {D : Type u'} [category.{v} C] 
-  [category.{v'} D] (L : C ⥤ D) (R : D ⥤ C) :=
+structure adjoint_functors_on_hom {C : Type u} {D : Type u'} [precategory.{v} C] 
+  [precategory.{v'} D] (L : C ⥤ D) (R : D ⥤ C) :=
 (hom_bij : Π (c : C) (d : D), bijection (L.obj c ⟶ d) (c ⟶ R.obj d)) 
 (nat_L : Π {c : C} {d : D} {c' : C} (h : c' ⟶ c) (f : L.obj c ⟶ d), 
            hom_bij c' d (L.map h ≫ f) = h ≫ hom_bij c d f)
@@ -314,8 +314,8 @@ structure adjoint_functors_on_hom {C : Type u} {D : Type u'} [category.{v} C]
            hom_bij c d' (f ≫ g) = hom_bij c d f ≫ R.map g)                                               
 
 @[hott]
-def adjoint_to_adjoint_hom {C : Type u} {D : Type u'} [category.{v} C] 
-  [category.{v'} D] {L : C ⥤ D} {R : D ⥤ C} : 
+def adjoint_to_adjoint_hom {C : Type u} {D : Type u'} [precategory.{v} C] 
+  [precategory.{v'} D] {L : C ⥤ D} {R : D ⥤ C} : 
   adjoint_functors L R -> adjoint_functors_on_hom L R :=
 begin 
   intro adj, fapply adjoint_functors_on_hom.mk, 
@@ -343,8 +343,8 @@ begin
 end
 
 @[hott]
-def adjoint_hom_to_adjoint {C : Type u} {D : Type u'} [category.{v} C] 
-  [category.{v'} D] {L : C ⥤ D} {R : D ⥤ C} : adjoint_functors_on_hom L R ->
+def adjoint_hom_to_adjoint {C : Type u} {D : Type u'} [precategory.{v} C] 
+  [precategory.{v'} D] {L : C ⥤ D} {R : D ⥤ C} : adjoint_functors_on_hom L R ->
   adjoint_functors L R :=
 begin 
   intro adj, 
@@ -390,8 +390,8 @@ begin
     rwr <- hom_map, rwr inv_bij_r_inv }  --zigzag_R 
 end       
 
-/- `adjoint_functors_on_hom` is also a proposition, so the two ways of defining adjoint
-   functors are logically equivalent. -/
+/- `adjoint_functors_on_hom` is also a proposition if `C` and `D` are categories, so the 
+   two ways of defining adjoint functors are logically equivalent. -/
 
 end categories.adjoints
 
