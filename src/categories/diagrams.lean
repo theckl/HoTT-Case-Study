@@ -4,7 +4,8 @@ universes v v' u u' w
 hott_theory
 
 namespace hott
-open hott.eq hott.set hott.subset hott.is_trunc hott.is_equiv hott.equiv hott.categories 
+open hott.eq hott.set hott.subset hott.is_trunc hott.is_equiv hott.equiv hott.categories
+     hott.categories.adjoints 
 
 namespace categories
 
@@ -227,14 +228,44 @@ begin
            ≫ ε⁻¹ʰ.app d₂) ≫ (ε.hom.app d₂ ≫ iD.hom.map (η⁻¹ʰ.app (iD⁻¹ʰ.obj d₂)) ≫ 
           ε⁻¹ʰ.app (iD.hom.obj (iD⁻¹ʰ.obj (d₂)))) = 𝟙 (iD.hom.obj (iD⁻¹ʰ.obj d₂)), 
     rwr precategory.assoc, rwr <- precategory.assoc _ (ε.hom.app d₂) _, 
-    rwr precategory.assoc _ _ (ε.hom.app d₂), sorry },
+    rwr precategory.assoc _ _ (ε.hom.app d₂), 
+    change _ ≫ (_ ≫ (ε⁻¹ʰ ≫ ε.hom).app d₂) ≫ _ ≫ _ = _, rwr ap nat_trans.app ε.r_inv,
+    change _ ≫ (_ ≫ 𝟙 ((iD⁻¹ʰ ≫ iD.hom).obj d₂)) ≫ _ ≫ _ = _, rwr precategory.comp_id, 
+    rwr <- precategory.assoc (iD.hom.map _), rwr <- functor.map_comp, 
+    change _ ≫ iD.hom.map ((η.hom ≫ η⁻¹ʰ).app (iD⁻¹ʰ.obj d₂)) ≫ _ = _, 
+    rwr ap nat_trans.app η.l_inv, change _ ≫ iD.hom.map (𝟙 _) ≫ _ = _, rwr functor.map_id, 
+    rwr precategory.id_comp, change (ε.hom ≫ ε⁻¹ʰ).app _ = _, rwr ap nat_trans.app ε.l_inv },
   { apply nat_trans_eq, apply eq_of_homotopy, intro d₂,
     change (ε.hom.app d₂ ≫ iD.hom.map (η⁻¹ʰ.app (iD⁻¹ʰ.obj d₂)) ≫ 
           ε⁻¹ʰ.app (iD.hom.obj (iD⁻¹ʰ.obj (d₂)))) ≫ (ε.hom.app (iD.hom.obj (iD⁻¹ʰ.obj d₂)) ≫ iD.hom.map (η.hom.app (iD⁻¹ʰ.obj d₂)) 
            ≫ ε⁻¹ʰ.app d₂) = 𝟙 d₂, 
     rwr precategory.assoc, rwr <- precategory.assoc _ (ε.hom.app _) _, 
-    rwr precategory.assoc _ _ (ε.hom.app _), sorry }
+    rwr precategory.assoc _ _ (ε.hom.app _), 
+    change _ ≫ (_ ≫ (ε⁻¹ʰ ≫ ε.hom).app _) ≫ _ ≫ _ = _, rwr ap nat_trans.app ε.r_inv,
+    change _ ≫ (_ ≫ 𝟙 ((iD⁻¹ʰ ≫ iD.hom).obj _)) ≫ _ ≫ _ = _, rwr precategory.comp_id,
+    rwr <- precategory.assoc (iD.hom.map _), rwr <- functor.map_comp, 
+    change _ ≫ iD.hom.map ((η⁻¹ʰ ≫ η.hom).app _) ≫ _ = _, 
+    rwr ap nat_trans.app η.r_inv, change _ ≫ iD.hom.map (𝟙 _) ≫ _ = _, rwr functor.map_id, 
+    rwr precategory.id_comp, change (ε.hom ≫ ε⁻¹ʰ).app _ = _, rwr ap nat_trans.app ε.l_inv }
 end  
+
+@[hott]
+def small_precat_iso_adj {D₁ D₂ : small_precategory} (iD : D₁ ≅ D₂) : 
+  adjoint_functors iD.hom iD.inv :=
+begin
+  let η := small_precat_iso_to_unit_iso iD, let ε := inv_iso (idtoiso iD.r_inv),
+  let ε' := small_precat_iso_to_counit_iso iD,
+  fapply adjoint_functors.mk, 
+  { exact η.inv },
+  { exact ε'.inv },
+  { intro d₁, 
+    change _ ≫ ε.hom.app (iD.hom.obj (iD⁻¹ʰ.obj (iD.hom.obj d₁))) ≫ 
+      iD.hom.map (η.hom.app (iD⁻¹ʰ.obj (iD.hom.obj d₁))) ≫ ε⁻¹ʰ.app (iD.hom.obj d₁) = _,
+    have H : η.hom.app (iD⁻¹ʰ.obj (iD.hom.obj d₁)) = iD⁻¹ʰ.map (iD.hom.map (η.hom.app d₁)), from
+      sorry,  
+    rwr H, sorry },
+  { intro d₂, sorry }
+end
 
 @[hott]
 def small_precat_iso_to_hom_iso : Π {D₁ D₂ : small_precategory} (iD : D₁ ≅ D₂), 
