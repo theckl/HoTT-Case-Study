@@ -9,22 +9,22 @@ open hott.eq hott.set hott.subset hott.is_trunc hott.is_equiv hott.equiv hott.ca
 
 namespace categories
 
-/- Diagrams are small precategories, that is precategories whose type of objects is a
-   set. In [HoTT-Book,Ch.9.6] they are called `strict categories`. We don't insist on 
-   the precategories being categories, becuase we allow diagrams with loops, that is 
-   cycles of homomorphisms that always yield the identity homomorphism when composed. 
+/- Precategories whose type of objects is a set are called `strict categories` following 
+   the [HoTT-Book,Ch.9.6], but they do not need to be categories. Thus we allow diagrams 
+   with loops, that is cycles of homomorphisms that always yield the identity 
+   homomorphism when composed. 
   
-   Diagrams together with functors between them form a category. In particular, 
-   equality of functors between diagrams is unique. -/
+   Strict categories together with functors between them form a category. In particular, 
+   equality of functors between strict categories is unique. -/
 @[hott]
-structure small_precategory :=
+structure strict_category :=
   (obj : Set.{u})
   (precat : precategory.{v} obj)
 
-attribute [instance] small_precategory.precat
+attribute [instance] strict_category.precat
 
 @[hott, instance]
-def functors_of_small_precat_is_set (D₁ D₂ : small_precategory) : 
+def functors_of_strict_cat_is_set (D₁ D₂ : strict_category) : 
   is_set (D₁.obj ⥤ D₂.obj) :=
 begin 
   fapply is_set.mk, intros F G p q, 
@@ -42,16 +42,16 @@ begin
 end    
 
 @[hott, instance]
-def small_precat_has_hom : has_hom (small_precategory) :=
-  has_hom.mk (λ D₁ D₂ : small_precategory, Set.mk (D₁.obj ⥤ D₂.obj) 
-                                            (functors_of_small_precat_is_set D₁ D₂))     
+def strict_cat_has_hom : has_hom (strict_category) :=
+  has_hom.mk (λ D₁ D₂ : strict_category, Set.mk (D₁.obj ⥤ D₂.obj) 
+                                            (functors_of_strict_cat_is_set D₁ D₂))     
 
 @[hott, instance]
-def small_precat_cat_str : category_struct small_precategory :=
+def strict_cat_cat_str : category_struct strict_category :=
   category_struct.mk (λ D, id_functor D.obj) (λ D₁ D₂ D₃ F G, F ⋙ G)
 
 @[hott, instance]
-def small_precat_precat : precategory small_precategory :=
+def strict_cat_precat : precategory strict_category :=
 precategory.mk (λ D₁ D₂ F, funct_id_comp F) 
                (λ D₁ D₂ F, funct_comp_id F) 
                (λ D₁ D₂ D₃ D₄ F G H, funct_comp_assoc F G H)
@@ -61,12 +61,12 @@ precategory.mk (λ D₁ D₂ F, funct_id_comp F)
    and equalities. They only are equivalent types if the precategories are categories 
    [Lem.9.4.15/16]. 
    
-   However, from an isomorphism in the category of small precategories we can deduce an 
-   isomorphism of (small) precategories in the sense of [Def.9.4.8], and this allows us to 
-   construct `isotoid` making `idtoiso` an equivalence in the precategory of small 
-   precategories. -/
+   However, from an isomorphism in the category of strict categories we can deduce an 
+   isomorphism of precategories in the sense of [Def.9.4.8], and this allows us to 
+   construct `isotoid` making `idtoiso` an equivalence in the precategory of strict 
+   categories. -/
 @[hott]
-def small_precat_eq {D₁ D₂ : small_precategory} : Π (Pₒ : D₁.obj = D₂.obj) 
+def strict_cat_eq {D₁ D₂ : strict_category} : Π (Pₒ : D₁.obj = D₂.obj) 
   (Pₕ : Π a b : D₁.obj, (a ⟶ b) = (Pₒ ▸[(λ (A : Set), A.carrier)] a ⟶ 
                                                  Pₒ ▸[(λ (A : Set), A.carrier)] b)), 
   (Π a : D₁.obj, (Pₕ a a) ▸ 𝟙 a = 𝟙 (Pₒ ▸ a)) -> 
@@ -75,7 +75,7 @@ def small_precat_eq {D₁ D₂ : small_precategory} : Π (Pₒ : D₁.obj = D₂
 begin
   hinduction D₁ with obj₁ precat₁, hinduction D₂ with obj₂ precat₂, hsimp, 
   intros Pₒ Pₕ id_eq comp_eq, 
-  hinduction Pₒ, fapply apd011 small_precategory.mk, 
+  hinduction Pₒ, fapply apd011 strict_category.mk, 
   { exact idp },
   { apply pathover_idp_of_eq, 
     hinduction precat₁ with cat_struct₁ id_comp₁ comp_id₁ comp_assoc₁, 
@@ -103,43 +103,43 @@ begin
 end  
 
 @[hott]
-def small_precat_eq_obj_eta {D₁ D₂ : small_precategory} (Pₒ : D₁.obj = D₂.obj) 
+def strict_cat_eq_obj_eta {D₁ D₂ : strict_category} (Pₒ : D₁.obj = D₂.obj) 
   (Pₕ : Π a b : D₁.obj, (a ⟶ b) = (Pₒ ▸[(λ (A : Set), A.carrier)] a ⟶ 
                                                  Pₒ ▸[(λ (A : Set), A.carrier)] b)) 
   (Pᵢ : Π a : D₁.obj, (Pₕ a a) ▸ 𝟙 a = 𝟙 (Pₒ ▸ a)) 
   (Pc : Π (a b c : D₁.obj) (f : a ⟶ b) (g : b ⟶ c), (Pₕ a c) ▸ (f ≫ g) = 
                             ((Pₕ a b) ▸ f) ≫ ((Pₕ b c) ▸ g)) : 
-  ap small_precategory.obj (small_precat_eq Pₒ Pₕ Pᵢ Pc) = Pₒ :=
+  ap strict_category.obj (strict_cat_eq Pₒ Pₕ Pᵢ Pc) = Pₒ :=
 begin
   hinduction D₁ with obj₁ precat₁, hinduction D₂ with obj₂ precat₂, 
   change obj₁ = obj₂ at Pₒ, hinduction Pₒ, 
-  change ap small_precategory.obj (apd011 small_precategory.mk (refl obj₁) _) = _, 
-  let H : Π obj precat, (small_precategory.mk obj precat).obj = obj, 
+  change ap strict_category.obj (apd011 strict_category.mk (refl obj₁) _) = _, 
+  let H : Π obj precat, (strict_category.mk obj precat).obj = obj, 
     by intros obj precat; exact idp, 
   have H' : Π obj precat, H obj precat = idp, from begin intros obj precat; exact idp end,   
-  rwr ap_apd011 small_precategory.mk _ _ small_precategory.obj H
+  rwr ap_apd011 strict_category.mk _ _ strict_category.obj H
 end                              
   
 /- Next, we adjointify the two natural transformations given by an isomorphism of two 
-   precategories. This gives an equivalence of precategories. -/
+   precategories, as in [HoTT-Book,Lem.9.4.2]. This gives an equivalence of precategories. -/
 @[hott]
-def small_precat_iso_to_obj_eqv : 
-  Π {D₁ D₂ : small_precategory}, (D₁ ≅ D₂) -> (D₁.obj ≃ D₂.obj) :=
+def strict_cat_iso_to_obj_eqv : 
+  Π {D₁ D₂ : strict_category}, (D₁ ≅ D₂) -> (D₁.obj ≃ D₂.obj) :=
 assume D₁ D₂ iD, equiv.mk iD.hom.obj (adjointify iD.hom.obj iD.inv.obj 
                                                 (homotopy_of_eq (ap functor.obj iD.r_inv)) 
                                                 (homotopy_of_eq (ap functor.obj iD.l_inv)))
 
 @[hott]
-def small_precat_iso_to_unit_iso : 
-  Π {D₁ D₂ : small_precategory} (iD : D₁ ≅ D₂), (iD.hom ⋙ iD.inv) ≅ id_functor D₁.obj :=
+def strict_cat_iso_to_unit_iso : 
+  Π {D₁ D₂ : strict_category} (iD : D₁ ≅ D₂), (iD.hom ⋙ iD.inv) ≅ id_functor D₁.obj :=
 assume D₁ D₂ iD, idtoiso iD.l_inv
 
 @[hott]
-def small_precat_iso_to_counit_iso_hom : 
-  Π {D₁ D₂ : small_precategory} (iD : D₁ ≅ D₂), id_functor D₂.obj ⟹ (iD.inv ⋙ iD.hom) :=
+def strict_cat_iso_to_counit_iso_hom : 
+  Π {D₁ D₂ : strict_category} (iD : D₁ ≅ D₂), id_functor D₂.obj ⟹ (iD.inv ⋙ iD.hom) :=
 begin
   intros D₁ D₂ iD, 
-  let η := small_precat_iso_to_unit_iso iD, 
+  let η := strict_cat_iso_to_unit_iso iD, 
   let ε : id_functor ↥(D₂.obj) ≅ iD⁻¹ʰ ≫ iD.hom := inv_iso (idtoiso iD.r_inv),
   fapply nat_trans.mk, 
   { intro d₂, exact ε.hom.app d₂ ≫ iD.hom.map (η⁻¹ʰ.app (iD⁻¹ʰ.obj d₂)) ≫ 
@@ -176,11 +176,11 @@ begin
 end 
 
 @[hott]
-def small_precat_iso_to_counit_iso_inv : 
-  Π {D₁ D₂ : small_precategory} (iD : D₁ ≅ D₂), (iD.inv ⋙ iD.hom) ⟹ id_functor D₂.obj :=
+def strict_cat_iso_to_counit_iso_inv : 
+  Π {D₁ D₂ : strict_category} (iD : D₁ ≅ D₂), (iD.inv ⋙ iD.hom) ⟹ id_functor D₂.obj :=
 begin
   intros D₁ D₂ iD, 
-  let η := small_precat_iso_to_unit_iso iD, 
+  let η := strict_cat_iso_to_unit_iso iD, 
   let ε : id_functor ↥(D₂.obj) ≅ iD⁻¹ʰ ≫ iD.hom := inv_iso (idtoiso iD.r_inv),
   fapply nat_trans.mk, 
   { intro d₂, exact ε.hom.app (iD.hom.obj (iD⁻¹ʰ.obj d₂)) ≫ 
@@ -215,14 +215,14 @@ begin
 end 
 
 @[hott]
-def small_precat_iso_to_counit_iso : 
-  Π {D₁ D₂ : small_precategory} (iD : D₁ ≅ D₂), id_functor D₂.obj ≅ (iD.inv ⋙ iD.hom) :=
+def strict_cat_iso_to_counit_iso : 
+  Π {D₁ D₂ : strict_category} (iD : D₁ ≅ D₂), id_functor D₂.obj ≅ (iD.inv ⋙ iD.hom) :=
 begin
   intros D₁ D₂ iD, 
-  let η := small_precat_iso_to_unit_iso iD, let ε := inv_iso (idtoiso iD.r_inv),
+  let η := strict_cat_iso_to_unit_iso iD, let ε := inv_iso (idtoiso iD.r_inv),
   fapply iso.mk, 
-  { exact small_precat_iso_to_counit_iso_hom iD },
-  { exact small_precat_iso_to_counit_iso_inv iD },
+  { exact strict_cat_iso_to_counit_iso_hom iD },
+  { exact strict_cat_iso_to_counit_iso_inv iD },
   { apply nat_trans_eq, apply eq_of_homotopy, intro d₂,
     change (ε.hom.app (iD.hom.obj (iD⁻¹ʰ.obj d₂)) ≫ iD.hom.map (η.hom.app (iD⁻¹ʰ.obj d₂)) 
            ≫ ε⁻¹ʰ.app d₂) ≫ (ε.hom.app d₂ ≫ iD.hom.map (η⁻¹ʰ.app (iD⁻¹ʰ.obj d₂)) ≫ 
@@ -250,11 +250,11 @@ begin
 end  
 
 @[hott]
-def small_precat_iso_adj {D₁ D₂ : small_precategory} (iD : D₁ ≅ D₂) : 
+def small_precat_iso_adj {D₁ D₂ : strict_category} (iD : D₁ ≅ D₂) : 
   adjoint_functors iD.hom iD.inv :=
 begin
-  let η := small_precat_iso_to_unit_iso iD, let ε := inv_iso (idtoiso iD.r_inv),
-  let ε' := small_precat_iso_to_counit_iso iD,
+  let η := strict_cat_iso_to_unit_iso iD, let ε := inv_iso (idtoiso iD.r_inv),
+  let ε' := strict_cat_iso_to_counit_iso iD,
   fapply adjoint_functors.mk, 
   { exact η.inv },
   { exact ε'.inv },
@@ -262,9 +262,34 @@ begin
     change _ ≫ ε.hom.app (iD.hom.obj (iD⁻¹ʰ.obj (iD.hom.obj d₁))) ≫ 
       iD.hom.map (η.hom.app (iD⁻¹ʰ.obj (iD.hom.obj d₁))) ≫ ε⁻¹ʰ.app (iD.hom.obj d₁) = _,
     have H : η.hom.app (iD⁻¹ʰ.obj (iD.hom.obj d₁)) = iD⁻¹ʰ.map (iD.hom.map (η.hom.app d₁)), from
-      sorry,  
+    begin 
+      rwr <- precategory.comp_id (η.hom.app (iD⁻¹ʰ.obj (iD.hom.obj d₁))), 
+      rwr <- precategory.comp_id (iD⁻¹ʰ.map (iD.hom.map (η.hom.app d₁))),  
+      change η.hom.app (iD⁻¹ʰ.obj (iD.hom.obj d₁)) ≫ (𝟙 (iD.hom ⋙ iD⁻¹ʰ)).app d₁ =
+             iD⁻¹ʰ.map (iD.hom.map (η.hom.app d₁)) ≫ (𝟙 (iD.hom ⋙ iD⁻¹ʰ)).app d₁, 
+      rwr <- apd10 (ap nat_trans.app η.l_inv) d₁, 
+      change η.hom.app (iD⁻¹ʰ.obj (iD.hom.obj d₁)) ≫ η.hom.app d₁ ≫ η⁻¹ʰ.app d₁ =
+             iD⁻¹ʰ.map (iD.hom.map (η.hom.app d₁)) ≫ η.hom.app d₁ ≫ η⁻¹ʰ.app d₁,
+      rwr <- precategory.assoc, rwr <- precategory.assoc, 
+      rwr η.hom.naturality (η.hom.app d₁)
+    end,  
     rwr H, sorry },
-  { intro d₂, sorry }
+  { intro d₂, 
+    change _ ≫ iD⁻¹ʰ.map (ε.hom.app (iD.hom.obj (iD⁻¹ʰ.obj d₂)) ≫ 
+                    iD.hom.map (η.hom.app (iD⁻¹ʰ.obj d₂)) ≫ ε⁻¹ʰ.app d₂) = _,
+    have H' : ε.hom.app (iD.hom.obj (iD⁻¹ʰ.obj d₂)) = iD.hom.map (iD⁻¹ʰ.map (ε.hom.app d₂)), from
+    begin 
+      rwr <- precategory.comp_id (ε.hom.app (iD.hom.obj (iD⁻¹ʰ.obj d₂))), 
+      rwr <- precategory.comp_id (iD.hom.map (iD⁻¹ʰ.map (ε.hom.app d₂))),  
+      change ε.hom.app (iD.hom.obj (iD⁻¹ʰ.obj d₂)) ≫ (𝟙 (iD⁻¹ʰ ⋙ iD.hom)).app d₂ =
+             iD.hom.map (iD⁻¹ʰ.map (ε.hom.app d₂)) ≫ (𝟙 (iD⁻¹ʰ ⋙ iD.hom)).app d₂, 
+      rwr <- apd10 (ap nat_trans.app ε.l_inv) d₂, 
+      change ε.hom.app (iD.hom.obj (iD⁻¹ʰ.obj d₂)) ≫ ε.hom.app d₂ ≫ ε⁻¹ʰ.app d₂ =
+             iD.hom.map (iD⁻¹ʰ.map (ε.hom.app d₂)) ≫ ε.hom.app d₂ ≫ ε⁻¹ʰ.app d₂,
+      rwr <- precategory.assoc, rwr <- precategory.assoc, 
+      rwr ε.hom.naturality (ε.hom.app d₂)
+    end,
+    rwr H', sorry }
 end
 
 @[hott]
