@@ -250,20 +250,15 @@ begin
 end  
 
 @[hott]
-def small_precat_iso_adj {D₁ D₂ : strict_category} (iD : D₁ ≅ D₂) : 
+def strict_cat_iso_adj {D₁ D₂ : strict_category} (iD : D₁ ≅ D₂) : 
   adjoint_functors iD.hom iD.inv :=
 begin
   let η := strict_cat_iso_to_unit_iso iD, let ε := inv_iso (idtoiso iD.r_inv),
   let ε' := strict_cat_iso_to_counit_iso iD,
-  fapply adjoint_functors.mk, 
-  { exact η.inv },
-  { exact ε'.inv },
-  { intro d₁, 
-    change _ ≫ ε.hom.app (iD.hom.obj (iD⁻¹ʰ.obj (iD.hom.obj d₁))) ≫ 
-      iD.hom.map (η.hom.app (iD⁻¹ʰ.obj (iD.hom.obj d₁))) ≫ ε⁻¹ʰ.app (iD.hom.obj d₁) = _,
-    have H : η.hom.app (iD⁻¹ʰ.obj (iD.hom.obj d₁)) = iD⁻¹ʰ.map (iD.hom.map (η.hom.app d₁)), from
+  have H : Π d₁ : D₁.obj, η.hom.app (iD⁻¹ʰ.obj (iD.hom.obj d₁)) = 
+                                             iD⁻¹ʰ.map (iD.hom.map (η.hom.app d₁)), from
     begin 
-      rwr <- precategory.comp_id (η.hom.app (iD⁻¹ʰ.obj (iD.hom.obj d₁))), 
+      intro d₁, rwr <- precategory.comp_id (η.hom.app (iD⁻¹ʰ.obj (iD.hom.obj d₁))), 
       rwr <- precategory.comp_id (iD⁻¹ʰ.map (iD.hom.map (η.hom.app d₁))),  
       change η.hom.app (iD⁻¹ʰ.obj (iD.hom.obj d₁)) ≫ (𝟙 (iD.hom ⋙ iD⁻¹ʰ)).app d₁ =
              iD⁻¹ʰ.map (iD.hom.map (η.hom.app d₁)) ≫ (𝟙 (iD.hom ⋙ iD⁻¹ʰ)).app d₁, 
@@ -272,24 +267,44 @@ begin
              iD⁻¹ʰ.map (iD.hom.map (η.hom.app d₁)) ≫ η.hom.app d₁ ≫ η⁻¹ʰ.app d₁,
       rwr <- precategory.assoc, rwr <- precategory.assoc, 
       rwr η.hom.naturality (η.hom.app d₁)
-    end,  
-    rwr H, sorry },
-  { intro d₂, 
-    change _ ≫ iD⁻¹ʰ.map (ε.hom.app (iD.hom.obj (iD⁻¹ʰ.obj d₂)) ≫ 
-                    iD.hom.map (η.hom.app (iD⁻¹ʰ.obj d₂)) ≫ ε⁻¹ʰ.app d₂) = _,
-    have H' : ε.hom.app (iD.hom.obj (iD⁻¹ʰ.obj d₂)) = iD.hom.map (iD⁻¹ʰ.map (ε.hom.app d₂)), from
+    end,
+  have H' : Π d₂ : D₂.obj, ε.hom.app (iD.hom.obj (iD⁻¹ʰ.obj d₂)) = 
+                                             iD.hom.map (iD⁻¹ʰ.map (ε.hom.app d₂)), from
     begin 
-      rwr <- precategory.comp_id (ε.hom.app (iD.hom.obj (iD⁻¹ʰ.obj d₂))), 
-      rwr <- precategory.comp_id (iD.hom.map (iD⁻¹ʰ.map (ε.hom.app d₂))),  
-      change ε.hom.app (iD.hom.obj (iD⁻¹ʰ.obj d₂)) ≫ (𝟙 (iD⁻¹ʰ ⋙ iD.hom)).app d₂ =
-             iD.hom.map (iD⁻¹ʰ.map (ε.hom.app d₂)) ≫ (𝟙 (iD⁻¹ʰ ⋙ iD.hom)).app d₂, 
-      rwr <- apd10 (ap nat_trans.app ε.l_inv) d₂, 
-      change ε.hom.app (iD.hom.obj (iD⁻¹ʰ.obj d₂)) ≫ ε.hom.app d₂ ≫ ε⁻¹ʰ.app d₂ =
-             iD.hom.map (iD⁻¹ʰ.map (ε.hom.app d₂)) ≫ ε.hom.app d₂ ≫ ε⁻¹ʰ.app d₂,
+      intro d₂, rwr <- precategory.comp_id (ε.hom.app (iD.hom.obj (iD⁻¹ʰ.obj d₂))), 
+      rwr <- precategory.comp_id (iD.hom.map (iD⁻¹ʰ.map (ε.hom.app d₂))),
+        
+      change _ ≫ (nat_trans_id (iD⁻¹ʰ ⋙ iD.hom)).app (iD.hom.obj (iD⁻¹ʰ.obj d₂)) =
+             _ ≫ (nat_trans_id (iD⁻¹ʰ ⋙ iD.hom)).app (iD.hom.obj (iD⁻¹ʰ.obj d₂)), 
+      have p : 𝟙 (iD⁻¹ʰ ≫ iD.hom) = nat_trans_id (iD⁻¹ʰ ⋙ iD.hom), from rfl, rwr <- p,        
+      rwr <- apd10 (ap nat_trans.app ε.r_inv) (iD.hom.obj (iD⁻¹ʰ.obj d₂)), 
+      change ε.hom.app (iD.hom.obj (iD⁻¹ʰ.obj d₂)) ≫ ε⁻¹ʰ.app (iD.hom.obj (iD⁻¹ʰ.obj d₂)) ≫ 
+             ε.hom.app (iD.hom.obj (iD⁻¹ʰ.obj d₂)) =
+             iD.hom.map (iD⁻¹ʰ.map (ε.hom.app d₂)) ≫ ε⁻¹ʰ.app (iD.hom.obj (iD⁻¹ʰ.obj d₂)) ≫
+             ε.hom.app (iD.hom.obj (iD⁻¹ʰ.obj d₂)),
       rwr <- precategory.assoc, rwr <- precategory.assoc, 
       rwr ε.hom.naturality (ε.hom.app d₂)
-    end,
-    rwr H', sorry }
+    end,  
+  fapply adjoint_functors.mk, 
+  { exact η.inv },
+  { exact ε'.inv },
+  { intro d₁, 
+    change _ ≫ ε.hom.app (iD.hom.obj (iD⁻¹ʰ.obj (iD.hom.obj d₁))) ≫ 
+      iD.hom.map (η.hom.app (iD⁻¹ʰ.obj (iD.hom.obj d₁))) ≫ ε⁻¹ʰ.app (iD.hom.obj d₁) = _,
+    rwr H d₁, change _ ≫ _ ≫ (iD⁻¹ʰ ≫ iD.hom).map (iD.hom.map (η.hom.app d₁)) ≫
+                     ε⁻¹ʰ.app (iD.hom.obj ((id_functor ↥(D₁.obj)).obj d₁)) = _,
+    rwr ε⁻¹ʰ.naturality (iD.hom.map (η.hom.app d₁)), 
+    change _ ≫ _ ≫ _ ≫ iD.hom.map (η.hom.app d₁) = _,
+    rwr <- precategory.assoc _ _ (iD.hom.map (η.hom.app d₁)), 
+    change _ ≫ ((ε.hom ≫ ε⁻¹ʰ).app _) ≫ _ = _, rwr ap nat_trans.app ε.l_inv, 
+    change _ ≫ 𝟙 (iD.hom.obj ((iD.hom ⋙ iD⁻¹ʰ).obj d₁)) ≫ _ = _, 
+    rwr precategory.id_comp, rwr <- functor.map_comp, 
+    change iD.hom.map ((η⁻¹ʰ ≫ η.hom).app d₁) = _, rwr ap nat_trans.app η.r_inv, hsimp },
+  { intro d₂, 
+    change _ ≫ iD⁻¹ʰ.map (ε.hom.app (iD.hom.obj (iD⁻¹ʰ.obj d₂)) ≫ 
+                           iD.hom.map (η.hom.app (iD⁻¹ʰ.obj d₂)) ≫ ε⁻¹ʰ.app d₂) = _, 
+    rwr functor.map_comp, rwr functor.map_comp,       
+    rwr H' d₂, sorry }
 end
 
 @[hott]
