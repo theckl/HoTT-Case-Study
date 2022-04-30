@@ -126,8 +126,13 @@ end
 def strict_cat_iso_to_obj_eqv : 
   Π {D₁ D₂ : strict_category}, (D₁ ≅ D₂) -> (D₁.obj ≃ D₂.obj) :=
 assume D₁ D₂ iD, equiv.mk iD.hom.obj (adjointify iD.hom.obj iD.inv.obj 
-                                                (homotopy_of_eq (ap functor.obj iD.r_inv)) 
-                                                (homotopy_of_eq (ap functor.obj iD.l_inv)))
+                                     (homotopy_of_eq (ap functor.obj iD.r_inv)) 
+                                     (homotopy_of_eq (ap functor.obj iD.l_inv)))
+
+@[hott]
+def strict_cat_iso_to_obj_eq : 
+  Π {D₁ D₂ : strict_category}, (D₁ ≅ D₂) -> (D₁.obj = D₂.obj) :=
+assume D₁ D₂ iD, car_eq_to_set_eq (ua (strict_cat_iso_to_obj_eqv iD))                                                 
 
 @[hott]
 def strict_cat_iso_to_unit_iso : 
@@ -320,22 +325,49 @@ def strict_cat_iso_to_fully_faithful : Π {D₁ D₂ : strict_category} (iD : D�
   Π (a b : D₁.obj), bijection (a ⟶ b) (functor.obj iD.hom a ⟶ functor.obj iD.hom b) :=
 begin
   intros D₁ D₂ iD a b, 
+  let η := strict_cat_iso_to_unit_iso iD, let ε := strict_cat_iso_to_counit_iso iD,
   fapply has_inverse_to_bijection, 
   { exact λ f : a ⟶ b, iD.hom.map f },
-  { let h₁ := (small_precat_iso_to_linv_iso iD).inv.app a, hsimp at h₁,
-    let h₂ := (small_precat_iso_to_linv_iso iD).hom.app b, hsimp at h₂,
-    intro g, exact h₁ ≫ iD.inv.map g ≫ h₂ },
-  { apply eq_of_homotopy, intro f, 
-    change iD.hom.map ((idp ▸ _) ≫ (id_functor D₁.obj).map (iD⁻¹ʰ.map f) ≫ (idp ▸ _)) = f, 
-    rwr idp_tr, rwr idp_tr, --rwr (small_precat_iso_to_linv_iso iD).inv.naturality,
-     sorry },
+  { intro g, exact η⁻¹ʰ.app a ≫ iD.inv.map g ≫ η.hom.app b },
+  { fapply is_set_inverse_of.mk,
+    { intro g, hsimp, 
+      have p : iD.hom.map (η.hom.app b) = ε⁻¹ʰ.app (iD.hom.obj b), from 
+        calc _ = iD.hom.map (η.hom.app b) ≫ 𝟙 _ : by rwr <- precategory.comp_id
+             ... = iD.hom.map (η.hom.app b) ≫ iD.hom.map (η⁻¹ʰ.app b) ≫ 
+                                             ε⁻¹ʰ.app (iD.hom.obj b) : 
+                   by rwr <- (strict_cat_iso_adj iD).zigzag_L
+             ... = (iD.hom.map (η.hom.app b) ≫ iD.hom.map (η⁻¹ʰ.app b)) ≫ 
+                                             ε⁻¹ʰ.app (iD.hom.obj b) : 
+                   by rwr precategory.assoc 
+             ... = iD.hom.map ((η.hom ≫ η⁻¹ʰ).app b) ≫ ε⁻¹ʰ.app (iD.hom.obj b) : by hsimp
+             ... = iD.hom.map (𝟙 ((iD.hom ⋙ iD⁻¹ʰ).obj b)) ≫ ε⁻¹ʰ.app (iD.hom.obj b) : 
+                   by rwr ap nat_trans.app η.l_inv 
+             ... = 𝟙 (iD.hom.obj ((iD.hom ⋙ iD⁻¹ʰ).obj b)) ≫ ε⁻¹ʰ.app (iD.hom.obj b) : 
+                   by rwr functor.map_id                                                                   
+             ... = _ : by rwr precategory.id_comp,
+      rwr p, rwr ε⁻¹ʰ.naturality, 
+      have p' : iD.hom.map (η⁻¹ʰ.app a) = ε.hom.app (iD.hom.obj a), from 
+        calc _ = iD.hom.map (η⁻¹ʰ.app a) ≫ 𝟙 _ : by rwr precategory.comp_id
+             ... = iD.hom.map (η⁻¹ʰ.app a) ≫ (ε⁻¹ʰ ≫ ε.hom).app (iD.hom.obj a) : 
+                   by rwr ap nat_trans.app ε.r_inv
+             ... = iD.hom.map (η⁻¹ʰ.app a) ≫ ε⁻¹ʰ.app (iD.hom.obj a) ≫ 
+                   ε.hom.app (iD.hom.obj a) : by refl
+             ... = (iD.hom.map (η⁻¹ʰ.app a) ≫ ε⁻¹ʰ.app (iD.hom.obj a)) ≫ 
+                   ε.hom.app (iD.hom.obj a) : by rwr precategory.assoc  
+             ... = 𝟙 (iD.hom.obj a) ≫ ε.hom.app (iD.hom.obj a) : 
+                   by rwr <- (strict_cat_iso_adj iD).zigzag_L                
+             ... = _ : by rwr precategory.id_comp,
+      rwr p', rwr <- precategory.assoc, change (ε.hom ≫ ε⁻¹ʰ).app (iD.hom.obj a) ≫ _ = _, 
+      rwr ap nat_trans.app ε.l_inv, hsimp },
+    { intro f, hsimp, rwr η.hom.naturality, rwr <- precategory.assoc, 
+      change (η⁻¹ʰ ≫ η.hom).app _ ≫ _ = _, rwr ap nat_trans.app η.r_inv, hsimp } },
 end
 
 @[hott, reducible]
-def small_precat_isotoid : Π {D₁ D₂ : small_precategory}, (D₁ ≅ D₂) -> (D₁ = D₂) :=
+def small_precat_isotoid : Π {D₁ D₂ : strict_category}, (D₁ ≅ D₂) -> (D₁ = D₂) :=
 begin  
-  intros D₁ D₂ iD, fapply small_precat_eq, 
-  { exact Set_isotoid (small_precat_iso_to_obj_iso iD) },
+  intros D₁ D₂ iD, fapply strict_cat_eq, 
+  { exact strict_cat_iso_to_obj_eq iD },
   { intros a b, rwr Set_isotoid_eq_hom (small_precat_iso_to_obj_iso iD) a, 
     rwr Set_isotoid_eq_hom (small_precat_iso_to_obj_iso iD) b,
     exact Set_isotoid (small_precat_iso_to_hom_iso iD a b) },
