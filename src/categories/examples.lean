@@ -621,7 +621,6 @@ def Set_category : category Set.{u} :=
     adjointify idtoiso Set_isotoid Set_id_iso_rinv Set_id_iso_linv,
   category.mk ideqviso  
 
-
 /- The subobjects of an object, together with their monomorphism-preserving homomorphisms
    defined in [categories.basic], form a category. -/  
 @[hott, instance]
