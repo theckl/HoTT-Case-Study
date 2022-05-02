@@ -312,6 +312,11 @@ def ap_tr_fn {A : Type _} {B : A -> Type _} (f : A -> A) (h : Π a : A, B a -> B
 begin hinduction p, refl end  
 
 @[hott]
+def tr_ap_id {A : Type _} {B : A -> Type _} {a₁ a₂ : A} (p : a₁ = a₂) (b₁ : B a₁) :
+  p ▸[λ a, B a] b₁ = ((ap B p) ▸[λ b, b] b₁) :=
+tr_compose (λ b : Type _, b) B p b₁  
+
+@[hott]
 def fn_ev_tr_tr_fn_ev {A : Type _} {B C : A -> Type _} {f : Π (a : A), B a -> C a} 
   {a a' : A} (p : a = a') (b : B a) : f a' (p ▸ b) = p ▸ (f a b) :=
 begin hinduction p, refl end  
