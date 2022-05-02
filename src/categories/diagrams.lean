@@ -134,6 +134,18 @@ def strict_cat_iso_to_obj_eq :
   Π {D₁ D₂ : strict_category}, (D₁ ≅ D₂) -> (D₁.obj = D₂.obj) :=
 assume D₁ D₂ iD, car_eq_to_set_eq (ua (strict_cat_iso_to_obj_eqv iD))                                                 
 
+@[hott] 
+def strict_cat_obj_tr_iso {D₁ D₂ : strict_category} (iD : D₁ ≅ D₂) :
+  Π d₁ : D₁.obj, (strict_cat_iso_to_obj_eq iD) ▸ d₁ = iD.hom.obj d₁ :=
+begin
+  intro d₁, 
+  change (strict_cat_iso_to_obj_eq iD) ▸[λ A : Set, A.carrier] d₁ = iD.hom.obj d₁, 
+  rwr @tr_ap_id Set (λ A : Set, A.carrier) _ _ (strict_cat_iso_to_obj_eq iD) d₁,
+  change (set_eq_to_car_eq (car_eq_to_set_eq _)) ▸[λ D, D] d₁ = _, 
+  rwr rinv_set_eq_car_eq, change cast (ua (strict_cat_iso_to_obj_eqv iD)) d₁ = _,
+  rwr cast_ua
+end  
+
 @[hott]
 def strict_cat_iso_to_unit_iso : 
   Π {D₁ D₂ : strict_category} (iD : D₁ ≅ D₂), (iD.hom ⋙ iD.inv) ≅ id_functor D₁.obj :=
@@ -368,11 +380,20 @@ def small_precat_isotoid : Π {D₁ D₂ : strict_category}, (D₁ ≅ D₂) -> 
 begin  
   intros D₁ D₂ iD, fapply strict_cat_eq, 
   { exact strict_cat_iso_to_obj_eq iD },
-  { intros a b, rwr Set_isotoid_eq_hom (small_precat_iso_to_obj_iso iD) a, 
-    rwr Set_isotoid_eq_hom (small_precat_iso_to_obj_iso iD) b,
-    exact Set_isotoid (small_precat_iso_to_hom_iso iD a b) },
-  { sorry },
-  { sorry }
+  { intros a b, 
+    have p : (strict_cat_iso_to_obj_eq iD ▸ a ⟶ strict_cat_iso_to_obj_eq iD ▸ b) =
+             (iD.hom.obj a ⟶ iD.hom.obj b), from 
+      begin rwr strict_cat_obj_tr_iso iD a, rwr strict_cat_obj_tr_iso iD b end,
+    apply (λ q, eq.concat q p⁻¹), 
+    exact bij_to_set_eq (strict_cat_iso_to_fully_faithful iD a b) },
+  { intro a, 
+    change ((bij_to_set_eq (strict_cat_iso_to_fully_faithful iD a a)) ⬝ _) ▸ 𝟙 a =_,
+    sorry },
+  { intros a b c f g, 
+    change ((bij_to_set_eq (strict_cat_iso_to_fully_faithful iD a c)) ⬝ _) ▸ f ≫ g =
+           (((bij_to_set_eq (strict_cat_iso_to_fully_faithful iD a b)) ⬝ _) ▸ f) ≫
+           (((bij_to_set_eq (strict_cat_iso_to_fully_faithful iD b c)) ⬝ _) ▸ g),
+    sorry }
 end    
 
 @[hott]
