@@ -376,7 +376,7 @@ begin
 end
 
 @[hott, reducible]
-def small_precat_isotoid : Π {D₁ D₂ : strict_category}, (D₁ ≅ D₂) -> (D₁ = D₂) :=
+def strict_cat_isotoid : Π {D₁ D₂ : strict_category}, (D₁ ≅ D₂) -> (D₁ = D₂) :=
 begin  
   intros D₁ D₂ iD, fapply strict_cat_eq, 
   { exact strict_cat_iso_to_obj_eq iD },
@@ -388,43 +388,62 @@ begin
     exact bij_to_set_eq (strict_cat_iso_to_fully_faithful iD a b) },
   { intro a, 
     change ((bij_to_set_eq (strict_cat_iso_to_fully_faithful iD a a)) ⬝ _) ▸ 𝟙 a =_,
-    sorry },
+    rwr con_tr, rwr <- bij_hom_tr_eq, change _ ▸ iD.hom.map (𝟙 a) = _, 
+    rwr functor.map_id, 
+    have H_id : Π {d₂ d₂' : D₂.obj} (p : d₂ = d₂'), 
+           (p⁻¹ ▸[λ d : D₂.obj, (d ⟶ d₂) = (d₂' ⟶ d₂')] 
+           (p⁻¹ ▸[λ d : D₂.obj, (d₂' ⟶ d) = (d₂' ⟶ d₂')] idp))⁻¹ ▸ (𝟙 d₂') = 𝟙 d₂, from
+      begin intros d₂ d₂' p, hinduction p, hsimp end,  
+    rwr H_id },
   { intros a b c f g, 
     change ((bij_to_set_eq (strict_cat_iso_to_fully_faithful iD a c)) ⬝ _) ▸ f ≫ g =
            (((bij_to_set_eq (strict_cat_iso_to_fully_faithful iD a b)) ⬝ _) ▸ f) ≫
            (((bij_to_set_eq (strict_cat_iso_to_fully_faithful iD b c)) ⬝ _) ▸ g),
-    sorry }
+    rwr con_tr, rwr con_tr, rwr con_tr, rwr <- bij_hom_tr_eq, rwr <- bij_hom_tr_eq,
+    rwr <- bij_hom_tr_eq, 
+    change _ ▸ iD.hom.map (f ≫ g) = (_ ▸ iD.hom.map f) ≫ (_ ▸ iD.hom.map g), 
+    rwr functor.map_comp,
+    have H_comp : Π {a b c a' b' c' : D₂.obj} (pa : a = a') (pb : b = b') (pc : c = c')
+           (f : a' ⟶ b') (g : b' ⟶ c'), (pa⁻¹ ▸[λ d : D₂.obj, (d ⟶ c) = (a' ⟶ c')] 
+           (pc⁻¹ ▸[λ d : D₂.obj, (a' ⟶ d) = (a' ⟶ c')] idp))⁻¹ ▸ (f ≫ g) =
+           ((pa⁻¹ ▸[λ d : D₂.obj, (d ⟶ b) = (a' ⟶ b')] 
+           (pb⁻¹ ▸[λ d : D₂.obj, (a' ⟶ d) = (a' ⟶ b')] idp))⁻¹ ▸ f) ≫
+           ((pb⁻¹ ▸[λ d : D₂.obj, (d ⟶ c) = (b' ⟶ c')] 
+           (pc⁻¹ ▸[λ d : D₂.obj, (b' ⟶ d) = (b' ⟶ c')] idp))⁻¹ ▸ g), from 
+      begin intros, hinduction pa, hinduction pb, hinduction pc, hsimp end,
+    rwr H_comp }
 end    
 
 @[hott]
-def small_precat_isotoid_idfunct_obj {D₁ D₂ : small_precategory} (i : D₁ ≅ D₂) : 
-  (small_precat_isotoid i ▸[λ D : small_precategory, D₁.obj ⥤ D.obj] 
+def strict_cat_isotoid_idfunct_obj {D₁ D₂ : strict_category} (i : D₁ ≅ D₂) : 
+  (strict_cat_isotoid i ▸[λ D : strict_category, D₁.obj ⥤ D.obj] 
                                                id_functor ↥(D₁.obj)).obj = i.hom.obj :=
 begin
-  change (λ D : small_precategory, @functor.obj D₁.obj D.obj _ _) D₂ 
-                (small_precat_isotoid i ▸[λ D : small_precategory, D₁.obj ⥤ D.obj] 
+  change (λ D : strict_category, @functor.obj D₁.obj D.obj _ _) D₂ 
+                (strict_cat_isotoid i ▸[λ D : strict_category, D₁.obj ⥤ D.obj] 
                 id_functor (D₁.obj)) = _,
-  rwr fn_tr_tr_ev (λ D : small_precategory, @functor.obj D₁.obj D.obj _ _), 
-  change small_precat_isotoid i ▸[λ D: small_precategory, D₁.obj -> D.obj] 
+  rwr fn_tr_tr_ev (λ D : strict_category, @functor.obj D₁.obj D.obj _ _), 
+  change strict_cat_isotoid i ▸[λ D: strict_category, D₁.obj -> D.obj] 
                                                 (id_functor ↥(D₁.obj)).obj = i.hom.obj,
   apply tr_eq_of_pathover, apply pathover_of_pathover_ap (λ D : Set, D₁.obj -> D), 
-  apply pathover_of_tr_eq, rwr small_precat_eq_obj_eta, 
-  change idtoiso⁻¹ᶠ (small_precat_iso_to_obj_iso i) ▸[λ D : Set, D₁.obj ⟶ D] 
-                                                      (id_functor ↥(D₁.obj)).obj = _, 
-  rwr iso_hom_tr_comp'
+  apply pathover_of_tr_eq, rwr strict_cat_eq_obj_eta, apply eq_of_homotopy, intro d₁,
+  --rwr tr_fn_eval_tr' (ap trunctype.carrier (strict_cat_iso_to_obj_eq i)), 
+  --change strict_cat_iso_to_obj_eq i ▸ d₁ = i.hom.obj d₁, 
+  --rwr strict_cat_obj_tr_iso, 
+  sorry
 end                                                 
 
 @[hott, instance]
-def small_precat_cat : category small_precategory :=
+def strict_cat_cat : category strict_category :=
 begin
   apply category.mk, intros D₁ D₂, fapply adjointify,
-  { exact small_precat_isotoid },
-  { intro b, change small_precat_isotoid b ▸ (id_is_iso D₁) = b, apply hom_eq_to_iso_eq,
+  { exact strict_cat_isotoid },
+  { intro b, change strict_cat_isotoid b ▸ (id_is_iso D₁) = b, apply hom_eq_to_iso_eq,
     rwr fn2_tr_tr_ev (@iso.hom _ _), 
-    change small_precat_isotoid b ▸[λ D : small_precategory, D₁.obj ⥤ D.obj] 
+    change strict_cat_isotoid b ▸[λ D : strict_category, D₁.obj ⥤ D.obj] 
                                                                     id_functor D₁.obj = _,  
     fapply functor_eq, 
-    { exact small_precat_isotoid_idfunct_obj b },
+    { exact strict_cat_isotoid_idfunct_obj b },
     { apply pathover_of_tr_eq, apply eq_of_homotopy3, intros d₁ d₁' h, sorry } },
   { sorry }
 end                 
