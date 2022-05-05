@@ -64,7 +64,9 @@ precategory.mk (λ D₁ D₂ F, funct_id_comp F)
    However, from an isomorphism in the category of strict categories we can deduce an 
    isomorphism of precategories in the sense of [Def.9.4.8], and this allows us to 
    construct `isotoid` making `idtoiso` an equivalence in the precategory of strict 
-   categories. -/
+   categories. 
+
+   The first step is to split up equalities of strict precategories. -/   
 @[hott]
 def strict_cat_eq {D₁ D₂ : strict_category} : Π (Pₒ : D₁.obj = D₂.obj) 
   (Pₕ : Π a b : D₁.obj, (a ⟶ b) = (Pₒ ▸[(λ (A : Set), A.carrier)] a ⟶ 
@@ -332,6 +334,8 @@ begin
     rwr ap nat_trans.app ε.l_inv, change iD⁻¹ʰ.map (𝟙 d₂) = _, rwr functor.map_id }
 end
 
+/- Now we can use the triangle identities to construct a bijection between sets of 
+   homomorphisms from isomorphisms of strict categories. -/
 @[hott]
 def strict_cat_iso_to_fully_faithful : Π {D₁ D₂ : strict_category} (iD : D₁ ≅ D₂), 
   Π (a b : D₁.obj), bijection (a ⟶ b) (functor.obj iD.hom a ⟶ functor.obj iD.hom b) :=
@@ -415,7 +419,7 @@ begin
 end    
 
 @[hott]
-def strict_cat_isotoid_idfunct_obj {D₁ D₂ : strict_category} (i : D₁ ≅ D₂) : 
+def strict_cat_isotoid_idfunct_obj_eq {D₁ D₂ : strict_category} (i : D₁ ≅ D₂) : 
   (strict_cat_isotoid i ▸[λ D : strict_category, D₁.obj ⥤ D.obj] 
                                                id_functor ↥(D₁.obj)).obj = i.hom.obj :=
 begin
@@ -423,29 +427,43 @@ begin
                 (strict_cat_isotoid i ▸[λ D : strict_category, D₁.obj ⥤ D.obj] 
                 id_functor (D₁.obj)) = _,
   rwr fn_tr_tr_ev (λ D : strict_category, @functor.obj D₁.obj D.obj _ _), 
-  change strict_cat_isotoid i ▸[λ D: strict_category, D₁.obj -> D.obj] 
-                                                (id_functor ↥(D₁.obj)).obj = i.hom.obj,
   apply tr_eq_of_pathover, apply pathover_of_pathover_ap (λ D : Set, D₁.obj -> D), 
   apply pathover_of_tr_eq, rwr strict_cat_eq_obj_eta, apply eq_of_homotopy, intro d₁,
-  --rwr tr_fn_eval_tr' (ap trunctype.carrier (strict_cat_iso_to_obj_eq i)), 
-  --change strict_cat_iso_to_obj_eq i ▸ d₁ = i.hom.obj d₁, 
-  --rwr strict_cat_obj_tr_iso, 
-  sorry
+  rwr tr_fn_eval_tr', rwr strict_cat_obj_tr_iso
 end                                                 
+
+@[hott]
+def strict_cat_isotoid_idfunct {D₁ D₂ : strict_category} (iD : D₁ ≅ D₂) :=
+  strict_cat_isotoid iD ▸[λ D : strict_category, D₁.obj ⥤ D.obj] id_functor ↥(D₁.obj)
+
+@[hott]
+def strict_cat_isotoid_idfunct_map {D₁ D₂ : strict_category} (iD : D₁ ≅ D₂) :=  
+  λ a b : D₁.obj, @functor.map _ _ _ _ (strict_cat_isotoid_idfunct iD) a b  
+
+@[hott]
+def strict_cat_isotoid_idfunct_map_eq {D₁ D₂ : strict_category} (iD : D₁ ≅ D₂) :
+  strict_cat_isotoid_idfunct_map iD =[strict_cat_isotoid_idfunct_obj_eq iD;
+                     λ f : D₁.obj -> D₂.obj, Π (a b : D₁.obj), (a ⟶ b) -> (f a ⟶ f b)]
+            iD.hom.map :=
+begin
+  apply pathover_of_tr_eq,   
+  --rwr apdt, apply eq_of_homotopy3, intros a b f, 
+  sorry
+end        
 
 @[hott, instance]
 def strict_cat_cat : category strict_category :=
 begin
   apply category.mk, intros D₁ D₂, fapply adjointify,
   { exact strict_cat_isotoid },
-  { intro b, change strict_cat_isotoid b ▸ (id_is_iso D₁) = b, apply hom_eq_to_iso_eq,
+  { intro iD, change strict_cat_isotoid iD ▸ (id_is_iso D₁) = iD, apply hom_eq_to_iso_eq,
     rwr fn2_tr_tr_ev (@iso.hom _ _), 
-    change strict_cat_isotoid b ▸[λ D : strict_category, D₁.obj ⥤ D.obj] 
+    change strict_cat_isotoid iD ▸[λ D : strict_category, D₁.obj ⥤ D.obj] 
                                                                     id_functor D₁.obj = _,  
     fapply functor_eq, 
-    { exact strict_cat_isotoid_idfunct_obj b },
-    { apply pathover_of_tr_eq, apply eq_of_homotopy3, intros d₁ d₁' h, sorry } },
-  { sorry }
+    { exact strict_cat_isotoid_idfunct_obj_eq iD },
+    { exact strict_cat_isotoid_idfunct_map_eq iD } },
+  { intro p, hinduction p, sorry }
 end                 
 
 
