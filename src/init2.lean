@@ -99,6 +99,12 @@ begin
 end 
 
 @[hott]
+def ap01_tr2 {A B D : Type _} {C : B -> Type _} (f : A -> B) 
+  (g : Π a : A, C (f a) -> C (f a) -> D) {a₁ a₂ : A} (p : a₁ = a₂) (c₁ c₂ : C (f a₁)) :
+  g a₁ c₁ c₂ = g a₂ (ap f p ▸[λ b : B, C b] c₁) (ap f p ▸[λ b : B, C b] c₂) :=
+begin hinduction p, hsimp end   
+
+@[hott]
 def apdd {A : Type _} {B : A -> Type _} {C : Type _}
   (f : Π (a : A) (b : B a), C) {a₁ a₂ : A} {b₁ : B a₁} {b₂ : B a₂} 
   (p : a₁ = a₂) (q : b₁ =[p] b₂) : f a₁ b₁ = f a₂ b₂ :=
