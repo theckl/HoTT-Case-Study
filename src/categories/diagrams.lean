@@ -65,18 +65,38 @@ precategory.mk (λ D₁ D₂ F, funct_id_comp F)
    isomorphism of precategories in the sense of [Def.9.4.8], and this allows us to 
    construct `isotoid` making `idtoiso` an equivalence in the precategory of strict 
    categories. 
-
-   The first step is to split up equalities of strict precategories. -/   
+   
+   The construction of the equivalence is organised in 3 steps:
+   The first step is to split up equalities of strict precategories in components and to 
+   show that equalities of the components is equivalent to equlity of the strict 
+   precategories. -/ 
 @[hott]
-def strict_cat_eq {D₁ D₂ : strict_category} : Π (Pₒ : D₁.obj = D₂.obj) 
+structure strict_cat_comp_eq (D₁ D₂ : strict_category) :=
+  (Pₒ : D₁.obj = D₂.obj)  
   (Pₕ : Π a b : D₁.obj, (a ⟶ b) = (Pₒ ▸[(λ (A : Set), A.carrier)] a ⟶ 
-                                                 Pₒ ▸[(λ (A : Set), A.carrier)] b)), 
-  (Π a : D₁.obj, (Pₕ a a) ▸ 𝟙 a = 𝟙 (Pₒ ▸ a)) -> 
-  (Π (a b c : D₁.obj) (f : a ⟶ b) (g : b ⟶ c), (Pₕ a c) ▸ (f ≫ g) = 
-                            ((Pₕ a b) ▸ f) ≫ ((Pₕ b c) ▸ g)) -> D₁ = D₂ :=
+                                                 Pₒ ▸[(λ (A : Set), A.carrier)] b))
+  (id_eq : Π a : D₁.obj, (Pₕ a a) ▸ 𝟙 a = 𝟙 (Pₒ ▸ a))
+  (comp_eq : Π (a b c : D₁.obj) (f : a ⟶ b) (g : b ⟶ c), (Pₕ a c) ▸ (f ≫ g) = 
+                            ((Pₕ a b) ▸ f) ≫ ((Pₕ b c) ▸ g))                                               
+
+@[hott]
+def strict_cat_eq_to_comp_eq (D₁ D₂ : strict_category) : 
+  D₁ = D₂ -> strict_cat_comp_eq D₁ D₂ :=
 begin
-  hinduction D₁ with obj₁ precat₁, hinduction D₂ with obj₂ precat₂, hsimp, 
-  intros Pₒ Pₕ id_eq comp_eq, 
+  intro p, fapply strict_cat_comp_eq.mk, 
+  { exact ap strict_category.obj p },
+  { intros a b, exact ap01_tr2 strict_category.obj 
+                               (λ (D : strict_category) (a b : D.obj), a ⟶ b) p a b },
+  { hsimp, intro a, sorry },
+  { hsimp, intros a b c f g, sorry }
+end    
+
+@[hott]
+def strict_cat_comp_eq_to_eq {D₁ D₂ : strict_category} : 
+  strict_cat_comp_eq D₁ D₂ -> D₁ = D₂ :=
+begin
+  hinduction D₁ with obj₁ precat₁, hinduction D₂ with obj₂ precat₂, 
+  intro comp_eq, hinduction comp_eq with Pₒ Pₕ id_eq comp_eq, change obj₁ = obj₂ at Pₒ, 
   hinduction Pₒ, fapply apd011 strict_category.mk, 
   { exact idp },
   { apply pathover_idp_of_eq, 
