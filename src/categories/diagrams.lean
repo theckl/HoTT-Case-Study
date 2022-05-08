@@ -80,19 +80,23 @@ structure strict_cat_comp_eq (D₁ D₂ : strict_category) :=
                             ((Pₕ a b) ▸ f) ≫ ((Pₕ b c) ▸ g))                                               
 
 @[hott]
+def strict_cat_comp_eq_eta {D₁ D₂ : strict_category} (eq : strict_cat_comp_eq D₁ D₂) :
+  eq = strict_cat_comp_eq.mk eq.Pₒ eq.Pₕ eq.id_eq eq.comp_eq :=
+begin hinduction eq, hsimp end   
+
+@[hott]
 def strict_cat_eq_to_comp_eq (D₁ D₂ : strict_category) : 
   D₁ = D₂ -> strict_cat_comp_eq D₁ D₂ :=
 begin
-  intro p, fapply strict_cat_comp_eq.mk, 
-  { exact ap strict_category.obj p },
-  { intros a b, exact ap01_tr2 strict_category.obj 
-                               (λ (D : strict_category) (a b : D.obj), a ⟶ b) p a b },
-  { hsimp, intro a, sorry },
-  { hsimp, intros a b c f g, sorry }
+  intro p, hinduction p, fapply strict_cat_comp_eq.mk, 
+  { exact idp },
+  { intros a b, hsimp },
+  { intro a, hsimp },
+  { intros a b c f g, hsimp }
 end    
 
 @[hott]
-def strict_cat_comp_eq_to_eq {D₁ D₂ : strict_category} : 
+def strict_cat_comp_eq_to_eq (D₁ D₂ : strict_category) : 
   strict_cat_comp_eq D₁ D₂ -> D₁ = D₂ :=
 begin
   hinduction D₁ with obj₁ precat₁, hinduction D₂ with obj₂ precat₂, 
@@ -125,22 +129,21 @@ begin
 end  
 
 @[hott]
-def strict_cat_eq_obj_eta {D₁ D₂ : strict_category} (Pₒ : D₁.obj = D₂.obj) 
-  (Pₕ : Π a b : D₁.obj, (a ⟶ b) = (Pₒ ▸[(λ (A : Set), A.carrier)] a ⟶ 
-                                                 Pₒ ▸[(λ (A : Set), A.carrier)] b)) 
-  (Pᵢ : Π a : D₁.obj, (Pₕ a a) ▸ 𝟙 a = 𝟙 (Pₒ ▸ a)) 
-  (Pc : Π (a b c : D₁.obj) (f : a ⟶ b) (g : b ⟶ c), (Pₕ a c) ▸ (f ≫ g) = 
-                            ((Pₕ a b) ▸ f) ≫ ((Pₕ b c) ▸ g)) : 
-  ap strict_category.obj (strict_cat_eq Pₒ Pₕ Pᵢ Pc) = Pₒ :=
+def strict_cat_eq_eqv_comp_eq (D₁ D₂ : strict_category) : 
+  D₁ = D₂ ≃ strict_cat_comp_eq D₁ D₂ :=
 begin
-  hinduction D₁ with obj₁ precat₁, hinduction D₂ with obj₂ precat₂, 
-  change obj₁ = obj₂ at Pₒ, hinduction Pₒ, 
-  change ap strict_category.obj (apd011 strict_category.mk (refl obj₁) _) = _, 
-  let H : Π obj precat, (strict_category.mk obj precat).obj = obj, 
-    by intros obj precat; exact idp, 
-  have H' : Π obj precat, H obj precat = idp, from begin intros obj precat; exact idp end,   
-  rwr ap_apd011 strict_category.mk _ _ strict_category.obj H
-end                              
+  fapply equiv.mk, 
+  { exact strict_cat_eq_to_comp_eq D₁ D₂ },
+  { fapply adjointify, 
+    { exact strict_cat_comp_eq_to_eq D₁ D₂ },
+    { intro b, hinduction b, rwr strict_cat_comp_eq_eta (strict_cat_eq_to_comp_eq D₁ D₂ _), 
+      fapply apd01111_v2 strict_cat_comp_eq.mk, 
+      { sorry },
+      { sorry },
+      { sorry },
+      { sorry } },
+    { sorry } }
+end                               
   
 /- Next, we adjointify the two natural transformations given by an isomorphism of two 
    precategories, as in [HoTT-Book,Lem.9.4.2]. This gives an equivalence of precategories. -/
