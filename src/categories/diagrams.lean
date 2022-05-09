@@ -84,7 +84,7 @@ def strict_cat_comp_eq_eta {D₁ D₂ : strict_category} (eq : strict_cat_comp_e
   eq = strict_cat_comp_eq.mk eq.Pₒ eq.Pₕ eq.id_eq eq.comp_eq :=
 begin hinduction eq, hsimp end   
 
-@[hott]
+@[hott, hsimp]
 def strict_cat_eq_to_comp_eq (D₁ D₂ : strict_category) : 
   D₁ = D₂ -> strict_cat_comp_eq D₁ D₂ :=
 begin
@@ -94,6 +94,11 @@ begin
   { intro a, hsimp },
   { intros a b c f g, hsimp }
 end    
+
+@[hott]
+def strict_cat_eq_to_comp_eq_obj {D₁ D₂ : strict_category} (eq : D₁ = D₂) :
+  ap strict_category.obj eq = (strict_cat_eq_to_comp_eq D₁ D₂ eq).Pₒ :=
+begin hinduction eq, hsimp end
 
 @[hott]
 def strict_cat_comp_eq_to_eq (D₁ D₂ : strict_category) : 
@@ -129,6 +134,18 @@ begin
 end  
 
 @[hott]
+def strict_cat_comp_eq_to_eq_obj {D₁ D₂ : strict_category} (ceq : strict_cat_comp_eq D₁ D₂) :
+  ap strict_category.obj (strict_cat_comp_eq_to_eq D₁ D₂ ceq) = ceq.Pₒ :=
+begin 
+  hinduction ceq, hinduction D₁ with obj₁ precat₁, hinduction D₂ with obj₂ precat₂, 
+  change obj₁ = obj₂ at Pₒ, hinduction Pₒ, 
+  change ap strict_category.obj (apd011 strict_category.mk _ _) = @idp _ obj₁, 
+  let H : Π (o : Set) (p : precategory ↥o), strict_category.obj (strict_category.mk o p) = o := 
+    assume o p, idp,
+  rwr ap_apd011 _ _ _ _ H 
+end  
+
+@[hott]
 def strict_cat_eq_eqv_comp_eq (D₁ D₂ : strict_category) : 
   D₁ = D₂ ≃ strict_cat_comp_eq D₁ D₂ :=
 begin
@@ -136,13 +153,15 @@ begin
   { exact strict_cat_eq_to_comp_eq D₁ D₂ },
   { fapply adjointify, 
     { exact strict_cat_comp_eq_to_eq D₁ D₂ },
-    { intro b, hinduction b, rwr strict_cat_comp_eq_eta (strict_cat_eq_to_comp_eq D₁ D₂ _), 
-      fapply apd01111_v2 strict_cat_comp_eq.mk, 
+    { intro b, hinduction b, rwr strict_cat_comp_eq_eta (strict_cat_eq_to_comp_eq D₁ D₂ _),
+      hinduction D₁ with obj₁ precat₁, hinduction D₂ with obj₂ precat₂, 
+      change obj₁ = obj₂ at Pₒ, hinduction Pₒ, fapply apd01111_v2 strict_cat_comp_eq.mk, 
+      { rwr <- strict_cat_eq_to_comp_eq_obj, rwr strict_cat_comp_eq_to_eq_obj },
       { sorry },
-      { sorry },
-      { sorry },
-      { sorry } },
-    { sorry } }
+      { apply pathover_of_tr_eq, apply eq_of_homotopy, intro a, exact is_set.elim _ _ },
+      { apply pathover_of_tr_eq, apply eq_of_homotopy3, intros a b c, 
+        apply eq_of_homotopy2, intros f g, exact is_set.elim _ _ } },
+    { intro p, hinduction p, sorry } }
 end                               
   
 /- Next, we adjointify the two natural transformations given by an isomorphism of two 
