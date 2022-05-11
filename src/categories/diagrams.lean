@@ -101,6 +101,15 @@ def strict_cat_eq_to_comp_eq_obj {D₁ D₂ : strict_category} (eq : D₁ = D₂
 begin hinduction eq, hsimp end
 
 @[hott]
+def strict_cat_eq_to_comp_eq_hom {D₁ D₂ : strict_category} (eq : D₁ = D₂) :
+  (strict_cat_eq_to_comp_eq D₁ D₂ eq).Pₕ = 
+  λ a b : D₁.obj, @eq.rec _ _ (λ (D : strict_category) (p : D₁ = D), 
+            (a ⟶ b) = ((strict_cat_eq_to_comp_eq D₁ D p).Pₒ ▸ a ⟶ 
+                        (strict_cat_eq_to_comp_eq D₁ D p).Pₒ ▸ b)) 
+            (@idp _ (a ⟶ b)) D₂ eq :=
+begin hinduction eq, exact rfl end
+
+@[hott]
 def strict_cat_comp_eq_to_eq (D₁ D₂ : strict_category) : 
   strict_cat_comp_eq D₁ D₂ -> D₁ = D₂ :=
 begin
@@ -146,6 +155,14 @@ begin
 end  
 
 @[hott]
+def strict_cat_comp_eq_to_eq_hom {D₁ D₂ : strict_category} (ceq : strict_cat_comp_eq D₁ D₂) :
+  (λ a b : D₁.obj, @eq.rec _ _ (λ (D : strict_category) (p : D₁ = D), 
+            (a ⟶ b) = ((strict_cat_eq_to_comp_eq D₁ D p).Pₒ ▸ a ⟶ 
+                        (strict_cat_eq_to_comp_eq D₁ D p).Pₒ ▸ b)) 
+            (@idp _ (a ⟶ b)) D₂ (strict_cat_comp_eq_to_eq D₁ D₂ ceq)) = ceq.Pₕ :=
+begin sorry end             
+
+@[hott]
 def strict_cat_eq_eqv_comp_eq (D₁ D₂ : strict_category) : 
   D₁ = D₂ ≃ strict_cat_comp_eq D₁ D₂ :=
 begin
@@ -157,7 +174,7 @@ begin
       hinduction D₁ with obj₁ precat₁, hinduction D₂ with obj₂ precat₂, 
       change obj₁ = obj₂ at Pₒ, hinduction Pₒ, fapply apd01111_v2 strict_cat_comp_eq.mk, 
       { rwr <- strict_cat_eq_to_comp_eq_obj, rwr strict_cat_comp_eq_to_eq_obj },
-      { sorry },
+      { rwr strict_cat_eq_to_comp_eq_hom, sorry },
       { apply pathover_of_tr_eq, apply eq_of_homotopy, intro a, exact is_set.elim _ _ },
       { apply pathover_of_tr_eq, apply eq_of_homotopy3, intros a b c, 
         apply eq_of_homotopy2, intros f g, exact is_set.elim _ _ } },
