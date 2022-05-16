@@ -155,24 +155,16 @@ begin
 end  
 
 @[hott]
-def strict_cat_comp_eq_to_eq_hom' {D₁ D₂ : strict_category} (ceq : strict_cat_comp_eq D₁ D₂) :
-  (λ a b : D₁.obj, @eq.rec _ _ (λ (D : strict_category) (p : D₁ = D), 
-                                (a ⟶ b) = ((strict_cat_eq_to_comp_eq D₁ D p).Pₒ ▸ a ⟶ 
-                                (strict_cat_eq_to_comp_eq D₁ D p).Pₒ ▸ b)) 
-     (@idp _ (a ⟶ b)) D₂ (strict_cat_comp_eq_to_eq D₁ D₂ ceq)) 
-        =[strict_cat_comp_eq_to_eq_obj ceq; 
-          λ Pₒ: D₁.obj = D₂.obj, Π (a b : D₁.obj), (a ⟶ b) = (Pₒ ▸ a ⟶ Pₒ ▸ b)] ceq.Pₕ :=
-begin sorry end             
-
-@[hott]
 def strict_cat_comp_eq_to_eq_hom {D₁ D₂ : strict_category} (ceq : strict_cat_comp_eq D₁ D₂) :
   (strict_cat_eq_to_comp_eq D₁ D₂ (strict_cat_comp_eq_to_eq D₁ D₂ ceq)).Pₕ 
     =[strict_cat_comp_eq_to_eq_obj ceq; λ (P : D₁.obj = D₂.obj), Π (a b : D₁.obj), 
                             (a ⟶ b) = (P ▸ a ⟶ P ▸ b)] ceq.Pₕ :=
 begin
-  hinduction ceq,
-  hinduction D₁ with obj₁ precat₁, hinduction D₂ with obj₂ precat₂, 
-  change obj₁ = obj₂ at Pₒ, hinduction Pₒ, rwr strict_cat_eq_to_comp_eq_hom, 
+  --hinduction ceq,
+  --hinduction D₁ with obj₁ precat₁, hinduction D₂ with obj₂ precat₂, 
+  --change obj₁ = obj₂ at Pₒ, hinduction Pₒ, 
+  rwr strict_cat_eq_to_comp_eq_hom, 
+  --change _ =[@idp _ obj₁; λ (P : obj₁ = obj₁), Π (a b : obj₁), (a ⟶ b) = (P ▸ a ⟶ P ▸ b)] _, 
   sorry
 end  
 
