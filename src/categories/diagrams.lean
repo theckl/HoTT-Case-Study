@@ -109,6 +109,28 @@ def strict_cat_eq_to_comp_eq_hom {D₁ D₂ : strict_category} (eq : D₁ = D₂
             (@idp _ (a ⟶ b)) D₂ eq :=
 begin hinduction eq, exact rfl end
 
+/- `strict_comp_eq` has an induction principle derived from the induction principles of the 
+   component equalities. -/
+@[hott]
+def strict_cat_idp_comp_eq (D : strict_category) : strict_cat_comp_eq D D :=
+begin 
+  fapply strict_cat_comp_eq.mk,
+  { exact idp },
+  { intros a b, hsimp },
+  { intro a, hsimp },
+  { intros a b c f g, hsimp } 
+end
+
+@[hott]
+def strict_cat_comp_eq_rec {D₁ : strict_category} 
+  {C : Π D₂ : strict_category, strict_cat_comp_eq D₁ D₂ -> Type _} 
+  (C_idp : C D₁ (strict_cat_idp_comp_eq D₁)) : 
+  Π {D₂ : strict_category} (ceq : strict_cat_comp_eq D₁ D₂), C D₂ ceq :=
+begin 
+  intros D₂ ceq, hinduction ceq,
+  sorry 
+end  
+
 @[hott]
 def strict_cat_comp_eq_to_eq (D₁ D₂ : strict_category) : 
   strict_cat_comp_eq D₁ D₂ -> D₁ = D₂ :=
