@@ -121,13 +121,16 @@ begin
   { intros a b c f g, hsimp } 
 end
 
+#check eq.rec
+
 @[hott]
 def strict_cat_comp_eq_rec {D₁ : strict_category} 
   {C : Π D₂ : strict_category, strict_cat_comp_eq D₁ D₂ -> Type _} 
   (C_idp : C D₁ (strict_cat_idp_comp_eq D₁)) : 
   Π {D₂ : strict_category} (ceq : strict_cat_comp_eq D₁ D₂), C D₂ ceq :=
 begin 
-  intros D₂ ceq, hinduction ceq,
+  hinduction D₁, intros D₂ ceq, hinduction D₂ with obj₂ precat₂, hinduction ceq,
+  change obj = obj₂ at Pₒ, hinduction Pₒ,
   sorry 
 end  
 
@@ -185,7 +188,8 @@ begin
   --hinduction ceq,
   --hinduction D₁ with obj₁ precat₁, hinduction D₂ with obj₂ precat₂, 
   --change obj₁ = obj₂ at Pₒ, hinduction Pₒ, 
-  rwr strict_cat_eq_to_comp_eq_hom, 
+  --rwr strict_cat_eq_to_comp_eq_hom, 
+  apply pathover_of_tr_eq, apply eq_of_homotopy2, intros a b,
   --change _ =[@idp _ obj₁; λ (P : obj₁ = obj₁), Π (a b : obj₁), (a ⟶ b) = (P ▸ a ⟶ P ▸ b)] _, 
   sorry
 end  
