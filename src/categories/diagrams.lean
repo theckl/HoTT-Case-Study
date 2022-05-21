@@ -68,7 +68,7 @@ precategory.mk (λ D₁ D₂ F, funct_id_comp F)
    
    The construction of the equivalence is organised in 3 steps:
    The first step is to split up equalities of strict precategories in components and to 
-   show that equalities of the components is equivalent to equlity of the strict 
+   show that equalities of the components is equivalent to equality of the strict 
    precategories. -/ 
 @[hott]
 structure strict_cat_comp_eq (D₁ D₂ : strict_category) :=
@@ -83,6 +83,16 @@ structure strict_cat_comp_eq (D₁ D₂ : strict_category) :=
 def strict_cat_comp_eq_eta {D₁ D₂ : strict_category} (eq : strict_cat_comp_eq D₁ D₂) :
   eq = strict_cat_comp_eq.mk eq.Pₒ eq.Pₕ eq.id_eq eq.comp_eq :=
 begin hinduction eq, hsimp end   
+
+@[hott]
+def strict_cat_idp_comp_eq (D : strict_category) : strict_cat_comp_eq D D :=
+begin 
+  fapply strict_cat_comp_eq.mk,
+  { exact idp },
+  { intros a b, hsimp },
+  { intro a, hsimp },
+  { intros a b c f g, hsimp } 
+end
 
 @[hott, hsimp]
 def strict_cat_eq_to_comp_eq (D₁ D₂ : strict_category) : 
@@ -109,30 +119,10 @@ def strict_cat_eq_to_comp_eq_hom {D₁ D₂ : strict_category} (eq : D₁ = D₂
             (@idp _ (a ⟶ b)) D₂ eq :=
 begin hinduction eq, exact rfl end
 
-/- `strict_comp_eq` has an induction principle derived from the induction principles of the 
-   component equalities. -/
 @[hott]
-def strict_cat_idp_comp_eq (D : strict_category) : strict_cat_comp_eq D D :=
-begin 
-  fapply strict_cat_comp_eq.mk,
-  { exact idp },
-  { intros a b, hsimp },
-  { intro a, hsimp },
-  { intros a b c f g, hsimp } 
-end
-
-#check eq.rec
-
-@[hott]
-def strict_cat_comp_eq_rec {D₁ : strict_category} 
-  {C : Π D₂ : strict_category, strict_cat_comp_eq D₁ D₂ -> Type _} 
-  (C_idp : C D₁ (strict_cat_idp_comp_eq D₁)) : 
-  Π {D₂ : strict_category} (ceq : strict_cat_comp_eq D₁ D₂), C D₂ ceq :=
-begin 
-  hinduction D₁, intros D₂ ceq, hinduction D₂ with obj₂ precat₂, hinduction ceq,
-  change obj = obj₂ at Pₒ, hinduction Pₒ,
-  sorry 
-end  
+def strict_cat_eq_to_comp_eq_idp (D : strict_category) :
+  strict_cat_eq_to_comp_eq D D (idpath D) = strict_cat_idp_comp_eq D :=
+begin rwr strict_cat_comp_eq_eta (strict_cat_eq_to_comp_eq D D (idpath D)) end  
 
 @[hott]
 def strict_cat_comp_eq_to_eq (D₁ D₂ : strict_category) : 
@@ -195,6 +185,13 @@ begin
 end  
 
 @[hott]
+def strict_cat_comp_eq_to_eq_idp (D : strict_category) : 
+  strict_cat_comp_eq_to_eq D D (strict_cat_idp_comp_eq D) = refl D :=
+begin 
+  change strict_cat_comp_eq_to_eq D D (strict_cat_comp_eq.mk _ _ _ _) = _, sorry
+end  
+
+@[hott]
 def strict_cat_eq_eqv_comp_eq (D₁ D₂ : strict_category) : 
   D₁ = D₂ ≃ strict_cat_comp_eq D₁ D₂ :=
 begin
@@ -210,7 +207,8 @@ begin
       { apply pathover_of_tr_eq, apply eq_of_homotopy, intro a, exact is_set.elim _ _ },
       { apply pathover_of_tr_eq, apply eq_of_homotopy3, intros a b c, 
         apply eq_of_homotopy2, intros f g, exact is_set.elim _ _ } },
-    { intro p, hinduction p, sorry } }
+    { intro p, hinduction p, rwr strict_cat_eq_to_comp_eq_idp, 
+      exact strict_cat_comp_eq_to_eq_idp D₁ } }
 end                               
   
 /- Next, we adjointify the two natural transformations given by an isomorphism of two 
