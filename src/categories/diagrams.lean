@@ -188,7 +188,16 @@ end
 def strict_cat_comp_eq_to_eq_idp (D : strict_category) : 
   strict_cat_comp_eq_to_eq D D (strict_cat_idp_comp_eq D) = refl D :=
 begin 
-  change strict_cat_comp_eq_to_eq D D (strict_cat_comp_eq.mk _ _ _ _) = _, sorry
+  change strict_cat_comp_eq_to_eq D D (strict_cat_comp_eq.mk _ _ _ _) = _, 
+  hinduction D with obj precat, 
+  change apd011 strict_category.mk _ _ = apd011 strict_category.mk idp idpo,
+  fapply apd011 (apd011 strict_category.mk), refl, 
+  apply pathover_of_tr_eq, change _ = pathover_idp_of_eq _ idp, 
+  apply ap (pathover_idp_of_eq _), 
+  hinduction precat with cat_struct id_comp comp_id comp_assoc, hsimp, 
+  
+  hinduction cat_struct with has_hom id comp, hsimp, 
+  sorry,
 end  
 
 @[hott]
