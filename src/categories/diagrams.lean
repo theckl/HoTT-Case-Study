@@ -15,7 +15,7 @@ namespace categories
    homomorphism when composed. 
   
    Strict categories together with functors between them form a category. In particular, 
-   equality of functors between strict categories is unique. -/
+   equality of functors between strict categories is unique.  -/
 @[hott]
 structure strict_category :=
   (obj : Set.{u})
@@ -175,11 +175,11 @@ def strict_cat_comp_eq_to_eq_hom {D₁ D₂ : strict_category} (ceq : strict_cat
     =[strict_cat_comp_eq_to_eq_obj ceq; λ (P : D₁.obj = D₂.obj), Π (a b : D₁.obj), 
                             (a ⟶ b) = (P ▸ a ⟶ P ▸ b)] ceq.Pₕ :=
 begin
-  --hinduction ceq,
   --hinduction D₁ with obj₁ precat₁, hinduction D₂ with obj₂ precat₂, 
   --change obj₁ = obj₂ at Pₒ, hinduction Pₒ, 
   --rwr strict_cat_eq_to_comp_eq_hom, 
-  apply pathover_of_tr_eq, apply eq_of_homotopy2, intros a b,
+  apply pathover_of_tr_eq, apply eq_of_homotopy2, intros a b, 
+  hinduction ceq,
   --change _ =[@idp _ obj₁; λ (P : obj₁ = obj₁), Π (a b : obj₁), (a ⟶ b) = (P ▸ a ⟶ P ▸ b)] _, 
   sorry
 end  
@@ -191,13 +191,11 @@ begin
   change strict_cat_comp_eq_to_eq D D (strict_cat_comp_eq.mk _ _ _ _) = _, 
   hinduction D with obj precat, 
   change apd011 strict_category.mk _ _ = apd011 strict_category.mk idp idpo,
-  fapply apd011 (apd011 strict_category.mk), refl, 
-  apply pathover_of_tr_eq, change _ = pathover_idp_of_eq _ idp, 
-  apply ap (pathover_idp_of_eq _), 
-  hinduction precat with cat_struct id_comp comp_id comp_assoc, hsimp, 
-  
-  hinduction cat_struct with has_hom id comp, hsimp, 
-  sorry,
+  fapply apd011 (apd011 strict_category.mk), 
+  { refl }, 
+  { apply pathover_of_tr_eq, change _ = pathover_idp_of_eq _ idp, 
+    apply ap (pathover_idp_of_eq _), hinduction precat with cat_struct id_comp comp_id assoc,
+    hsimp, sorry }
 end  
 
 @[hott]
@@ -211,7 +209,8 @@ begin
     { intro b, hinduction b, rwr strict_cat_comp_eq_eta (strict_cat_eq_to_comp_eq D₁ D₂ _),
       fapply apd01111_v2 strict_cat_comp_eq.mk, 
       { rwr strict_cat_comp_eq_to_eq_obj },
-      { change _ =[_ ▸[λ P, P = Pₒ] idp] _, rwr id_tr_eq_id_inv_con, rwr con_idp, rwr hott.eq.inv_inv, 
+      { change _ =[_ ▸[λ P, P = Pₒ] idp] _, rwr id_tr_eq_id_inv_con, rwr con_idp, 
+        rwr hott.eq.inv_inv, 
         exact @strict_cat_comp_eq_to_eq_hom D₁ D₂ (strict_cat_comp_eq.mk Pₒ Pₕ id_eq comp_eq) },
       { apply pathover_of_tr_eq, apply eq_of_homotopy, intro a, exact is_set.elim _ _ },
       { apply pathover_of_tr_eq, apply eq_of_homotopy3, intros a b c, 
