@@ -56,6 +56,8 @@ precategory.mk (λ D₁ D₂ F, funct_id_comp F)
                (λ D₁ D₂ F, funct_comp_id F) 
                (λ D₁ D₂ D₃ D₄ F G H, funct_comp_assoc F G H)
 
+namespace strict_cat
+
 /- In the [HoTT-Book], three types of equivalences between (pre)categories are discussed :
    equivalences of (pre)categories [Def.9.4.1], isomorphisms of (pre)categories [Def.9.4.8]
    and equalities. They only are equivalent types if the precategories are categories 
@@ -71,23 +73,23 @@ precategory.mk (λ D₁ D₂ F, funct_id_comp F)
    show that equalities of the components is equivalent to equality of the strict 
    precategories. -/ 
 @[hott]
-structure strict_cat_comp_eq (D₁ D₂ : strict_category) :=
+structure comp_eq (D₁ D₂ : strict_category) :=
   (Pₒ : D₁.obj = D₂.obj)  
   (Pₕ : Π a b : D₁.obj, (a ⟶ b) = (Pₒ ▸[(λ (A : Set), A.carrier)] a ⟶ 
                                                  Pₒ ▸[(λ (A : Set), A.carrier)] b))
   (id_eq : Π a : D₁.obj, (Pₕ a a) ▸ 𝟙 a = 𝟙 (Pₒ ▸ a))
-  (comp_eq : Π (a b c : D₁.obj) (f : a ⟶ b) (g : b ⟶ c), (Pₕ a c) ▸ (f ≫ g) = 
+  (comp_hom_eq : Π (a b c : D₁.obj) (f : a ⟶ b) (g : b ⟶ c), (Pₕ a c) ▸ (f ≫ g) = 
                             ((Pₕ a b) ▸ f) ≫ ((Pₕ b c) ▸ g))                                               
 
 @[hott]
-def strict_cat_comp_eq_eta {D₁ D₂ : strict_category} (eq : strict_cat_comp_eq D₁ D₂) :
-  eq = strict_cat_comp_eq.mk eq.Pₒ eq.Pₕ eq.id_eq eq.comp_eq :=
+def comp_eq_eta {D₁ D₂ : strict_category} (eq : comp_eq D₁ D₂) :
+  eq = comp_eq.mk eq.Pₒ eq.Pₕ eq.id_eq eq.comp_hom_eq :=
 begin hinduction eq, hsimp end   
 
 @[hott]
-def strict_cat_idp_comp_eq (D : strict_category) : strict_cat_comp_eq D D :=
+def idp_comp_eq (D : strict_category) : comp_eq D D :=
 begin 
-  fapply strict_cat_comp_eq.mk,
+  fapply comp_eq.mk,
   { exact idp },
   { intros a b, hsimp },
   { intro a, hsimp },
@@ -95,10 +97,10 @@ begin
 end
 
 @[hott, hsimp]
-def strict_cat_eq_to_comp_eq (D₁ D₂ : strict_category) : 
-  D₁ = D₂ -> strict_cat_comp_eq D₁ D₂ :=
+def eq_to_comp_eq (D₁ D₂ : strict_category) : 
+  D₁ = D₂ -> comp_eq D₁ D₂ :=
 begin
-  intro p, hinduction p, fapply strict_cat_comp_eq.mk, 
+  intro p, hinduction p, fapply comp_eq.mk, 
   { exact idp },
   { intros a b, hsimp },
   { intro a, hsimp },
@@ -106,27 +108,27 @@ begin
 end    
 
 @[hott]
-def strict_cat_eq_to_comp_eq_obj {D₁ D₂ : strict_category} (eq : D₁ = D₂) :
-  ap strict_category.obj eq = (strict_cat_eq_to_comp_eq D₁ D₂ eq).Pₒ :=
+def eq_to_comp_eq_obj {D₁ D₂ : strict_category} (eq : D₁ = D₂) :
+  ap strict_category.obj eq = (eq_to_comp_eq D₁ D₂ eq).Pₒ :=
 begin hinduction eq, hsimp end
 
 @[hott]
-def strict_cat_eq_to_comp_eq_hom {D₁ D₂ : strict_category} (eq : D₁ = D₂) :
-  (strict_cat_eq_to_comp_eq D₁ D₂ eq).Pₕ = 
+def eq_to_comp_eq_hom {D₁ D₂ : strict_category} (eq : D₁ = D₂) :
+  (eq_to_comp_eq D₁ D₂ eq).Pₕ = 
   λ a b : D₁.obj, @eq.rec _ _ (λ (D : strict_category) (p : D₁ = D), 
-            (a ⟶ b) = ((strict_cat_eq_to_comp_eq D₁ D p).Pₒ ▸ a ⟶ 
-                        (strict_cat_eq_to_comp_eq D₁ D p).Pₒ ▸ b)) 
+            (a ⟶ b) = ((eq_to_comp_eq D₁ D p).Pₒ ▸ a ⟶ 
+                        (eq_to_comp_eq D₁ D p).Pₒ ▸ b)) 
             (@idp _ (a ⟶ b)) D₂ eq :=
 begin hinduction eq, exact rfl end
 
 @[hott]
-def strict_cat_eq_to_comp_eq_idp (D : strict_category) :
-  strict_cat_eq_to_comp_eq D D (idpath D) = strict_cat_idp_comp_eq D :=
-begin rwr strict_cat_comp_eq_eta (strict_cat_eq_to_comp_eq D D (idpath D)) end  
+def eq_to_comp_eq_idp (D : strict_category) :
+  eq_to_comp_eq D D (idpath D) = idp_comp_eq D :=
+begin rwr comp_eq_eta (eq_to_comp_eq D D (idpath D)) end  
 
 @[hott]
-def strict_cat_comp_eq_to_eq (D₁ D₂ : strict_category) : 
-  strict_cat_comp_eq D₁ D₂ -> D₁ = D₂ :=
+def comp_eq_to_eq (D₁ D₂ : strict_category) : 
+  comp_eq D₁ D₂ -> D₁ = D₂ :=
 begin
   hinduction D₁ with obj₁ precat₁, hinduction D₂ with obj₂ precat₂, 
   intro comp_eq, hinduction comp_eq with Pₒ Pₕ id_eq comp_eq, change obj₁ = obj₂ at Pₒ, 
@@ -158,11 +160,11 @@ begin
 end  
 
 @[hott]
-def strict_cat_comp_eq_to_eq_obj {D₁ D₂ : strict_category} (ceq : strict_cat_comp_eq D₁ D₂) :
-  (strict_cat_eq_to_comp_eq D₁ D₂ (strict_cat_comp_eq_to_eq D₁ D₂ ceq)).Pₒ = ceq.Pₒ :=
+def comp_eq_to_eq_obj {D₁ D₂ : strict_category} (ceq : comp_eq D₁ D₂) :
+  (eq_to_comp_eq D₁ D₂ (comp_eq_to_eq D₁ D₂ ceq)).Pₒ = ceq.Pₒ :=
 begin 
   hinduction ceq, hinduction D₁ with obj₁ precat₁, hinduction D₂ with obj₂ precat₂, 
-  change obj₁ = obj₂ at Pₒ, hinduction Pₒ, rwr <- strict_cat_eq_to_comp_eq_obj,
+  change obj₁ = obj₂ at Pₒ, hinduction Pₒ, rwr <- eq_to_comp_eq_obj,
   change ap strict_category.obj (apd011 strict_category.mk _ _) = @idp _ obj₁, 
   let H : Π (o : Set) (p : precategory ↥o), strict_category.obj (strict_category.mk o p) = o := 
     assume o p, idp,
@@ -170,25 +172,21 @@ begin
 end  
 
 @[hott]
-def strict_cat_comp_eq_to_eq_hom {D₁ D₂ : strict_category} (ceq : strict_cat_comp_eq D₁ D₂) :
-  (strict_cat_eq_to_comp_eq D₁ D₂ (strict_cat_comp_eq_to_eq D₁ D₂ ceq)).Pₕ 
-    =[strict_cat_comp_eq_to_eq_obj ceq; λ (P : D₁.obj = D₂.obj), Π (a b : D₁.obj), 
-                            (a ⟶ b) = (P ▸ a ⟶ P ▸ b)] ceq.Pₕ :=
+def comp_eq_to_eq_hom {D₁ D₂ : strict_category} (ceq : comp_eq D₁ D₂) :
+  (eq_to_comp_eq D₁ D₂ (comp_eq_to_eq D₁ D₂ ceq)).Pₕ =[comp_eq_to_eq_obj ceq; 
+          λ (P : D₁.obj = D₂.obj), Π (a b : D₁.obj), (a ⟶ b) = (P ▸ a ⟶ P ▸ b)] ceq.Pₕ :=
 begin
-  --hinduction D₁ with obj₁ precat₁, hinduction D₂ with obj₂ precat₂, 
-  --change obj₁ = obj₂ at Pₒ, hinduction Pₒ, 
-  --rwr strict_cat_eq_to_comp_eq_hom, 
   apply pathover_of_tr_eq, apply eq_of_homotopy2, intros a b, 
-  hinduction ceq,
-  --change _ =[@idp _ obj₁; λ (P : obj₁ = obj₁), Π (a b : obj₁), (a ⟶ b) = (P ▸ a ⟶ P ▸ b)] _, 
+  hinduction ceq, change _ = Pₕ a b,
+  hinduction D₁ with obj₁ precat₁, hinduction D₂ with obj₂ precat₂, 
+  change obj₁ = obj₂ at Pₒ, hinduction Pₒ,
   sorry
 end  
 
 @[hott]
-def strict_cat_comp_eq_to_eq_idp (D : strict_category) : 
-  strict_cat_comp_eq_to_eq D D (strict_cat_idp_comp_eq D) = refl D :=
+def comp_eq_to_eq_idp (D : strict_category) : comp_eq_to_eq D D (idp_comp_eq D) = refl D :=
 begin 
-  change strict_cat_comp_eq_to_eq D D (strict_cat_comp_eq.mk _ _ _ _) = _, 
+  change comp_eq_to_eq D D (comp_eq.mk _ _ _ _) = _, 
   hinduction D with obj precat, 
   change apd011 strict_category.mk _ _ = apd011 strict_category.mk idp idpo,
   fapply apd011 (apd011 strict_category.mk), 
@@ -199,24 +197,23 @@ begin
 end  
 
 @[hott]
-def strict_cat_eq_eqv_comp_eq (D₁ D₂ : strict_category) : 
-  D₁ = D₂ ≃ strict_cat_comp_eq D₁ D₂ :=
+def eq_eqv_comp_eq (D₁ D₂ : strict_category) : D₁ = D₂ ≃ comp_eq D₁ D₂ :=
 begin
   fapply equiv.mk, 
-  { exact strict_cat_eq_to_comp_eq D₁ D₂ },
+  { exact eq_to_comp_eq D₁ D₂ },
   { fapply adjointify, 
-    { exact strict_cat_comp_eq_to_eq D₁ D₂ },
-    { intro b, hinduction b, rwr strict_cat_comp_eq_eta (strict_cat_eq_to_comp_eq D₁ D₂ _),
-      fapply apd01111_v2 strict_cat_comp_eq.mk, 
-      { rwr strict_cat_comp_eq_to_eq_obj },
+    { exact comp_eq_to_eq D₁ D₂ },
+    { intro b, hinduction b, rwr comp_eq_eta (eq_to_comp_eq D₁ D₂ _),
+      fapply apd01111_v2 comp_eq.mk, 
+      { rwr comp_eq_to_eq_obj },
       { change _ =[_ ▸[λ P, P = Pₒ] idp] _, rwr id_tr_eq_id_inv_con, rwr con_idp, 
         rwr hott.eq.inv_inv, 
-        exact @strict_cat_comp_eq_to_eq_hom D₁ D₂ (strict_cat_comp_eq.mk Pₒ Pₕ id_eq comp_eq) },
+        exact @comp_eq_to_eq_hom D₁ D₂ (comp_eq.mk Pₒ Pₕ id_eq comp_hom_eq) },
       { apply pathover_of_tr_eq, apply eq_of_homotopy, intro a, exact is_set.elim _ _ },
       { apply pathover_of_tr_eq, apply eq_of_homotopy3, intros a b c, 
         apply eq_of_homotopy2, intros f g, exact is_set.elim _ _ } },
-    { intro p, hinduction p, rwr strict_cat_eq_to_comp_eq_idp, 
-      exact strict_cat_comp_eq_to_eq_idp D₁ } }
+    { intro p, hinduction p, rwr eq_to_comp_eq_idp, 
+      exact comp_eq_to_eq_idp D₁ } }
 end                               
   
 /- Next, we adjointify the two natural transformations given by an isomorphism of two 
@@ -546,7 +543,9 @@ begin
   apply pathover_of_tr_eq,   
   --rwr apdt, apply eq_of_homotopy3, intros a b f, 
   sorry
-end        
+end  
+
+end strict_cat
 
 @[hott, instance]
 def strict_cat_cat : category strict_category :=
