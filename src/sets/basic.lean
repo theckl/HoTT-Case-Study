@@ -100,6 +100,11 @@ def is_set_dmap {A : Type _} {B : A -> Set} : is_set (Π (a : A), B a) :=
     @is_prop.elim _ H_eqv p q,
   is_set.mk (Π (a : A), B a) H
 
+@[hott, instance]
+def is_set_dmap' {A : Type _} {B : A -> Type _} [H : Π a : A, is_set (B a)] : 
+  is_set (Π (a : A), B a) :=
+@is_set_dmap A (λ a : A, trunctype.mk (B a) (H a))  
+
 @[hott]
 def Sections {A : Set} (B : A -> Set) : Set :=
   Set.mk (Π (a : A), B a) (@is_set_dmap _ _)  
