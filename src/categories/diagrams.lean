@@ -179,8 +179,8 @@ begin
   apply pathover_of_tr_eq, apply eq_of_homotopy2, intros a b, 
   hinduction ceq, change _ = Pₕ a b,
   hinduction D₁ with obj₁ precat₁, hinduction D₂ with obj₂ precat₂, 
-  change obj₁ = obj₂ at Pₒ, hinduction Pₒ,
-  sorry
+  change obj₁ = obj₂ at Pₒ, hinduction Pₒ, 
+  rwr eq_to_comp_eq_hom, sorry
 end  
 
 @[hott]
@@ -193,7 +193,20 @@ begin
   { refl }, 
   { apply pathover_of_tr_eq, change _ = pathover_idp_of_eq _ idp, 
     apply ap (pathover_idp_of_eq _), hinduction precat with cat_struct id_comp comp_id assoc,
-    hsimp, sorry }
+    hsimp, change apd01111' (@precategory.mk _) _ _ _ _ = 
+                                            apd01111' (@precategory.mk _) idp idpo idpo idpo,
+    fapply apd01111' (apd01111' (@precategory.mk _)), 
+    { hinduction cat_struct with has_hom id comp, hinduction has_hom with hom, hsimp, 
+      change apd0111' (@category_struct.mk _) _ _ _ = 
+                                               apd0111' (@category_struct.mk _) idp idpo idpo,
+      fapply apd0111' (apd0111' (@category_struct.mk _)), 
+      { change _ = ap has_hom.mk idp, apply ap (ap has_hom.mk), 
+        change eq_of_homotopy2 (λ (a b : ↥obj), idp) = _, rwr eq_of_homotopy2_id },
+      { apply pathover_of_tr_eq, apply dep_set_eq_eq _ _ _, apply is_set_dmap' },
+      { apply pathover_of_tr_eq, apply dep_set_eq_eq _ _ _, apply is_set_dmap' } },
+    { apply pathover_of_tr_eq, apply dep_set_eq_eq _ _ _, apply is_set_dmap' },
+    { apply pathover_of_tr_eq, apply dep_set_eq_eq _ _ _, apply is_set_dmap' },
+    { apply pathover_of_tr_eq, apply dep_set_eq_eq _ _ _, apply is_set_dmap' } }
 end  
 
 @[hott]
