@@ -100,13 +100,17 @@ end
 def eq_to_obj_eq {D₁ D₂ : strict_category} : Π (p : D₁ = D₂), D₁.obj = D₂.obj :=
   assume p, ap strict_category.obj p
 
+@[hott, hsimp]
+def eq_to_obj_eq_idp (D : strict_category) : eq_to_obj_eq (@idp _ D) = @idp _ D.obj :=
+  ap_idp _ _
+
 @[hott]
 def eq_to_hom_eq {D₁ D₂ : strict_category} : 
   Π (p : D₁ = D₂) (a b : D₁.obj), (a ⟶ b) = (eq_to_obj_eq p ▸ a ⟶ eq_to_obj_eq p ▸ b) :=
-assume p a b,  
+assume p,  
 have H : (λ (a b : D₁.obj), a ⟶ b) =[p; λ D : strict_category, Π a b : D.obj, Set] 
          (λ (a' b' : D₂.obj), a' ⟶ b'), from sorry, 
-sorry    
+begin sorry end    
 
 @[hott, hsimp]
 def eq_to_hom_eq_idp {D : strict_category} (a b : D.obj) : 
@@ -114,14 +118,13 @@ def eq_to_hom_eq_idp {D : strict_category} (a b : D.obj) :
 sorry  
 
 @[hott, hsimp]
-def eq_to_comp_eq (D₁ D₂ : strict_category) : 
-  D₁ = D₂ -> comp_eq D₁ D₂ :=
+def eq_to_comp_eq (D₁ D₂ : strict_category) : D₁ = D₂ -> comp_eq D₁ D₂ :=
 begin
   intro p, fapply comp_eq.mk, 
   { exact eq_to_obj_eq p },
   { intros a b, exact eq_to_hom_eq p a b },
-  { intro a, hinduction p, hsimp, sorry },
-  { intros a b c f g, hsimp, sorry }
+  { intro a, hinduction p, hsimp },
+  { intros a b c f g, induction p, hsimp }
 end    
 
 @[hott]
