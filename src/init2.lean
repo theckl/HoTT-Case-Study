@@ -98,6 +98,16 @@ begin
   { intro q, exact pathover_of_pathover_ap C f q } 
 end 
 
+@[hott, hsimp]
+def apo100 {A A' C : Type _} {f : A -> A'} {B : A' -> Type _} {a a' : A} (p : a = a') 
+  {g : B (f a) -> B (f a) -> C} {g' : B (f a') -> B (f a') -> C} 
+  (H : g =[p; λ a : A, B (f a) -> B (f a) -> C] g') :
+  Π b₁ b₂ : B (f a), g b₁ b₂ = g' (ap f p ▸[B] b₁) (ap f p ▸[B] b₂) :=
+begin 
+  hinduction p, intros b₁ b₂, rwr tr_ap, rwr tr_ap,
+  rwr idp_tr, rwr idp_tr, exact ap100 (eq_of_pathover_idp H) b₁ b₂ 
+end  
+
 @[hott]
 def ap01_tr2 {A B D : Type _} {C : B -> Type _} (f : A -> B) 
   (g : Π a : A, C (f a) -> C (f a) -> D) {a₁ a₂ : A} (p : a₁ = a₂) (c₁ c₂ : C (f a₁)) :
