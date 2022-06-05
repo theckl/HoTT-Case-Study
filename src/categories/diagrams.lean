@@ -96,26 +96,23 @@ begin
   { intros a b c f g, hsimp } 
 end
 
-@[hott]
+@[hott, hsimp]
 def eq_to_obj_eq {D₁ D₂ : strict_category} : Π (p : D₁ = D₂), D₁.obj = D₂.obj :=
-  assume p, ap strict_category.obj p
+  assume p, ap (λ D : strict_category, D.obj) p
 
 @[hott, hsimp]
 def eq_to_obj_eq_idp (D : strict_category) : eq_to_obj_eq (@idp _ D) = @idp _ D.obj :=
   ap_idp _ _
 
-@[hott]
+@[hott, hsimp]
 def eq_to_hom_eq {D₁ D₂ : strict_category} : 
   Π (p : D₁ = D₂) (a b : D₁.obj), (a ⟶ b) = (eq_to_obj_eq p ▸ a ⟶ eq_to_obj_eq p ▸ b) :=
-assume p,  
-have H : (λ (a b : D₁.obj), a ⟶ b) =[p; λ D : strict_category, Π a b : D.obj, Set] 
-         (λ (a' b' : D₂.obj), a' ⟶ b'), from sorry, 
-begin sorry end    
+assume p, apo100 p (apd (λ D, @has_hom.hom D.obj _) p)    
 
 @[hott, hsimp]
 def eq_to_hom_eq_idp {D : strict_category} (a b : D.obj) : 
   eq_to_hom_eq (@idp _ D) a b = @idp _ (a ⟶ b) :=
-sorry  
+by hsimp  
 
 @[hott, hsimp]
 def eq_to_comp_eq (D₁ D₂ : strict_category) : D₁ = D₂ -> comp_eq D₁ D₂ :=
@@ -126,20 +123,6 @@ begin
   { intro a, hinduction p, hsimp },
   { intros a b c f g, induction p, hsimp }
 end    
-
-@[hott]
-def eq_to_comp_eq_hom {D₁ D₂ : strict_category} (eq : D₁ = D₂) :
-  (eq_to_comp_eq D₁ D₂ eq).Pₕ = 
-  λ a b : D₁.obj, @eq.rec _ _ (λ (D : strict_category) (p : D₁ = D), 
-            (a ⟶ b) = ((eq_to_comp_eq D₁ D p).Pₒ ▸ a ⟶ 
-                        (eq_to_comp_eq D₁ D p).Pₒ ▸ b)) 
-            (@idp _ (a ⟶ b)) D₂ eq :=
-begin hinduction eq, exact rfl end
-
-@[hott]
-def eq_to_comp_eq_idp (D : strict_category) :
-  eq_to_comp_eq D D (idpath D) = idp_comp_eq D :=
-begin rwr comp_eq_eta (eq_to_comp_eq D D (idpath D)) end  
 
 @[hott]
 def comp_eq_to_eq (D₁ D₂ : strict_category) : 
@@ -179,7 +162,7 @@ def comp_eq_to_eq_obj {D₁ D₂ : strict_category} (ceq : comp_eq D₁ D₂) :
   (eq_to_comp_eq D₁ D₂ (comp_eq_to_eq D₁ D₂ ceq)).Pₒ = ceq.Pₒ :=
 begin 
   hinduction ceq, hinduction D₁ with obj₁ precat₁, hinduction D₂ with obj₂ precat₂, 
-  change obj₁ = obj₂ at Pₒ, hinduction Pₒ, rwr <- eq_to_comp_eq_obj,
+  change obj₁ = obj₂ at Pₒ, hinduction Pₒ, hsimp, 
   change ap strict_category.obj (apd011 strict_category.mk _ _) = @idp _ obj₁, 
   let H : Π (o : Set) (p : precategory ↥o), strict_category.obj (strict_category.mk o p) = o := 
     assume o p, idp,
@@ -194,7 +177,7 @@ begin
   apply pathover_of_tr_eq, apply eq_of_homotopy2, intros a b, 
   hinduction ceq, change _ = Pₕ a b,
   hinduction D₁ with obj₁ precat₁, hinduction D₂ with obj₂ precat₂, 
-  change obj₁ = obj₂ at Pₒ, hinduction Pₒ, change ↥obj₁ at a, change ↥obj₁ at b, 
+  change obj₁ = obj₂ at Pₒ, hinduction Pₒ, change ↥obj₁ at a, change ↥obj₁ at b,
   rwr eq_to_comp_eq_hom, change (Π a b, (a ⟶ b) = (a ⟶ b)) at Pₕ, sorry
 end  
 
