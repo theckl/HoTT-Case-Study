@@ -73,6 +73,30 @@ namespace strict_cat
    show that equalities of the components is equivalent to equality of the strict 
    precategories. -/ 
 @[hott]
+def flat_mk : Π (obj : Set.{u}) (hom : obj -> obj -> Set.{v}) 
+  (id : Π a : obj, hom a a) (comp : Π {a b c}, hom a b -> hom b c -> hom a c),
+  (Π {a b} (g : hom a b), comp (id a) g = g) ->
+  (Π {a b} (f : hom a b), comp f (id b) = f) ->
+  (Π {a b c d} (f : hom a b) (g : hom b c) (h : hom c d), 
+       comp (comp f g) h = comp f (comp g h)) -> strict_category :=
+assume obj hom id comp id_comp comp_id assoc, 
+strict_category.mk obj (@precategory.mk ↥obj (@category_struct.mk ↥obj (has_hom.mk hom) 
+                                                                  @id @comp) 
+                                        @id_comp @comp_id @assoc)     
+
+@[hott]
+def flat_eta (D : strict_category) : 
+  D = flat_mk D.obj D.precat.to_has_hom.hom D.precat.to_category_struct.id 
+              D.precat.to_category_struct.comp D.precat.id_comp D.precat.comp_id
+              D.precat.assoc :=
+begin 
+  hinduction D with obj precat, hsimp, 
+  hinduction precat with cat_str id_comp comp_id assoc, hsimp,
+  hinduction cat_str with has_hom id comp, hinduction has_hom with hom, hsimp,
+  exact idp
+end              
+
+@[hott]
 structure comp_eq (D₁ D₂ : strict_category) :=
   (Pₒ : D₁.obj = D₂.obj)  
   (Pₕ : Π a b : D₁.obj, (a ⟶ b) = (Pₒ ▸[(λ (A : Set), A.carrier)] a ⟶ 
@@ -177,8 +201,9 @@ begin
   apply pathover_of_tr_eq, apply eq_of_homotopy2, intros a b, 
   hinduction ceq, change _ = Pₕ a b,
   hinduction D₁ with obj₁ precat₁, hinduction D₂ with obj₂ precat₂, 
-  change obj₁ = obj₂ at Pₒ, hinduction Pₒ, change ↥obj₁ at a, change ↥obj₁ at b,
-  rwr eq_to_comp_eq_hom, change (Π a b, (a ⟶ b) = (a ⟶ b)) at Pₕ, sorry
+  change obj₁ = obj₂ at Pₒ, hinduction Pₒ, change ↥obj₁ at a, change ↥obj₁ at b, 
+  change (comp_eq_to_eq_obj _ ▸ (λ a b, eq_to_hom_eq _ a b)) a b = _,
+  sorry
 end  
 
 @[hott]
