@@ -231,6 +231,23 @@ def apd000011 {A B C F : Type _} {D : B -> A -> Type _} {E : C -> A -> Type _}
 begin hinduction pa, hinduction pb, hinduction pc, hinduction pd, hinduction pe, refl end  
 
 @[hott]
+def apd01d6 {A H : Type _} {B : A -> Type _} {C D: Π (a : A), B a -> Type _}
+  {E F G : Π (a : A) (b : B a), C a b -> D a b -> Type _} (f : Π (a : A) (b : B a) 
+  (c : C a b) (d : D a b), E a b c d -> F a b c d -> G a b c d -> H)
+  {a₁ a₂ : A} {b₁ : B a₁} {b₂ : B a₂} {c₁ : C a₁ b₁} {c₂ : C a₂ b₂} {d₁ : D a₁ b₁} 
+  {d₂ : D a₂ b₂} {e₁ : E a₁ b₁ c₁ d₁} {e₂ : E a₂ b₂ c₂ d₂} {f₁ : F a₁ b₁ c₁ d₁} 
+  {f₂ : F a₂ b₂ c₂ d₂} {g₁ : G a₁ b₁ c₁ d₁} {g₂ : G a₂ b₂ c₂ d₂} 
+  (pA : a₁ = a₂) (pB : b₁ =[pA] b₂) (pC : c₁ =[apd011 C pA pB; id] c₂) 
+  (pD : d₁ =[apd011 D pA pB; id] d₂) (pE : e₁ =[apd01111_v2 E pA pB pC pD; id] e₂)
+  (pF : f₁ =[apd01111_v2 F pA pB pC pD; id] f₂) 
+  (pG : g₁ =[apd01111_v2 G pA pB pC pD; id] g₂) :
+  f a₁ b₁ c₁ d₁ e₁ f₁ g₁ = f a₂ b₂ c₂ d₂ e₂ f₂ g₂ :=
+begin 
+  hinduction pA, hinduction pB, hinduction pC, hinduction pD, hinduction pE, 
+  hinduction pF, hinduction pG, refl 
+end  
+
+@[hott]
 def apd01111_eq {A F : Type _} {B C D E : A -> Type _} 
   (h : Π a : A, B a -> C a -> D a -> E a -> F) {a a' : A} 
   {b : B a} {b' : B a'} {c : C a} {c' : C a'} {d : D a} {d' : D a'} 
@@ -297,6 +314,12 @@ begin hinduction p, refl end
 def tr_dep_fn_eval_tr {A C : Type _} {B : A -> Type _}  
   {a₁ a₂ : A} {f : B a₁ -> C} (p : a₁ = a₂) (b : B a₂) : (p ▸ f) b = f (p⁻¹ ▸ b) :=
 begin hinduction p, refl end  
+
+@[hott]
+def tr_dep_fn2_eval_tr {A C : Type _} {B : A -> Type _}  
+  {a₁ a₂ : A} (f₂ : B a₂ -> B a₂ -> C) (p : a₁ = a₂) (b₁ b₂ : B a₁) : 
+  (p⁻¹ ▸ f₂) b₁ b₂ = f₂ (p ▸ b₁) (p ▸ b₂) :=
+begin hinduction p, refl end 
 
 @[hott]
 def ap100_tr {A B C : Type _} {F G : A -> B -> C} {D : C -> Type _} 
