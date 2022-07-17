@@ -1,9 +1,9 @@
-init2       :   461
+init2       :   494
 types2      :   252
 prop_axioms :   647
 prop_logic  :   208
 sets
-  basic     :   659
+  basic     :   664
   finite    :   206
   subset    :   407
   axioms    :   340
@@ -12,15 +12,16 @@ sets
   theories  :   695
 categories  
   basic     :   776
-  examples  :   825
+  examples  :   824
   adjoints  :   398
-  diagrams  :   441
+  strict_cat:   633
+  diagrams  :   442
   limits    :   626
   pullbacks :   403
   colimits  :   458
   structures:   613
               -----
-               8859
+               9540
 
 
 Files to edit : 
@@ -35,6 +36,6 @@ categories.colimits : isomorphisms of diagrams induce isomorphisms of colimits
 categories.limits : isomorphisms of diagrams induce isomorphisms of limits
 categories.diagrams : isomorphism of infinite (co)wedge diagrams
 categories.diagrams : infinte wedge, infinite cowedge, cowedge
-categories.diagrams : category of small precategories
+categories.strict_cat : category of small precategories = strict categories
 
 
