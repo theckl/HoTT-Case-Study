@@ -99,9 +99,8 @@ end
 @[hott]
 structure comp_eq (D₁ D₂ : strict_category) :=
   (Pₒ : D₁.obj = D₂.obj)  
-  (Pₕ : Π a b : D₁.obj, (a ⟶ b) = (Pₒ ▸[(λ (A : Set), A.carrier)] a ⟶ 
-                                                 Pₒ ▸[(λ (A : Set), A.carrier)] b))
-  (id_eq : Π a : D₁.obj, (Pₕ a a) ▸ 𝟙 a = 𝟙 (Pₒ ▸ a))
+  (Pₕ : Π a b : D₁.obj, (a ⟶ b) = (Pₒ ▸[λ D : Set, D.carrier] a ⟶ Pₒ ▸ b))
+  (id_eq : Π a : D₁.obj, (Pₕ a a) ▸ 𝟙 a = 𝟙 (Pₒ ▸[λ D : Set, D.carrier] a))
   (comp_hom_eq : Π (a b c : D₁.obj) (f : a ⟶ b) (g : b ⟶ c), (Pₕ a c) ▸ (f ≫ g) = 
                             ((Pₕ a b) ▸ f) ≫ ((Pₕ b c) ▸ g))                                               
 
@@ -113,8 +112,7 @@ begin hinduction eq, hsimp end
 @[hott]
 def eq_of_comp_eq {D₁ D₂ : strict_category} (ceq₁ ceq₂ : comp_eq D₁ D₂) :
   Π (pₒ : ceq₁.Pₒ = ceq₂.Pₒ), (ceq₁.Pₕ =[pₒ; λ P : D₁.obj = D₂.obj, Π a b : D₁.obj, 
-    (a ⟶ b) = (P ▸[(λ (A : Set), A.carrier)] a ⟶ 
-                         P ▸[(λ (A : Set), A.carrier)] b)] ceq₂.Pₕ) -> ceq₁ = ceq₂ :=
+    (a ⟶ b) = (P ▸[λ D : Set, D.carrier] a ⟶ P ▸ b)] ceq₂.Pₕ) -> ceq₁ = ceq₂ :=
 begin
   intros pₒ pₕ, rwr comp_eq_eta ceq₁, rwr comp_eq_eta ceq₂, 
   fapply apd01111_v2 comp_eq.mk, 
@@ -145,13 +143,14 @@ def eq_to_obj_eq_idp (D : strict_category) : eq_to_obj_eq (@idp _ D) = @idp _ D.
 
 @[hott, hsimp]
 def eq_to_hom_eq {D₁ D₂ : strict_category} : 
-  Π (p : D₁ = D₂) (a b : D₁.obj), (a ⟶ b) = (eq_to_obj_eq p ▸ a ⟶ eq_to_obj_eq p ▸ b) :=
-assume p, apo100 p (apd (λ D, @has_hom.hom D.obj _) p)    
+  Π (p : D₁ = D₂) (a b : D₁.obj), (a ⟶ b) = (eq_to_obj_eq p ▸[λ D : Set, D.carrier] a ⟶ 
+                                              eq_to_obj_eq p ▸ b) :=
+begin intro p, hsimp, exact apo100 p (apd (λ D, @has_hom.hom ↥(D.obj) _) p) end   
 
 @[hott, hsimp]
 def eq_to_hom_eq_idp {D : strict_category} (a b : D.obj) : 
   eq_to_hom_eq (@idp _ D) a b = @idp _ (a ⟶ b) :=
-by hsimp  
+begin hsimp, rwr cast_def end 
 
 @[hott, hsimp]
 def eq_to_comp_eq (D₁ D₂ : strict_category) : D₁ = D₂ -> comp_eq D₁ D₂ :=
@@ -170,13 +169,15 @@ begin
   intro comp_eq, hinduction comp_eq with Pₒ Pₕ id_eq comp_eq,
   rwr flat_eta D₁, rwr flat_eta D₂, fapply apd01d6 flat_mk,  
   { exact Pₒ },
-  { apply pathover_of_eq_tr, apply eq_of_homotopy2, intros a b, rwr Pₕ a b, 
-    rwr tr_dep_fn2_eval_tr },
-  { apply pathover_of_tr_eq, apply eq_of_homotopy, intro a, sorry },
-  { sorry },
-  { sorry },
-  { sorry },
-  { sorry }
+  { exact fn2_deq_to_eval_eq Pₒ Pₕ },
+  { apply pathover_of_eq_tr, apply eq_of_homotopy, intro a, sorry },
+  { apply pathover_of_eq_tr, apply eq_of_homotopy3, intros a b c,
+    apply eq_of_homotopy2, intros f g, sorry },
+  { apply pathover_of_tr_eq, apply eq_of_homotopy3, intros a b f, exact is_set.elim _ _ },
+  { apply pathover_of_tr_eq, apply eq_of_homotopy3, intros a b f, exact is_set.elim _ _ },
+  { apply pathover_of_tr_eq, apply eq_of_homotopy3, intros a b c, 
+      apply eq_of_homotopy3, intros d f g, apply eq_of_homotopy, intro h, 
+      exact is_set.elim _ _ }
 end
 
 @[hott]
