@@ -1,4 +1,4 @@
-init2       :   494
+init2       :   543
 types2      :   252
 prop_axioms :   647
 prop_logic  :   208
@@ -21,7 +21,7 @@ categories
   colimits  :   458
   structures:   613
               -----
-               9540
+               9589
 
 
 Files to edit : 
