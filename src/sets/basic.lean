@@ -645,7 +645,7 @@ def dprod_of_Sets_is_set (A : Set) (B : A -> Set) : is_set (Σ (a : A), B a) :=
 def dprod_Set (A : Set) (B : A -> Set) : Set :=
   Set.mk (Σ (a : A), B a) (dprod_of_Sets_is_set A B)   
 
-/- The sum of sets is a set. This is contianed in the file [types.sum] of the HoTT3 library
+/- The sum of sets is a set. This is contained in the file [types.sum] of the HoTT3 library
    which does not compile. -/
 @[hott, instance]
 def sum_of_Sets_is_set (A B : Set) : is_set (A ⊎ B) :=
