@@ -30,6 +30,12 @@ begin hinduction q, rwr idp_tr, rwr idp_inv, rwr idp_con end
 def pathover_idp_of_id {A : Type _} : Π a : A, pathover_idp_of_eq id (@idp _ a) = idpo := 
   assume a, rfl
 
+@[hott, hsimp]
+def pathover_idp_of_eq_eq_of_pathover_idp {A : Type _} {B : A -> Type _} {a : A} 
+  {b b': B a} (p : b =[idpath a] b') : pathover_idp_of_eq B (eq_of_pathover_idp p) = p :=
+by hinduction p; refl
+
+
 @[reducible,hott]
 def ap100 {A B C : Type _} {f g : A → B -> C} (H : f = g) : f ~2 g := apd100 H
 
@@ -37,6 +43,11 @@ def ap100 {A B C : Type _} {f g : A → B -> C} (H : f = g) : f ~2 g := apd100 H
 def ap100_eq_of_hty2_inv {A B C : Type _} {f g : A → B -> C} (H : f ~2 g) :
   ap100 (eq_of_homotopy2 H) = H :=
 is_equiv.left_inv (funext.is_equiv_apd100 f g).inv H 
+
+@[hott]
+def hty2_of_ap100_eq_inv {A B C : Type _} {f g : A → B -> C} (p : f = g) :
+  eq_of_homotopy2 (ap100 p) = p :=
+is_equiv.right_inv (funext.is_equiv_apd100 f g).inv p 
 
 @[hott]
 def ap0111 {A : Type u} {B : Type v} {C D : A -> B -> Type _} {E : Type _}
@@ -490,5 +501,43 @@ decidable.rec
   (λ Hnc' : ¬c, calc @dite c (decidable.inr Hnc') A t e = e Hnc' : rfl 
                      ... = e Hnc : ap e (is_prop.elim _ _))
   H   
+
+/- We need some equivalent descriptions of equalities of functions. -/
+@[hott, hsimp]
+def fn2_deq_to_eval_eq {A C : Type _} {B : A -> Type _} {a b : A} 
+  {f : (B a) -> (B a) -> C} {g : (B b) -> (B b) -> C} (p : a = b) :
+  (Π (a₁ a₂ : B a), f a₁ a₂ = g (p ▸ a₁) (p ▸ a₂)) -> 
+                                  f =[p; λ c : A, (B c) -> (B c) -> C] g :=
+begin 
+  hinduction p, change (Π (a₁ a₂ : B a), f a₁ a₂ = g a₁ a₂) -> _, intro Pₕ,
+  apply pathover_of_tr_eq, exact eq_of_homotopy2 Pₕ 
+end  
+
+@[hott, hsimp]
+def fn2_eval_eq_to_deq {A C : Type _} {B : A -> Type _} {a b : A} 
+  {f : (B a) -> (B a) -> C} {g : (B b) -> (B b) -> C} (p : a = b) :
+  (f =[p; λ c : A, (B c) -> (B c) -> C] g) -> 
+                    (Π (a₁ a₂ : B a), f a₁ a₂ = g (p ▸ a₁) (p ▸ a₂)) :=
+begin 
+  hinduction p, intro pₕ, exact ap100 (eq_of_pathover_idp pₕ)
+end
+
+@[hott]
+def fn2_deq_eval_eq_rinv {A C : Type _} {B : A -> Type _} {a b : A} 
+  {f : (B a) -> (B a) -> C} {g : (B b) -> (B b) -> C} (p : a = b)
+  (Pₕ : Π (a₁ a₂ : B a), f a₁ a₂ = g (p ▸ a₁) (p ▸ a₂)) : 
+  fn2_eval_eq_to_deq p (fn2_deq_to_eval_eq p Pₕ) = Pₕ :=
+begin hinduction p, hsimp, rwr ap100_eq_of_hty2_inv end   
+
+@[hott]
+def fn2_deq_eval_eq_linv {A C : Type _} {B : A -> Type _} {a b : A} 
+  {f : (B a) -> (B a) -> C} {g : (B b)  -> (B b) -> C} (p : a = b)
+  (pₕ : f =[p; λ a : A, (B a) -> (B a) -> C] g) : 
+  fn2_deq_to_eval_eq p (fn2_eval_eq_to_deq p pₕ) = pₕ :=
+begin 
+  hinduction p, hsimp, rwr hty2_of_ap100_eq_inv, 
+  change pathover_idp_of_eq (λ (a : A), (B a) → (B a) → C) (eq_of_pathover_idp pₕ) = pₕ,
+  rwr pathover_idp_of_eq_eq_of_pathover_idp 
+end
 
 end hott
