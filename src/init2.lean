@@ -540,4 +540,30 @@ begin
   rwr pathover_idp_of_eq_eq_of_pathover_idp 
 end
 
+@[hott]
+def fn2_po_adp011_idp_eq {A : Type _} {B : A -> Type _} {C : Π a : A, B a -> Type _} 
+  {a : A} {b₁ b₂ : B a} (p : b₁ = b₂) {f₁ : C a b₁} {f₂ : C a b₂} : 
+  f₁ =[p] f₂ -> f₁ =[apd011 C (refl a) (pathover_idp_of_eq B p); id] f₂ :=
+begin hinduction p, intro q, apply pathover_idp_of_eq, exact eq_of_pathover_idp q end
+
+@[hott]
+def fn2_po_of_tr_eq {A C : Type _} {b₁ b₂ : A -> A -> C} (p : b₁ = b₂) {D : C -> Type _}
+  {f₁ : Π a : A, D (b₁ a a)} {f₂ : Π a : A, D (b₂ a a)} : 
+  (Π a : A, ap100 p a a ▸ f₁ a = f₂ a) -> 
+  @pathover (A -> A -> C) b₁ (λ b : A -> A -> C, Π a : A, D (b a a)) f₁ b₂ p f₂ :=
+begin hinduction p, intro q, apply pathover_idp_of_eq, exact eq_of_homotopy q end  
+
+@[hott]
+def fn2_po_of_tr_eq' {A C : Type _} {b₁ b₂ : A -> A -> C} (p : b₁ = b₂) {D : C -> Type _}
+  {f₁ : Π {a b c : A}, D (b₁ a b) -> D (b₁ b c) -> D (b₁ a c)} 
+  {f₂ : Π {a b c : A}, D (b₂ a b) -> D (b₂ b c) -> D (b₂ a c)} : 
+  (Π (a b c : A) (f : D (b₁ a b)) (g : D (b₁ b c)), ap100 p a c ▸ f₁ f g = 
+                                          f₂ (ap100 p a b ▸ f) (ap100 p b c ▸ g)) -> 
+  @pathover (A -> A -> C) b₁ (λ B : A -> A -> C, Π {a b c : A}, D (B a b) -> 
+                                              D (B b c) -> D (B a c)) @f₁ b₂ p @f₂ :=
+begin 
+  hinduction p, intro q, apply pathover_idp_of_eq, apply eq_of_homotopy3, 
+  intros a b c, exact eq_of_homotopy2 (q a b c) 
+end
+
 end hott
