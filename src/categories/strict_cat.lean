@@ -163,16 +163,23 @@ begin
 end    
 
 @[hott]
-def comp_eq_to_eq' (D₁ D₂ : strict_category) : 
+def comp_eq_to_eq (D₁ D₂ : strict_category) : 
   comp_eq D₁ D₂ -> D₁ = D₂ :=
 begin
   intro comp_eq, hinduction comp_eq with Pₒ Pₕ id_eq comp_eq,
   rwr flat_eta D₁, rwr flat_eta D₂, fapply apd01d6 flat_mk,  
   { exact Pₒ },
   { exact fn2_deq_to_eval_eq Pₒ Pₕ },
-  { apply pathover_of_eq_tr, apply eq_of_homotopy, intro a, sorry },
-  { apply pathover_of_eq_tr, apply eq_of_homotopy3, intros a b c,
-    apply eq_of_homotopy2, intros f g, sorry },
+  { hinduction D₁ with obj₁ precat₁, hinduction D₂ with obj₂ precat₂,
+    change obj₁ = obj₂ at Pₒ, hinduction Pₒ, hsimp,
+    apply @fn2_po_adp011_idp_eq _ _ (λ (A : Set) (b : A → A → Set), Π (a : A), b a a) 
+                                    _ _ _ (eq_of_homotopy2 Pₕ), 
+    apply fn2_po_of_tr_eq (eq_of_homotopy2 Pₕ), rwr ap100_eq_of_hty2_inv, exact id_eq },
+  { hinduction D₁ with obj₁ precat₁, hinduction D₂ with obj₂ precat₂,
+    change obj₁ = obj₂ at Pₒ, hinduction Pₒ, hsimp,
+    apply @fn2_po_adp011_idp_eq _ _ (λ (A : Set) (H : A → A → Set), 
+             Π {a b c : A}, (H a b) → (H b c) → (H a c)) _ _ _ (eq_of_homotopy2 Pₕ), 
+    apply fn2_po_of_tr_eq' (eq_of_homotopy2 Pₕ), rwr ap100_eq_of_hty2_inv, exact comp_eq },
   { apply pathover_of_tr_eq, apply eq_of_homotopy3, intros a b f, exact is_set.elim _ _ },
   { apply pathover_of_tr_eq, apply eq_of_homotopy3, intros a b f, exact is_set.elim _ _ },
   { apply pathover_of_tr_eq, apply eq_of_homotopy3, intros a b c, 
@@ -181,43 +188,10 @@ begin
 end
 
 @[hott]
-def comp_eq_to_eq (D₁ D₂ : strict_category) : 
-  comp_eq D₁ D₂ -> D₁ = D₂ :=
-begin
-  hinduction D₁ with obj₁ precat₁, hinduction D₂ with obj₂ precat₂, 
-  intro comp_eq, hinduction comp_eq with Pₒ Pₕ id_eq comp_eq, change obj₁ = obj₂ at Pₒ, 
-  hinduction Pₒ, fapply apd011 strict_category.mk, 
-  { exact idp },
-  { apply pathover_idp_of_eq, 
-    hinduction precat₁ with cat_struct₁ id_comp₁ comp_id₁ comp_assoc₁, 
-    hinduction precat₂ with cat_struct₂ id_comp₂ comp_id₂ comp_assoc₂,
-    fapply apd01111' (@precategory.mk obj₁), 
-    { hinduction cat_struct₁ with has_hom₁ id₁ comp₁, 
-      hinduction cat_struct₂ with has_hom₂ id₂ comp₂,
-      hinduction has_hom₁ with hom₁, hinduction has_hom₂ with hom₂, 
-      fapply apd0111' (@category_struct.mk obj₁),
-      { apply ap has_hom.mk, apply eq_of_homotopy2, intros a b, exact Pₕ a b },
-      { apply pathover_ap,         
-        apply pathover_of_tr_eq, apply eq_of_homotopy, intro a, rwr tr_fn_tr_eval,  
-        rwr <- ap100_tr (eq_of_homotopy2 (λ (a b : ↥obj₁), Pₕ a b)) (id₁ a), 
-        rwr ap100_eq_of_hty2_inv, exact id_eq a },
-      { apply pathover_ap,         
-        apply pathover_of_tr_eq, apply eq_of_homotopy3, intros a b c, rwr tr_fn_tr_eval,
-        apply eq_of_homotopy2, intros f g,   
-        rwr <- ap100_tr_comp (eq_of_homotopy2 (λ (a b : ↥obj₁), Pₕ a b)) (@comp₁ a) f g, 
-        rwr ap100_eq_of_hty2_inv, rwr comp_eq a b c, rwr tr_inv_tr, rwr tr_inv_tr } },
-    { apply pathover_of_tr_eq, apply eq_of_homotopy3, intros a b f, exact is_set.elim _ _ },
-    { apply pathover_of_tr_eq, apply eq_of_homotopy3, intros a b f, exact is_set.elim _ _ },
-    { apply pathover_of_tr_eq, apply eq_of_homotopy3, intros a b c, 
-      apply eq_of_homotopy3, intros d f g, apply eq_of_homotopy, intro h, 
-      exact is_set.elim _ _ } }
-end  
-
-@[hott]
 def comp_eq_to_eq_obj {D₁ D₂ : strict_category} (ceq : comp_eq D₁ D₂) :
   (eq_to_comp_eq D₁ D₂ (comp_eq_to_eq D₁ D₂ ceq)).Pₒ = ceq.Pₒ :=
 begin 
-  hinduction ceq, hinduction D₁ with obj₁ precat₁, hinduction D₂ with obj₂ precat₂, 
+  hsimp, hinduction ceq, hinduction D₁ with obj₁ precat₁, hinduction D₂ with obj₂ precat₂, 
   change obj₁ = obj₂ at Pₒ, hinduction Pₒ, hsimp, 
   change ap strict_category.obj (apd011 strict_category.mk _ _) = @idp _ obj₁, 
   let H : Π (o : Set) (p : precategory ↥o), strict_category.obj (strict_category.mk o p) = o := 
@@ -271,6 +245,19 @@ begin
   { exact eq_to_comp_eq D₁ D₂ },
   { fapply adjointify, 
     { exact comp_eq_to_eq D₁ D₂ },
+    { intro b, fapply eq_of_comp_eq, 
+      { sorry },
+      { sorry } },
+    { intro p, hinduction p, exact comp_eq_to_eq_idp D₁ } }
+end  
+
+@[hott]
+def eq_eqv_comp_eq' (D₁ D₂ : strict_category) : D₁ = D₂ ≃ comp_eq D₁ D₂ :=
+begin
+  fapply equiv.mk, 
+  { exact eq_to_comp_eq D₁ D₂ },
+  { fapply adjointify, 
+    { exact comp_eq_to_eq D₁ D₂ },
     { intro b, hinduction b, rwr comp_eq_eta (eq_to_comp_eq D₁ D₂ _),
       fapply apd01111_v2 comp_eq.mk, 
       { rwr comp_eq_to_eq_obj },
@@ -280,8 +267,7 @@ begin
       { apply pathover_of_tr_eq, apply eq_of_homotopy, intro a, exact is_set.elim _ _ },
       { apply pathover_of_tr_eq, apply eq_of_homotopy3, intros a b c, 
         apply eq_of_homotopy2, intros f g, exact is_set.elim _ _ } },
-    { intro p, hinduction p, rwr eq_to_comp_eq_idp, 
-      exact comp_eq_to_eq_idp D₁ } }
+    { intro p, hinduction p, exact comp_eq_to_eq_idp D₁ } }
 end                               
   
 /- Next, we adjointify the two natural transformations given by an isomorphism of two 
