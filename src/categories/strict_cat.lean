@@ -135,7 +135,7 @@ end
 
 @[hott, hsimp]
 def eq_to_obj_eq {D₁ D₂ : strict_category} : Π (p : D₁ = D₂), D₁.obj = D₂.obj :=
-  assume p, ap (λ D : strict_category, D.obj) p
+  assume p, ap (λ D : strict_category, D.obj) ((flat_eta D₁)⁻¹ ⬝ p ⬝ (flat_eta D₂))
 
 @[hott, hsimp]
 def eq_to_obj_eq_idp (D : strict_category) : eq_to_obj_eq (@idp _ D) = @idp _ D.obj :=
@@ -167,7 +167,8 @@ def comp_eq_to_eq (D₁ D₂ : strict_category) :
   comp_eq D₁ D₂ -> D₁ = D₂ :=
 begin
   intro comp_eq, hinduction comp_eq with Pₒ Pₕ id_eq comp_eq,
-  rwr flat_eta D₁, rwr flat_eta D₂, fapply apd01d6 flat_mk,  
+  apply (λ q, concat q (flat_eta D₂)⁻¹), apply concat (flat_eta D₁),  
+  fapply apd01d6 flat_mk,  
   { exact Pₒ },
   { exact fn2_deq_to_eval_eq Pₒ Pₕ },
   { hinduction D₁ with obj₁ precat₁, hinduction D₂ with obj₂ precat₂,
@@ -191,12 +192,16 @@ end
 def comp_eq_to_eq_obj {D₁ D₂ : strict_category} (ceq : comp_eq D₁ D₂) :
   (eq_to_comp_eq D₁ D₂ (comp_eq_to_eq D₁ D₂ ceq)).Pₒ = ceq.Pₒ :=
 begin 
-  hsimp, hinduction ceq, hinduction D₁ with obj₁ precat₁, hinduction D₂ with obj₂ precat₂, 
+  hinduction ceq, 
+  change (eq_to_comp_eq D₁ D₂ ((flat_eta D₁) ⬝ (apd01d6 flat_mk _ _ _ _ _ _ _) 
+                               ⬝ (flat_eta D₂)⁻¹)).Pₒ = Pₒ,
+  sorry
+  /-hinduction D₁ with obj₁ precat₁, hinduction D₂ with obj₂ precat₂, 
   change obj₁ = obj₂ at Pₒ, hinduction Pₒ, hsimp, 
   change ap strict_category.obj (apd011 strict_category.mk _ _) = @idp _ obj₁, 
   let H : Π (o : Set) (p : precategory ↥o), strict_category.obj (strict_category.mk o p) = o := 
     assume o p, idp,
-  rwr ap_apd011 _ _ _ _ H 
+  rwr ap_apd011 _ _ _ _ H -/
 end  
 
 @[hott]
@@ -246,29 +251,10 @@ begin
   { fapply adjointify, 
     { exact comp_eq_to_eq D₁ D₂ },
     { intro b, fapply eq_of_comp_eq, 
-      { sorry },
-      { sorry } },
+      { exact comp_eq_to_eq_obj b },
+      { exact comp_eq_to_eq_hom b } },
     { intro p, hinduction p, exact comp_eq_to_eq_idp D₁ } }
-end  
-
-@[hott]
-def eq_eqv_comp_eq' (D₁ D₂ : strict_category) : D₁ = D₂ ≃ comp_eq D₁ D₂ :=
-begin
-  fapply equiv.mk, 
-  { exact eq_to_comp_eq D₁ D₂ },
-  { fapply adjointify, 
-    { exact comp_eq_to_eq D₁ D₂ },
-    { intro b, hinduction b, rwr comp_eq_eta (eq_to_comp_eq D₁ D₂ _),
-      fapply apd01111_v2 comp_eq.mk, 
-      { rwr comp_eq_to_eq_obj },
-      { change _ =[_ ▸[λ P, P = Pₒ] idp] _, rwr id_tr_eq_id_inv_con, rwr con_idp, 
-        rwr hott.eq.inv_inv, 
-        exact @comp_eq_to_eq_hom D₁ D₂ (comp_eq.mk Pₒ Pₕ id_eq comp_hom_eq) },
-      { apply pathover_of_tr_eq, apply eq_of_homotopy, intro a, exact is_set.elim _ _ },
-      { apply pathover_of_tr_eq, apply eq_of_homotopy3, intros a b c, 
-        apply eq_of_homotopy2, intros f g, exact is_set.elim _ _ } },
-    { intro p, hinduction p, exact comp_eq_to_eq_idp D₁ } }
-end                               
+end                                 
   
 /- Next, we adjointify the two natural transformations given by an isomorphism of two 
    precategories, as in [HoTT-Book,Lem.9.4.2]. This gives an equivalence of precategories. -/
