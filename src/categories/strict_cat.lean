@@ -84,7 +84,7 @@ strict_category.mk obj (@precategory.mk ↥obj (@category_struct.mk ↥obj (has_
                                                                   @id @comp) 
                                         @id_comp @comp_id @assoc)     
 
-@[hott]
+@[hott, hsimp]
 def flat_eta (D : strict_category) : 
   D = flat_mk D.obj D.precat.to_has_hom.hom D.precat.to_category_struct.id 
               D.precat.to_category_struct.comp D.precat.id_comp D.precat.comp_id
@@ -95,6 +95,16 @@ begin
   hinduction cat_str with has_hom id comp, hinduction has_hom with hom, hsimp,
   exact idp
 end              
+
+@[hott]
+def ap_obj_flat_eta (D : strict_category) : 
+  ap strict_category.obj (flat_eta D) = @idp _ D.obj :=
+begin 
+  hinduction D with obj precat, hsimp, 
+  hinduction precat with cat_str id_comp comp_id assoc, hsimp,
+  hinduction cat_str with has_hom id comp, hinduction has_hom with hom, 
+  change ap strict_category.obj idp = _, hsimp
+end
 
 @[hott]
 structure comp_eq (D₁ D₂ : strict_category) :=
@@ -135,7 +145,7 @@ end
 
 @[hott, hsimp]
 def eq_to_obj_eq {D₁ D₂ : strict_category} : Π (p : D₁ = D₂), D₁.obj = D₂.obj :=
-  assume p, ap (λ D : strict_category, D.obj) ((flat_eta D₁)⁻¹ ⬝ p ⬝ (flat_eta D₂))
+  assume p, ap (λ D : strict_category, D.obj) p
 
 @[hott, hsimp]
 def eq_to_obj_eq_idp (D : strict_category) : eq_to_obj_eq (@idp _ D) = @idp _ D.obj :=
@@ -145,7 +155,10 @@ def eq_to_obj_eq_idp (D : strict_category) : eq_to_obj_eq (@idp _ D) = @idp _ D.
 def eq_to_hom_eq {D₁ D₂ : strict_category} : 
   Π (p : D₁ = D₂) (a b : D₁.obj), (a ⟶ b) = (eq_to_obj_eq p ▸[λ D : Set, D.carrier] a ⟶ 
                                               eq_to_obj_eq p ▸ b) :=
-begin intro p, hsimp, exact apo100 p (apd (λ D, @has_hom.hom ↥(D.obj) _) p) end   
+begin 
+  intro p, --apply fn2_eval_eq_to_deq, exact apd (λ D : Set, @has_hom.hom D _) (eq_to_obj_eq p)
+  hsimp, let H := apo100 p (apd (λ D, @has_hom.hom ↥(D.obj) _) p), exact H 
+end   
 
 @[hott, hsimp]
 def eq_to_hom_eq_idp {D : strict_category} (a b : D.obj) : 
@@ -193,15 +206,14 @@ def comp_eq_to_eq_obj {D₁ D₂ : strict_category} (ceq : comp_eq D₁ D₂) :
   (eq_to_comp_eq D₁ D₂ (comp_eq_to_eq D₁ D₂ ceq)).Pₒ = ceq.Pₒ :=
 begin 
   hinduction ceq, 
-  change (eq_to_comp_eq D₁ D₂ ((flat_eta D₁) ⬝ (apd01d6 flat_mk _ _ _ _ _ _ _) 
-                               ⬝ (flat_eta D₂)⁻¹)).Pₒ = Pₒ,
-  sorry
-  /-hinduction D₁ with obj₁ precat₁, hinduction D₂ with obj₂ precat₂, 
-  change obj₁ = obj₂ at Pₒ, hinduction Pₒ, hsimp, 
-  change ap strict_category.obj (apd011 strict_category.mk _ _) = @idp _ obj₁, 
-  let H : Π (o : Set) (p : precategory ↥o), strict_category.obj (strict_category.mk o p) = o := 
-    assume o p, idp,
-  rwr ap_apd011 _ _ _ _ H -/
+  change ap (λ D : strict_category, D.obj) ((flat_eta D₁) ⬝ 
+                              (apd01d6 flat_mk _ _ _ _ _ _ _) ⬝ (flat_eta D₂)⁻¹) = Pₒ,
+  rwr ap_con, rwr ap_con, rwr ap_inv, 
+  rwr ap_obj_flat_eta, rwr ap_obj_flat_eta, 
+  rwr idp_inv, rwr idp_con, rwr con_idp, 
+  let H' : Π o h i c ic ci as, strict_category.obj (flat_mk o h i c ic ci as) = o := 
+    begin assume o h i c ic ci as, exact idp end,
+  rwr ap_apd01d6 _ _ _ _ _ _ _ _ _ H', rwr idp_con
 end  
 
 @[hott]
@@ -213,7 +225,6 @@ begin
   hinduction ceq, change _ = Pₕ a b,
   hinduction D₁ with obj₁ precat₁, hinduction D₂ with obj₂ precat₂, 
   change obj₁ = obj₂ at Pₒ, hinduction Pₒ, change ↥obj₁ at a, change ↥obj₁ at b, 
-  change (comp_eq_to_eq_obj _ ▸ (λ a b, eq_to_hom_eq _ a b)) a b = _,
   sorry
 end  
 
