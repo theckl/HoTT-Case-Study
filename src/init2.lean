@@ -256,7 +256,26 @@ def apd01d6 {A H : Type _} {B : A -> Type _} {C D: Π (a : A), B a -> Type _}
 begin 
   hinduction pA, hinduction pB, hinduction pC, hinduction pD, hinduction pE, 
   hinduction pF, hinduction pG, refl 
-end  
+end 
+
+@[hott]
+def ap_apd01d6 {A H : Type _} {B : A -> Type _} {C D: Π (a : A), B a -> Type _}
+  {E F G : Π (a : A) (b : B a), C a b -> D a b -> Type _} (f : Π (a : A) (b : B a) 
+  (c : C a b) (d : D a b), E a b c d -> F a b c d -> G a b c d -> H)
+  {a₁ a₂ : A} {b₁ : B a₁} {b₂ : B a₂} {c₁ : C a₁ b₁} {c₂ : C a₂ b₂} {d₁ : D a₁ b₁} 
+  {d₂ : D a₂ b₂} {e₁ : E a₁ b₁ c₁ d₁} {e₂ : E a₂ b₂ c₂ d₂} {f₁ : F a₁ b₁ c₁ d₁} 
+  {f₂ : F a₂ b₂ c₂ d₂} {g₁ : G a₁ b₁ c₁ d₁} {g₂ : G a₂ b₂ c₂ d₂} 
+  (pA : a₁ = a₂) (pB : b₁ =[pA] b₂) (pC : c₁ =[apd011 C pA pB; id] c₂) 
+  (pD : d₁ =[apd011 D pA pB; id] d₂) (pE : e₁ =[apd01111_v2 E pA pB pC pD; id] e₂)
+  (pF : f₁ =[apd01111_v2 F pA pB pC pD; id] f₂) 
+  (pG : g₁ =[apd01111_v2 G pA pB pC pD; id] g₂) (g : H -> A) 
+  (pH : Π a' b' c' d' e' f' g', g (f a' b' c' d' e' f' g') = a') : 
+  ap g (apd01d6 f pA pB pC pD pE pF pG) = (pH a₁ b₁ c₁ d₁ e₁ f₁ g₁) ⬝ pA ⬝ 
+                                          (pH a₂ b₂ c₂ d₂ e₂ f₂ g₂)⁻¹ :=
+begin 
+  hinduction pA, hinduction pB, hinduction pC, hinduction pD, hinduction pE, 
+  hinduction pF, hinduction pG, rwr con_idp, rwr con.right_inv 
+end                                          
 
 @[hott]
 def apd01111_eq {A F : Type _} {B C D E : A -> Type _} 
