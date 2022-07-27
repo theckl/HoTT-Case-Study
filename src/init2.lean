@@ -435,6 +435,10 @@ begin
 end  
 
 /- Facts on combinations of pathovers and versions of `ap` and `apd`. -/
+@[hott] def pathover_ap_idpo {A A' : Type _}(B' : A' → Type _) (f : A → A') {a : A}
+    {b : B' (f a)} : pathover_ap B' f (@idpo _ _ a b) = idpo :=
+begin refl end    
+
 @[hott]
 def po_of_po_apd100 {A : Type _} {B : A -> Type _} {C : Π (a : A), B a -> Type _}
   {a₀ : A} {b₀ : B a₀} {D : C a₀ b₀ -> Type _} 
