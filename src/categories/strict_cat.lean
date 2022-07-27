@@ -141,10 +141,63 @@ def eq_to_flat_comp_eq  {D₁ D₂ : strict_category} :
 begin 
   intro p, fapply flat_comp_eq.mk,  
   { exact ap strict_category.obj p },
-  { sorry },
-  { sorry },
-  { sorry }, 
+  { exact pathover_ap _ _ (apd (λ D : strict_category, @has_hom.hom D.obj _) p) },
+  { hinduction p, hsimp, rwr pathover_ap_idpo },
+  { hinduction p, hsimp, rwr pathover_ap_idpo }, 
 end  
+
+@[hott]
+def flat_comp_eq_to_eq {D₁ D₂ : strict_category} : 
+  flat_comp_eq D₁ D₂ -> D₁ = D₂ :=
+begin
+  intro feq, hinduction feq with pₒ pₕ pᵢ pc,
+  apply (λ q, concat q (flat_eta D₂)⁻¹), apply concat (flat_eta D₁),  
+  fapply apd01d6 flat_mk,
+  { exact pₒ },
+  { exact pₕ },
+  { exact pᵢ },
+  { exact pc },
+  { apply pathover_of_tr_eq, exact is_prop.elim _ _ },
+  { apply pathover_of_tr_eq, exact is_prop.elim _ _ },
+  { apply pathover_of_tr_eq, exact is_prop.elim _ _ }
+end    
+
+@[hott]
+def flat_comp_eq_to_eq_obj {D₁ D₂ : strict_category} (feq : flat_comp_eq D₁ D₂) :
+  (eq_to_flat_comp_eq (flat_comp_eq_to_eq feq)).pₒ = feq.pₒ :=
+begin
+  hinduction feq with pₒ pₕ pᵢ pc,
+  change ap (λ D : strict_category, D.obj) ((flat_eta D₁) ⬝ 
+                      (apd01d6 flat_mk _ _ _ _ _ _ _) ⬝ (flat_eta D₂)⁻¹) = pₒ,
+  rwr ap_con, rwr ap_con, rwr ap_inv, 
+  rwr ap_obj_flat_eta, rwr ap_obj_flat_eta, 
+  rwr idp_inv, rwr idp_con, rwr con_idp, 
+  let H' : Π o h i c ic ci as, strict_category.obj 
+                                          (flat_mk o h i c ic ci as) = o := 
+    begin assume o h i c ic ci as, exact idp end,
+  rwr ap_apd01d6 _ _ _ _ _ _ _ _ _ H', rwr idp_con
+end
+
+@[hott]
+def eq_eqv_flat_comp_eq (D₁ D₂ : strict_category) : D₁ = D₂ ≃ flat_comp_eq D₁ D₂ :=
+begin
+  fapply equiv.mk, 
+  { exact @eq_to_flat_comp_eq D₁ D₂ },
+  { fapply adjointify, 
+    { exact @flat_comp_eq_to_eq D₁ D₂ },
+    { intro feq, hinduction feq with pₒ pₕ pᵢ pc, fapply flat_comp_eq_eq, 
+      { exact flat_comp_eq_to_eq_obj _ },
+      { change pathover_ap (λ obj : Set, obj -> obj -> Set) 
+          (λ D : strict_category, D.obj) 
+                     (apd (λ D : strict_category, @has_hom.hom D.obj _) 
+                                                         (flat_comp_eq_to_eq _)) 
+          =[flat_comp_eq_to_eq_obj (flat_comp_eq.mk pₒ pₕ pᵢ pc);
+                          λ (q : D₁.obj = D₂.obj),
+          (λ (a b : ↥(D₁.obj)), a ⟶ b) =[q; λ (D : Set), D → D → Set] 
+                                               λ (a b : ↥(D₂.obj)), a ⟶ b] pₕ,
+        sorry } },
+    { sorry }}
+end    
 
 @[hott]
 structure comp_eq (D₁ D₂ : strict_category) :=
