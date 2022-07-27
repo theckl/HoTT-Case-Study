@@ -107,6 +107,46 @@ begin
 end
 
 @[hott]
+structure flat_comp_eq (D₁ D₂ : strict_category) :=
+  (pₒ : D₁.obj = D₂.obj)
+  (pₕ : (λ a b : D₁.obj, a ⟶ b) =[pₒ; λ D : Set, D -> D -> Set] (λ a b : D₂.obj, a ⟶ b))
+  (pᵢ : (λ a : D₁.obj, 𝟙 a) =[apd011 (λ (D : Set) (h : D -> D -> Set), Π (a : D), h a a) 
+                                     pₒ pₕ; id] (λ a : D₂.obj, 𝟙 a))
+  (pc : (λ (a b c: D₁.obj) (f : a ⟶ b) (g : b ⟶ c), f ≫ g) =[apd011 
+        (λ (D : Set) (h : D -> D -> Set), Π (a b c : D), h a b -> h b c -> h a c) 
+                        pₒ pₕ; id] (λ (a b c: D₂.obj) (f : a ⟶ b) (g : b ⟶ c), f ≫ g))                                   
+
+@[hott]
+def flat_comp_eq_eta {D₁ D₂ : strict_category} (feq : flat_comp_eq D₁ D₂) :
+  feq = flat_comp_eq.mk feq.pₒ feq.pₕ feq.pᵢ feq.pc :=
+begin hinduction feq, hsimp end 
+
+@[hott]
+def flat_comp_eq_eq {D₁ D₂ : strict_category} (feq₁ feq₂ : flat_comp_eq D₁ D₂) :
+  Π (qₒ : feq₁.pₒ = feq₂.pₒ), (feq₁.pₕ =[qₒ; λ q : D₁.obj = D₂.obj, (λ a b : D₁.obj, 
+    (a ⟶ b)) =[q; λ D : Set, D -> D -> Set] λ a b : D₂.obj, (a ⟶ b)] feq₂.pₕ) -> 
+    feq₁ = feq₂ :=
+begin
+  intros qₒ qₕ, rwr flat_comp_eq_eta feq₁, rwr flat_comp_eq_eta feq₂, 
+  fapply apd01111_v2 flat_comp_eq.mk, 
+  { exact qₒ },
+  { exact qₕ },
+  { apply pathover_of_tr_eq, exact is_prop.elim _ _ },
+  { apply pathover_of_tr_eq, exact is_prop.elim _ _ }
+end   
+
+@[hott]
+def eq_to_flat_comp_eq  {D₁ D₂ : strict_category} : 
+  D₁ = D₂ -> flat_comp_eq D₁ D₂ :=
+begin 
+  intro p, fapply flat_comp_eq.mk,  
+  { exact ap strict_category.obj p },
+  { sorry },
+  { sorry },
+  { sorry }, 
+end  
+
+@[hott]
 structure comp_eq (D₁ D₂ : strict_category) :=
   (Pₒ : D₁.obj = D₂.obj)  
   (Pₕ : Π a b : D₁.obj, (a ⟶ b) = (Pₒ ▸[λ D : Set, D.carrier] a ⟶ Pₒ ▸ b))
