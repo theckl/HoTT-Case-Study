@@ -71,7 +71,39 @@ namespace strict_cat
    The construction of the equivalence is organised in 3 steps:
    The first step is to split up equalities of strict precategories in components and to 
    show that equalities of the components is equivalent to equality of the strict 
-   precategories. -/ 
+   precategories. -/
+@[hott]
+structure comp_l1_eq (D₁ D₂ : strict_category) :=
+  (pₒ : D₁.obj = D₂.obj)
+  (pₚ : D₁.precat =[pₒ; λ D : Set, precategory D] D₂.precat) 
+
+@[hott]
+def eq_to_comp_l1_eq (D₁ D₂ : strict_category) : (D₁ = D₂) -> (comp_l1_eq D₁ D₂) :=  
+begin 
+  intro pₒ, fapply comp_l1_eq.mk, 
+  { exact ap strict_category.obj pₒ },
+  { apply pathover_ap, exact apd strict_category.precat pₒ} 
+end  
+
+@[hott]
+def comp_l1_eq_to_eq (D₁ D₂ : strict_category) : (comp_l1_eq D₁ D₂) -> (D₁ = D₂) :=
+begin
+  hinduction D₁ with obj₁ precat₁, hinduction D₂ with obj₂ precat₂,
+  intro ceq, hinduction ceq with pₒ pₚ,  
+  fapply apd011 strict_category.mk, exact pₒ, exact pₚ
+end  
+
+@[hott]
+def eq_eqv_comp_l1_eq (D₁ D₂ : strict_category) : (D₁ = D₂) ≃ (comp_l1_eq D₁ D₂) :=
+begin
+  fapply equiv.mk,
+  { exact eq_to_comp_l1_eq D₁ D₂ },
+  { fapply adjointify, 
+    { exact comp_l1_eq_to_eq D₁ D₂ },
+    { sorry },
+    { sorry } }
+end
+
 @[hott]
 def flat_mk : Π (obj : Set.{u}) (hom : obj -> obj -> Set.{v}) 
   (id : Π a : obj, hom a a) (comp : Π {a b c}, hom a b -> hom b c -> hom a c),
@@ -103,8 +135,24 @@ begin
   hinduction D with obj precat, hsimp, 
   hinduction precat with cat_str id_comp comp_id assoc, hsimp,
   hinduction cat_str with has_hom id comp, hinduction has_hom with hom, 
-  change ap strict_category.obj idp = _, hsimp
+  change ap strict_category.obj idp = _, exact idp
 end
+
+@[hott]
+def apd_hom_flat_eta (D : strict_category) : 
+  pathover_ap (λ obj : Set, obj -> obj -> Set) (λ D : strict_category, D.obj) 
+              (apd (λ D : strict_category, @has_hom.hom D.obj _) (flat_eta D)) 
+    =[ap_obj_flat_eta D; λ p : D.obj = (flat_mk _ _ _ _ _ _ _).obj, 
+        (@has_hom.hom D.obj _) =[p; λ obj : Set, obj -> obj -> Set] 
+                                                    (@has_hom.hom D.obj _)] 
+      @idpo _ (λ obj : Set, obj -> obj -> Set) D.obj (@has_hom.hom D.obj _) :=
+begin 
+  hinduction D with obj precat, hsimp, 
+  hinduction precat with cat_str id_comp comp_id assoc, hsimp,
+  hinduction cat_str with has_hom id comp, hinduction has_hom with hom, 
+  hsimp, change _ =[idp] _, exact idpo
+end
+
 
 @[hott]
 structure flat_comp_eq (D₁ D₂ : strict_category) :=
@@ -189,13 +237,13 @@ begin
       { exact flat_comp_eq_to_eq_obj _ },
       { change pathover_ap (λ obj : Set, obj -> obj -> Set) 
           (λ D : strict_category, D.obj) 
-                     (apd (λ D : strict_category, @has_hom.hom D.obj _) 
-                                                         (flat_comp_eq_to_eq _)) 
+          (apd (λ D : strict_category, @has_hom.hom D.obj _) 
+            ((flat_eta D₁) ⬝ (apd01d6 flat_mk _ _ _ _ _ _ _) ⬝ (flat_eta D₂)⁻¹)) 
           =[flat_comp_eq_to_eq_obj (flat_comp_eq.mk pₒ pₕ pᵢ pc);
                           λ (q : D₁.obj = D₂.obj),
           (λ (a b : ↥(D₁.obj)), a ⟶ b) =[q; λ (D : Set), D → D → Set] 
                                                λ (a b : ↥(D₂.obj)), a ⟶ b] pₕ,
-        sorry } },
+        rwr apd_con, rwr apd_con, rwr apd_inv, sorry } },
     { sorry }}
 end    
 
