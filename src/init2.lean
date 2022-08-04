@@ -439,6 +439,21 @@ end
     {b : B' (f a)} : pathover_ap B' f (@idpo _ _ a b) = idpo :=
 begin refl end    
 
+@[hott] 
+def pathover_ap_concato {A A' : Type _}(B' : A' → Type _) (f : A → A') {a₁ a₂ a₃ : A}
+    {p : a₁ = a₂} {q : a₂ = a₃} {b₁ : B' (f a₁)} {b₂ : B' (f a₂)} {b₃ : B' (f a₃)}
+    {P : b₁ =[p; B' ∘ f] b₂} {Q : b₂ =[q; B' ∘ f] b₃} :
+    pathover_ap B' f (P ⬝o Q) =[ap_con f p q; λ r : f a₁ = f a₃, b₁ =[r; B'] b₃] 
+                                            pathover_ap B' f P ⬝o pathover_ap B' f Q :=
+begin hinduction p, hinduction q, hinduction P, hinduction Q, exact idpo end
+
+@[hott] 
+def pathover_ap_inverseo {A A' : Type _}(B' : A' → Type _) (f : A → A') {a₁ a₂ : A}
+    {p : a₁ = a₂} {b₁ : B' (f a₁)} {b₂ : B' (f a₂)} {P : b₁ =[p; B' ∘ f] b₂} :
+    pathover_ap B' f (P⁻¹ᵒ) =[ap_inv f p; λ r : f a₂ = f a₁, b₂ =[r; B'] b₁] 
+                                                            (pathover_ap B' f P)⁻¹ᵒ :=
+begin hinduction p, hinduction P, exact idpo end
+
 @[hott]
 def po_of_po_apd100 {A : Type _} {B : A -> Type _} {C : Π (a : A), B a -> Type _}
   {a₀ : A} {b₀ : B a₀} {D : C a₀ b₀ -> Type _} 
