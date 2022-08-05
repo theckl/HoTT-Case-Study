@@ -80,9 +80,9 @@ structure comp_l1_eq (D₁ D₂ : strict_category) :=
 @[hott]
 def eq_to_comp_l1_eq (D₁ D₂ : strict_category) : (D₁ = D₂) -> (comp_l1_eq D₁ D₂) :=  
 begin 
-  intro pₒ, fapply comp_l1_eq.mk, 
-  { exact ap strict_category.obj pₒ },
-  { apply pathover_ap, exact apd strict_category.precat pₒ} 
+  intro p, fapply comp_l1_eq.mk, 
+  { exact ap strict_category.obj p },
+  { apply pathover_ap, exact apd strict_category.precat p } 
 end  
 
 @[hott]
@@ -100,7 +100,19 @@ begin
   { exact eq_to_comp_l1_eq D₁ D₂ },
   { fapply adjointify, 
     { exact comp_l1_eq_to_eq D₁ D₂ },
-    { sorry },
+    { hinduction D₁ with obj₁ precat₁, hinduction D₂ with obj₂ precat₂,
+      intro ceq, hinduction ceq with pₒ pₚ, 
+      change comp_l1_eq.mk (ap strict_category.obj (apd011 strict_category.mk pₒ pₚ))
+        (pathover_ap _ _ (apd strict_category.precat (apd011 strict_category.mk pₒ pₚ))) = _,
+      let HP : Π (D : Set) (pc : precategory D), 
+              strict_category.obj (strict_category.mk D pc) = D := assume D pc, idp, 
+      let HQ : Π (D : Set) (pc : precategory D), 
+                  strict_category.precat (strict_category.mk D pc) 
+                                                =[HP D pc; λ D : Set, precategory D] pc := 
+        assume D pc, idpo,        
+      fapply apd011 comp_l1_eq.mk,
+      { rwr ap_apd011 _ _ _ _ HP, rwr idp_con },
+      { hsimp, sorry } },
     { sorry } }
 end
 
