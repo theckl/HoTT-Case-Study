@@ -165,6 +165,24 @@ def ap_apd011 {A C : Type _} {B : A -> Type _} (f : Π (a : A), B a -> C) {a₁ 
 begin hinduction pA, hinduction pB, rwr con_idp, rwr con.right_inv end 
 
 @[hott]
+def ap_apd011_idp {A C : Type _} {B : A -> Type _} (f : Π (a : A), B a -> C) {a : A} 
+  {b : B a} (g : C -> A) (HP : Π a b, g (f a b) = a) : 
+  ap_apd011 f idp (@idpo _ _ a b) g HP = idp :=
+sorry
+
+@[hott]
+def apd_apd011 {A C : Type _} {B : A -> Type _} (f : Π (a : A), B a -> C) {a₁ a₂ : A} 
+  {b₁ : B a₁} {b₂ : B a₂} (pA : a₁ = a₂) (pB : b₁ =[pA] b₂) (g₁ : C -> A) 
+  (g₂ : Π (c : C), B (g₁ c)) (HP : Π a b, g₁ (f a b) = a) 
+  (HQ : Π a b, g₂ (f a b) =[HP a b] b) : 
+  pathover_ap _ _ (apd g₂ (apd011 f pA pB)) =[ap_apd011 f pA pB g₁ HP; 
+    λ p : g₁ (f a₁ b₁) = g₁ (f a₂ b₂), g₂ (f a₁ b₁) =[p; λ a : A, B a] g₂ (f a₂ b₂)] 
+                                                    (HQ a₁ b₁) ⬝o pB ⬝o (HQ a₂ b₂)⁻¹ᵒ :=
+begin 
+  hinduction pA, hinduction pB, sorry 
+end
+
+@[hott]
 def ap_apd0111 {A D : Type _} {B : A -> Type _} {C : Π (a : A), B a -> Type _} 
   (f : Π (a : A) (b : B a) (c : C a b), D) {a₁ a₂ : A} {b₁ : B a₁} {b₂ : B a₂}
   {c₁ : C a₁ b₁} {c₂ : C a₂ b₂} (pA : a₁ = a₂) 
