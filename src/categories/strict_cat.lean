@@ -79,18 +79,16 @@ structure comp_l1_eq (D₁ D₂ : strict_category) :=
 
 @[hott]
 def eq_to_comp_l1_eq (D₁ D₂ : strict_category) : (D₁ = D₂) -> (comp_l1_eq D₁ D₂) :=  
-begin 
-  intro p, fapply comp_l1_eq.mk, 
-  { exact ap strict_category.obj p },
-  { apply pathover_ap, exact apd strict_category.precat p } 
-end  
+begin intro p, hinduction p, fapply comp_l1_eq.mk, exact idp, exact idpo end  
 
 @[hott]
 def comp_l1_eq_to_eq (D₁ D₂ : strict_category) : (comp_l1_eq D₁ D₂) -> (D₁ = D₂) :=
 begin
   hinduction D₁ with obj₁ precat₁, hinduction D₂ with obj₂ precat₂,
-  intro ceq, hinduction ceq with pₒ pₚ,  
-  fapply apd011 strict_category.mk, exact pₒ, exact pₚ
+  intro ceq, hinduction ceq with pₒ pₚ, 
+  change obj₁ = obj₂ at pₒ, hinduction pₒ,
+  change precat₁ =[idp; λ D : Set, precategory D] precat₂ at pₚ, hinduction pₚ,  
+  exact idp
 end  
 
 @[hott]
@@ -102,19 +100,58 @@ begin
     { exact comp_l1_eq_to_eq D₁ D₂ },
     { hinduction D₁ with obj₁ precat₁, hinduction D₂ with obj₂ precat₂,
       intro ceq, hinduction ceq with pₒ pₚ, 
-      change comp_l1_eq.mk (ap strict_category.obj (apd011 strict_category.mk pₒ pₚ))
-        (pathover_ap _ _ (apd strict_category.precat (apd011 strict_category.mk pₒ pₚ))) = _,
-      let HP : Π (D : Set) (pc : precategory D), 
-              strict_category.obj (strict_category.mk D pc) = D := assume D pc, idp, 
-      let HQ : Π (D : Set) (pc : precategory D), 
-                  strict_category.precat (strict_category.mk D pc) 
-                                                =[HP D pc; λ D : Set, precategory D] pc := 
-        assume D pc, idpo,        
-      fapply apd011 comp_l1_eq.mk,
-      { rwr ap_apd011 _ _ _ _ HP, rwr idp_con },
-      { hsimp, sorry } },
-    { sorry } }
+      change obj₁ = obj₂ at pₒ, hinduction pₒ,
+      change precat₁ =[idp; λ D : Set, precategory D] precat₂ at pₚ, hinduction pₚ,
+      exact idp },
+    { intro p, hinduction p, hinduction D₁ with obj precat, exact idp } }
 end
+
+/- Equality of precategories over the same set is equivalent to equality of the 
+   underlying category structure. -/
+@[hott]
+def precat_eq_to_cat_struct_eq {D : Set} {precat₁ precat₂ : precategory D} :
+  precat₁ = precat₂ -> precat₁.to_category_struct = precat₂.to_category_struct :=
+begin intro p, hinduction p, exact idp end
+
+@[hott]
+def cat_struct_eq_to_precat_eq {D : Set} {precat₁ precat₂ : precategory D} :
+  precat₁.to_category_struct = precat₂.to_category_struct -> precat₁ = precat₂ :=
+begin 
+  hinduction precat₁ with cat_struct₁ ic₁ ci₁ as₁, 
+  hinduction precat₂ with cat_struct₂ ic₂ ci₂ as₂,
+  intro pcs, change cat_struct₁ = cat_struct₂ at pcs, hinduction pcs, 
+  fapply apd01111' (@precategory.mk D) idp,
+  { apply pathover_of_tr_eq, exact is_prop.elim _ _ },
+  { apply pathover_of_tr_eq, exact is_prop.elim _ _ },
+  { apply pathover_of_tr_eq, exact is_prop.elim _ _ } 
+end 
+
+@[hott]
+structure comp_l2_eq (D₁ D₂ : strict_category) :=
+  (pₒ : D₁.obj = D₂.obj)
+  (pₚ : D₁.precat.to_category_struct =[pₒ; λ D : Set, category_struct D] 
+                                                        D₂.precat.to_category_struct)
+
+@[hott]
+def comp_l1_eq_to_comp_l2_eq (D₁ D₂ : strict_category) :
+  comp_l1_eq D₁ D₂ -> comp_l2_eq D₁ D₂ :=
+begin 
+  hinduction D₁ with obj₁ precat₁, hinduction D₂ with obj₂ precat₂,
+  intro c1_eq, hinduction c1_eq with pₒ pₚ, change obj₁ = obj₂ at pₒ, hinduction pₒ,
+  change precat₁ =[idp; λ D : Set, precategory D] precat₂ at pₚ, hinduction pₚ,
+  fapply comp_l2_eq.mk, exact idp, exact idpo
+end  
+
+@[hott]
+def comp_l2_eq_to_comp_l1_eq (D₁ D₂ : strict_category) :
+  comp_l2_eq D₁ D₂ -> comp_l1_eq D₁ D₂ :=
+begin
+  hinduction D₁ with obj₁ precat₁, hinduction D₂ with obj₂ precat₂,
+  intro c2_eq, hinduction c2_eq with pₒ pₚ, change obj₁ = obj₂ at pₒ, hinduction pₒ,
+  fapply comp_l1_eq.mk,
+  exact idp,
+  exact pathover_idp_of_eq _ (cat_struct_eq_to_precat_eq (eq_of_pathover_idp pₚ))
+end 
 
 @[hott]
 def flat_mk : Π (obj : Set.{u}) (hom : obj -> obj -> Set.{v}) 
