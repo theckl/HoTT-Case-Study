@@ -164,6 +164,7 @@ def ap_apd011 {A C : Type _} {B : A -> Type _} (f : Π (a : A), B a -> C) {a₁ 
   ap g (apd011 f pA pB) = (HP a₁ b₁) ⬝ pA ⬝ (HP a₂ b₂)⁻¹ :=
 begin hinduction pA, hinduction pB, rwr con_idp, rwr con.right_inv end 
 
+/-
 @[hott]
 def ap_apd011_idp {A C : Type _} {B : A -> Type _} (f : Π (a : A), B a -> C) {a : A} 
   {b : B a} (g : C -> A) (HP : Π a b, g (f a b) = a) : 
@@ -181,6 +182,7 @@ def apd_apd011 {A C : Type _} {B : A -> Type _} (f : Π (a : A), B a -> C) {a₁
 begin 
   hinduction pA, hinduction pB, sorry 
 end
+-/
 
 @[hott]
 def ap_apd0111 {A D : Type _} {B : A -> Type _} {C : Π (a : A), B a -> Type _} 
