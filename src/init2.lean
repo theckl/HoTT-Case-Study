@@ -39,6 +39,9 @@ by hinduction p; refl
 @[reducible,hott]
 def ap100 {A B C : Type _} {f g : A → B -> C} (H : f = g) : f ~2 g := apd100 H
 
+@[reducible,hott]
+def ap1000 {A B C D: Type _} {f g : A → B -> C -> D} (H : f = g) : f ~3 g := apd1000 H
+
 @[hott]
 def ap100_eq_of_hty2_inv {A B C : Type _} {f g : A → B -> C} (H : f ~2 g) :
   ap100 (eq_of_homotopy2 H) = H :=
@@ -401,6 +404,25 @@ def homotopy_eq_rinv {A B : Type _} {f g : A -> B} {H : f ~ g} :
 @is_equiv.right_inv _ _ _ (eq_equiv_homotopy f g).to_is_equiv H  
 
 @[hott]
+def deq_of_homotopy {A : Type _} {h₁ h₂ : A -> Type _} {p : h₁ = h₂} {g₁ : Π a : A, h₁ a}
+  {g₂ : Π a : A, h₂ a} : 
+  (Π a : A, g₁ a =[ap10 p a; id] g₂ a) -> g₁ =[p; λ h : A -> Type _, Π a : A, h a] g₂ :=
+begin 
+  hinduction p, hsimp, intro hty, apply pathover_idp_of_eq, 
+  exact eq_of_homotopy (λ a : A, eq_of_pathover_idp (hty a)) 
+end  
+
+@[hott]
+def deq_of_homotopy3 {A B C : Type _} {h₁ h₂ : A -> B -> C -> Type _} {p : h₁ = h₂} 
+  {g₁ : Π (a : A) (b : B) (c : C), h₁ a b c} {g₂ : Π (a : A) (b : B) (c : C), h₂ a b c} : 
+  (Π (a : A) (b : B) (c : C) , g₁ a b c =[ap1000 p a b c; id] g₂ a b c) -> 
+              g₁ =[p; λ h : A -> B -> C -> Type _, Π (a : A) (b : B) (c : C), h a b c] g₂ :=
+begin 
+  hinduction p, hsimp, intro hty, apply pathover_idp_of_eq, 
+  exact eq_of_homotopy3 (λ (a : A) (b : B) (c : C), eq_of_pathover_idp (hty a b c)) 
+end  
+
+@[hott]
 def dep_eq_of_homotopy {A : Type _} {P : A -> A -> Type _} {b b' : A} (p : b = b') 
   (f : Π a : A, P b a) (f' : Π a : A, P b' a) : 
   (Π a : A, f a =[p; λ b : A, P b a] f' a) -> f =[p; λ b : A, Π a : A, P b a] f' :=
@@ -435,7 +457,26 @@ begin
 end  
 
 /- Facts on combinations of pathovers and versions of `ap` and `apd`. -/
-@[hott] def pathover_ap_idpo {A A' : Type _}(B' : A' → Type _) (f : A → A') {a : A}
+@[hott]
+def pathover_ap10 {A : Type _} {h₁ h₂ : A -> Type _} {p : h₁ = h₂} {g₁ : Π a : A, h₁ a}
+  {g₂ : Π a : A, h₂ a} : 
+  Π a : A, g₁ a =[p; λ h : A -> Type _, h a] g₂ a -> g₁ a =[ap10 p a; id] g₂ a :=
+begin hinduction p, intros a q₁, exact pathover_idp_of_eq _ (eq_of_pathover_idp q₁) end  
+
+@[hott]
+def pathover_ap1000 {A B C : Type _} {h₁ h₂ : A -> B -> C -> Type _} {p : h₁ = h₂} 
+  {g₁ : Π a b c, h₁ a b c} {g₂ : Π a b c, h₂ a b c} : 
+  Π a b c, g₁ a b c =[p; λ h : A -> B -> C -> Type _, h a b c] g₂ a b c -> 
+           g₁ a b c =[ap1000 p a b c; id] g₂ a b c :=
+begin hinduction p, intros a b c q, exact pathover_idp_of_eq _ (eq_of_pathover_idp q) end 
+
+@[hott]
+def pathover_of_pathover_ap100 {A B C: Type _} {D : C -> Type _} {h₁ h₂ : A -> B -> C} 
+  {p : h₁ = h₂} : Π {a : A} {b : B} {c₁ : D (h₁ a b)} {c₂ : D (h₂ a b)}, 
+  c₁ =[ap100 p a b; D] c₂ -> c₁ =[p; λ h : A -> B -> C, D (h a b)] c₂ :=
+begin hinduction p, intros a b c₁ c₂ q, exact pathover_idp_of_eq _ (eq_of_pathover_idp q) end 
+
+@[hott] def pathover_ap_idpo {A A' : Type _} (B' : A' → Type _) (f : A → A') {a : A}
     {b : B' (f a)} : pathover_ap B' f (@idpo _ _ a b) = idpo :=
 begin refl end    
 
@@ -472,6 +513,11 @@ def po_homotopy_of_tr_eq2 {A B : Type _} {f g : A -> B} (p : f = g)
   (apd10 p a₂) ▸[λ b, Q (g a₁) b] ((apd10 p a₁) ▸[λ b, Q b (f a₂)] hf) = hg -> 
   hf =[p; λ f' : A -> B, Q (f' a₁) (f' a₂)] hg :=
 begin hinduction p, hsimp, intro H, apply pathover_idp_of_eq, exact H end  
+
+@[hott]
+def apd011_idp_to_ap {A C : Type _} {B : A -> Type _} (f : Π (a : A), B a -> C) {a : A} 
+  {b₁ b₂ : B a} (q : b₁ =[idp] b₂) : apd011 f idp q = ap (f a) (eq_of_pathover_idp q) :=
+begin hinduction q, change idp = idp, exact idp end  
 
 /- Some facts involving equivalences -/
 @[hott]
