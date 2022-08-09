@@ -287,8 +287,25 @@ begin
   fapply comp_l3_eq.mk,
   { exact idp },
   { exact pathover_idp_of_eq _ (eq_of_homotopy2 Pₕ) },
-  { sorry },
-  { sorry }
+  { rwr apd011_idp_to_ap, hsimp, 
+    apply @pathover_ap _ _ _ _ id (λ (h : obj₁ → obj₁ → Set), Π (a : obj₁), (h a a)) 
+                                  (eq_of_homotopy2 Pₕ), hsimp,
+    apply @pathover_of_pathover_ap _ _ _ _ (λ h : obj₁ -> Type _, Π a : obj₁, h a),                               
+    apply deq_of_homotopy, intro a, apply pathover_ap10, 
+    apply @pathover_ap _ _ _ _  (λ h : obj₁ -> Type _, h a) 
+            (λ (hom : obj₁ → obj₁ → Set) (a : obj₁), (hom a a).carrier) (eq_of_homotopy2 Pₕ), 
+    hsimp, apply pathover_of_pathover_ap100, rwr ap100_eq_of_hty2_inv, 
+    apply pathover_of_tr_eq, exact Pᵢ a },
+  { rwr apd011_idp_to_ap, hsimp, 
+    apply @pathover_ap _ _ _ _ id (λ (h : obj₁ → obj₁ → Set), Π (a b c : obj₁), 
+            h a b -> h b c -> h a c) (eq_of_homotopy2 Pₕ), hsimp, 
+    apply @pathover_of_pathover_ap _ _ _ _ (λ h : obj₁ -> obj₁ -> obj₁ -> Type _, 
+                                                                    Π a b c : obj₁, h a b c),        
+    apply deq_of_homotopy3, intros a b c, apply pathover_ap1000, 
+    apply @pathover_ap _ _ _ _  (λ h : obj₁ -> obj₁ -> obj₁ -> Type _, h a b c) 
+            (λ (hom : obj₁ → obj₁ → Set) (a b c : obj₁), hom a b -> hom b c -> hom a c ) 
+            (eq_of_homotopy2 Pₕ), 
+    hsimp, sorry }
 end
 
 @[hott]
