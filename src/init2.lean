@@ -120,6 +120,16 @@ def apo100 {A A' C : Type _} {f : A -> A'} {B : A' -> Type _} {a a' : A} (p : a 
 begin 
   hinduction p, intros b₁ b₂, rwr tr_ap, rwr tr_ap,
   rwr idp_tr, rwr idp_tr, exact ap100 (eq_of_pathover_idp H) b₁ b₂ 
+end
+
+@[hott, hsimp]
+def apo100' {A C : Type _} {B : A -> Type _} {a a' : A} (p : a = a') 
+  {g : B a -> B a -> C} {g' : B a' -> B a' -> C} 
+  (H : g =[p; λ a : A, B a -> B a -> C] g') :
+  Π b₁ b₂ : B a, g b₁ b₂ = g' (p ▸[B] b₁) (p ▸[B] b₂) :=
+begin 
+  hinduction p, intros b₁ b₂, 
+  rwr idp_tr, rwr idp_tr, exact ap100 (eq_of_pathover_idp H) b₁ b₂ 
 end  
 
 @[hott]
@@ -411,6 +421,16 @@ begin
   hinduction p, hsimp, intro hty, apply pathover_idp_of_eq, 
   exact eq_of_homotopy (λ a : A, eq_of_pathover_idp (hty a)) 
 end  
+
+@[hott]
+def deq_of_homotopy2 {A : Type _} {B C D : A -> Type _} {a₁ a₂ : A} {p : a₁ = a₂}
+  {f₁ : B a₁ -> C a₁ -> D a₁} {f₂ : B a₂ -> C a₂ -> D a₂} :
+  (Π (b₁ : B a₁) (c₁ : C a₁), f₁ b₁ c₁ =[p] f₂ (p ▸ b₁) (p ▸ c₁)) -> 
+                                                  f₁ =[p; λ a : A, B a -> C a -> D a] f₂ :=
+begin 
+  hinduction p, hsimp, intro hty, apply pathover_idp_of_eq, 
+  exact eq_of_homotopy2 (λ (b₁ : B a₁) (c₁ : C a₁), eq_of_pathover_idp (hty b₁ c₁)) 
+end                                                        
 
 @[hott]
 def deq_of_homotopy3 {A B C : Type _} {h₁ h₂ : A -> B -> C -> Type _} {p : h₁ = h₂} 
