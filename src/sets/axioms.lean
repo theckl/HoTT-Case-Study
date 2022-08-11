@@ -46,7 +46,7 @@ def Choice_nonempty := Π (X : Set.{u}) (Y : X -> Set.{v}),
 axiom AC_nonempty : Choice_nonempty
 
 @[hott]
-lemma AxChoice_equiv : Choice.{u v} ↔ Choice_nonempty.{u v} :=
+def AxChoice_equiv : Choice.{u v} ↔ Choice_nonempty.{u v} :=
   have imp1 : Choice.{u v} -> Choice_nonempty.{u v}, from 
     assume AxCh, assume X Y pi_trunc, 
     have pi_trunc_T : Π x : X, ∥ Σ y : Y x, True ∥, from 
