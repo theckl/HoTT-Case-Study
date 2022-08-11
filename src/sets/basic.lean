@@ -111,7 +111,7 @@ def Sections {A : Set} (B : A -> Set) : Set :=
 
 /- That is a HoTT-ism, but should be automatable. -/
 @[hott, instance]
-lemma is_set_inj_is_prop {A : Set} {B : Set} (f : B -> A): 
+def is_set_inj_is_prop {A : Set} {B : Set} (f : B -> A): 
   is_prop (is_set_injective f) := 
 have eq_imp : forall b1 b2 : B, is_prop (f b1 = f b2 -> b1 = b2), from 
   assume b1 b2, is_prop_map (is_trunc_eq -1 b1 b2),
@@ -136,7 +136,7 @@ is_prop.mk H
 
 /- This is the universal property of injective maps. -/
 @[hott]
-lemma univ_prop_of_inj {A : Set} {B : Set} (i : A -> B) (i_inj : is_set_injective i) : 
+def univ_prop_of_inj {A : Set} {B : Set} (i : A -> B) (i_inj : is_set_injective i) : 
   forall (C : Set) (f g : C -> A), i ∘ f = i ∘ g -> f = g :=
 assume C f g comp_eq, 
 have i_hom : forall c : C, i (f c) = i (g c), from 
@@ -152,7 +152,7 @@ def is_set_surjective {A : Set} {B : Set} (f : B -> A) :=
   forall a : A, image f a
 
 @[hott, instance]
-lemma is_set_surj_is_prop {A : Set} {B : Set} (f : B -> A): 
+def is_set_surj_is_prop {A : Set} {B : Set} (f : B -> A): 
   is_prop (is_set_surjective f) :=
 have forall a : A, is_prop (image f a), from assume a, by apply_instance, 
 have pre_im_is_prop : is_prop (forall a : A, image f a), from
@@ -167,7 +167,7 @@ class is_set_bijective {A : Set} {B : Set} (f : B -> A) :=
  (inj : is_set_injective f) (surj : is_set_surjective f)
 
 @[hott, instance]
-lemma is_set_bij_is_prop {A : Set} {B : Set} (f : B -> A) : 
+def is_set_bij_is_prop {A : Set} {B : Set} (f : B -> A) : 
   is_prop (is_set_bijective f) :=
 have H : forall bij1 bij2 : is_set_bijective f, bij1 = bij2, from
   assume bij1 bij2,
@@ -189,7 +189,7 @@ has_coe_to_fun.mk (λ _, A -> B) (λ f, f.map)
 attribute [instance] bijection.bij 
 
 @[hott]
-lemma bijection_eq_from_map_eq {A : Set} {B : Set}: 
+def bijection_eq_from_map_eq {A : Set} {B : Set}: 
   forall f g : bijection A B, bijection.map f = bijection.map g -> f = g  
 | (bijection.mk map1 bij1) (bijection.mk map2 bij2) := 
    assume map_eq, 
@@ -199,7 +199,7 @@ lemma bijection_eq_from_map_eq {A : Set} {B : Set}:
    apd011 bijection.mk map_eq is_bij_eq
 
 @[hott]
-lemma map_eq_from_bijection_eq {A : Set} {B : Set}:
+def map_eq_from_bijection_eq {A : Set} {B : Set}:
   forall f g : bijection A B, f = g -> bijection.map f = bijection.map g :=
 assume f g map_eq, ap bijection.map map_eq
 
@@ -230,7 +230,7 @@ def id_is_inv_to_id (A : Set) : is_set_inverse_of (id_map A) (id_map A) :=
 
 /- The inverse is uniquely determined. -/
 @[hott]
-lemma inv_is_unique {A : Set} {B : Set} (f : A -> B) (g : B -> A) (g' : B -> A) :
+def inv_is_unique {A : Set} {B : Set} (f : A -> B) (g : B -> A) (g' : B -> A) :
   is_set_inverse_of f g -> is_set_inverse_of f g' -> g = g' :=
 assume inv_g inv_g', 
 have hom : g ~ g', from assume b,
@@ -386,7 +386,7 @@ def set_eq_to_car_eq {A B : Set} : (A = B) -> ((car A) = (car B)) :=
   assume e, ap trunctype.carrier e
 
 @[hott]
-definition idp_set_to_idp_car {A : Set} : set_eq_to_car_eq (idpath A) = idpath (car A) :=
+def idp_set_to_idp_car {A : Set} : set_eq_to_car_eq (idpath A) = idpath (car A) :=
   by hsimp
 
 @[hott, reducible, hsimp]
@@ -420,7 +420,7 @@ end
 /- This should be shown for general structures consisting of a type and
    a dependent proposition. -/
 @[hott]   
-lemma ap_car_apd011_set_mk {cA cB: Type _} :
+def ap_car_apd011_set_mk {cA cB: Type _} :
   Π (ec : cA = cB) [s : is_set cA] [t : is_set cB] (est : s =[ec] t), 
   ap trunctype.carrier (apd011 Set.mk ec est) = ec := 
 begin 
@@ -432,7 +432,7 @@ begin
 end   
 
 @[hott]
-lemma rinv_set_eq_car_eq : Π {A B : Set}, forall (ec : (car A) = (car B)),
+def rinv_set_eq_car_eq : Π {A B : Set}, forall (ec : (car A) = (car B)),
   set_eq_to_car_eq (car_eq_to_set_eq ec) = ec
 | (trunctype.mk carr1 struct1) (trunctype.mk carr2 struct2) := 
   assume ec, 
@@ -465,11 +465,11 @@ def id_map_eqv (A : Set) : (car A) ≃ (car A) :=
   equiv.mk (id_map A) (hott.is_equiv.is_equiv_id (car A))
 
 @[hott, hsimp]
-lemma id_to_id_map_eqv (A : Set) : car_eq_to_car_eqv (idpath (car A)) = id_map_eqv A := 
+def id_to_id_map_eqv (A : Set) : car_eq_to_car_eqv (idpath (car A)) = id_map_eqv A := 
   by reflexivity
 
 @[hott]
-lemma id_map_eqv_to_id (A : Set) : car_eqv_to_car_eq (id_map_eqv A) = idpath (car A) := 
+def id_map_eqv_to_id (A : Set) : car_eqv_to_car_eq (id_map_eqv A) = idpath (car A) := 
   calc car_eqv_to_car_eq (id_map_eqv A) = car_eqv_to_car_eq (car_eq_to_car_eqv (idpath (car A))) :
        ap car_eqv_to_car_eq (id_to_id_map_eqv A)
        ... = idpath (car A) : 
@@ -491,7 +491,7 @@ let f_rinv := @is_set_inverse_of.r_inv _ _ f g c,
 equiv.mk f (is_equiv.adjointify f g f_rinv f_linv)
 
 @[hott]
-lemma rinv_set_equiv_bijection {A B : Set} : forall f : bijection A B,
+def rinv_set_equiv_bijection {A B : Set} : forall f : bijection A B,
   bijection.map (car_eqv_to_bij (bij_to_car_eqv f)) = f :=
 let F := @car_eqv_to_bij A B, G := @bij_to_car_eqv A B in
 assume f, 
@@ -500,7 +500,7 @@ have eq_F : bijection.map (F (G f)) = equiv.to_fun (G f), by hsimp,
 eq_F ⬝ eq_G
 
 @[hott]
-lemma linv_bijection_set_equiv {A B : Set} : forall e : (car A) ≃ (car B),
+def linv_bijection_set_equiv {A B : Set} : forall e : (car A) ≃ (car B),
   equiv.to_fun (bij_to_car_eqv (car_eqv_to_bij e)) = e :=
 let F := @car_eqv_to_bij A B, G := @bij_to_car_eqv A B in
 assume e, 
@@ -536,13 +536,13 @@ def car_eqv_equiv_bij {A B : Set.{u}} : ((car A) ≃ (car B)) ≃ (bijection A B
   equiv.mk F (is_equiv.adjointify F G rinv linv)
 
 @[hott]
-lemma identity_to_id_eqv (A : Set) : bij_to_car_eqv (identity A) = id_map_eqv A := 
+def identity_to_id_eqv (A : Set) : bij_to_car_eqv (identity A) = id_map_eqv A := 
   have fun_eq : equiv.to_fun (bij_to_car_eqv (identity A)) = 
                 equiv.to_fun (id_map_eqv A), by reflexivity,
   equiv_eq_from_fun_eq (bij_to_car_eqv (identity A)) (id_map_eqv A) fun_eq
 
 @[hott]
-lemma id_eqv_to_identity (A : Set) : car_eqv_to_bij (id_map_eqv A) = identity A := 
+def id_eqv_to_identity (A : Set) : car_eqv_to_bij (id_map_eqv A) = identity A := 
   have map_eq : bijection.map (car_eqv_to_bij (id_map_eqv A)) = 
                 bijection.map (identity A), by reflexivity, 
   bijection_eq_from_map_eq _ _ map_eq
@@ -562,7 +562,7 @@ def bij_to_set_eq {A B : Set.{u}} : (bijection A B) -> A = B :=
 @[hott]
 /- These equivalence functions extracted from the equivalences can indeed be used for 
    calculations. -/
-lemma identity_to_idp {A : Set} : bij_to_set_eq (identity A) = idpath A :=
+def identity_to_idp {A : Set} : bij_to_set_eq (identity A) = idpath A :=
 calc bij_to_set_eq (identity A) = 
             car_eq_to_set_eq (car_eqv_to_car_eq (bij_to_car_eqv (identity A))) : 
      by reflexivity
@@ -576,7 +576,7 @@ def right_inv_set_eq_bij {A B : Set} (f : bijection A B) :
 @is_equiv.right_inv (A = B) (bijection A B) set_eq_to_bij _ f
 
 @[hott]
-lemma hom_eq_tr_eq {A B : Set} (e : A = B) :
+def hom_eq_tr_eq {A B : Set} (e : A = B) :
   forall a : A, set_eq_to_bij e a = e ▸ a :=
 begin 
   intro a,
@@ -585,7 +585,7 @@ begin
 end   
 
 @[hott]
-lemma bij_hom_tr_eq {A B : Set} (f : bijection A B) : 
+def bij_hom_tr_eq {A B : Set} (f : bijection A B) : 
   forall a : A, f a = (bij_to_set_eq f) ▸ a := 
 let rinv := right_inv_set_eq_bij f, 
     eq_f := bij_to_set_eq f in
