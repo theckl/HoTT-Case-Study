@@ -188,6 +188,22 @@ structure comp_l3_eq (D₁ D₂ : strict_category) :=
          Π (a b c : D), h a b -> h b c -> h a c) pₒ pₕ; id] D₂.precat.to_category_struct.comp)                            
 
 @[hott]
+def eq_to_comp_l3_eq {D₁ D₂ : strict_category} :
+  D₁ = D₂ -> comp_l3_eq D₁ D₂ :=
+begin 
+  intro p, hinduction p, fapply comp_l3_eq.mk,
+  { exact idp },
+  { exact idpo },
+  { exact idpo },
+  { exact idpo }
+end  
+
+@[hott]
+def eq_to_comp_l3_eq_idp {D : strict_category} :
+  eq_to_comp_l3_eq idp = @comp_l3_eq.mk D D idp idpo idpo idpo :=
+idp  
+
+@[hott]
 def comp_l2_eq_to_comp_l3_eq {D₁ D₂ : strict_category} :
   comp_l2_eq D₁ D₂ -> comp_l3_eq D₁ D₂ :=
 begin 
@@ -200,6 +216,36 @@ begin
   hinduction cat_struct₁ with hh id comp, hinduction hh with hom,
   fapply comp_l3_eq.mk, exact idp, exact idpo, exact idpo, exact idpo
 end    
+
+@[hott]
+def comp_l3_eq_to_eq {D₁ D₂ : strict_category} :
+  comp_l3_eq D₁ D₂ -> D₁ = D₂ :=
+begin 
+  hinduction D₁ with obj₁ precat₁, hinduction D₂ with obj₂ precat₂,
+  intro c3_eq, hinduction c3_eq with pₒ pₕ pᵢ pc, change obj₁ = obj₂ at pₒ, hinduction pₒ,
+  hinduction precat₁ with cat_struct₁ ic₁ ci₁ as₁, 
+  hinduction precat₂ with cat_struct₂ ic₂ ci₂ as₂,
+  hinduction cat_struct₁ with hh₁ id₁ comp₁, hinduction hh₁ with hom₁,
+  hinduction cat_struct₂ with hh₂ id₂ comp₂, hinduction hh₂ with hom₂,
+  change hom₁ =[idp; λ D : Set, D -> D -> Set] hom₂ at pₕ, hinduction pₕ,  
+  change id₁ =[idp; hott.id] id₂ at pᵢ, hinduction pᵢ,
+  change @comp₁ =[idp; hott.id] @comp₂ at pc, hinduction pc,
+  let pic : @ic₁ = @ic₂ := is_prop.elim _ _, hinduction pic,
+  let pci : @ci₁ = @ci₂ := is_prop.elim _ _, hinduction pci,
+  let pas : @as₁ = @as₂ := is_prop.elim _ _, hinduction pas, 
+  exact idp
+end  
+
+#print comp_l3_eq_to_eq 
+
+@[hott]
+def comp_l3_eq_to_eq_idp (D : strict_category) :
+  comp_l3_eq_to_eq (@comp_l3_eq.mk D D idp idpo idpo idpo) = idp :=
+begin 
+  hinduction D with obj precat, hinduction precat with cat_struct ic ci as,
+  hinduction cat_struct with hh id comp, hinduction hh with hom, hsimp,
+  sorry 
+end   
 
 @[hott]
 def comp_l3_eq_to_comp_l2_eq {D₁ D₂ : strict_category} :
@@ -216,6 +262,30 @@ begin
   change @comp₁ =[idp; hott.id] @comp₂ at pc, hinduction pc,  
   fapply comp_l2_eq.mk, exact idp, hsimp
 end
+
+@[hott]
+def eq_eqv_comp_l3_eq {D₁ D₂ : strict_category} :
+  D₁ = D₂ ≃ comp_l3_eq D₁ D₂ :=
+begin 
+  fapply equiv.mk,
+  { exact eq_to_comp_l3_eq },
+  { fapply adjointify,
+    { exact comp_l3_eq_to_eq },
+    { hinduction D₁ with obj₁ precat₁, hinduction D₂ with obj₂ precat₂,
+      intro c3_eq, hinduction c3_eq with pₒ pₕ pᵢ pc, change obj₁ = obj₂ at pₒ, hinduction pₒ,
+      hinduction precat₁ with cat_struct₁ ic₁ ci₁ as₁, 
+      hinduction precat₂ with cat_struct₂ ic₂ ci₂ as₂,
+      hinduction cat_struct₁ with hh₁ id₁ comp₁, hinduction hh₁ with hom₁,
+      hinduction cat_struct₂ with hh₂ id₂ comp₂, hinduction hh₂ with hom₂,
+      change hom₁ =[idp; λ D : Set, D -> D -> Set] hom₂ at pₕ, hinduction pₕ,  
+      change id₁ =[idp; hott.id] id₂ at pᵢ, hinduction pᵢ,
+      change @comp₁ =[idp; hott.id] @comp₂ at pc, hinduction pc,
+      have pic : @ic₁ = @ic₂, from is_prop.elim _ _, hinduction pic,
+      have pci : @ci₁ = @ci₂, from is_prop.elim _ _, hinduction pci,
+      have pas : @as₁ = @as₂, from is_prop.elim _ _, hinduction pas, 
+      rwr comp_l3_eq_to_eq_idp },
+    { intro p, hinduction p, rwr eq_to_comp_l3_eq_idp, rwr comp_l3_eq_to_eq_idp } }
+end  
 
 @[hott]
 def comp_l2_eq_eqv_comp_l3_eq {D₁ D₂ : strict_category} :
