@@ -59,7 +59,7 @@ def False_uninhabited : ¬ False :=
 
 /- Some instances of propositions. -/
 @[hott, instance]
-lemma is_prop_map {A B : Type _} (pB : is_prop B) : is_prop (A -> B) :=
+def is_prop_map {A B : Type _} (pB : is_prop B) : is_prop (A -> B) :=
 have eq_map : forall f1 f2 : A -> B, f1 = f2, from 
   assume f1 f2, 
   have map_hom : f1 ~ f2, from 
@@ -68,7 +68,7 @@ have eq_map : forall f1 f2 : A -> B, f1 = f2, from
 is_prop.mk eq_map 
 
 @[hott, instance]
-lemma is_prop_dprod {A : Type u} {P : A -> Type v} 
+def is_prop_dprod {A : Type u} {P : A -> Type v} 
     (pP : forall a : A, is_prop (P a)) : 
   is_prop (forall a : A, P a) :=
 have eq_prod : forall dP1 dP2 : (forall a : A, P a), dP1 = dP2, from 
@@ -80,7 +80,7 @@ have eq_prod : forall dP1 dP2 : (forall a : A, P a), dP1 = dP2, from
 is_prop.mk eq_prod
 
 @[hott, instance]
-lemma is_prop_dprod2 {A : Type u} {P : A -> A -> Type v} 
+def is_prop_dprod2 {A : Type u} {P : A -> A -> Type v} 
     (pP : forall a b : A, is_prop (P a b)) : 
   is_prop (forall a b : A, P a b) :=
 have eq_prod : forall dP1 dP2 : (forall a b : A, P a b), dP1 = dP2, from 
@@ -186,7 +186,7 @@ have linv : Π a : A, BA (AB a) = a, from assume a, @is_prop.elim A pA _ _,
 equiv.mk AB (adjointify AB BA rinv linv)
 
 @[hott]
-lemma prop_iff_eq : Π {A B : trunctype -1} (imp1 : A -> B) (imp2 : B -> A), 
+def prop_iff_eq : Π {A B : trunctype -1} (imp1 : A -> B) (imp2 : B -> A), 
   A = B 
 | (trunctype.mk carA structA) (trunctype.mk carB structB) :=
   assume imp1 imp2, 
