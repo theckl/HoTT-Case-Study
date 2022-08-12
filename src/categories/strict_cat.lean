@@ -224,7 +224,7 @@ begin
   hinduction D₁ with obj₁ precat₁, hinduction D₂ with obj₂ precat₂,
   intro c3_eq, hinduction c3_eq with pₒ pₕ pᵢ pc, change obj₁ = obj₂ at pₒ, hinduction pₒ,
   hinduction precat₁ with cat_struct₁ ic₁ ci₁ as₁, 
-  hinduction precat₂ with cat_struct₂ ic₂ ci₂ as₂,
+  hinduction precat₂ with cat_struct₂ ic₂ ci₂ as₂, 
   hinduction cat_struct₁ with hh₁ id₁ comp₁, hinduction hh₁ with hom₁,
   hinduction cat_struct₂ with hh₂ id₂ comp₂, hinduction hh₂ with hom₂,
   change hom₁ =[idp; λ D : Set, D -> D -> Set] hom₂ at pₕ, hinduction pₕ,  
@@ -242,8 +242,7 @@ end
 def comp_l3_eq_to_eq_idp (D : strict_category) :
   comp_l3_eq_to_eq (@comp_l3_eq.mk D D idp idpo idpo idpo) = idp :=
 begin 
-  hinduction D with obj precat, hinduction precat with cat_struct ic ci as,
-  hinduction cat_struct with hh id comp, hinduction hh with hom, hsimp,
+  hinduction D with obj precat, 
   sorry 
 end   
 
