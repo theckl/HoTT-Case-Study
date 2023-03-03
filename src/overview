@@ -1,4 +1,6 @@
-init2       :   592
+Compiling files, in order of dependencies:
+------------------------------------------
+init2       :   673
 types2      :   252
 prop_axioms :   647
 prop_logic  :   208
@@ -14,18 +16,21 @@ categories
   basic     :   776
   examples  :   824
   adjoints  :   398
-  strict_cat:   633
+  strict_cat:   824 (change as described below already started, 
+                     but yet unsuccessful)
   diagrams  :   442
   limits    :   626
-  pullbacks :   403
+  pullbacks :   403 (contains 2 sorries, for symmetry of intersection
+                     of subobjects & for construction of implications
+                     as subobjects)
   colimits  :   458
   structures:   613
               -----
-               9638
+               9900
 
 
-Files to edit : 
----------------
+Planned changes in Files, from bottom to top: 
+---------------------------------------------
 categories.models : is_interpretable_in-class
 categories.pullbacks : complements, instance
 categories.pullbacks : Heyting property
