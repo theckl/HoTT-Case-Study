@@ -236,8 +236,6 @@ begin
   exact idp
 end  
 
-#print comp_l3_eq_to_eq 
-
 @[hott]
 def comp_l3_eq_to_eq_idp (D : strict_category) :
   comp_l3_eq_to_eq (@comp_l3_eq.mk D D idp idpo idpo idpo) = idp :=
