@@ -46,7 +46,7 @@ extends category_struct.{v} obj : Type (max u (v+1)) :=
 
 attribute [hsimp] precategory.id_comp precategory.comp_id precategory.assoc
 
-/- Defintion of categorical isomorphisms. -/
+/- Definition of categorical isomorphisms. -/
 @[hott]
 structure iso {C : Type u} [precategory.{v} C] (a b : C) :=
   (hom : a ⟶ b)
@@ -380,7 +380,7 @@ begin
                                                                                        Hp Hq Hr 
 end   
 
-/- A homomorphism between subobjects compatible with the injections is itself injection. Hence,
+/- A homomorphism between subobjects compatible with the injections is itself an injection. Hence,
    homomorphisms between subobjects in both ways imply an isomorphism of subobjects and therefore
    equality. -/
 @[hott]
@@ -751,7 +751,7 @@ begin
 end  
 
 /- The full subcategory on a subtype of the type of a category can be defined using
-   the injctive embedding of the subtype into the type. -/
+   the injective embedding of the subtype into the type. -/
 @[hott]
 def subtype_emb {C : Type u} [category.{v} C] (P : C -> trunctype.{0} -1) :
   subtype (λ c : C, ↥(P c)) -> C := assume sc, sc.1
