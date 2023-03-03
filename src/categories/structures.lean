@@ -9,7 +9,7 @@ open hott.eq hott.sigma hott.set hott.subset hott.is_trunc hott.is_equiv hott.eq
 
 namespace categories
 
-/- We define multi-sorted stamdard structures on categories and prove the Structure 
+/- We define multi-sorted standard structures on categories and prove the Structure 
    Identity Principle, following and generalizing the [HoTT-Book], Section 9.8.  -/
 @[hott]
 structure std_structure_on (C : Type u) [category.{v} C] :=
