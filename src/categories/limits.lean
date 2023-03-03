@@ -481,7 +481,7 @@ end
    Note that the limit cone vertex may be the empty set - then all cones over the functor `F`
    are empty because otherwise they cannot factorize through the empty set. 
    
-   Also not that the cone must live in an uiniverse both containing the diagram set 
+   Also not that the cone must live in a universe both containing the diagram set 
    and the sets ordered according to the diagram. -/
 @[hott]
 def set_limit_pred {J : Set.{u'}} [precategory.{v'} J] (F : J ⥤ Set) : 
