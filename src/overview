@@ -42,5 +42,5 @@ categories.limits : isomorphisms of diagrams induce isomorphisms of limits
 categories.diagrams : isomorphism of infinite (co)wedge diagrams
 categories.diagrams : infinte wedge, infinite cowedge, cowedge
 categories.strict_cat : category of small precategories = strict categories
-
+categories.basic : bundle (pre)categories (follow up in other categories-files)
 
