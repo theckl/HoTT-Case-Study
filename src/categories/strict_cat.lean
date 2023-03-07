@@ -14,8 +14,8 @@ namespace categories
    with loops, that is cycles of homomorphisms that always yield the identity 
    homomorphism when composed. 
   
-   Strict categories together with functors between them form a category. In particular, 
-   equality of functors between strict categories is unique.  -/
+   Strict categories together with functors between them form a precategory in a 
+   straightforward way.  -/
 @[hott]
 structure strict_category :=
   (obj : Set.{u})
@@ -58,20 +58,21 @@ precategory.mk (λ D₁ D₂ F, funct_id_comp F)
 
 namespace strict_cat
 
-/- In the [HoTT-Book], three types of equivalences between (pre)categories are discussed :
-   equivalences of (pre)categories [Def.9.4.1], isomorphisms of (pre)categories [Def.9.4.8]
-   and equalities. They only are equivalent types if the precategories are categories 
-   [Lem.9.4.15/16]. 
+/- It is more complicated to show that the precategory of strict categories is actually a 
+   category. To construct an equivalence between the identity type of two strict 
+   categories and the type of isomorphism between them as given by the category structure, 
+   we use one of the three types of equivalences between (pre)categories discussed in the 
+   [HoTT-Book, Sec.9.4] as an intermediate step: In [Def.9.4.8], they are also called 
+   isomorphisms of (pre)categories. 
    
-   However, from an isomorphism in the category of strict categories we can deduce an 
-   isomorphism of precategories in the sense of [Def.9.4.8], and this allows us to 
-   construct `isotoid` making `idtoiso` an equivalence in the precategory of strict 
-   categories. 
+   The equivalence between equalities and these isomorphisms is constructed in 
+   [Lem.9.4.15] without the strictness assumption. For the equivalence between the two 
+   notions of isomorphisms, the assumption is needed when constructing the category 
+   structure on the strict categories. 
    
-   The construction of the equivalence is organised in 3 steps:
-   The first step is to split up equalities of strict precategories in components and to 
-   show that equalities of the components is equivalent to equality of the strict 
-   precategories. -/
+   The proof that the precategory of strict categories is a category is complete when we 
+   have shown that the combined equivalence is [idtoiso]. This can be done by induction, 
+   using that [id_A] is mapped to [𝟙_A]. -/
 @[hott]
 structure comp_l1_eq (D₁ D₂ : strict_category) :=
   (pₒ : D₁.obj = D₂.obj)
