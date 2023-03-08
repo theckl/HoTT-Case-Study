@@ -11,8 +11,11 @@ We introduce precategories and categories following the HoTT book,
 Sec. 9.1. HoTT precategories have sets of homomorphisms, and HoTT categories 
 prescribe univalence : Isomorphisms are equivalent to identities of objects.
 
-As far as possible we copy the mathlib-code in [category_theory.category.default]. In particular,
-we keep the distinction of universe levels for objects and morphisms of a category.
+As far as possible we copy the mathlib-code in [category_theory.category.default]. 
+In particular, we keep the distinction of universe levels for objects and 
+morphisms of a category. On the other hand, we bundle the definition of 
+precategories and categories, as this makes it easier to deal with questions on
+their equivalence and equality.
 -/
 
 namespace precategories
@@ -55,6 +58,237 @@ structure Precategory :=
   has_coe_to_sort.mk Type.{u} Precategory.obj
 
 attribute [instance] Precategory.struct
+
+section
+variables (C : Precategory) (D : Precategory) (E : Precategory)
+
+/- Functors are defined between precategories. -/
+@[hott]
+structure functor :=
+(obj      : C → D)
+(map      : Π {x y : C}, (x ⟶ y) → ((obj x) ⟶ (obj y)))
+(map_id   : ∀ (x : C), map (𝟙 x) = 𝟙 (obj x))
+(map_comp : ∀ {x y z : C} (f : x ⟶ y) (g : y ⟶ z), map (f ≫ g) = (map f) ≫ (map g))
+
+infixr ` ⥤ ` :26 := functor       
+
+attribute [hsimp] functor.map_id
+attribute [hsimp] functor.map_comp
+
+@[hott]
+def functor_eta (F : C ⥤ D) : 
+  F = functor.mk F.obj F.map F.map_id F.map_comp :=
+begin hinduction F, refl end 
+
+@[hott]
+def functor_eta_mk :
+  Π obj map map_id map_comp, functor_eta C D (functor.mk obj map map_id map_comp) = idp :=
+assume obj map map_id map_comp, rfl  
+
+@[hott]
+def functor_mk_obj :
+  Π obj map map_id map_comp, @functor.obj C D (functor.mk obj map map_id map_comp) = obj :=
+assume obj map map_id map_comp, rfl   
+
+/- Functors are equal if their maps of objects and arrows are equal. -/
+@[hott]
+def functor_eq {F G : C ⥤ D} :
+  Π (p : F.obj = G.obj), 
+    (F.map =[p; λ f : C -> D, Π (x y : C), (x ⟶ y) -> (f x ⟶ f y)] G.map) -> F = G :=
+begin 
+  intros p q, 
+  exact (functor_eta C D F) ⬝ (apd01111_v2 functor.mk p q 
+          (pathover_of_tr_eq (is_prop.elim _ _))  (pathover_of_tr_eq (is_prop.elim _ _)))
+        ⬝ (functor_eta C D G)⁻¹  
+end  
+
+@[hott]
+def functor_eq_idp' {obj : C -> D} 
+  (map : Π (c₁ c₂ : C), (c₁ ⟶ c₂) -> (obj c₁ ⟶ obj c₂)) :
+  Π mi mc, functor_eq C D (@idp _ (functor.mk obj map mi mc).obj) idpo = idp :=
+begin 
+  intros mi mc,                                          
+  change idp ⬝ (apd01111_v2 functor.mk idp idpo 
+           (pathover_of_tr_eq (is_prop.elim _ _)) (pathover_of_tr_eq (is_prop.elim _ _))) 
+         ⬝ inverse idp = _, 
+  rwr idp_con, rwr idp_inv, rwr con_idp,             
+  have H1 : pathover_of_tr_eq (is_prop.elim (apd011 (λ (a : C → D) 
+              (b : Π {x y : C}, (x ⟶ y) → (a x ⟶ a y)), Π (x : C), b (𝟙 x) = 𝟙 (a x))
+              idp idpo ▸[id] mi) mi) = idpo, by apply dep_set_eq_eq,
+  have H2 : pathover_of_tr_eq (is_prop.elim (apd011 (λ (a : C → D) (b : Π {x y : C}, 
+              (x ⟶ y) → (a x ⟶ a y)), Π (x y z : C) (f : x ⟶ y) (g : y ⟶ z), 
+              b (f ≫ g) = b f ≫ b g) idp idpo ▸[id] @mc) @mc) = idpo,
+    by apply dep_set_eq_eq,        
+  rwr H1, rwr H2
+end
+
+@[hott]
+def functor_eq_idp {F : C ⥤ D} :
+  functor_eq C D (@idp _ F.obj) idpo = idp :=
+begin hinduction F, rwr functor_eq_idp' end
+
+@[hott]
+def functor_eq_obj {F G : C ⥤ D} :
+  Π (p : F.obj = G.obj) q, (ap functor.obj (functor_eq C D p q)) = p :=
+begin 
+  intros p q, 
+  change (ap _ ((functor_eta C D F) ⬝ (apd01111_v2 functor.mk p q 
+          (pathover_of_tr_eq (is_prop.elim _ _))  (pathover_of_tr_eq (is_prop.elim _ _)))
+        ⬝ (functor_eta C D G)⁻¹)) = p, 
+  rwr ap_con, rwr ap_con, hinduction F, hinduction G, 
+  rwr functor_eta_mk, rwr functor_eta_mk, rwr idp_inv, rwr ap_idp, rwr ap_idp, rwr con_idp,
+  rwr idp_con, rwr ap_apd01111_v2 _ _ _ _ _ _ (functor_mk_obj C D),  
+  change idp ⬝ p ⬝ idp⁻¹ = p, rwr idp_inv, rwr con_idp, rwr idp_con  
+end    
+
+@[hott]
+def functor_eq_change_path {F G : C ⥤ D} 
+  {p p' : F.obj = G.obj} (q : p = p')
+  (r : (F.map =[p; λ f : C -> D, Π (x y : C), (x ⟶ y) -> (f x ⟶ f y)] G.map)) :
+  functor_eq C D p' (change_path q r) = functor_eq C D p r :=
+begin hinduction q, rwr change_path_idp end  
+
+@[hott]
+def functor_eq_eta {F G : C ⥤ D} (p : F = G) :
+  functor_eq C D (ap functor.obj p) 
+                 (pathover_ap (λ f : C -> D, Π (x y : C), (x ⟶ y) -> (f x ⟶ f y)) 
+                              functor.obj (apd functor.map p)) = p :=
+begin 
+  hinduction p, rwr apd_idp, 
+  change functor_eq C D (ap functor.obj (refl F)) 
+                        (change_path (ap_idp F functor.obj)⁻¹ idpo) = _, 
+  rwr functor_eq_change_path, rwr functor_eq_idp
+end  
+
+@[hott, reducible]
+def constant_functor (d : D) : 
+  C ⥤ D := 
+have id_hom_eq : ∀ d : D, 𝟙 d = 𝟙 d ≫ 𝟙 d, by intro d; hsimp,  
+functor.mk (λ c : C, d) (λ c₁ c₂ f, 𝟙 d) (λ c, rfl) 
+  (λ c₁ c₂ c₃ f g, (id_hom_eq d))
+
+@[hott]
+def constant_functor_map (d : D) :
+  ∀ {c₁ c₂ : C} (h : c₁ ⟶ c₂), (constant_functor C D d).map h = 𝟙 d :=
+assume c₁ c₂ h, rfl  
+
+@[hott, reducible]
+def id_functor : C ⥤ C :=
+  functor.mk (λ c : C, c) (λ c₁ c₂ f, f) (λ c, idp) (λ c₁ c₂ c₃ f g, idp)  
+
+
+@[hott]
+structure nat_trans (F G : C ⥤ D) :=
+(app : Π c : C, (F.obj c) ⟶ (G.obj c))
+(naturality : ∀ {c c' : C} (f : c ⟶ c'), 
+                                 (F.map f) ≫ (app c') = (app c) ≫ (G.map f))  
+
+infixr ` ⟹ `:10 := nat_trans _ _
+
+end
+
+section
+variables {B : Precategory} {C : Precategory} {D : Precategory} {E : Precategory}
+
+@[hott]
+def is_faithful_functor (F : C ⥤ D) := 
+  Π {x y : C}, is_set_injective (@functor.map C D F x y) 
+
+@[hott]
+def is_fully_faithful_functor (F : C ⥤ D) := 
+  Π {x y : C}, is_set_bijective (@functor.map C D F x y)
+
+@[hott]
+def id_functor_is_fully_faithful : is_fully_faithful_functor (id_functor C) :=
+  λ x y : C, (identity (x ⟶ y)).bij   
+
+/- The composition of functors -/
+@[hott, reducible]
+def functor_comp (F : C ⥤ D) (G : D ⥤ E) : C ⥤ E := 
+begin
+  fapply functor.mk,  
+  { exact λ c : C, G.obj (F.obj c) }, -- map of objects
+  { intros c c' f, exact G.map (F.map f) },  -- map of morphisms
+  { intro x, hsimp }, -- identity morphisms are preserved
+  { intros x y x f g, hsimp } --composition of morphisms is preserved
+end  
+
+infixr ` ⋙ `:25 := functor_comp 
+
+@[hott]
+def funct_id_comp (F : C ⥤ D) : 
+  (id_functor C ⋙ F) = F :=
+begin 
+  fapply functor_eq, 
+  { apply eq_of_homotopy, intro c, hsimp },
+  { hsimp, change F.map =[eq_of_homotopy (λ c : C, idp); 
+                    λ f : C -> D, Π (x y : C), (x ⟶ y) → (f x ⟶ f y)] F.map, 
+    rwr eq_of_homotopy_idp } 
+end  
+
+@[hott]
+def funct_comp_id (F : C ⥤ D) : 
+  (F ⋙ id_functor D) = F :=
+begin 
+  fapply functor_eq, 
+  { apply eq_of_homotopy, intro c, hsimp },
+  { hsimp, change F.map =[eq_of_homotopy (λ c : C, idp); 
+                    λ f : C -> D, Π (x y : C), (x ⟶ y) → (f x ⟶ f y)] F.map, 
+    rwr eq_of_homotopy_idp } 
+end 
+
+@[hott]
+def funct_comp_assoc (F : C ⥤ D) (G : D ⥤ E) (H : E ⥤ B) : 
+  ((F ⋙ G) ⋙ H) = (F ⋙ (G ⋙ H)) :=
+begin
+  fapply functor_eq, 
+  { apply eq_of_homotopy, intro c, hsimp },
+  { change _ =[eq_of_homotopy (λ c : C, idp); 
+                    λ f : C -> B, Π (x y : C), (x ⟶ y) → (f x ⟶ f y)] _, 
+    rwr eq_of_homotopy_idp }
+end  
+
+end
+
+/- Equalities of precategories can be characterized by fully faithful 
+   functors that induce an equivalence on the types of the objects, see
+   [HoTT-Book, Lem.9.4.15]. -/
+@[hott]
+structure precat_iso (C D : Precategory) :=
+  (functor : C ⥤ D) 
+  (ff : is_fully_faithful_functor functor) 
+  (eqv : is_equiv functor.obj)
+
+@[hott]
+def idtoprecat_iso (C D : Precategory) : (C = D) -> (precat_iso C D) :=
+begin  
+  intro p, hinduction p, fapply precat_iso.mk, 
+  exact id_functor C, exact @id_functor_is_fully_faithful C, 
+  exact is_equiv_id C.obj      
+end
+
+@[hott]
+def precat_isotoid : Π (C D : Precategory), (precat_iso C D) -> (C = D)
+| (Precategory.mk obj_C struct_C) (Precategory.mk obj_D struct_D) :=
+begin 
+  intro pc_iso, 
+  have p : obj_C = obj_D, from 
+    ua (equiv.mk pc_iso.functor.obj pc_iso.eqv),
+  hinduction p,
+  fapply ap (Precategory.mk obj_C), 
+  hinduction struct_C with struct_C id_comp_C comp_id_C assoc_C, 
+  hinduction struct_D with struct_D id_comp_D comp_id_D assoc_D, 
+  sorry
+end
+
+@[hott]
+def is_eqv_idtoprecat_iso (C D : Precategory) : 
+  is_equiv (idtoprecat_iso C D) :=
+sorry  
+
+@[hott]
+def id_eqv_precat_iso (C D : Precategory) : (C = D) ≃ (precat_iso C D) :=
+  equiv.mk (idtoprecat_iso C D) (is_eqv_idtoprecat_iso C D)      
 
 end precategories
 
