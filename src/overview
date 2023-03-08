@@ -13,7 +13,7 @@ sets
   quotients :   205
   theories  :   695
 categories  
-  basic     :   776
+*  basic     :   776
   examples  :   824
   adjoints  :   398
   strict_cat:   824 (change as described below already started, 
