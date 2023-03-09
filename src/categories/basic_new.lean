@@ -250,9 +250,36 @@ end
 
 end
 
-/- Equalities of precategories can be characterized by fully faithful 
-   functors that induce an equivalence on the types of the objects, see
-   [HoTT-Book, Lem.9.4.15]. -/
+/- Equalities of precategories can be characterized by 
+   fully faithful functors that induce an equivalence on the types of 
+   the objects. Following the proof in [HoTT-Book, Lem.9.4.15] we split 
+   up equalities of precageories and isomorphisms of precategories into
+   components and use univalence to show their equivalence. -/
+@[hott]
+structure precat_eq_comp (C D : Precategory) :=
+  (pₒ : C.obj = D.obj)
+  (pₕ : Π (a b : C), (a ⟶ b) = ((pₒ ▸[id] a) ⟶ (pₒ ▸[id] b)))
+  (pᵢ : Π a : C, (pₕ a a) ▸ 𝟙 a = 𝟙 (pₒ ▸[id] a))
+  (pc : Π {a b c : C} (f : a ⟶ b) (g : b ⟶ c), 
+            (pₕ a c) ▸ (f ≫ g) = ((pₕ a b) ▸ f) ≫ ((pₕ b c) ▸ g))
+
+@[hott]
+def precat_eqtocomp {C D : Precategory} : C = D -> precat_eq_comp C D :=
+begin
+  intro p, hinduction p, fapply precat_eq_comp.mk, 
+  { exact idp },
+  { intros a b, exact idp },
+  { intro a, hsimp },
+  { intros a b c f g, hsimp }
+end
+
+@[hott]
+def precat_comptoeq {C D : Precategory} : precat_eq_comp C D -> C = D :=
+begin
+  intro pcc, hinduction pcc, sorry
+end
+
+
 @[hott]
 structure precat_iso (C D : Precategory) :=
   (functor : C ⥤ D) 
@@ -278,7 +305,23 @@ begin
   fapply ap (Precategory.mk obj_C), 
   hinduction struct_C with struct_C id_comp_C comp_id_C assoc_C, 
   hinduction struct_D with struct_D id_comp_D comp_id_D assoc_D, 
-  sorry
+  fapply apd01111' (@is_precat.mk obj_C), 
+  { hinduction struct_C with has_hom_C id_C comp_C, 
+    hinduction struct_D with has_hom_D id_D comp_D, 
+    have ph : has_hom_C = has_hom_D, from 
+      begin 
+        hinduction has_hom_C with hom_C, 
+        hinduction has_hom_D with hom_D,
+        apply ap (@has_hom.mk obj_C),
+        apply eq_of_homotopy2, intros a b, 
+        apply bij_to_set_eq, 
+        exact bijection.mk (pc_iso.functor.map) (@pc_iso.ff a b) 
+      end,
+    hinduction ph,
+    fapply ap011 (@category_struct.mk _ has_hom_C),
+    { sorry },
+    { sorry } },
+  all_goals { apply pathover_of_tr_eq, exact is_prop.elim _ _ }
 end
 
 @[hott]
