@@ -255,6 +255,38 @@ end
    the objects. Following the proof in [HoTT-Book, Lem.9.4.15] we split 
    up equalities of precageories and isomorphisms of precategories into
    components and use univalence to show their equivalence. -/
+@[hott] 
+structure has_hom_eq_comp {obj : Type} (hh₁ hh₂ : has_hom obj) := 
+  (pₕ : Π (a b : obj), @has_hom.hom _ hh₁ a b = @has_hom.hom _ hh₂ a b)  
+
+@[hott]
+def hh_eqtocomp {obj : Type} {hh₁ hh₂ : has_hom obj} : 
+  hh₁ = hh₂ -> has_hom_eq_comp hh₁ hh₂ :=
+begin
+  intro p, exact has_hom_eq_comp.mk 
+  (λ a b, ap (λ hh, @has_hom.hom _ hh a b) p) 
+end
+
+@[hott]
+def hh_comptoeq {obj : Type} {hh₁ hh₂ : has_hom obj} :
+  has_hom_eq_comp hh₁ hh₂ -> hh₁ = hh₂ :=
+begin
+  hinduction hh₁ with h₁, hinduction hh₂ with h₂,
+  intro pc, hinduction pc, 
+  exact ap has_hom.mk (eq_of_homotopy2 pₕ)
+end
+
+@[hott]
+def hh_eq_rinv {obj : Type} {hh₁ hh₂ : has_hom obj} :
+  Π hhc : has_hom_eq_comp hh₁ hh₂, hh_eqtocomp (hh_comptoeq hhc) = hhc :=
+begin
+  hinduction hh₁ with h₁, hinduction hh₂ with h₂,
+  intro hhc, hinduction hhc with pₕ, 
+  apply ap has_hom_eq_comp.mk, apply eq_of_homotopy2, intros a b, hsimp,
+  change ap _ (ap has_hom.mk _) = _, rwr <- ap_compose, hsimp,
+  sorry
+end
+
 @[hott]
 structure precat_eq_comp (C D : Precategory) :=
   (pₒ : C.obj = D.obj)
@@ -276,7 +308,33 @@ end
 @[hott]
 def precat_comptoeq {C D : Precategory} : precat_eq_comp C D -> C = D :=
 begin
-  intro pcc, hinduction pcc, sorry
+  hinduction C with obj_C precat_C, hinduction D with obj_D precat_D,
+  intro pcc, hinduction pcc, 
+  change obj_C = obj_D at pₒ, hinduction pₒ, 
+  change Π a b, (a ⟶ b) = (a ⟶ b) at pₕ, 
+  change Π a, _ = 𝟙 a at pᵢ,
+  fapply apd011 Precategory.mk, exact idp, 
+  apply pathover_of_tr_eq, change precat_C = precat_D,
+  hinduction precat_C with cat_C ic_C ci_C as_C,
+  hinduction precat_D with cat_D ic_D ci_D as_D,
+  fapply apd01111' (@is_precat.mk obj_C),
+  { hinduction cat_C with has_hom_C id_C comp_C, 
+    hinduction cat_D with has_hom_D id_D comp_D,
+    hinduction has_hom_C with hom_C, hinduction has_hom_D with hom_D,    
+    fapply apd0111' (@category_struct.mk obj_C),
+    { exact ap has_hom.mk (eq_of_homotopy2 pₕ) },
+    { apply pathover_of_tr_eq, 
+      change Π a : obj_C, hom_C a a at id_C,
+      have q : (ap has_hom.mk (eq_of_homotopy2 pₕ)) 
+        ▸[λ hh : has_hom obj_C, Π a : obj_C, (@has_hom.hom _ hh) a a] id_C =
+         ((eq_of_homotopy2 pₕ) ▸[λ h : obj_C -> obj_C -> Set, Π a : obj_C, h a a] id_C),
+        from @tr_ap _ _ hom_C hom_D 
+                 (λ hh : has_hom obj_C, Π a : obj_C, (@has_hom.hom _ hh) a a) 
+                 has_hom.mk (eq_of_homotopy2 pₕ) id_C, 
+      rwr q, apply eq_of_homotopy, intro a, 
+      sorry },
+    { sorry } },
+  all_goals { apply pathover_of_tr_eq, exact is_prop.elim _ _ }
 end
 
 
