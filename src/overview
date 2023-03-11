@@ -43,4 +43,5 @@ categories.diagrams : isomorphism of infinite (co)wedge diagrams
 categories.diagrams : infinte wedge, infinite cowedge, cowedge
 categories.strict_cat : category of small precategories = strict categories
 categories.basic : bundle (pre)categories (follow up in other categories-files)
-
+categories.basic : split off subobjects to [categories.subobjects]
+categories.basic : prove characterisation of equalities of precategories
