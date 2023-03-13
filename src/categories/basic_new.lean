@@ -259,7 +259,7 @@ end
 structure has_hom_eq_comp {obj : Type} (hh₁ hh₂ : has_hom obj) := 
   (pₕ : Π (a b : obj), @has_hom.hom _ hh₁ a b = @has_hom.hom _ hh₂ a b)  
 
-@[hott]
+@[hott, reducible]
 def hh_eqtocomp {obj : Type} {hh₁ hh₂ : has_hom obj} : 
   hh₁ = hh₂ -> has_hom_eq_comp hh₁ hh₂ :=
 begin
@@ -267,7 +267,7 @@ begin
   (λ a b, ap (λ hh, @has_hom.hom _ hh a b) p) 
 end
 
-@[hott]
+@[hott, reducible]
 def hh_comptoeq {obj : Type} {hh₁ hh₂ : has_hom obj} :
   has_hom_eq_comp hh₁ hh₂ -> hh₁ = hh₂ :=
 begin
@@ -284,6 +284,85 @@ begin
   intro hhc, hinduction hhc with pₕ, 
   apply ap has_hom_eq_comp.mk, apply eq_of_homotopy2, intros a b, hsimp,
   change ap _ (ap has_hom.mk _) = _, rwr <- ap_compose, hsimp,
+  rwr ap_ev_eq_of_hty2_ev
+end
+
+@[hott]
+def hh_eq_linv {obj : Type} {hh₁ hh₂ : has_hom obj} :
+  Π hh_eq: hh₁ = hh₂, hh_comptoeq (hh_eqtocomp hh_eq) = hh_eq :=
+begin 
+  intro hh_eq, hinduction hh_eq, hinduction hh₁ with h₁, 
+  change ap has_hom.mk _ = ap has_hom.mk idp, rwr ap_idp, 
+  change ap has_hom.mk (eq_of_homotopy2 (apd100 (@idp _ 
+    (@has_hom.hom _ (has_hom.mk h₁))))) = _,
+  rwr hty2_of_ap100_eq_inv
+end    
+
+@[hott, hsimp]
+def cs_hom {obj : Type} :
+  category_struct obj -> (obj -> obj -> Set) :=
+λ cat_str : category_struct obj, @has_hom.hom _ cat_str.to_has_hom  
+
+@[hott, hsimp]
+def cs_id {obj : Type} :
+  Π cs : category_struct obj, Π a : obj, cs_hom cs a a :=
+λ cs : category_struct obj, λ a : obj, @category_struct.id _ cs a
+
+@[hott, hsimp]
+def cs_comp {obj : Type} :
+  Π cs : category_struct obj, Π {a b c : obj} (f : cs_hom cs a b) 
+                                (g : cs_hom cs b c), cs_hom cs a c :=
+λ cs : category_struct obj, λ (a b c : obj) (f : cs_hom cs a b) 
+          (g : cs_hom cs b c), @category_struct.comp _ cs _ _ _ f g   
+
+@[hott] 
+structure cat_str_eq_comp {obj : Type} (cat_str₁ cat_str₂ : category_struct obj) :=
+  (pₕ : Π (a b : obj), (cs_hom cat_str₁) a b = (cs_hom cat_str₂) a b)
+  (pᵢ : Π a : obj, ((pₕ a a) ▸ cs_id cat_str₁ a) = cs_id cat_str₂ a)
+  (pc : Π {a b c : obj} (f : cs_hom cat_str₁ a b) (g : cs_hom cat_str₁ b c), 
+          ((pₕ a c) ▸ (cs_comp cat_str₁ f g)) = 
+                        cs_comp cat_str₂ ((pₕ a b) ▸ f) ((pₕ b c) ▸ g))
+
+@[hott]
+def cs_eqtocomp {obj : Type} (cat_str₁ cat_str₂ : category_struct obj) :
+  (cat_str₁ = cat_str₂) -> cat_str_eq_comp cat_str₁ cat_str₂ :=
+begin
+  hinduction cat_str₁ with hh₁ id₁ comp₁, 
+  hinduction cat_str₂ with hh₂ id₂ comp₂,
+  intro p, 
+  let ph : hh₁ = hh₂ := ap (@category_struct.to_has_hom _) p,
+  let pi : id₁ =[ph; λ (hh : has_hom obj), Π (a : obj), 
+                                  @has_hom.hom _ hh a a] id₂ := 
+    pathover_ap (λ hh : has_hom obj, Π a : obj, @has_hom.hom _ hh a a) 
+        (@category_struct.to_has_hom _) (apd (@category_struct.id _) p), 
+  let pc : @comp₁ =[ph; λ (hh : has_hom obj), Π (a b c: obj)
+                          (f : @has_hom.hom _ hh a b) (g : @has_hom.hom _ hh b c), 
+                          @has_hom.hom _ hh a c] @comp₂ := 
+    pathover_ap (λ hh : has_hom obj, Π (a b c: obj)
+                  (f : @has_hom.hom _ hh a b) (g : @has_hom.hom _ hh b c), 
+                  @has_hom.hom _ hh a c) 
+      (@category_struct.to_has_hom _) (apd (@category_struct.comp _) p),       
+  fapply cat_str_eq_comp.mk,
+  { exact (hh_eqtocomp ph).pₕ },
+  { hsimp, intro a, rwr tr_ap_id, rwr <- ap_compose, rwr <- tr_ap_id, 
+    rwr <- @tr_fn_tr_eval _ _ (λ hh a, @has_hom.hom _ hh a a) _ _ id₁ ph a, 
+    exact apd10 (tr_eq_of_pathover pi) a },
+  { hsimp, intros a b c f g, 
+    rwr tr_ap_id, rwr <- ap_compose, rwr <- tr_ap_id, 
+    rwr tr_ap_id _ f, rwr <- ap_compose, rwr <- tr_ap_id,
+    rwr tr_ap_id _ g, rwr <- ap_compose, rwr <- tr_ap_id,
+    rwr @tr_fn2_tr_ev _ ((λ hh, @has_hom.hom _ hh a b)) _ _ _ _ 
+                     (@comp₁ a b c) ph f g,
+    exact ap100 (tr_eq_of_pathover (po_fn_ev ph c (po_fn_ev ph b 
+                                           (po_fn_ev ph a pc)))) _ _ }
+end  
+
+@[hott]
+def cs_comptoeq {obj : Type} (cat_str₁ cat_str₂ : category_struct obj) :
+  cat_str_eq_comp cat_str₁ cat_str₂ -> (cat_str₁ = cat_str₂) :=
+begin
+  hinduction cat_str₁ with hh₁ id₁ comp₁, 
+  hinduction cat_str₂ with hh₂ id₂ comp₂,
   sorry
 end
 
