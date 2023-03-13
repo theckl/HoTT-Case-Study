@@ -39,6 +39,11 @@ by hinduction p; refl
 @[reducible,hott]
 def ap100 {A B C : Type _} {f g : A → B -> C} (H : f = g) : f ~2 g := apd100 H
 
+@[hott]
+def ap100_ev_ap {A B C : Type _} {f g : A → B -> C} (H : f = g) (a : A) (b : B) :
+  ap100 H a b = ap (λ h : A -> B -> C, h a b) H :=
+by hinduction H; refl
+
 @[reducible,hott]
 def ap1000 {A B C D: Type _} {f g : A → B -> C -> D} (H : f = g) : f ~3 g := apd1000 H
 
@@ -46,6 +51,12 @@ def ap1000 {A B C D: Type _} {f g : A → B -> C -> D} (H : f = g) : f ~3 g := a
 def ap100_eq_of_hty2_inv {A B C : Type _} {f g : A → B -> C} (H : f ~2 g) :
   ap100 (eq_of_homotopy2 H) = H :=
 is_equiv.left_inv (funext.is_equiv_apd100 f g).inv H 
+
+@[hott]
+def ap_ev_eq_of_hty2_ev {A B C : Type _} {f g : A → B -> C} (H : f ~2 g) 
+  (a : A) (b : B) :
+  ap (λ h : A -> B -> C, h a b) (eq_of_homotopy2 H) = H a b := 
+by rwr <- ap100_ev_ap; rwr ap100_eq_of_hty2_inv; refl
 
 @[hott]
 def hty2_of_ap100_eq_inv {A B C : Type _} {f g : A → B -> C} (p : f = g) :
@@ -365,6 +376,12 @@ def tr_dep_fn2_eval_tr {A C : Type _} {B : A -> Type _}
 begin hinduction p, refl end 
 
 @[hott]
+def tr_fn2_tr_ev {A : Type _} {B C D : A -> Type _} {a₁ a₂ : A} 
+  (f₁ : B a₁ -> C a₁ -> D a₁) (p : a₁ = a₂) (b₁ : B a₁) (c₁ : C a₁) : 
+  p ▸ f₁ b₁ c₁ = (p ▸ f₁) (p ▸ b₁) (p ▸ c₁) :=
+begin hinduction p, refl end 
+
+@[hott]
 def ap100_tr {A B C : Type _} {F G : A -> B -> C} {D : C -> Type _} 
   (p : F = G) {a : A} {b : B} (f : D (F a b)) :
   (ap100 p a b ▸[λ c : C, D c] f) = (p ▸[λ H : A -> B -> C, D (H a b)] f) :=
@@ -407,6 +424,15 @@ tr_compose (λ b : Type _, b) B p b₁
 def fn_ev_tr_tr_fn_ev {A : Type _} {B C : A -> Type _} {f : Π (a : A), B a -> C a} 
   {a a' : A} (p : a = a') (b : B a) : f a' (p ▸ b) = p ▸ (f a b) :=
 begin hinduction p, refl end  
+
+@[hott]
+def po_fn_ev {A B : Type _} {C : A -> B -> Type _} {a₁ a₂ : A} 
+  {f₁ : Π b : B, C a₁ b} {f₂ : Π b : B, C a₂ b} (p : a₁ = a₂) (b : B) :
+  f₁ =[p; λa : A, Π b : B, C a b ] f₂ -> f₁ b =[p; λ a : A, C a b] f₂ b :=
+begin 
+  hinduction p, intro po, hinduction po, 
+  apply pathover_idp_of_eq, refl 
+end  
 
 @[hott]
 def homotopy_eq_rinv {A B : Type _} {f g : A -> B} {H : f ~ g} :
