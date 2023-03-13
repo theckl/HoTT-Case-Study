@@ -1,6 +1,6 @@
 Compiling files, in order of dependencies:
 ------------------------------------------
-init2       :   673
+init2       :   699
 types2      :   252
 prop_axioms :   647
 prop_logic  :   208
