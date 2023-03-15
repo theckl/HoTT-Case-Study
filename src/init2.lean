@@ -357,7 +357,7 @@ begin hinduction p, refl end
 @[hott]
 def tr_fn_eval_tr {A B C : Type _} {f : A -> C} (p : A = B) (b : B) : 
   (p ▸ f) b = f (p⁻¹ ▸ b) := 
-begin hinduction p, refl end 
+begin hinduction p, refl end
 
 @[hott]
 def tr_fn_eval_tr' {A B : Type _} (g : B -> Type _) {b₁ b₂ : B} (p : b₁ = b₂) (a : A) 
