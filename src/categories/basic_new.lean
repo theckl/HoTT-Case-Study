@@ -363,7 +363,21 @@ def cs_comptoeq {obj : Type} (cat_str₁ cat_str₂ : category_struct obj) :
 begin
   hinduction cat_str₁ with hh₁ id₁ comp₁, 
   hinduction cat_str₂ with hh₂ id₂ comp₂,
-  sorry
+  intro cs_comp, hinduction cs_comp,
+  fapply apd0111' (@category_struct.mk obj),
+  { exact hh_comptoeq (has_hom_eq_comp.mk pₕ) },
+  { apply pathover_of_tr_eq, apply eq_of_homotopy, intro a, 
+    change Π a : obj, pₕ a a ▸ id₁ a = id₂ a at pᵢ, rwr <- pᵢ a, 
+    rwr tr_fn_tr_eval, rwr tr_ap_id, 
+    change ap ((λ A : Set, A.carrier) ∘ 
+           (λ hh : has_hom obj, @has_hom.hom _ hh a a)) _ ▸ _= _,
+    rwr ap_compose (λ A : Set, A.carrier) 
+           (λ hh : has_hom obj, @has_hom.hom _ hh a a) _, 
+    rwr <- tr_ap_id, hinduction hh₁, hinduction hh₂, rwr <- ap_compose, 
+    rwr ap_ev_eq_of_hty2_ev },
+  { apply pathover_of_tr_eq, apply eq_of_homotopy3, intros a b c,
+    apply eq_of_homotopy2, intros f' g', 
+    sorry }
 end
 
 @[hott]
