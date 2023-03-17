@@ -324,7 +324,7 @@ structure cat_str_eq_comp {obj : Type} (cat_str₁ cat_str₂ : category_struct 
                         cs_comp cat_str₂ ((pₕ a b) ▸ f) ((pₕ b c) ▸ g))
 
 @[hott]
-def cs_eqtocomp {obj : Type} (cat_str₁ cat_str₂ : category_struct obj) :
+def cs_eqtocomp {obj : Type} {cat_str₁ cat_str₂ : category_struct obj} :
   (cat_str₁ = cat_str₂) -> cat_str_eq_comp cat_str₁ cat_str₂ :=
 begin
   hinduction cat_str₁ with hh₁ id₁ comp₁, 
@@ -358,17 +358,19 @@ begin
 end  
 
 @[hott]
-def cs_comptoeq {obj : Type} (cat_str₁ cat_str₂ : category_struct obj) :
+def cs_comptoeq {obj : Type} {cat_str₁ cat_str₂ : category_struct obj} :
   cat_str_eq_comp cat_str₁ cat_str₂ -> (cat_str₁ = cat_str₂) :=
 begin
   hinduction cat_str₁ with hh₁ id₁ comp₁, 
   hinduction cat_str₂ with hh₂ id₂ comp₂,
   intro cs_comp, hinduction cs_comp,
+  change Π a : obj, pₕ a a ▸ id₁ a = id₂ a at pᵢ,
+  change Π (a b c : obj) f g, pₕ a c ▸ comp₁ f g = 
+                                   comp₂ (pₕ a b ▸f) (pₕ b c ▸g) at pc, 
   fapply apd0111' (@category_struct.mk obj),
   { exact hh_comptoeq (has_hom_eq_comp.mk pₕ) },
   { apply pathover_of_tr_eq, apply eq_of_homotopy, intro a, 
-    change Π a : obj, pₕ a a ▸ id₁ a = id₂ a at pᵢ, rwr <- pᵢ a, 
-    rwr tr_fn_tr_eval, rwr tr_ap_id, 
+    rwr <- pᵢ a, rwr tr_fn_tr_eval, rwr tr_ap_id, 
     change ap ((λ A : Set, A.carrier) ∘ 
            (λ hh : has_hom obj, @has_hom.hom _ hh a a)) _ ▸ _= _,
     rwr ap_compose (λ A : Set, A.carrier) 
@@ -377,7 +379,51 @@ begin
     rwr ap_ev_eq_of_hty2_ev },
   { apply pathover_of_tr_eq, apply eq_of_homotopy3, intros a b c,
     apply eq_of_homotopy2, intros f' g', 
-    sorry }
+    rwr tr_fn_tr_eval, rwr tr_fn_tr_eval, rwr tr_fn_tr_eval,
+    rwr tr_fn2_eval_tr, rwr tr_ap_id, 
+    change ap ((λ A : Set, A.carrier) ∘ 
+           (λ hh : has_hom obj, @has_hom.hom _ hh a c)) _ ▸ _ = _,
+    rwr ap_compose (λ A : Set, A.carrier) 
+           (λ hh : has_hom obj, @has_hom.hom _ hh a c) _, 
+    rwr <- tr_ap_id, hinduction hh₁, hinduction hh₂, rwr <- ap_compose,             
+    rwr ap_ev_eq_of_hty2_ev, 
+    change _ ▸ comp₁ ((hh_comptoeq (has_hom_eq_comp.mk pₕ))⁻¹ 
+                       ▸[λ hh : has_hom obj, (@has_hom.hom _ hh a b).carrier] f')
+                     ((hh_comptoeq (has_hom_eq_comp.mk pₕ))⁻¹ 
+                       ▸[λ hh : has_hom obj, (@has_hom.hom _ hh b c).carrier] g') = _,                      
+    have q : Π {a b : obj} (f' : hom_1 a b), (hh_comptoeq (has_hom_eq_comp.mk pₕ))⁻¹ 
+                   ▸[λ hh : has_hom obj, (@has_hom.hom _ hh a b).carrier] f' = 
+                   (pₕ a b)⁻¹ ▸ f', from 
+    begin 
+      intros a b f', rwr tr_ap_id, 
+      change ap ((λ A : Set, A.carrier) ∘ 
+                (λ hh : has_hom obj, @has_hom.hom _ hh a b)) _ ▸ _ = _,
+      rwr ap_compose (λ A : Set, A.carrier) 
+                     (λ hh : has_hom obj, @has_hom.hom _ hh a b) _, 
+      rwr <- tr_ap_id, rwr ap_inv, rwr <- ap_compose,             
+      rwr ap_ev_eq_of_hty2_ev 
+    end, 
+    rwr ap011 comp₁ (q f') (q g'),
+    rwr pc a b c, rwr tr_inv_tr, rwr tr_inv_tr }
+end
+
+@[hott]
+def cs_eq_rinv {obj : Type _} {cs₁ cs₂ : category_struct obj} :
+  Π csc : cat_str_eq_comp cs₁ cs₂, cs_eqtocomp (cs_comptoeq csc) = csc :=
+begin
+  intro csc, hinduction csc with pₕ pᵢ pc, 
+  hinduction cs₁ with hh₁ id₁ comp₁, hinduction cs₂ with hh₂ id₂ comp₂, 
+  change Π a : obj, pₕ a a ▸ id₁ a = id₂ a at pᵢ,
+  change Π (a b c : obj) f g, pₕ a c ▸ comp₁ f g = 
+                                   comp₂ (pₕ a b ▸f) (pₕ b c ▸g) at pc,
+  sorry
+end 
+
+@[hott]
+def cs_eq_linv {obj : Type _} {cs₁ cs₂ : category_struct obj} :
+  Π ceq : cs₁ = cs₂, cs_comptoeq (cs_eqtocomp ceq) = ceq :=
+begin
+  intro ceq, hinduction ceq, sorry
 end
 
 @[hott]
