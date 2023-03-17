@@ -370,6 +370,13 @@ def tr_dep_fn_eval_tr {A C : Type _} {B : A -> Type _}
 begin hinduction p, refl end  
 
 @[hott]
+def tr_fn2_eval_tr {A : Type _} {B C D : A -> Type _}  
+  {a₁ a₂ : A} (f₁ : B a₁ -> C a₁ -> D a₁) (p : a₁ = a₂) (b₂ : B a₂) 
+  (c₂ : C a₂) : 
+  (p ▸ f₁) b₂ c₂ = p ▸ f₁ (p⁻¹ ▸ b₂) (p⁻¹ ▸ c₂) :=
+begin hinduction p, refl end 
+
+@[hott]
 def tr_dep_fn2_eval_tr {A C : Type _} {B : A -> Type _}  
   {a₁ a₂ : A} (f₂ : B a₂ -> B a₂ -> C) (p : a₁ = a₂) (b₁ b₂ : B a₁) : 
   (p⁻¹ ▸ f₂) b₁ b₂ = f₂ (p ▸ b₁) (p ▸ b₂) :=
