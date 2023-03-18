@@ -200,6 +200,16 @@ begin
 end 
 
 @[hott]
+def ap_apd0111' {A D : Type _} {B C : A -> Type _} 
+  (f : Π (a : A), B a -> C a -> D) {a₁ a₂ : A} {b₁ : B a₁} {b₂ : B a₂}
+  {c₁ : C a₁} {c₂ : C a₂} (pA : a₁ = a₂) (pB : b₁ =[pA] b₂) (pC : c₁ =[pA] c₂) 
+  (g : D -> A) (HP : Π a b c, g (f a b c ) = a) : 
+  ap g (apd0111' f pA pB pC) = (HP a₁ b₁ c₁) ⬝ pA ⬝ (HP a₂ b₂ c₂)⁻¹ :=
+begin 
+  hinduction pA, hinduction pB, hinduction pC, rwr con_idp, rwr con.right_inv 
+end 
+
+@[hott]
 def apd0111_eq {A D : Type _} {B : A -> Type _} {C : Π (a : A), B a -> Type _} 
   (f : Π (a : A) (b : B a) (c : C a b), D) {a₁ a₂ : A} {b₁ : B a₁} {b₂ : B a₂}
   {c₁ : C a₁ b₁} {c₂ : C a₂ b₂} {pA pA': a₁ = a₂} {pB : b₁ =[pA] b₂} {pB' : b₁ =[pA'] b₂} 
