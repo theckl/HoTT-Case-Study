@@ -48,6 +48,16 @@ by hinduction H; refl
 def ap1000 {A B C D: Type _} {f g : A → B -> C -> D} (H : f = g) : f ~3 g := apd1000 H
 
 @[hott]
+def eq_of_homotopy2_inv {A B C : Type _} {f g : A → B -> C} (H : f ~2 g) :
+  (eq_of_homotopy2 H)⁻¹ = eq_of_homotopy2 (λ a b, (H a b)⁻¹) :=
+begin 
+  change (eq_of_homotopy (λ a : A, eq_of_homotopy (λ b : B, H a b)))⁻¹ = 
+         (eq_of_homotopy _), 
+  rwr <- eq_of_homotopy_inv, apply ap eq_of_homotopy, 
+  apply eq_of_homotopy, intro a, hsimp, rwr eq_of_homotopy_inv
+end  
+
+@[hott]
 def ap100_eq_of_hty2_inv {A B C : Type _} {f g : A → B -> C} (H : f ~2 g) :
   ap100 (eq_of_homotopy2 H) = H :=
 is_equiv.left_inv (funext.is_equiv_apd100 f g).inv H 
@@ -246,6 +256,18 @@ def apd01111' {A F : Type _} {B C D : A -> Type _}
   (pA : a = a') (pB : b =[pA] b') (pC : c =[pA] c') (pD : d =[pA] d') :
   h a b c d = h a' b' c' d' :=
 begin hinduction pA, hinduction pB, hinduction pC, hinduction pD, refl end
+
+@[hott, hsimp, reducible]
+def ap_apd01111' {A F : Type _} {B C D : A -> Type _} 
+  (h : Π a : A, B a -> C a -> D a  -> F) {a a' : A} 
+  {b : B a} {b' : B a'} {c : C a} {c' : C a'} {d : D a} {d' : D a'}  
+  (pA : a = a') (pB : b =[pA] b') (pC : c =[pA] c') (pD : d =[pA] d') 
+  (g : F -> A) (HP : Π a b c d, g (h a b c d) = a) :
+  ap g (apd01111' h pA pB pC pD) = (HP a b c d) ⬝ pA ⬝ (HP a' b' c' d')⁻¹ :=
+begin 
+  hinduction pA, hinduction pB, hinduction pC, hinduction pD, rwr con_idp, 
+  rwr con.right_inv 
+end
 
 @[hott]
 def apd01111_v2 {A E : Type _} {B : A -> Type _} {C D : Π (a : A), B a -> Type _} 
