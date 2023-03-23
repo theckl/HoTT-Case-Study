@@ -1,7 +1,7 @@
 Compiling files, in order of dependencies:
 ------------------------------------------
-init2       :   715
-types2      :   252
+init2       :   737
+* types2      :   252 (Rijke's structure identity principle)
 prop_axioms :   647
 prop_logic  :   208
 sets
@@ -13,7 +13,8 @@ sets
   quotients :   205
   theories  :   695
 categories  
-*  basic     :   776
+  basic     :   776 (A new version will include the characterisation of 
+                     identity types of precategories)
   examples  :   824
   adjoints  :   398
   strict_cat:   824 (change as described below already started, 
