@@ -145,13 +145,13 @@ def list_map_size_eq {A B : Type _} (f : A -> B) (l : list A) :
   list.length (list.map f l) = list.length l :=
 begin hinduction l, refl, hsimp, rwr ih end  
 
-/- Following [HoTT-Book, Ch.5.8] we characterize the identity types of a type by identity
-   systems which are type families with the same inductive properties as identity. The 
-   fibers of such a type family are equivalent to the identity types if the total space of 
-   the type family is contractible. 
-   
-   Egbert Rijke considers this criterion as the main tool to deal with identity types in 
-   HoTT. -/
+/- We use Egbert Rijke's insight that the main tool to deal with identity types in 
+   HoTT is the Structure Identity Principle for Σ-types [Rijke-Book, Thm.11.6.2]. 
+   It is the dependent version of the Fundamental Theorem of identity types
+   [Thm.11.2.2] which characterizes the identity types of a type by identity
+   systems which are type families with the same inductive properties as identity: 
+   The fibers of such a type family are equivalent to the identity types if the 
+   total space of the type family is contractible. See also [HoTT-Book, Ch.5.8]. -/
 @[hott]
 def ppred {A : Type u} (a₀ : A) := Σ (R : A -> Type v), R a₀
 
@@ -188,7 +188,7 @@ end
 @[hott]
 def id_system {A : Type u} {a₀ : A} := Σ (R : ppred a₀), is_id_system R
 
-/- We split up the implications in [HoTT-Book, Thm.5.8.2]. -/
+/- We split up the implications in [Rijke-Book, Thm.11.2.2]. -/
 @[hott]
 def tot_space_contr_id_sys {A : Type u} {a₀ : A} (R : ppred a₀) : 
   is_contr (Σ (a : A), R.1 a) -> is_id_system R :=
@@ -202,6 +202,18 @@ begin
   { exact λ (a : A) (r : R.1 a), (p ⟨a, r⟩)⁻¹ ▸[D'] d },
   { apply inv_tr_eq_of_eq_tr, rwr q }
 end  
+
+@[hott]
+def id_sys_tot_space_contr {A : Type u} {a₀ : A} (R : ppred a₀) : 
+  is_id_system R -> is_contr (Σ (a : A), R.1 a) :=
+begin 
+  intro is_id_sys_R, fapply is_contr.mk,
+  { exact ⟨a₀, R.2⟩ },
+  { let D : Π (a : A), R.1 a -> Type _ := λ a r, 
+                                  @dpair A R.1 a₀ R.snd = ⟨a, r⟩, 
+    intro dp, hinduction dp with a r, 
+    exact (is_id_sys_R D idp).1 a r }
+end
 
 @[hott]
 def id_sys_ppmap_contr {A : Type u} {a₀ : A} (R : ppred a₀) : is_id_system R -> 
