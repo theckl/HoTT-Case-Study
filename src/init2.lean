@@ -20,7 +20,8 @@ notation eq `▸[`:50 P:0 `]`:0 b:50 := transport P eq b
 @[hott, hsimp, reducible]
 def id {A : Type _} (a : A) : A := a 
 
-/- All these equalities should be produced by tactics. -/
+/- All these equalities of pathovers, concatenations and transports of 
+   identities should be produced by tactics. -/
 @[hott]
 def id_tr_eq_id_inv_con {A : Type _} {a₀ a₁ a₂ : A} (q : a₁ = a₂) (p : a₁ = a₀) :
   q ▸ p = q⁻¹ ⬝ p :=
@@ -34,6 +35,16 @@ def pathover_idp_of_id {A : Type _} : Π a : A, pathover_idp_of_eq id (@idp _ a)
 def pathover_idp_of_eq_eq_of_pathover_idp {A : Type _} {B : A -> Type _} {a : A} 
   {b b': B a} (p : b =[idpath a] b') : pathover_idp_of_eq B (eq_of_pathover_idp p) = p :=
 by hinduction p; refl
+
+@[hott]
+def po_eq_eq_con {A : Type _} {a b c : A} (p : a = c) (q : b = c)
+  (r : a = b) : p =[r; λ d : A, d = c] q -> p = r ⬝ q :=
+by hinduction r; intro P; rwr idp_con; rwr eq_of_pathover_idp P
+
+@[hott]
+def eq_con_po_eq {A : Type _} {a b c : A} (p : a = c) (q : b = c)
+  (r : a = b) : p = r ⬝ q -> p =[r; λ d : A, d = c] q :=
+by hinduction r; intro P; rwr idp_con at P; exact pathover_idp_of_eq _ P
 
 
 @[reducible,hott]
@@ -61,6 +72,13 @@ end
 def ap100_eq_of_hty2_inv {A B C : Type _} {f g : A → B -> C} (H : f ~2 g) :
   ap100 (eq_of_homotopy2 H) = H :=
 is_equiv.left_inv (funext.is_equiv_apd100 f g).inv H 
+
+@[hott]
+def apd100_eq_of_hty2_inv {A : Type _} {B : A -> Type _} 
+  {C : Π (a : A), B a -> Type _} {f g : Π (a : A) (b : B a), C a b} 
+  (H : f ~2 g) (a : A) (b : B a) :
+  apd100 (eq_of_homotopy2 H) a b = H a b :=
+apd100 (is_equiv.left_inv (funext.is_equiv_apd100 f g).inv H) a b
 
 @[hott]
 def ap_ev_eq_of_hty2_ev {A B C : Type _} {f g : A → B -> C} (H : f ~2 g) 
