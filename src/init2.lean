@@ -46,6 +46,16 @@ def eq_con_po_eq {A : Type _} {a b c : A} (p : a = c) (q : b = c)
   (r : a = b) : p = r ⬝ q -> p =[r; λ d : A, d = c] q :=
 by hinduction r; intro P; rwr idp_con at P; exact pathover_idp_of_eq _ P
 
+@[hott]
+def is_contr_tot_peq {A : Type _} (a₀ : A) : 
+  is_contr (Σ (a : A), a₀ = a) :=
+begin 
+  fapply is_contr.mk,
+  { exact ⟨a₀, idp⟩ },
+  { intro dp, hinduction dp with a p, fapply sigma.sigma_eq,
+    exact p, hsimp, apply pathover_of_tr_eq, hsimp }
+end
+
 
 @[reducible,hott]
 def ap100 {A B C : Type _} {f g : A → B -> C} (H : f = g) : f ~2 g := apd100 H
