@@ -153,29 +153,23 @@ begin hinduction l, refl, hsimp, rwr ih end
    The fibers of such a type family are equivalent to the identity types if the 
    total space of the type family is contractible. See also [HoTT-Book, Ch.5.8]. -/
 @[hott]
-def ppred {A : Type _} (a₀ : A) := Σ (R : A -> Type v), R a₀
+structure ppred {A : Type _} (a₀ : A) := 
+  (fam : A -> Type _)
+  (base : fam a₀)
 
 @[hott]
 def id_ppred {A : Type _} (a₀ : A) : ppred a₀ :=
-  ⟨λ a, a₀ = a, refl a₀⟩
+  @ppred.mk A a₀ (λ a : A, a₀ = a) (idpath a₀) 
 
 @[hott] 
-def ppmap {A : Type _} {a₀ : A} (R S : ppred a₀) := 
-  Σ (g : Π (a : A), R.1 a -> S.1 a), g a₀ R.2 = S.2 
-
-@[hott]
-def ppmap_id {A : Type _} {a₀ : A} (R : ppred a₀) : ppmap R R :=
-  ⟨λ (a : A) (r : R.1 a), r, refl R.2⟩    
-
-@[hott]
-def ppmap_comp {A : Type _} {a₀ : A} {R S T : ppred a₀} (f : ppmap R S) (g : ppmap S T) :
-  ppmap R T :=
-⟨λ (a : A) (r : R.1 a), g.1 a (f.1 a r), f.2⁻¹ ▸[λ s : S.1 a₀, g.1 a₀ s = T.2] g.2⟩  
+structure ppmap {A : Type _} {a₀ : A} (R S : ppred a₀) := 
+  (fam_map : Π (a : A), R.fam a -> S.fam a)
+  (base_map : fam_map a₀ R.base = S.base) 
 
 @[hott]
 def is_id_system {A : Type _} {a₀ : A} (R : ppred a₀) := 
-  Π (D : Π (a : A), R.1 a -> Type w) (d : D a₀ R.2),
-                      Σ (f : Π (a : A) (r : R.1 a), D a r), (f a₀ R.2 = d) 
+  Π (D : Π (a : A), R.fam a -> Type w) (d : D a₀ R.base),
+      Σ (f : Π (a : A) (r : R.fam a), D a r), (f a₀ R.base = d) 
 
 @[hott]
 def id_type_fam_is_id_sys {A : Type _} {a₀ : A} : is_id_system (id_ppred a₀) :=
@@ -198,18 +192,20 @@ begin
     exact (is_id_sys_R D_eq d_eq).1 a r },
   { apply @po_of_po_apd100 _ _ D _ _ (λ d' : D a₀ R.2, d' = d), 
     let H : (is_id_sys_R D d).1 ~2 (is_id_sys_R' D d).1 
-          := λ (a : A) (r : R.1 a), (is_id_sys_R D_eq d_eq).1 a r,
-    change _ =[apd100 (eq_of_homotopy2 H) a₀ R.2] _,
-    rwr apd100_eq_of_hty2_inv H a₀ R.2, apply eq_con_po_eq,
-    have q : (is_id_sys_R D_eq d_eq).1 a₀ R.2 = d_eq, from
+          := λ (a : A) (r : R.fam a), (is_id_sys_R D_eq d_eq).1 a r,
+    change _ =[apd100 (eq_of_homotopy2 H) a₀ R.base] _,
+    rwr apd100_eq_of_hty2_inv H a₀ R.base, apply eq_con_po_eq,
+    have q : (is_id_sys_R D_eq d_eq).1 a₀ R.base = d_eq, from
       (is_id_sys_R D_eq d_eq).2,      
-    have p : H a₀ R.2 = d_eq, by 
-      change (is_id_sys_R _ _).1 a₀ R.2 = _; rwr q,
+    have p : H a₀ R.base = d_eq, by 
+      change (is_id_sys_R _ _).1 a₀ R.base = _; rwr q,
     rwr p, hsimp }
 end  
 
 @[hott]
-def id_system {A : Type u} {a₀ : A} := Σ (R : ppred a₀), is_id_system R
+structure id_system {A : Type u} (a₀ : A) := 
+  (ppred : ppred a₀) 
+  (is_id_sys : is_id_system ppred)
 
 /- We split up the implications between the properties of the Fundamental 
    Theorem of Identity as in the proof of [Rijke-Book, Thm.11.2.2].
@@ -217,15 +213,15 @@ def id_system {A : Type u} {a₀ : A} := Σ (R : ppred a₀), is_id_system R
    seems not needed in the applications. -/
 @[hott]
 def tot_space_contr_id_sys {A : Type u} {a₀ : A} (R : ppred a₀) : 
-  is_contr (Σ (a : A), R.1 a) -> is_id_system R :=
+  is_contr (Σ (a : A), R.fam a) -> is_id_system R :=
 begin 
   intros contr D d, 
-  let D' : (Σ (a : A), R.1 a) -> Type _ := λ (ar : Σ (a : A), R.1 a), D ar.1 ar.2,
-  have p : Π (u : Σ (a : A), R.1 a), u = ⟨a₀, R.2⟩, from 
+  let D' : (Σ (a : A), R.fam a) -> Type _ := λ (ar : Σ (a : A), R.fam a), D ar.1 ar.2,
+  have p : Π (u : Σ (a : A), R.fam a), u = ⟨a₀, R.base⟩, from 
     assume u, @eq_of_is_contr _ contr _ _,
-  have q : p ⟨a₀, R.2⟩ = idp, from @prop_eq_of_is_contr _ contr _ _ _ _,  
+  have q : p ⟨a₀, R.base⟩ = idp, from @prop_eq_of_is_contr _ contr _ _ _ _,  
   fapply dpair, 
-  { exact λ (a : A) (r : R.1 a), (p ⟨a, r⟩)⁻¹ ▸[D'] d },
+  { exact λ (a : A) (r : R.fam a), (p ⟨a, r⟩)⁻¹ ▸[D'] d },
   { apply inv_tr_eq_of_eq_tr, rwr q }
 end  
 
@@ -234,73 +230,79 @@ def id_sys_tot_space_contr {A : Type u} {a₀ : A} (R : ppred a₀) :
   is_id_system R -> is_contr (Σ (a : A), R.1 a) :=
 begin 
   intro is_id_sys_R, fapply is_contr.mk,
-  { exact ⟨a₀, R.2⟩ },
-  { let D : Π (a : A), R.1 a -> Type _ := λ a r, 
-                                  @dpair A R.1 a₀ R.snd = ⟨a, r⟩, 
+  { exact ⟨a₀, R.base⟩ },
+  { let D : Π (a : A), R.fam a -> Type _ := λ a r, 
+                            @dpair A R.fam a₀ R.base = ⟨a, r⟩, 
     intro dp, hinduction dp with a r, 
     exact (is_id_sys_R D idp).1 a r }
 end
 
+/- We need some facts on families of equivalences, see [Rijke-Book, 11.1]. -/
 @[hott]
-def ppmap_id_eqv_tot_space_contr {A : Type u} {a₀ : A} (R : ppred a₀) : 
-  Π (f : ppmap (id_ppred a₀) R), (Π (a : A), is_equiv (f.1 a)) ->
-  is_contr (Σ (a : A), R.1 a) := 
+def tot_map {A : Type _} {B C : A -> Type _} (f : Π a : A, B a -> C a) :
+  (Σ (a : A), B a) -> Σ (a : A), C a :=
+λ (x : Σ (a : A), B a), dpair x.1 (f x.1 x.2)
+
+@[hott] --[Rijke-Book, Thm.11.1.3.(i)=>(ii)] = [HoTT-Book, Thm.4.7.7]
+def fam_eqv_tot_map_eqv {A : Type _} {B C : A -> Type _} 
+  (f : Π a : A, B a -> C a) : 
+  (Π a : A, is_equiv (f a)) -> is_equiv (tot_map f) :=
+λ fib_eqv, @is_equiv_total_of_is_fiberwise_equiv _ _ _ f fib_eqv
+
+@[hott] --[Rijke-Book, Thm.11.1.3.(ii)=>(i)] = [HoTT-Book, Thm.4.7.7]
+def tot_map_eqv_fam_eqv {A : Type _} {B C : A -> Type _} 
+  (f : Π a : A, B a -> C a) : 
+  is_equiv (tot_map f) -> (Π a : A, is_equiv (f a)) :=
+λ tot_eqv, @is_fiberwise_equiv_of_is_equiv_total _ _ _ f tot_eqv 
+
+/- Now we can show the second pair of implications in [Rijke-Book, Thm.11.2.2]. 
+   In particular, we can apply them to the canonical maps from the identity
+   pointed predicate to arbitrary pointed predicates. -/
+@[hott]
+def can_ppmap {A : Type _} {a₀ : A} (R : ppred a₀) : 
+  ppmap (id_ppred a₀) R :=
+⟨λ (a : A) (p : a₀ = a), p ▸[λ a : A, R.fam a] R.base, idp⟩  
+
+@[hott]
+def ppmap_id_eqv_tot_space_contr {A : Type _} {a₀ : A} (R : ppred a₀) : 
+  Π (f : ppmap (id_ppred a₀) R), (Π (a : A), is_equiv (f.fam_map a)) ->
+  is_contr (Σ (a : A), R.fam a) := 
 begin
-  intros f f_eqv, fapply is_contr.mk,
-  { exact ⟨a₀, R.2⟩ },
-  { intro dp, hinduction dp with a r, sorry }
+  intros f f_eqv, 
+  have F : (Σ (a : A), a₀ = a) ≃ (Σ (a : A), R.fam a), from
+    equiv.mk (tot_map f.fam_map) (fam_eqv_tot_map_eqv f.fam_map f_eqv),
+  exact is_trunc_equiv_closed -2 F (is_contr_tot_peq a₀)  
 end
 
 @[hott]
-def tot_space_contr_ppmap_id_eqv {A : Type u} {a₀ : A} (R : ppred a₀) : 
-  Π (f : ppmap (id_ppred a₀) R), is_contr (Σ (a : A), R.1 a) -> 
-  Π (a : A), is_equiv (f.1 a) := 
-sorry
-
-@[hott]
-def id_sys_ppmap_contr {A : Type u} {a₀ : A} (R : ppred a₀) : is_id_system R -> 
-  Π (S : ppred a₀), is_contr (ppmap R S) :=
+def tot_space_contr_ppmap_id_eqv {A : Type _} {a₀ : A} (R : ppred a₀) : 
+  Π (f : ppmap (id_ppred a₀) R), is_contr (Σ (a : A), R.fam a) -> 
+  Π (a : A), is_equiv (f.fam_map a) := 
 begin
-  intros idsys S, 
-  let C := λ (a : A) (r : R.1 a), S.1 a, let map : ppmap R S := idsys C S.2, 
-  have H : is_prop (ppmap R S), from 
-  begin
-    apply is_prop.mk, intros m₁ m₂, hinduction m₁ with f fᵣ, hinduction m₂ with g gᵣ,
-    let D := λ (a : A) (r : R.1 a), f a r = g a r, let d := fᵣ ⬝ (gᵣ)⁻¹,
-    let h := idsys D d, fapply sigma.sigma_eq,
-    { apply eq_of_homotopy2, exact h.1 },
-    { apply @po_of_po_apd100 A R.1 (λ a r, S.1 a) a₀ R.2 (λ c : S.1 a₀, c = S.2) _ _ 
-                             (eq_of_homotopy2 h.1) fᵣ gᵣ,
-      have q : apd100 (eq_of_homotopy2 h.1) = h.1, by  
-        apply (funext.is_equiv_apd100 f g).right_inv,                      
-      rwr q, let q' : h.1 a₀ R.2 = d := h.2, apply pathover_of_tr_eq, rwr q', 
-      rwr id_tr_eq_id_inv_con, rwr con_inv, rwr eq.inv_inv, rwr con.assoc, rwr con.left_inv }
-  end,
-  exact @is_contr_of_inhabited_prop _ H map
-end    
+  intros f contr_tot_R, apply tot_map_eqv_fam_eqv, 
+  apply @is_equiv_of_is_contr _ _ (is_contr_tot_peq a₀) contr_tot_R
+end
+
+/- The Structure Identity Principle [Rijke-Book, Thm.11.6.2] splits 
+   up the Fundamental Identity Theorem for Σ-Types into checks for 
+   pointed predicates over objects of the Σ-type with fixed first 
+   component. -/
+@[hott]
+structure dep_ppred {A : Type _} (a₀ : A) {B : A -> Type _} (b₀ : B a₀) :=
+  (ppred_fst : ppred a₀)
+  (dep_fam : Π (a : A), B a -> ppred_fst.fam a -> Type _) 
+  (dep_base : dep_fam a₀ b₀ ppred_fst.base) 
 
 @[hott]
-def ppmap_contr_id_equiv {A : Type u} {a₀ : A} (R : ppred a₀) :
-  (Π (S : ppred a₀), is_contr (ppmap R S)) -> 
-                    Π a : A, is_equiv (λ p : a₀ = a, p ▸[λ b : A, R.1 b] R.2) :=
-begin 
-  intro ppred_contr, let S : ppred a₀ := ⟨λ a, a₀ = a, refl a₀⟩, 
-  let map_SR : ppmap S R := ⟨λ (a : A) (p : a₀ = a), p ▸[λ b, R.1 b] R.2, idp_tr R.2⟩, 
-  let map_RS : ppmap R S := center' (ppred_contr S),
-  let map_RR : ppmap R R := ppmap_comp map_RS map_SR, 
-  have p_R : map_RR = ppmap_id R, from @eq_of_is_contr _ (ppred_contr R) _ _,
-  let map_SS : ppmap S S := ppmap_comp map_SR map_RS,
-  have p_S : map_SS = ppmap_id S, from 
-    @eq_of_is_contr _ (id_sys_ppmap_contr S (@id_type_fam_is_id_sys _ a₀) S) _ _,
-  intro a, fapply adjointify, 
-  { exact map_RS.1 a },
-  { intro r, change map_RR.1 a r = r, rwr p_R },
-  { intro p, change map_SS.1 a p = p, rwr p_S }
-end                      
+def is_dep_id_system {A : Type _} {a₀ : A} {B : A -> Type _} {b₀ : B a₀} 
+  (R : dep_ppred a₀ b₀) := 
+is_id_system (@ppred.mk _ b₀ (λ (b : B a₀), 
+                    R.dep_fam a₀ b R.ppred_fst.base) R.dep_base)  
 
-@[hott]
-def tot_space_contr_id_equiv {A : Type u} {a₀ : A} (R : ppred a₀) : 
-  is_contr (Σ (a : A), R.1 a) -> Π a : A, is_equiv (λ p : a₀ = a, p ▸[λ b : A, R.1 b] R.2) :=
-assume contr, ppmap_contr_id_equiv R (id_sys_ppmap_contr R (tot_space_contr_id_sys R contr))               
+/- We only need to show one equivalence between characterizations of 
+   the identities in Σ-Types and identities of objects of the Σ-type 
+   with fixed first component: the contractibility of the total space
+   of the pairs with fixed first component and the contractibility of 
+   the total space of the associated pointed predicate on the Σ-type. -/
 
 end hott
