@@ -1,6 +1,6 @@
 Compiling files, in order of dependencies:
 ------------------------------------------
-init2       :   744
+init2       :   754
 * types2      :   252 (Rijke's structure identity principle)
 prop_axioms :   647
 prop_logic  :   208
