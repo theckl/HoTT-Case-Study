@@ -285,7 +285,6 @@ end
 @[hott]
 structure dep_ppred {A : Type _} (a₀ : A) {B : A -> Type _} (b₀ : B a₀) :=
   (ppred_fst : ppred a₀)
-  (id_sys_fst : is_id_system ppred_fst)
   (dep_fam : Π (a : A), B a -> ppred_fst.fam a -> Type _) 
   (dep_base : dep_fam a₀ b₀ ppred_fst.base) 
 
@@ -299,6 +298,7 @@ is_id_system (@ppred.mk _ b₀ (λ (b : B a₀),
 structure dep_id_system {A : Type _} {a₀ : A} {B : A -> Type _} 
   {b₀ : B a₀} :=
 (dep_ppred : dep_ppred a₀ b₀)
+(id_sys_fst : is_id_system dep_ppred.ppred_fst)  
 (is_dep_id_sys : is_dep_id_system dep_ppred)
 
 /- We only need to show one equivalence between characterizations of 
@@ -310,10 +310,12 @@ structure dep_id_system {A : Type _} {a₀ : A} {B : A -> Type _}
    The other equivalences are consequences of the equivalences in the 
    Fundamental Identity Theorem: We just include that dependent 
    identity systems give rise to identity systems on the Σ-type and
-   vice versa. -/
+   vice versa, and state the criterion to produce equivalences from
+   contractibility. -/
 @[hott]
 def struct_id_contr_eqv {A : Type _} {a₀ : A} {B : A -> Type _} 
-  {b₀ : B a₀} (R : dep_ppred a₀ b₀) : 
+  {b₀ : B a₀} (R : dep_ppred a₀ b₀) 
+  (id_sys_fst : is_id_system R.ppred_fst) : 
   is_contr (Σ (b : B a₀), R.dep_fam a₀ b R.ppred_fst.base) ↔
   is_contr (Σ (dp : Σ (a : A), B a), 
             Σ (c : R.ppred_fst.fam dp.1), R.dep_fam dp.1 dp.2 c) :=
@@ -326,7 +328,7 @@ begin
                 Σ (b : B a₀), R.dep_fam a₀ b R.ppred_fst.base,
       df := λ dp : Σ (b : B a₀), 
                           R.dep_fam a₀ b R.ppred_fst.base, dp,
-      fp := R.id_sys_fst Df df in
+      fp := id_sys_fst Df df in
   let D_eq := λ (a : A) (c : R.ppred_fst.fam a), 
         Π (dpf : Σ (b : B a), R.dep_fam a b c),
            @dpair _ (λ (dp : Σ (a : A), R.ppred_fst.fam a), 
@@ -336,7 +338,7 @@ begin
                 (ap (@dpair _ (λ (dp : Σ (a : A), R.ppred_fst.fam a), 
         Σ (b : B dp.1), R.dep_fam dp.1 b dp.2) ⟨a₀, R.ppred_fst.base⟩) 
                 (ap10 fp.2 dpf))⁻¹,
-      f_eq := R.id_sys_fst D_eq d_eq in               
+      f_eq := id_sys_fst D_eq d_eq in               
   begin  
     fapply equiv.mk,
     { intro dpB, exact ⟨⟨a₀, R.ppred_fst.base⟩, dpB⟩ },
@@ -371,19 +373,40 @@ end
 
 @[hott]
 def struct_id_dep_id_sys_eqv {A : Type _} {a₀ : A} {B : A -> Type _} 
-  {b₀ : B a₀} (R : dep_ppred a₀ b₀) : (is_dep_id_system R) ↔
+  {b₀ : B a₀} (R : dep_ppred a₀ b₀) 
+  (id_sys_fst : is_id_system R.ppred_fst) : (is_dep_id_system R) ↔
   (is_id_system (@ppred.mk (Σ (a : A), B a) ⟨a₀, b₀⟩ 
     (λ dp, Σ (c : R.ppred_fst.fam dp.1), R.dep_fam dp.1 dp.2 c) 
     ⟨R.ppred_fst.base, R.dep_base⟩)) :=
 begin
   apply pair, 
   { intro dep_id_sys, apply tot_space_contr_id_sys,
-    apply (struct_id_contr_eqv R).1, 
+    apply (struct_id_contr_eqv R id_sys_fst).1, 
     exact id_sys_tot_space_contr (@ppred.mk _ b₀ (λ (b : B a₀), 
       R.dep_fam a₀ b R.ppred_fst.base) R.dep_base) dep_id_sys },
   { intro id_sys, apply tot_space_contr_id_sys, 
-    apply (struct_id_contr_eqv R).2, 
+    apply (struct_id_contr_eqv R id_sys_fst).2, 
     exact id_sys_tot_space_contr _ id_sys }
 end    
+
+@[hott]
+def struct_id_char_of_contr {A : Type _} {a₀ : A} {B : A -> Type _} 
+  (b₀ : B a₀) (D : dep_ppred a₀ b₀) : 
+  is_contr (Σ (a : A), D.ppred_fst.fam a) -> 
+  is_contr (Σ (b : B a₀), D.dep_fam a₀ b D.ppred_fst.base) ->
+  Π (ab : Σ (a : A), B a), (dpair a₀ b₀ = ab) ≃ 
+       Σ (c : D.ppred_fst.fam ab.1), D.dep_fam ab.1 ab.2 c :=
+begin
+  intros is_contr_fst is_contr_dep ab, fapply equiv.mk,
+  let R := @ppred.mk _ (dpair a₀ b₀) 
+              (λ ab, Σ (c : D.ppred_fst.fam ab.fst), 
+                            D.dep_fam ab.fst ab.snd c) 
+              ⟨D.ppred_fst.base, D.dep_base⟩,
+  { exact (can_ppmap R).fam_map ab },
+  { apply tot_space_contr_ppmap_id_eqv, hsimp,
+    have id_sys_fst : is_id_system D.ppred_fst, from 
+      tot_space_contr_id_sys D.ppred_fst is_contr_fst, 
+    apply (struct_id_contr_eqv D id_sys_fst).1 is_contr_dep }
+end 
 
 end hott
