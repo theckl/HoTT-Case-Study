@@ -1,4 +1,4 @@
-import hott.init hott.types.trunc hott.types.prod init2
+import hott.init hott.types.trunc hott.types.prod init2 types2
 
 universes u v w
 hott_theory
@@ -6,7 +6,7 @@ hott_theory
 namespace hott
 open is_trunc trunc equiv hott.is_equiv hott.prod
 
-set_option pp.universes true
+--set_option pp.universes true
 
 /- Nicer name for construction of `Prop` from `is_prop`. -/
 @[hott]
@@ -122,38 +122,17 @@ def inv_is_prop {A B : Type _} [is_prop A] (f : A -> B) (g : B -> A) :
 is_prop_dprod (λ a : A, @is_trunc_succ _ -2 (is_trunc_eq -2 _ _))
 
 @[hott]
-def is_equiv_mk_adj {A B : Type _} [is_prop A] [is_prop B] (f : A -> B) (g : B -> A) 
+def is_equiv_mk_adj {A B : Type _} (f : A -> B) (g : B -> A) 
   (rinv : ∀ b : B, f (g b) = b) (linv : ∀ a : A, g (f a) = a) 
   (adj : Π a, rinv (f a) = ap f (linv a)) :
 is_equiv.mk' g rinv linv adj = adjointify f g rinv linv :=
-  let adj_linv := adjointify_left_inv' f g rinv linv,
-      adj' := adjointify_adj' f g rinv linv in
-  have adj'_is_prop : is_prop (Π a, rinv (f a) = ap f (adj_linv a)), from 
-    have rfa_is_prop : ∀ a : A, is_prop (f (g (f a)) = f a), from 
-      assume a, @is_trunc_succ _ -2 (is_trunc_eq -2 _ _),
-    is_prop_dprod (λ a : A, @is_trunc_succ _ -2 (is_trunc_eq -2 _ _)),
-  have Hlinv : linv = adj_linv, from @is_prop.elim _ (inv_is_prop f g) _ _,
-  have Hadj : adj =[Hlinv; λ l : (∀ a, g (f a) = a), Π a, rinv (f a) = ap f (l a)] adj', from 
-    @po_proofs _ _ _ Hlinv (λ l, Π a, rinv (f a) = ap f (l a)) adj'_is_prop _ _,
-  calc is_equiv.mk' g rinv linv adj = is_equiv.mk' g rinv adj_linv adj' :
-       apd011 _ Hlinv Hadj
-       ... = adjointify f g rinv linv : rfl
+is_prop.elim _ _
 
 @[hott]
-def prop_is_equiv_is_prop {A B : Type _} [pA : is_prop A] [pB : is_prop B] 
+def prop_is_equiv_is_prop {A B : Type _}  
   (f₁ f₂ : A -> B) (ef : f₁ = f₂) : 
-Π (is_eqv₁ : is_equiv f₁) (is_eqv₂ : is_equiv f₂), is_eqv₁ =[ef] is_eqv₂ 
-| (is_equiv.mk' g₁ rinv₁ linv₁ adj₁) (is_equiv.mk' g₂ rinv₂ linv₂ adj₂) :=
-have eg : g₁ = g₂, from 
-  have pAB : is_prop (B -> A), from is_prop_map pA,
-  @is_prop.elim _ pAB _ _, 
-have er : rinv₁ =[apd011 _ ef (pathover_of_eq ef eg); id] rinv₂, from 
-  begin apply pathover_of_tr_eq, exact @is_prop.elim _ (inv_is_prop g₂ f₂) _ _ end,
-have el : linv₁ =[apd011 _ ef (pathover_of_eq ef eg); id] linv₂, from 
-  begin apply pathover_of_tr_eq, exact @is_prop.elim _ (inv_is_prop f₂ g₂) _ _ end,  
-eq_concato (is_equiv_mk_adj f₁ g₁ rinv₁ linv₁ adj₁) 
-           (concato_eq (adj_eq f₁ f₂ g₁ g₂ rinv₁ rinv₂ linv₁ linv₂ ef eg er el)
-           (is_equiv_mk_adj f₂ g₂ rinv₂ linv₂ adj₂)⁻¹)
+  Π (is_eqv₁ : is_equiv f₁) (is_eqv₂ : is_equiv f₂), is_eqv₁ =[ef] is_eqv₂ :=
+λ is_eqv₁ is_eqv₂, pathover_of_tr_eq (is_prop.elim _ _)  
 
 @[hott, instance]
 def prop_equiv_is_prop (A B : Type _) [pA : is_prop A] [pB : is_prop B] : is_prop (A ≃ B) :=
@@ -421,66 +400,54 @@ inductive Two : Type _
 | zero : Two 
 | one : Two 
 
-/- We prove that [Two] is a set using the encode-decode method presented in the
-   HoTT-book, Sec.2.13. -/
+/- We prove that [Two] is a set using the Fundamental Identity Theorem, 
+   following [Rijke-Book, 11.3]. This is a streamlined version of the
+   encode-decode method presented in [HoTT-book, Sec.2.13], getting rid 
+   of the decoding. -/
 @[hott, hsimp]
-def code_Two : Two.{u} -> Two.{u} -> Type u :=
+def code_Two : Two -> Two -> Type _ :=
 begin
   intros t₁ t₂, 
-  induction t₁,
-    induction t₂, exact One, exact Zero,
-    induction t₂, exact Zero, exact One,
+  hinduction t₁,
+    hinduction t₂, exact One, exact Zero,
+    hinduction t₂, exact Zero, exact One,
 end  
+
+@[hott, instance]
+def code_Two_is_prop : Π t₁ t₂ : Two, is_prop (code_Two t₁ t₂) :=
+begin
+  intros t₁ t₂, hinduction t₁, 
+  hinduction t₂, exact One_is_prop, exact Zero_is_prop,
+  hinduction t₂, exact Zero_is_prop, exact One_is_prop,
+end
+
+@[hott]
+def refl_Two : Π t : Two, code_Two t t := 
+begin intro t; induction t; exact One.star; exact One.star end
 
 @[hott, hsimp]
 def encode_Two : Π t₁ t₂ : Two, (t₁ = t₂) -> code_Two t₁ t₂ :=
-  have r : Π t : Two, code_Two t t, by 
-    intro t; induction t; exact One.star; exact One.star,
-  assume t₁ t₂ eq, transport (λ t : Two, code_Two t₁ t) eq (r t₁)
-
-@[hott, hsimp]
-def decode_Two : Π t₁ t₂ : Two, code_Two t₁ t₂ -> (t₁ = t₂) :=
-begin
-  intros t₁ t₂,
-  induction t₁, 
-    induction t₂, intro; refl, intro f; induction f,
-    induction t₂, intro f; induction f, intro; refl,     
-end    
+  assume t₁ t₂ eq, eq ▸[λ t : Two, code_Two t₁ t] (refl_Two t₁)
 
 @[hott]
 def Two_eq_equiv_code : ∀ t₁ t₂ : Two, (t₁ = t₂) ≃ code_Two t₁ t₂ := 
-  assume t₁ t₂, 
-  have z1 : code_Two Two.zero Two.one -> Zero, from λ c, c,
-  have z2 : code_Two.{u} Two.one Two.zero -> Zero, from λ c, c,
-  have rinv : ∀ c : code_Two t₁ t₂, (encode_Two t₁ t₂) (decode_Two t₁ t₂ c) = c, from
-    assume c, 
-    begin
-      induction t₁, 
-        induction t₂, induction c; refl, exact Zero.rec _ (z1 c),  
-        induction t₂, exact Zero.rec _ (z1 c), induction c; refl, 
-    end,  
-  have linv : ∀ eq : t₁ = t₂, (decode_Two t₁ t₂) (encode_Two t₁ t₂ eq) = eq, from
-    begin
-      intro eq,
-      induction eq,
-      induction t₁, 
-      refl, refl,
-    end,    
-  equiv.mk (encode_Two t₁ t₂) 
-           (is_equiv.adjointify (encode_Two t₁ t₂) (decode_Two t₁ t₂) rinv linv)
+begin 
+  intros t₁ t₂, 
+  let R := ppred.mk (λ t₂ : Two, code_Two t₁ t₂) (refl_Two t₁),
+  let f := @ppmap.mk _ _ (id_ppred t₁) R 
+                    (λ t₂ : Two, encode_Two t₁ t₂) idp, 
+  fapply equiv.mk, exact encode_Two t₁ t₂,
+  apply tot_space_contr_ppmap_id_eqv R f, fapply is_contr.mk,
+  exact ⟨t₁, refl_Two t₁⟩, intro tp, hinduction tp with t ct, 
+  hinduction t₁, 
+    hinduction t, induction ct; refl, exact Zero.rec _ ct,  
+    hinduction t, exact Zero.rec _ ct, induction ct; refl
+  end  
 
 @[hott, instance]
-def Two_is_set : is_set Two.{u} :=
-  have Two_eq_is_prop : ∀ t₁ t₂ : Two.{u}, is_prop (t₁ = t₂), from 
-    assume t₁ t₂,
-    have code_Two_is_prop : is_prop (code_Two t₁ t₂), from
-      begin
-        induction t₁, 
-          induction t₂, exact One_is_prop, exact Zero_is_prop,
-          induction t₂, exact Zero_is_prop, exact One_is_prop,
-      end,
-    is_trunc_equiv_closed_rev -1 (Two_eq_equiv_code t₁ t₂) code_Two_is_prop,
-  is_trunc_succ_intro Two_eq_is_prop
+def Two_is_set : is_set Two :=
+  is_trunc_succ_intro (λ t₁ t₂ : Two, is_trunc_equiv_closed_rev 
+          -1 (Two_eq_equiv_code t₁ t₂) (code_Two_is_prop t₁ t₂))
 
 @[hott]
 def Two_Set : Set :=
