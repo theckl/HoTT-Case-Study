@@ -548,8 +548,38 @@ def id_eqv_to_identity (A : Set) : car_eqv_to_bij (id_map_eqv A) = identity A :=
   bijection_eq_from_map_eq _ _ map_eq
 
 @[hott]
+def set_eq_equiv_car_eq_bij (A B : Set) : (A = B) ≃ 
+  (Σ (p : (car A) = car B) (f : bijection A B), 
+                            (equiv_of_eq p).to_fun = f.map) :=
+begin
+  sorry
+end
+
+@[hott]
+def car_eq_bij_equiv_bij (A B : Set) : (Σ (p : (car A) = car B) 
+      (f : bijection A B), (equiv_of_eq p).to_fun = f.map) ≃
+      bijection A B :=
+begin
+  fapply equiv.mk, 
+  { intro eq_bij_eq, exact eq_bij_eq.2.1 },
+  { fapply is_equiv.adjointify,
+    { intro f, fapply dpair,
+      { exact ua (bij_to_car_eqv f) },
+      { apply dpair f, rwr equiv_of_eq_ua } },
+    { intro b, refl },
+    { intro eq_bij_eq, hinduction eq_bij_eq with p bij_eq, 
+      hinduction bij_eq with f map_eq, 
+      --change dpair (ua (bij_to_car_eqv f)) (dpair f _) = ⟨p, ⟨f, map_eq⟩⟩,
+      sorry } }      
+end
+
+@[hott]
 def set_eq_equiv_bij {A B : Set.{u}} : (A = B) ≃ (bijection A B) :=
   (set_eq_equiv_car_eq ⬝e car_eq_equiv_car_eqv) ⬝e car_eqv_equiv_bij
+
+@[hott]
+def set_eq_equiv_bij' {A B : Set.{u}} : (A = B) ≃ (bijection A B) :=
+  (set_eq_equiv_car_eq_bij A B) ⬝e (car_eq_bij_equiv_bij A B)
 
 @[hott]
 def set_eq_to_bij {A B : Set.{u}} : A = B -> (bijection A B) :=
