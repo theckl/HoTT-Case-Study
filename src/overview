@@ -1,11 +1,11 @@
 Compiling files, in order of dependencies:
 ------------------------------------------
 init2       :   754
-* types2      :   252 (Rijke's structure identity principle)
-prop_axioms :   647
+types2      :   389 
+prop_axioms :   614
 prop_logic  :   208
 sets
-  basic     :   664
+  * basic     :   664
   finite    :   206
   subset    :   407
   axioms    :   340
