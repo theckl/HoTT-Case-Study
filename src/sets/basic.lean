@@ -20,7 +20,22 @@ def Prop_to_Set : Prop -> Set :=
 /- Nicer name for construction of `Set` from `is_set`. -/
 @[hott]
 def to_Set (A : Type _) [pA : is_set A] : Set :=
-  trunctype.mk A pA    
+  trunctype.mk A pA  
+
+/- To deal with equalities of sets it is better to define sets as
+   Σ-types, not as structures. -/
+@[hott]
+def Set_str_equiv_sig : Set ≃ Σ (A : Type _), is_set A :=
+begin
+  fapply equiv.mk, 
+  { intro A, exact dpair A.carrier A.struct },
+  { fapply is_equiv.adjointify, 
+    { intro sig_set, exact trunctype.mk sig_set.1 sig_set.2 }, 
+    { intro sig_set, hinduction sig_set, fapply sigma.sigma_eq, 
+      refl, refl },
+    { intro A, hinduction A, fapply apd011 trunctype.mk, 
+      refl, refl } }
+end    
 
 /- We need the empty set, the identity map between sets and some properties of maps between sets. They can be 
    derived from properties of general (n-)types, in [function], but we give them separate definitions adapted 
@@ -548,11 +563,59 @@ def id_eqv_to_identity (A : Set) : car_eqv_to_bij (id_map_eqv A) = identity A :=
   bijection_eq_from_map_eq _ _ map_eq
 
 @[hott]
-def set_eq_equiv_car_eq_bij (A B : Set) : (A = B) ≃ 
-  (Σ (p : (car A) = car B) (f : bijection A B), 
-                            (equiv_of_eq p).to_fun = f.map) :=
+def Set_dep_ppred (A : Σ (C : Type _), is_set C) : 
+  @dep_ppred _ A.1 A.2 :=
 begin
+  fapply dep_ppred.mk, 
+  { fapply ppred.mk, exact λ B : Type u, A.1 = B, refl },
+  { intros B is_set_B p, 
+    exact ulift.{u+1 u} (Σ (f : bijection (trunctype.mk A.1 (A.2).down) 
+                           (trunctype.mk B (is_set_B).down)), 
+            (equiv_of_eq p).to_fun = f.map) },
+  { exact ulift.up.{u+1} (dpair (identity (trunctype.mk A.1 (A.2).down)) idp) }
+end
+
+@[hott]
+def set_sig_eq_equiv_car_eq_bij' (A B : Σ C : Type _, 
+                                    (ulift.{u+1 u} ∘ is_set) C) : 
+  (A = B) ≃ (Σ (p : A.1 = B.1), ulift.{u+1 u}  
+               (Σ (f : bijection (trunctype.mk A.1 (A.2).down) 
+                                 (trunctype.mk B.1 (B.2).down)), 
+               (equiv_of_eq p).to_fun = f.map)) :=
+begin
+  hinduction A with car_A is_set_A, 
+  fapply @struct_id_char_of_contr _ car_A (ulift.{u+1 u} ∘ is_set) 
+           (is_set_A) (Set_dep_ppred (dpair car_A is_set_A)),
+  { exact is_contr_tot_peq car_A },
+  { fapply is_contr.mk, 
+    exact ⟨is_set_A, (Set_dep_ppred (dpair car_A is_set_A)).dep_base⟩, 
+    sorry }
+end
+
+@[hott]
+def set_sig_eq_equiv_car_eq_bij (A B : Σ C : Type _, is_set C) : 
+  (A = B) ≃ (Σ (p : A.1 = B.1) 
+               (f : bijection (trunctype.mk A.1 A.2) 
+                              (trunctype.mk B.1 B.2)), 
+               (equiv_of_eq p).to_fun = f.map) :=
+begin
+  hinduction A with car_A is_set_A, 
+  fapply @struct_id_char_of_contr _ car_A (ulift.{u+1 u} ∘ is_set) 
+              (is_set_A) (Set_dep_ppred (trunctype.mk car_A is_set_A)), 
   sorry
+end
+
+@[hott]
+def set_eq_equiv_car_eq_bij (A B : Set) : (A = B) ≃ 
+      (Σ (p : (car A) = car B) (f : bijection A B), 
+                           (equiv_of_eq p).to_fun = f.map) :=
+begin
+  hinduction A with car_A is_set_A, hinduction B with car_B is_set_B,
+  exact (eq_equiv_fn_eq_of_equiv Set_str_equiv_sig 
+                                 (trunctype.mk car_A is_set_A) 
+                                 (trunctype.mk car_B is_set_B)) ⬝e
+        (set_sig_eq_equiv_car_eq_bij (dpair car_A is_set_A)
+                                     (dpair car_B is_set_B))
 end
 
 @[hott]
@@ -569,8 +632,12 @@ begin
     { intro b, refl },
     { intro eq_bij_eq, hinduction eq_bij_eq with p bij_eq, 
       hinduction bij_eq with f map_eq, 
-      --change dpair (ua (bij_to_car_eqv f)) (dpair f _) = ⟨p, ⟨f, map_eq⟩⟩,
-      sorry } }      
+      fapply @sigma2_eq' _ _ (λ p (f : bijection A B), 
+                                     (equiv_of_eq p).to_fun = f.map),
+      { hsimp, rwr <- ua_equiv_of_eq p, apply ap ua, 
+        apply equiv_eq', rwr map_eq },
+      { refl },
+      { exact is_set.elim _ _ } } }       
 end
 
 @[hott]
@@ -578,7 +645,7 @@ def set_eq_equiv_bij {A B : Set.{u}} : (A = B) ≃ (bijection A B) :=
   (set_eq_equiv_car_eq ⬝e car_eq_equiv_car_eqv) ⬝e car_eqv_equiv_bij
 
 @[hott]
-def set_eq_equiv_bij' {A B : Set.{u}} : (A = B) ≃ (bijection A B) :=
+def set_eq_equiv_bij' {A B : Set} : (A = B) ≃ (bijection A B) :=
   (set_eq_equiv_car_eq_bij A B) ⬝e (car_eq_bij_equiv_bij A B)
 
 @[hott]
