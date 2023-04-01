@@ -47,7 +47,7 @@ def eq_con_po_eq {A : Type _} {a b c : A} (p : a = c) (q : b = c)
 by hinduction r; intro P; rwr idp_con at P; exact pathover_idp_of_eq _ P
 
 @[hott]
-def is_contr_tot_peq {A : Type _} (a₀ : A) : 
+def is_contr_tot_peq {A : Type u} (a₀ : A) : 
   is_contr (Σ (a : A), a₀ = a) :=
 begin 
   fapply is_contr.mk,
