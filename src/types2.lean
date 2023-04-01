@@ -35,6 +35,17 @@ begin
   intros q₁ q₂, apply ap011 pair q₁ q₂ 
 end
 
+@[hott]
+def sigma2_eq' {A B : Type _} {C : A -> B -> Type _} {a₁ a₂ : A}
+  {b₁ b₂ : B} {c₁ : C a₁ b₁} {c₂ : C a₂ b₂} : 
+  Π (p : a₁ = a₂) (q : b₁ = b₂) (r : (ap011 C p q) ▸[id] c₁ = c₂), 
+  dpair a₁ (dpair b₁ c₁) = ⟨a₂, ⟨b₂, c₂⟩⟩ :=
+begin
+  intros p q r, hinduction p, hinduction q, 
+  fapply sigma.sigma_eq, refl, apply pathover_idp_of_eq, 
+  fapply sigma.sigma_eq, refl, apply pathover_idp_of_eq, exact r
+end  
+
 /- The decode-encode technique for sums; it is contained in [types.sum] from the HoTT3 
    library, but this file does not compile. -/
 @[hott, reducible, hsimp] 
@@ -203,7 +214,7 @@ begin
 end  
 
 @[hott]
-structure id_system {A : Type u} (a₀ : A) := 
+structure id_system {A : Type _} (a₀ : A) := 
   (ppred : ppred a₀) 
   (is_id_sys : is_id_system ppred)
 
@@ -212,7 +223,7 @@ structure id_system {A : Type u} (a₀ : A) :=
    The properties are all propositions, hence equivalent, but this 
    seems not needed in the applications. -/
 @[hott]
-def tot_space_contr_id_sys {A : Type u} {a₀ : A} (R : ppred a₀) : 
+def tot_space_contr_id_sys {A : Type _} {a₀ : A} (R : ppred a₀) : 
   is_contr (Σ (a : A), R.fam a) -> is_id_system R :=
 begin 
   intros contr D d, 
@@ -226,7 +237,7 @@ begin
 end  
 
 @[hott]
-def id_sys_tot_space_contr {A : Type u} {a₀ : A} (R : ppred a₀) : 
+def id_sys_tot_space_contr {A : Type _} {a₀ : A} (R : ppred a₀) : 
   is_id_system R -> is_contr (Σ (a : A), R.1 a) :=
 begin 
   intro is_id_sys_R, fapply is_contr.mk,
@@ -278,10 +289,13 @@ begin
   apply @is_equiv_of_is_contr _ _ (is_contr_tot_peq a₀) contr_tot_R
 end
 
-/- The Structure Identity Principle [Rijke-Book, Thm.11.6.2] splits 
-   up the Fundamental Identity Theorem for Σ-Types into checks for 
-   pointed predicates over objects of the Σ-type with fixed first 
-   component. -/
+/- In HoTT3, types with structures are usually defined as `structure`, 
+   not Σ-types. Therefore, we need to provide equivalences of structures 
+   with Σ-types before we can apply the Structure Identity Principle 
+   on types with structure. The proof follows that of [Rijke-Book, Thm.11.6.2], 
+   splitting up the Fundamental Identity Theorem for Σ-Types into 
+   checks for pointed predicates over objects of the Σ-type with 
+   fixed first component and over objects of the first component. -/
 @[hott]
 structure dep_ppred {A : Type _} (a₀ : A) {B : A -> Type _} (b₀ : B a₀) :=
   (ppred_fst : ppred a₀)
