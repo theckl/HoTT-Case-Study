@@ -564,45 +564,31 @@ def id_eqv_to_identity (A : Set) : car_eqv_to_bij (id_map_eqv A) = identity A :=
 
 @[hott]
 def Set_dep_ppred (A : Σ (C : Type _), is_set C) : 
-  @dep_ppred _ A.1 A.2 :=
+  dep_ppred A.1 A.2 :=
 begin
   fapply dep_ppred.mk, 
-  { fapply ppred.mk, exact λ B : Type u, A.1 = B, refl },
+  { fapply ppred.mk, exact λ B : Type _, A.1 = B, refl },
   { intros B is_set_B p, 
-    exact ulift.{u+1 u} (Σ (f : bijection (trunctype.mk A.1 (A.2).down) 
-                           (trunctype.mk B (is_set_B).down)), 
-            (equiv_of_eq p).to_fun = f.map) },
-  { exact ulift.up.{u+1} (dpair (identity (trunctype.mk A.1 (A.2).down)) idp) }
+    exact Σ (f : bijection (trunctype.mk A.1 A.2) 
+                           (trunctype.mk B is_set_B)), 
+            (equiv_of_eq p).to_fun = f.map },
+  { exact dpair (identity (trunctype.mk A.1 A.2)) idp }
 end
 
 @[hott]
-def set_sig_eq_equiv_car_eq_bij' (A B : Σ C : Type _, 
-                                    (ulift.{u+1 u} ∘ is_set) C) : 
-  (A = B) ≃ (Σ (p : A.1 = B.1), ulift.{u+1 u}  
-               (Σ (f : bijection (trunctype.mk A.1 (A.2).down) 
-                                 (trunctype.mk B.1 (B.2).down)), 
-               (equiv_of_eq p).to_fun = f.map)) :=
+def set_sig_eq_equiv_car_eq_bij (A B : Σ C : Type u, is_set C) : 
+  (A = B) ≃ (Σ (p : A.1 = B.1), 
+                Σ (f : bijection (trunctype.mk A.1 A.2) 
+                                 (trunctype.mk B.1 B.2)), 
+               (equiv_of_eq p).to_fun = f.map) :=
 begin
   hinduction A with car_A is_set_A, 
-  fapply @struct_id_char_of_contr _ car_A (ulift.{u+1 u} ∘ is_set) 
+  fapply @struct_id_char_of_contr.{u+1 u u} (Type u) car_A is_set 
            (is_set_A) (Set_dep_ppred (dpair car_A is_set_A)),
   { exact is_contr_tot_peq car_A },
   { fapply is_contr.mk, 
     exact ⟨is_set_A, (Set_dep_ppred (dpair car_A is_set_A)).dep_base⟩, 
     sorry }
-end
-
-@[hott]
-def set_sig_eq_equiv_car_eq_bij (A B : Σ C : Type _, is_set C) : 
-  (A = B) ≃ (Σ (p : A.1 = B.1) 
-               (f : bijection (trunctype.mk A.1 A.2) 
-                              (trunctype.mk B.1 B.2)), 
-               (equiv_of_eq p).to_fun = f.map) :=
-begin
-  hinduction A with car_A is_set_A, 
-  fapply @struct_id_char_of_contr _ car_A (ulift.{u+1 u} ∘ is_set) 
-              (is_set_A) (Set_dep_ppred (trunctype.mk car_A is_set_A)), 
-  sorry
 end
 
 @[hott]
