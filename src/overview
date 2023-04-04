@@ -1,12 +1,12 @@
 Compiling files, in order of dependencies:
 ------------------------------------------
 init2       :   766
-types2      :   426 
+types2      :   449 
 prop_axioms :   614
 prop_logic  :   208
 sets
-  * basic     :   664
-  finite    :   206
+  basic     :   620
+  * finite    :   206
   subset    :   407
   axioms    :   340
   algebra   :   239
