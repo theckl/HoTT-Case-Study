@@ -385,117 +385,11 @@ def bijection_l_to_r {A : Set} {B : Set} (f : bijection A B) :
 assume a b p, (inv_bij_l_inv f a)⁻¹ ⬝ ap (inv_bijection_of f) p    
 
 /- Equalities between two sets correspond to bijections between the two sets. 
-   To make the construction of the equivalence more transparent we split off some 
-   auxiliary definitions and lemmas. 
-   The equivalence is constructed as a composition of intermediate equivalences. 
-   To show right and left inverses we use the behaviour of the equivalence functions
-   on the respective identity elements. -/
+   We construct the equivalence using the Structure Identity Principle
+   in [types2]. They do not calculate particularly well when applied to
+   identities, but that seems to be a question of making the expressions
+   reducible and of using the calculus of equivalences in [init/ua]. -/
 local notation `car` A := trunctype.carrier A
-
-/- The equivalence between [Set] equalities and equalities of their carriers is also 
-   constructed by [trunctype_eq_equiv] in [type.trunc] but it is not reducible, 
-   hence cannot be used for calculations. Instead we construct the equivalence
-   from scratch, making the functions reducible. -/
-@[hott, hsimp, reducible]   
-def set_eq_to_car_eq {A B : Set} : (A = B) -> ((car A) = (car B)) :=
-  assume e, ap trunctype.carrier e
-
-@[hott]
-def idp_set_to_idp_car {A : Set} : set_eq_to_car_eq (idpath A) = idpath (car A) :=
-  by hsimp
-
-@[hott, reducible, hsimp]
-def car_eq_to_set_eq : Π {A B : Set}, ((car A) = (car B)) -> (A = B) 
-| (trunctype.mk car1 struct1) (trunctype.mk car2 struct2) := 
-  assume ec, 
-  let est := pathover_of_tr_eq (is_prop.elim (ec ▸ struct1) struct2) in
-  apd011 Set.mk ec est  
-
-/- It's complicated to do calculations with [car_eq_to_set_eq].-/
-@[hott, hsimp]
-def idp_car_to_idp_set : 
-  Π {A : Set}, car_eq_to_set_eq (idpath (car A)) = idpath A 
-| (trunctype.mk carr struct) :=  
-  begin
-    hsimp,
-    have est_eq : (pathover_idp_of_eq (is_trunc 0) idp) = idpatho struct, from 
-      is_prop.elim (pathover_of_tr_eq _) (idpatho struct),
-    rwr est_eq
-  end
-
-@[hott]
-def linv_set_eq_car_eq {A B : Set} : forall (es : A = B),
-  car_eq_to_set_eq (set_eq_to_car_eq es) = es :=
-begin 
-  intro es,
-  hinduction es,
-  hsimp 
-end   
-
-/- This should be shown for general structures consisting of a type and
-   a dependent proposition. -/
-@[hott]   
-def ap_car_apd011_set_mk {cA cB: Type _} :
-  Π (ec : cA = cB) [s : is_set cA] [t : is_set cB] (est : s =[ec] t), 
-  ap trunctype.carrier (apd011 Set.mk ec est) = ec := 
-begin 
-  intro ec,
-  hinduction ec,
-    intros s t est,
-    hinduction est,
-    reflexivity
-end   
-
-@[hott]
-def rinv_set_eq_car_eq : Π {A B : Set}, forall (ec : (car A) = (car B)),
-  set_eq_to_car_eq (car_eq_to_set_eq ec) = ec
-| (trunctype.mk carr1 struct1) (trunctype.mk carr2 struct2) := 
-  assume ec, 
-  let est := pathover_of_tr_eq (is_prop.elim (ec ▸ struct1) struct2) in  
-  calc set_eq_to_car_eq (car_eq_to_set_eq ec) = ap trunctype.carrier (car_eq_to_set_eq ec) : 
-       by hsimp 
-       ... = ap trunctype.carrier (apd011 Set.mk ec est) : 
-       by reflexivity
-       ... = ec : by rwr @ap_car_apd011_set_mk _ _ ec struct1 struct2 est
-
-@[hott]
-def set_eq_equiv_car_eq {A B : Set} : (A = B) ≃ ((car A) = (car B)) :=
-  equiv.mk set_eq_to_car_eq (hott.is_equiv.adjointify set_eq_to_car_eq car_eq_to_set_eq 
-                                        rinv_set_eq_car_eq linv_set_eq_car_eq)
-
-@[hott, hsimp]
-def car_eq_equiv_car_eqv {A B : Set} : ((car A) = (car B)) ≃ ((car A) ≃ (car B)) :=
-  eq_equiv_equiv _ _    /- Here, univalence is used. -/
-
-@[hott, hsimp]
-def car_eq_to_car_eqv {A B : Set} : ((car A) = (car B)) -> ((car A) ≃ (car B)) :=
-  equiv.to_fun car_eq_equiv_car_eqv
-
-@[hott, hsimp]
-def car_eqv_to_car_eq {A B : Set} : ((car A) ≃ (car B)) -> ((car A) = (car B)) :=
-  (equiv.to_fun car_eq_equiv_car_eqv)⁻¹ᶠ
-
-@[hott, hsimp]
-def id_map_eqv (A : Set) : (car A) ≃ (car A) :=
-  equiv.mk (id_map A) (hott.is_equiv.is_equiv_id (car A))
-
-@[hott, hsimp]
-def id_to_id_map_eqv (A : Set) : car_eq_to_car_eqv (idpath (car A)) = id_map_eqv A := 
-  by reflexivity
-
-@[hott]
-def id_map_eqv_to_id (A : Set) : car_eqv_to_car_eq (id_map_eqv A) = idpath (car A) := 
-  calc car_eqv_to_car_eq (id_map_eqv A) = car_eqv_to_car_eq (car_eq_to_car_eqv (idpath (car A))) :
-       ap car_eqv_to_car_eq (id_to_id_map_eqv A)
-       ... = idpath (car A) : 
-       by exact is_equiv.left_inv car_eq_to_car_eqv (idpath (car A)) 
-
-@[hott, reducible]
-def car_eqv_to_bij {A B : Set} : ((car A) ≃ (car B)) -> (bijection A B) :=
-  assume f_eqv : (car A) ≃ (car B), 
-  let f := equiv.to_fun f_eqv, g := (equiv.to_fun f_eqv)⁻¹ᶠ in
-  let inv_f_g := is_set_inverse_of.mk (is_equiv.right_inv f_eqv) (is_equiv.left_inv f_eqv) in
-  has_inverse_to_bijection f g inv_f_g 
 
 @[hott, reducible]
 def bij_to_car_eqv {A B : Set} : (bijection A B) -> ((car A) ≃ (car B)) :=
@@ -504,63 +398,6 @@ have c : is_set_inverse_of f g, from f_inv.2,
 let f_rinv := @is_set_inverse_of.r_inv _ _ f g c, 
     f_linv := @is_set_inverse_of.l_inv _ _ f g c in
 equiv.mk f (is_equiv.adjointify f g f_rinv f_linv)
-
-@[hott]
-def rinv_set_equiv_bijection {A B : Set} : forall f : bijection A B,
-  bijection.map (car_eqv_to_bij (bij_to_car_eqv f)) = f :=
-let F := @car_eqv_to_bij A B, G := @bij_to_car_eqv A B in
-assume f, 
-have eq_G : equiv.to_fun (G f) = f, by hsimp,
-have eq_F : bijection.map (F (G f)) = equiv.to_fun (G f), by hsimp,
-eq_F ⬝ eq_G
-
-@[hott]
-def linv_bijection_set_equiv {A B : Set} : forall e : (car A) ≃ (car B),
-  equiv.to_fun (bij_to_car_eqv (car_eqv_to_bij e)) = e :=
-let F := @car_eqv_to_bij A B, G := @bij_to_car_eqv A B in
-assume e, 
-have eq_F : bijection.map (F e) = equiv.to_fun e, by hsimp,
-have eq_G : equiv.to_fun (G (F e)) = bijection.map (F e), by hsimp,
-eq_G ▸ eq_F
-
-/- The next 2 lemmas should be in [init.equiv]. -/
-@[hott]
-def equiv_eq_from_fun_eq {A B : Type u} : forall e1 e2 : A ≃ B, 
-  equiv.to_fun e1 = equiv.to_fun e2 -> e1 = e2
-| (equiv.mk fun1 is_eqv1) (equiv.mk fun2 is_eqv2) := 
-  assume fun_eq, 
-  have tr_eq : fun_eq ▸ is_eqv1 = is_eqv2, from
-     is_prop.elim (fun_eq ▸ is_eqv1) (is_eqv2),
-  have is_equiv_eq : is_eqv1 =[fun_eq] is_eqv2, from pathover_of_tr_eq tr_eq,  
-  apd011 equiv.mk fun_eq is_equiv_eq
-
-@[hott]
-def fun_eqv_trans_comp_eqv {A B C : Type u} : Π (F : A ≃ B) (G : B ≃ C), 
-  equiv.to_fun (equiv.trans F G) = (equiv.to_fun G) ∘ (equiv.to_fun F) :=
-assume F G, by reflexivity 
-
-@[hott]
-def car_eqv_equiv_bij {A B : Set.{u}} : ((car A) ≃ (car B)) ≃ (bijection A B) :=
-  let F := @car_eqv_to_bij A B, G := @bij_to_car_eqv A B in
-  have rinv : forall f, F (G f) = f, from assume f, 
-    have map_eq : bijection.map (F (G f)) = bijection.map f, from rinv_set_equiv_bijection f,
-    bijection_eq_from_map_eq _ _ map_eq, 
-  have linv : forall e, G (F e) = e, from assume e,
-    have fun_eq : equiv.to_fun (G (F e)) = equiv.to_fun e, from linv_bijection_set_equiv e,
-    equiv_eq_from_fun_eq _ _ fun_eq, 
-  equiv.mk F (is_equiv.adjointify F G rinv linv)
-
-@[hott]
-def identity_to_id_eqv (A : Set) : bij_to_car_eqv (identity A) = id_map_eqv A := 
-  have fun_eq : equiv.to_fun (bij_to_car_eqv (identity A)) = 
-                equiv.to_fun (id_map_eqv A), by reflexivity,
-  equiv_eq_from_fun_eq (bij_to_car_eqv (identity A)) (id_map_eqv A) fun_eq
-
-@[hott]
-def id_eqv_to_identity (A : Set) : car_eqv_to_bij (id_map_eqv A) = identity A := 
-  have map_eq : bijection.map (car_eqv_to_bij (id_map_eqv A)) = 
-                bijection.map (identity A), by reflexivity, 
-  bijection_eq_from_map_eq _ _ map_eq
 
 @[hott]
 def Set_dep_ppred (A : Σ (C : Type _), is_set C) : 
@@ -576,19 +413,29 @@ begin
 end
 
 @[hott]
-def set_sig_eq_equiv_car_eq_bij (A B : Σ C : Type u, is_set C) : 
+def set_sig_eq_equiv_car_eq_bij (A B : Σ C : Type _, is_set C) : 
   (A = B) ≃ (Σ (p : A.1 = B.1), 
                 Σ (f : bijection (trunctype.mk A.1 A.2) 
                                  (trunctype.mk B.1 B.2)), 
                (equiv_of_eq p).to_fun = f.map) :=
 begin
   hinduction A with car_A is_set_A, 
-  fapply @struct_id_char_of_contr.{u+1 u u} (Type u) car_A is_set 
+  fapply @struct_id_char_of_contr (Type _) car_A is_set 
            (is_set_A) (Set_dep_ppred (dpair car_A is_set_A)),
   { exact is_contr_tot_peq car_A },
   { fapply is_contr.mk, 
     exact ⟨is_set_A, (Set_dep_ppred (dpair car_A is_set_A)).dep_base⟩, 
-    sorry }
+    intro B, hinduction B with is_set_B d, 
+    have p : is_set_A = is_set_B, from is_prop.elim _ _,
+    hinduction p, fapply sigma.sigma_eq, exact idp,
+    apply pathover_idp_of_eq, hsimp, 
+    hinduction d with f f_map, fapply sigma.sigma_eq,
+    { change identity _ = f, apply bijection_eq_from_map_eq, 
+      exact f_map },
+    { apply pathover_of_tr_eq, 
+      have H : is_set (car_A -> car_A), from 
+        @is_set_map _ (trunctype.mk car_A is_set_A),
+      exact @is_set.elim _ H _ _ _ _ } }
 end
 
 @[hott]
@@ -602,6 +449,21 @@ begin
                                  (trunctype.mk car_B is_set_B)) ⬝e
         (set_sig_eq_equiv_car_eq_bij (dpair car_A is_set_A)
                                      (dpair car_B is_set_B))
+end
+
+@[hott]
+def set_eq_to_car_eq_bij_id (A : Set) : 
+  (set_eq_equiv_car_eq_bij A A) (idpath A) = 
+                      ⟨idpath (car A), ⟨identity A, idpath id⟩⟩ :=
+begin
+  change (set_eq_equiv_car_eq_bij A A).to_fun _ = _,
+  hinduction A with car_A is_set_A,   
+  change ((eq_equiv_fn_eq_of_equiv Set_str_equiv_sig 
+                                 (trunctype.mk car_A is_set_A) 
+                                 (trunctype.mk car_A is_set_A)) ⬝e
+        (set_sig_eq_equiv_car_eq_bij (dpair car_A is_set_A)
+                                     (dpair car_A is_set_A))).to_fun _ = _,
+  rwr to_fun_trans
 end
 
 @[hott]
@@ -627,44 +489,55 @@ begin
 end
 
 @[hott]
-def set_eq_equiv_bij {A B : Set.{u}} : (A = B) ≃ (bijection A B) :=
-  (set_eq_equiv_car_eq ⬝e car_eq_equiv_car_eqv) ⬝e car_eqv_equiv_bij
+def car_eq_bij_to_bij_id (A : Set) : 
+  (car_eq_bij_equiv_bij A A) ⟨idp, ⟨identity A, idpath (@id (car A))⟩⟩ =
+  identity A := idp 
 
-@[hott]
-def set_eq_equiv_bij' {A B : Set} : (A = B) ≃ (bijection A B) :=
+@[hott, reducible]
+def set_eq_equiv_bij {A B : Set} : (A = B) ≃ (bijection A B) :=
   (set_eq_equiv_car_eq_bij A B) ⬝e (car_eq_bij_equiv_bij A B)
 
-@[hott]
-def set_eq_to_bij {A B : Set.{u}} : A = B -> (bijection A B) :=
+@[hott, reducible]
+def set_eq_to_bij {A B : Set} : A = B -> (bijection A B) :=
   equiv.to_fun set_eq_equiv_bij
 
-@[hott]
-def bij_to_set_eq {A B : Set.{u}} : (bijection A B) -> A = B :=
+@[hott, reducible]
+def bij_to_set_eq {A B : Set} : (bijection A B) -> A = B :=
   (equiv.to_fun set_eq_equiv_bij)⁻¹ᶠ
 
 @[hott]
-/- These equivalence functions extracted from the equivalences can indeed be used for 
-   calculations. -/
 def identity_to_idp {A : Set} : bij_to_set_eq (identity A) = idpath A :=
-calc bij_to_set_eq (identity A) = 
-            car_eq_to_set_eq (car_eqv_to_car_eq (bij_to_car_eqv (identity A))) : 
-     by reflexivity
-     ... =  idpath A : begin rwr identity_to_id_eqv, 
-                             rwr id_map_eqv_to_id, 
-                             rwr idp_car_to_idp_set end     
+begin
+  change (equiv.to_fun ((set_eq_equiv_car_eq_bij A A) ⬝e 
+                             (car_eq_bij_equiv_bij A A)))⁻¹ᶠ _ = _,
+  rwr to_inv_trans, rwr <- car_eq_bij_to_bij_id A,
+  change ((set_eq_equiv_car_eq_bij A A).to_fun)⁻¹ᶠ 
+                             ((car_eq_bij_equiv_bij A A)⁻¹ᶠ _) = _, 
+  rwr to_left_inv (car_eq_bij_equiv_bij A A),
+  rwr <- to_left_inv (set_eq_equiv_car_eq_bij A A) (idpath A), 
+  apply ap ((set_eq_equiv_car_eq_bij A A).to_fun)⁻¹ᶠ, 
+  rwr set_eq_to_car_eq_bij_id
+end     
+
+@[hott]
+def idp_to_identity {A : Set} : set_eq_to_bij (idpath A) = identity A :=
+begin
+  change (equiv.to_fun ((set_eq_equiv_car_eq_bij A A) ⬝e 
+                             (car_eq_bij_equiv_bij A A))) _ = _,
+  rwr to_fun_trans, rwr set_eq_to_car_eq_bij_id
+end 
 
 @[hott]
 def right_inv_set_eq_bij {A B : Set} (f : bijection A B) :
-  set_eq_to_bij (bij_to_set_eq f) = f :=
+  set_eq_to_bij (bij_to_set_eq f) = f := 
 @is_equiv.right_inv (A = B) (bijection A B) set_eq_to_bij _ f
 
 @[hott]
 def hom_eq_tr_eq {A B : Set} (e : A = B) :
   forall a : A, set_eq_to_bij e a = e ▸ a :=
 begin 
-  intro a,
-  hinduction e,
-  reflexivity
+  intro a, hinduction e, rwr idp_tr, 
+  exact ap10 (ap bijection.map idp_to_identity) a
 end   
 
 @[hott]
