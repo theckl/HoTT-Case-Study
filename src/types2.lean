@@ -248,22 +248,6 @@ begin
     exact (is_id_sys_R D idp).1 a r }
 end
 
-@[hott, reducible, hsimp]
-def id_sys_tot_space_contr_eq {A : Type _} {a₀ : A} (R : ppred a₀) : 
-  is_id_system R -> (Π ab : Σ (a : A), R.1 a, ab = ⟨a₀, R.base⟩) :=
-begin 
-  intros is_id_sys ab, 
-  let ceq : @center _ (id_sys_tot_space_contr R is_id_sys) =
-           ⟨a₀, R.base⟩ := idp, rwr <- ceq,
-  rwr @center_eq _ (id_sys_tot_space_contr R is_id_sys) ab
-end 
-
-@[hott]
-def id_sys_tot_space_base_idp {A : Type _} {a₀ : A} (R : ppred a₀)  
-  (is_id_sys : is_id_system R) : 
-  id_sys_tot_space_contr_eq R is_id_sys ⟨a₀, R.base⟩ = idp :=
-begin hsimp, sorry end
-
 /- We need some facts on families of equivalences, see [Rijke-Book, 11.1]. -/
 @[hott] --[Rijke-Book, Thm.11.1.3.(i)=>(ii)] = [HoTT-Book, Thm.4.7.7]
 def fam_eqv_tot_map_eqv {A : Type _} {B C : A -> Type _} 
@@ -342,7 +326,7 @@ structure dep_id_system {A : Type _} {a₀ : A} {B : A -> Type _}
    identity systems give rise to identity systems on the Σ-type and
    vice versa, and state the criterion to produce equivalences from
    contractibility. -/
---set_option pp.universes true
+set_option pp.universes true
 
 @[hott]
 def struct_id_eqv₁ {A : Type _} {a₀ : A} {B : A -> Type _} 
@@ -352,30 +336,31 @@ def struct_id_eqv₁ {A : Type _} {a₀ : A} {B : A -> Type _}
               (Σ (dp : Σ (a : A), R.ppred_fst.fam a), 
                  Σ (b : B dp.1), R.dep_fam dp.1 b dp.2) :=
 begin
-let ceq : @center _ (id_sys_tot_space_contr R.ppred_fst id_sys_fst) =
-           ⟨a₀, R.ppred_fst.base⟩ := idp,
-let ppred_fst_eq : Π (ac : Σ (a : A), R.ppred_fst.fam a),
-      ac = ⟨a₀, R.ppred_fst.base⟩, by intro ac; rwr <- ceq;
-      rwr @center_eq _ (id_sys_tot_space_contr R.ppred_fst 
-                         id_sys_fst) ac,
-have p : ppred_fst_eq ⟨a₀, R.ppred_fst.base⟩ = idp, from 
-  begin sorry end,                         
-let f := λ (ac : Σ (a : A), R.ppred_fst.fam a) 
-           (bd : Σ (b : B ac.1), R.dep_fam ac.1 b ac.2),
-           (ppred_fst_eq ac) ▸[λ (ac : Σ (a : A), R.ppred_fst.fam a), 
-                      (Σ (b : B ac.1), R.dep_fam ac.1 b ac.2)] bd,              
-fapply equiv.mk,
-  { intro dpB, exact ⟨⟨a₀, R.ppred_fst.base⟩, dpB⟩ },
-  { fapply adjointify, 
-    { intro dpR1, exact f dpR1.1 dpR1.2 },
-    { intro ptR, hinduction ptR with ptd ptB, 
-      hinduction ptd with a ca, 
-      hinduction ptB with b bR, hsimp, fapply sigma.sigma_eq,
-      exact (ppred_fst_eq ⟨a, ca⟩)⁻¹, hsimp, 
-      apply pathover_of_tr_eq, apply inv_tr_eq_of_eq_tr, refl }, 
-    { intro ptB, hinduction ptB with b bR, hsimp, 
-      change (ppred_fst_eq ⟨a₀, R.ppred_fst.base⟩) ▸ _ = _, 
-      rwr p } }
+  let ceq : @center _ (id_sys_tot_space_contr R.ppred_fst id_sys_fst) =
+             ⟨a₀, R.ppred_fst.base⟩ := idp,
+  let ppred_fst_eq : Π (ac : Σ (a : A), R.ppred_fst.fam a),
+        ac = ⟨a₀, R.ppred_fst.base⟩, by intro ac; 
+    exact @eq_of_is_contr _ (id_sys_tot_space_contr R.ppred_fst 
+                             id_sys_fst) _ _,
+  have p : ppred_fst_eq ⟨a₀, R.ppred_fst.base⟩ = idp, from 
+    @prop_eq_of_is_contr _ (id_sys_tot_space_contr R.ppred_fst 
+                            id_sys_fst) _ _ _ _,                         
+  let f := λ (ac : Σ (a : A), R.ppred_fst.fam a) 
+             (bd : Σ (b : B ac.1), R.dep_fam ac.1 b ac.2),
+             (ppred_fst_eq ac) ▸[λ (ac : Σ (a : A), R.ppred_fst.fam a), 
+                        (Σ (b : B ac.1), R.dep_fam ac.1 b ac.2)] bd,              
+  fapply equiv.mk,
+    { intro dpB, exact ⟨⟨a₀, R.ppred_fst.base⟩, dpB⟩ },
+    { fapply adjointify, 
+      { intro dpR1, exact f dpR1.1 dpR1.2 },
+      { intro ptR, hinduction ptR with ptd ptB, 
+        hinduction ptd with a ca, 
+        hinduction ptB with b bR, hsimp, fapply sigma.sigma_eq,
+        exact (ppred_fst_eq ⟨a, ca⟩)⁻¹, hsimp, 
+        apply pathover_of_tr_eq, apply inv_tr_eq_of_eq_tr, refl }, 
+      { intro ptB, hinduction ptB with b bR, hsimp, 
+        change (ppred_fst_eq ⟨a₀, R.ppred_fst.base⟩) ▸ _ = _, 
+        rwr p } }
 end
 
 @[hott]
@@ -395,8 +380,6 @@ begin
     { intro tup, hsimp, hinduction tup with tup₁ tup₂, 
       hinduction tup₁ with a b, hinduction tup₂ with c d, hsimp } }
 end
-
-#print struct_id_eqv₁
 
 @[hott]
 def struct_id_dep_contr_to_contr {A : Type _} {a₀ : A} {B : A -> Type _} 
