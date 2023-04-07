@@ -384,13 +384,53 @@ def bijection_l_to_r {A : Set} {B : Set} (f : bijection A B) :
   Π {a : A} {b : B}, f a = b -> a = inv_bijection_of f b :=
 assume a b p, (inv_bij_l_inv f a)⁻¹ ⬝ ap (inv_bijection_of f) p    
 
-/- Equalities between two sets correspond to bijections between the two sets. 
+/- The "trivial" characterisation of equalities of sets is by the
+   equality of carrier types. This follows because `is_set` is a 
+   proposition, hence is an instance of a general scheme, see
+   [Rijke-Book, Cor.12.2.4]. -/
+local notation `car` A := trunctype.carrier A
+
+@[hott, reducible]
+def car_eq_to_set_eq {A B : Set} : ((car A) = car B) -> (A = B) :=
+begin
+  hinduction A with car_A is_set_A, hinduction B with car_B is_set_B, 
+  intro p, fapply apd011 Set.mk, exact p, 
+  apply pathover_of_tr_eq, exact is_prop.elim _ _
+end
+
+@[hott]
+def car_idp_to_set_idp {A : Set} : 
+  car_eq_to_set_eq (idpath (car A)) = idpath A := 
+begin 
+  hinduction A with car_A is_set_A, change apd011 Set.mk idp _ = _,
+  hsimp, change apd011 Set.mk idp idpo = _, refl 
+end
+
+@[hott, reducible]
+def set_eq_to_car_eq {A B : Set} : (A = B) -> ((car A) = car B) :=
+  λ p, ap trunctype.carrier p
+
+@[hott]
+def set_eq_equiv_car_eq {A B : Set} : (A = B) ≃ ((car A) = car B) :=
+begin
+  fapply equiv.mk,
+  { exact set_eq_to_car_eq },
+  { fapply is_equiv.adjointify,
+    { exact car_eq_to_set_eq },
+    { hinduction A with car_A is_set_A, hinduction B with car_B is_set_B,
+      intro car_eq, change car_A = car_B at car_eq, hinduction car_eq,  
+      have q : is_set_A = is_set_B, from is_prop.elim _ _, hinduction q,
+      rwr car_idp_to_set_idp },
+    { intro p, hinduction p, 
+      change car_eq_to_set_eq (ap trunctype.carrier idp) = _,
+      rwr ap_idp, rwr car_idp_to_set_idp } }
+end   
+
+/- Equalities between two sets also correspond to bijections between the two sets. 
    We construct the equivalence using the Structure Identity Principle
    in [types2]. They do not calculate particularly well when applied to
    identities, but that seems to be a question of making the expressions
    reducible and of using the calculus of equivalences in [init/ua]. -/
-local notation `car` A := trunctype.carrier A
-
 @[hott, reducible]
 def bij_to_car_eqv {A B : Set} : (bijection A B) -> ((car A) ≃ (car B)) :=
 assume f : bijection A B, let f_inv := inv_of_bijection f, g := f_inv.1 in
@@ -596,6 +636,11 @@ def dprod_of_Sets_is_set (A : Set) (B : A -> Set) : is_set (Σ (a : A), B a) :=
       exact apd011 sigma_eq s₁ s₂
     end,
   is_set.mk _ dpr_eq
+
+@[hott, instance]
+def dprod_of_Sets_is_set' (A : Type _) (B : A -> Type _) [HA : is_set A] 
+  [HB : Π a : A, is_set (B a)] : is_set (Σ (a : A), B a) :=
+dprod_of_Sets_is_set (trunctype.mk A HA) (λ a : A, trunctype.mk (B a) (HB a))
 
 @[hott]
 def dprod_Set (A : Set) (B : A -> Set) : Set :=
