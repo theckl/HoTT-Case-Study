@@ -289,6 +289,15 @@ begin
   apply @is_equiv_of_is_contr _ _ (is_contr_tot_peq a₀) contr_tot_R
 end
 
+@[hott]
+def tot_space_contr_ppmap_id_eqv' {A : Type _} {a₀ : A} (R : ppred a₀) : 
+  (ppmap (id_ppred a₀) R) -> is_contr (Σ (a : A), R.fam a) -> 
+  Π (a : A), (a₀ = a) ≃ (R.fam a) :=
+begin
+  intros f contr_tot_R, intro a, 
+  exact equiv.mk (f.fam_map a) (tot_space_contr_ppmap_id_eqv R f contr_tot_R a)
+end
+
 /- In HoTT3, types with structures are usually defined as `structure`, 
    not Σ-types. Therefore, we need to provide equivalences of structures 
    with Σ-types before we can apply the Structure Identity Principle 
@@ -326,8 +335,6 @@ structure dep_id_system {A : Type _} {a₀ : A} {B : A -> Type _}
    identity systems give rise to identity systems on the Σ-type and
    vice versa, and state the criterion to produce equivalences from
    contractibility. -/
-set_option pp.universes true
-
 @[hott]
 def struct_id_eqv₁ {A : Type _} {a₀ : A} {B : A -> Type _} 
   {b₀ : B a₀} (R : dep_ppred a₀ b₀) 
