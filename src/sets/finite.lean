@@ -30,7 +30,7 @@ def fin_Set_lift_desc {n m : ℕ} (H1 : n ≤ m) (b : fin_Set m) (H2 : b.1 < n) 
   fin_Set_lift H1 (fin_Set_desc b H2) = b :=
 begin apply fin_Set_eq, refl end  
 
-/- These finte sets can be used to check whether a set is finite and to define the 
+/- These finite sets can be used to check whether a set is finite and to define the 
    cardinality of finite sets. 
    
    We can show that finiteness is a predicate on sets, so we can use it as a class. -/
