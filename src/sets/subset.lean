@@ -10,9 +10,9 @@ namespace subset
 
 set_option pp.universes false
 
-/- We define subsets of sets [A] by predicates on `A`, with a corecion to the set of all 
-   elements of `A` satisfying the predicate, and a coercion of the objects of this set to
-   the elements of `A`. -/
+/- We define subsets of sets [A] by predicates on `A`, with a 
+   coercion to the set of all elements of `A` satisfying the predicate, 
+   and a coercion of the objects of this set to the elements of `A`. -/
 
 @[hott]
 def Subset (A : Set) := A -> trunctype.{0} -1
@@ -68,7 +68,8 @@ def inj_to_pred_sset {A : Set} : inj_Subset A -> Subset A :=
 
 @[hott]
 def inj_car_eqv_pred_sset {A : Set.{u}} {B_car : Set.{u}} (map : B_car -> A) 
-  (inj : is_set_injective map) : pred_Set (λ a : A, prop_resize.{0 u} (image map a)) ≃ B_car :=
+  (inj : is_set_injective map) : 
+  pred_Set (λ a : A, prop_resize.{0 u} (image map a)) ≃ B_car :=
 let HP : (Σ a : A, prop_resize.{0 u} (image map a)) -> (Σ a : A, fiber map a) := 
   λ a_im, 
   ⟨a_im.1, @untrunc_of_is_trunc _ _ (set_inj_implies_unique_fib map inj a_im.1) 
