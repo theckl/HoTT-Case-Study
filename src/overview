@@ -1,17 +1,17 @@
 Compiling files, in order of dependencies:
 ------------------------------------------
 init2       :   766
-types2      :   449 
+types2      :   456 
 prop_axioms :   614
 prop_logic  :   208
 sets
-  basic     :   620
-  * finite    :   206
-  subset    :   407
+  basic     :   665
+  finite    :   206
+  subset    :   408
   axioms    :   340
   algebra   :   239
   quotients :   205
-  theories  :   695
+  * theories  :   695
 categories  
   basic     :   776 (A new version will include the characterisation of 
                      identity types of precategories)
