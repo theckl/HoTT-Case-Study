@@ -76,154 +76,134 @@ structure fo_signature :=
 namespace term
 
 @[hott] 
-inductive term {sign : fo_signature} : sign.sorts -> Type 
+inductive term_of_sort {sign : fo_signature} : sign.sorts -> Type 
 | var (s : sign.sorts) (v : var sign.var_labels sign.sorts) 
-                                    (pv : v.sort = s) : term s      
+                            (pv : v.sort = s) : term_of_sort s      
 | op (s : sign.sorts) (o : sign.ops) (pot : sign.ops_target o = s)
-     (args : Π (oa : sign.ops_arity o), term (sign.ops_source o oa)) : 
-     term s
+     (args : Π (oa : sign.ops_arity o), term_of_sort (sign.ops_source o oa)) : 
+     term_of_sort s
 
-#print term.op
-
-@[hott, reducible, hsimp]
+@[hott, reducible]
 protected def code {sign : fo_signature} : Π {s₁ s₂ : sign.sorts}, 
-  term s₁ -> term s₂ -> Type 
-/-begin
-  revert s₁, fapply @term.rec sign (λ s t, term s₂ -> Type), 
-  { hsimp, intros s₁ v₁ pv₁, revert s₂, 
-    fapply @term.rec sign (λ s t, Type), 
-    { hsimp, intros s₂ v₂ pv₂, exact v₁ = v₂ },
-    { hsimp, intros s₂ o₂ pot₂ args₂ ih₂, exact Zero } },
-  { hsimp, intros s₁ o₁ pot₁ args₁ ih₁, revert s₂, 
-    fapply @term.rec sign (λ s t, Type), sorry }
-end  -/
-/- 
+  term_of_sort s₁ -> term_of_sort s₂ -> Type :=
+begin
+  intros s₁ s₂ t₁, revert s₁ t₁ s₂, intros s₁ t₁,
+  hinduction t₁ with s₁ v₁ pv₁ s₁ o₁ pot₁ args₁ ih₁,
+  { intros s₂ t₂, hinduction t₂ with s₂ v₂ pv₂ s₂ o₂ pot₂ args₂ ih₂, 
+    { exact v₁ = v₂ },
+    { exact Zero } },
+  { intros s₂ t₂, hinduction t₂ with s₂ v₂ pv₂ s₂ o₂ pot₂ args₂ ih₂,
+    { exact Zero },
+    { exact Σ (q : o₁ = o₂), Π (oa₁ : sign.ops_arity o₁), 
+                           ih₁ oa₁ (args₂ (q ▸ oa₁)) } }
+end  
+/- The equation compiler produces a non-hott term when we use 
+   pattern-matching to define `code`: 
 | s₁ s₂ (term.var _ v₁ pv₁) (term.var _ v₂ pv₂) := v₁ = v₂
 | s₁ s₂ (term.var _ v₁ pv₁) (term.op _ o₂ pot₂ args₂) := Zero
 | s₁ s₂ (term.op _ o₁ pot₁ args₁) (term.var _ v₂ pv₂) := Zero
 | s₁ s₂ (term.op _ o₁ pot₁ args₁) (term.op _ o₂ pot₂ args₂) :=  
     Σ (q : o₁ = o₂), Π (oa₁ : sign.ops_arity o₁), 
-                       code (args₁ oa₁) (args₂ (q ▸ oa₁))
--/
---begin 
---  intro t₁, intro t₂,
---  hinduction t₁ with s₁ v₁ pv₁ s₁ o₁ pot₁ args₁ ih₁, 
---  { hinduction t₂ with s₂ v₂ pv₂ s₂ o₂ pot₂ args₂ ih₂, 
---    exact v₁ = v₂, exact Zero },
---  { hinduction t₂ with s₂ v₂ pv₂ s₂ o₂ pot₂ args₂ ih₂, 
---    { exact Zero }, 
---    { hsimp at ih₁, hsimp at ih₂, 
---      exact Σ (q : o₁ = o₂), (Π oa₁, code (ih₁ oa₁) (ih₂ (q ▸ oa₁))) } } 
---end
+                       code (args₁ oa₁) (args₂ (q ▸ oa₁)) -/
 
 @[hott, instance]
-def code_is_prop  {sign : fo_signature} {s₁ s₂ : sign.sorts} : 
-  Π (t₁ : term s₁) (t₂ : term s₂), is_prop (term.code t₁ t₂) :=
+protected def code_is_prop  {sign : fo_signature} {s₁ s₂ : sign.sorts} : 
+  Π (t₁ : term_of_sort s₁) (t₂ : term_of_sort s₂), 
+    is_prop (term.code t₁ t₂) :=
 begin
-  intros t₁ t₂, hinduction t₁ with s₁ v₁ pv₁ s₁ o₁ pot₁ args₁ ih₁,  
-  { hinduction t₂ with s₂ v₂ pv₂ s₂ o₂ pot₂ args₂ ih₂, 
+  intro t₁, revert s₁ t₁ s₂, intros s₁ t₁, 
+  hinduction t₁ with s₁ v₁ pv₁ s₁ o₁ pot₁ args₁ ih₁,  
+  { intros s₂ t₂, hinduction t₂ with s₂ v₂ pv₂ s₂ o₂ pot₂ args₂ ih₂, 
     { change is_prop (v₁ = v₂), apply is_prop.mk, intros q q', 
       exact is_set.elim _ _ },
     { change is_prop Zero, apply_instance } },
-  { hinduction t₂ with s₂ v₂ pv₂ s₂ o₂ pot₂ args₂ ih₂,
+  { intros s₂ t₂, hinduction t₂ with s₂ v₂ pv₂ s₂ o₂ pot₂ args₂ ih₂,
     { change is_prop Zero, apply_instance },
-    { apply is_prop.mk, intros t₁_code t₂_code, fapply sigma.sigma_eq, 
+    { change is_prop (Σ (q : o₁ = o₂), Π (oa₁ : sign.ops_arity o₁),
+                        term.code (args₁ oa₁) (args₂ (q ▸ oa₁))),
+      apply is_prop.mk, intros t₁_code t₂_code, fapply sigma.sigma_eq, 
       { exact is_set.elim _ _ },
-      { apply pathover_of_tr_eq, apply eq_of_homotopy, intro oa₂, 
-        exact @is_prop.elim _ (ih₁ oa₁) _ _ } } }
+      { apply pathover_of_tr_eq, apply eq_of_homotopy, intro oa₁, 
+        exact @is_prop.elim _ (ih₁ oa₁ (args₂ (t₂_code.1 ▸ oa₁))) _ _ } } }
 end 
 
 @[hott]
-protected def refl {sign : fo_signature} : Π t : term sign, 
-  term.code t t :=
+structure term (sign : fo_signature) :=
+  (sort : sign.sorts)
+  (expr : term_of_sort sort)
+
+@[hott]
+def term_eq_term {sign : fo_signature} (s : sign.sorts) :
+  Π (t₁ t₂ : term_of_sort s), term.mk s t₁ = term.mk s t₂ -> t₁ = t₂ :=
+begin
+  intros t₁ t₂ q, let p := pathover_ap _ _ (apd term.expr q), 
+  hsimp at p, have r : ap term.sort q = idp, from is_set.elim _ _, 
+  rwr r at p, exact eq_of_pathover_idp p
+end
+
+@[hott]
+protected def refl {sign : fo_signature} : 
+  Π t : term sign, term.code t.expr t.expr :=
 begin 
   intro term, hinduction term with s t, hinduction t,
   exact rfl , exact ⟨rfl, λ k, ih k⟩ 
-end    
+end 
 
-@[hott]
-def encode {sign : fo_signature} {term₁ term₂ : term sign} 
-  (p : term₁ = term₂) : term.code term₁ term₂ :=
-p ▸ (term.refl term₁)  
+@[hott, reducible]
+protected def ppred {sign : fo_signature} (t₀ : term sign) : ppred t₀ :=
+  ppred.mk (λ t : term sign, term.code t₀.expr t.expr) (term.refl t₀)
 
 @[hott, hsimp]
-def decode {sign : fo_signature} : 
-  Π {term₁ term₂ : term sign}, term.code term₁ term₂ -> term₁ = term₂ :=
+protected def decode {sign : fo_signature} : 
+  Π {t₁ t₂ : term sign}, term.code t₁.expr t₂.expr -> t₁ = t₂ :=
 begin
-  intro term₁, hinduction term₁ with s₁ t₁, hinduction t₁, 
-  { intro term₂, hinduction term₂ with s₂ t₂, hinduction t₂, 
+  intro t₁, hinduction t₁ with s₁ t₁, 
+  hinduction t₁ with s₁ v₁ pv₁ s₁ o₁ pot₁ args₁ ih₁, 
+  { intro t₂, hinduction t₂ with s₂ t₂, 
+    hinduction t₂ with s₂ v₂ pv₂ s₂ o₂ pot₂ args₂ ih₂, 
     { intro t_code, 
-      have q : v = v_1, from t_code, hinduction q, 
-      have r : s = s_1, from a⁻¹ ⬝ a_1, hinduction r,
+      have q : v₁ = v₂, from t_code, hinduction q, 
+      have r : s₁ = s₂, from pv₁⁻¹ ⬝ pv₂, hinduction r,
       fapply apd011 term.mk, exact rfl, apply pathover_idp_of_eq, 
-      exact ap (term_of_sort.var s v) (is_set.elim _ _) },
+      exact ap (term_of_sort.var s₁ v₁) (is_set.elim _ _) },
     { intro t_code, hinduction t_code } },
-  { intro term₂, hinduction term₂ with s₂ t₂, hinduction t₂,
+  { intro t₂, hinduction t₂ with s₂ t₂, 
+    hinduction t₂ with s₂ v₂ pv₂ s₂ o₂ pot₂ args₂ ih₂,
     { intro t_code, hinduction t_code },
-    { intro t_code, hinduction t_code with q args_code, hinduction q,
-      have r : s = s_1, from pot⁻¹ ⬝ pot_1, hinduction r,
-      have r' : pot = pot_1, from is_prop.elim _ _, hinduction r',      
+    { intro t_code,       
+      change Σ (q : o₁ = o₂), Π (oa₁ : sign.ops_arity o₁),
+                term.code (args₁ oa₁) (args₂ (q ▸ oa₁)) at t_code,
+      hinduction t_code with q args_code, hinduction q,
+      have ps : s₁ = s₂, from pot₁⁻¹ ⬝ pot₂, hinduction ps,
+      have pot_eq : pot₁ = pot₂, from is_set.elim _ _, hinduction pot_eq,
       fapply apd011 term.mk, exact rfl, apply pathover_idp_of_eq,                 
-      apply ap (term_of_sort.op s o pot), apply eq_of_homotopy, intro k, hsimp,
-      have q : term.mk _ (args k) = term.mk _ (args_1 k), from ih k (args_code k), 
-      have p' : term_eq_sort q = idp, from is_set.elim _ _, 
-      let q'' := term_eq_term q, rwr p' at q'', exact eq_of_pathover_idp q'' } }
+      apply ap (term_of_sort.op s₁ o₁ pot₁), apply eq_of_homotopy, 
+      intro oa₁,  
+      have q : term.mk _ (args₁ oa₁) = term.mk _ (args₂ (idp ▸ oa₁)), from 
+        begin exact @ih₁ oa₁ (term.mk _ (args₂ (idp ▸ oa₁))) (args_code oa₁) end, 
+      rwr idp_tr oa₁ at q, exact term_eq_term _ _ _ q } }
 end  
 
 @[hott]
-def code_is_contr_to_refl {sign : fo_signature} (term₁ : term sign) : 
-  Π (t_code : Σ (term₂ : term sign), term.code term₁ term₂), 
-                            t_code = ⟨term₁, term.refl term₁⟩ :=
-begin 
-  intro t_code, fapply sigma.sigma_eq, 
-  { exact (decode t_code.2)⁻¹ },
-  { apply pathover_of_tr_eq, exact is_prop.elim _ _ } 
-end
-
-@[hott, instance]
-def code_is_contr {sign : fo_signature} (term₁ : term sign) : 
-  is_contr (Σ (term₂ : term sign), term.code term₁ term₂) :=
-is_contr.mk _ (λ t_code, (code_is_contr_to_refl term₁ t_code)⁻¹)  
-
-@[hott]
-def term_eq_equiv_eq_code {sign : fo_signature} : 
-  Π (t₁ t₂ : term sign), (t₁ = t₂) ≃ 
-                  (Σ (p : t₁.sort = t₂.sort), term.code t₁ t₂) :=
-sorry
-
-@[hott] 
-def eq_code_equiv_code {sign : fo_signature} : Π (t₁ t₂ : term sign),  
-  (Σ (p : t₁.sort = t₂.sort), term.code t₁ t₂) ≃ term.code t₁ t₂ :=
+def term_eq_equiv_code {sign : fo_signature} (t₀ : term sign) :
+  Π (t : term sign), (t₀ = t) ≃ (term.code t₀.expr t.expr) :=
 begin
-  intros t₁ t₂, fapply equiv.mk,
-  { intro pc, exact pc.2 },
-  { fapply adjointify, 
-    { intro c, hinduction t₁ with s₁ t₁, hinduction t₁, 
-      { hinduction t₂ with s₂ t₂, hinduction t₂, 
-        { fapply sigma.mk, 
-          { hsimp at c, exact a⁻¹ ⬝ (ap var.sort c) ⬝ a_1 },
-          { exact c } }, 
-        { hsimp at c, hinduction c } },
-      { hinduction t₂ with s₂ t₂, hinduction t₂, 
-        { hsimp at c, hinduction c }, 
-        { sorry } } },
-    { intro c, exact is_prop.elim _ _ },
-    { intro c, exact is_prop.elim _ _ } }
+  apply tot_space_contr_ppmap_id_eqv' _ (can_ppmap (term.ppred t₀)), 
+  fapply is_contr.mk, exact ⟨t₀, term.refl t₀⟩, 
+  intro t, hinduction t with t t_code, 
+  change term.code t₀.expr t.expr at t_code,
+  fapply sigma.sigma_eq,
+  { exact term.decode t_code },
+  { apply pathover_of_tr_eq, exact is_prop.elim _ _}
 end
-
-@[hott]
-def term_eq_equiv_code {sign : fo_signature} : 
-  Π (term₁ term₂ : term sign), 
-                    (term₁ = term₂) ≃ (term.code term₁ term₂) :=
-λ t₁ t₂, (term_eq_equiv_eq_code t₁ t₂) ⬝e (eq_code_equiv_code t₁ t₂)
 
 @[hott, instance]
 def term_is_set {sign : fo_signature} : is_set (term sign) :=
 begin
   apply is_trunc_succ_intro, intros term₁ term₂, 
   exact is_trunc_equiv_closed_rev -1 (term_eq_equiv_code term₁ term₂) 
-                                     (code_is_prop _ _)
-end  
+                                     (term.code_is_prop _ _)
+end
 
 end term
 
@@ -232,7 +212,7 @@ open term
 /- Terms of a specific sort also form a set. -/
 @[hott]
 def term_eq {sign : fo_signature} {term₁ term₂ : term sign} : 
-  Π (p : term₁.sort = term₂.sort), (term₁.term =[p] term₂.term) -> (term₁ = term₂) :=
+  Π (p : term₁.sort = term₂.sort), (term₁.expr =[p] term₂.expr) -> (term₁ = term₂) :=
 begin
   intros p q, hinduction term₁ with s₁ t₁, hinduction term₂ with s₂ t₂, 
   exact apd011 term.mk p q
@@ -245,7 +225,7 @@ begin
   fapply equiv.mk, 
   { intro t, exact ⟨term.mk s t, rfl⟩ },
   { fapply adjointify, 
-    { intro t, exact t.2 ▸ t.1.term },
+    { intro t, exact t.2 ▸ t.1.expr },
     { intro t, hsimp, fapply sigma.sigma_eq, 
       { fapply term_eq, 
         { hsimp, exact t.2⁻¹ },
@@ -255,16 +235,17 @@ begin
 end  
 
 @[hott, instance]
-def term_of_sort_is_set' {sign : fo_signature} (s : sign.sorts) : 
+def term_of_sort_is_set {sign : fo_signature} (s : sign.sorts) : 
   is_set (term_of_sort s) :=
 begin apply is_trunc_equiv_closed_rev 0 (term_of_sort_of_term s), apply_instance end  
+
 
 /- To define formulas we need the free variables of a term. -/
 @[hott]
 def free_vars_of_term {sign : fo_signature} : term sign -> 
   Subset (to_Set (var sign.var_labels sign.sorts)) :=
 begin 
-  intro t, hinduction t, hinduction term, 
+  intro t, hinduction t, hinduction expr, 
   { exact elem_to_Subset v }, 
   { exact iUnion ih }
 end
@@ -380,7 +361,7 @@ begin
 end  
 
 @[hott, instance]
-def code_is_prop  {sign : fo_signature} : 
+protected def code_is_prop  {sign : fo_signature} : 
   Π form₁ form₂ : formula sign, is_prop (formula.code form₁ form₂) :=
 begin
   intro form₁, hinduction form₁ with term₁ term₂ p, 
@@ -406,17 +387,20 @@ end
 @[hott]
 protected def refl {sign : fo_signature} : Π t : formula sign, formula.code t t :=
 begin 
-  intro t, hinduction t, exact ⟨idp, idp⟩, exact ⟨idp, idpo⟩, exact One.star, exact One.star,
-  exact ⟨ih_a, ih_a_1⟩, exact ⟨ih_a, ih_a_1⟩, exact ⟨ih_a, ih_a_1⟩, exact ih, exact ⟨idp, ih⟩,
+  intro t, hinduction t, exact ⟨idp, idp⟩, exact ⟨idp, idpo⟩, 
+  exact One.star, exact One.star,
+  exact ⟨ih_a, ih_a_1⟩, exact ⟨ih_a, ih_a_1⟩, exact ⟨ih_a, ih_a_1⟩,
+  exact ih, exact ⟨idp, ih⟩,
   exact ⟨idp, ih⟩, exact ⟨idp, ih⟩, exact ⟨idp, ih⟩
 end  
 
 @[hott]
-def encode {sign : fo_signature} {form₁ form₂ : formula sign} (p : form₁ = form₂) : 
-  formula.code form₁ form₂ := p ▸ (formula.refl form₁) 
+protected def ppred {sign : fo_signature} (form₀ : formula sign) : 
+  ppred form₀ :=
+  ppred.mk (λ form, formula.code form₀ form) (formula.refl form₀) 
 
 @[hott, hsimp]
-def decode {sign : fo_signature} : 
+protected def decode {sign : fo_signature} : 
   Π {form₁ form₂ : formula sign}, formula.code form₁ form₂ -> form₁ = form₂ :=
 begin
   intro form₁, hinduction form₁, 
@@ -439,32 +423,26 @@ begin
 end
 
 @[hott]
-def code_is_contr_to_refl {sign : fo_signature} (form₁ : formula sign) : 
-  Π (f_code : Σ (form₂ : formula sign), formula.code form₁ form₂), f_code = 
-                                                           ⟨form₁, formula.refl form₁⟩ :=
-begin 
-  intro a_code, fapply sigma.sigma_eq, 
-  { exact (decode a_code.2)⁻¹ },
-  { apply pathover_of_tr_eq, exact is_prop.elim _ _ } 
-end
-
-@[hott, instance]
-def code_is_contr {sign : fo_signature} (form₁ : formula sign) : 
-  is_contr (Σ (form₂ : formula sign), formula.code form₁ form₂) :=
-is_contr.mk _ (λ f_code, (code_is_contr_to_refl form₁ f_code)⁻¹)  
-
-@[hott]
-def form_eq_equiv_code {sign : fo_signature} :
-  Π (form₁ form₂: formula sign), 
-                  (form₁ = form₂) ≃ (formula.code form₁ form₂) :=
-sorry                   
+def form_eq_equiv_code {sign : fo_signature} (form₀ : formula sign) :
+  Π (form: formula sign), 
+                  (form₀ = form) ≃ (formula.code form₀ form) :=
+begin
+  apply tot_space_contr_ppmap_id_eqv' _ (can_ppmap (formula.ppred form₀)), 
+  fapply is_contr.mk, exact ⟨form₀, formula.refl form₀⟩, 
+  intro f, hinduction f with form form_code, 
+  change formula.code form₀ form at form_code,
+  fapply sigma.sigma_eq,
+  { exact formula.decode form_code },
+  { apply pathover_of_tr_eq, change _ = form_code, 
+    exact is_prop.elim _ _ }
+end                   
 
 @[hott, instance]
 def form_is_set {sign : fo_signature} : is_set (formula sign) :=
 begin
   apply is_trunc_succ_intro, intros form₁ form₂, 
   exact is_trunc_equiv_closed_rev -1 (form_eq_equiv_code form₁ form₂) 
-                                     (code_is_prop _ _)
+                                     (formula.code_is_prop _ _)
 end 
 
 /- We use the class mechanism to implement the hierarchy of fragments in the first-order
