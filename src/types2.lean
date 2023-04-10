@@ -168,6 +168,8 @@ structure ppred {A : Type _} (a₀ : A) :=
   (fam : A -> Type _)
   (base : fam a₀)
 
+attribute [reducible] ppred.fam
+
 @[hott]
 def id_ppred {A : Type _} (a₀ : A) : ppred a₀ :=
   @ppred.mk A a₀ (λ a : A, a₀ = a) (idpath a₀) 
@@ -310,6 +312,8 @@ structure dep_ppred {A : Type _} (a₀ : A) {B : A -> Type _} (b₀ : B a₀) :=
   (ppred_fst : ppred a₀)
   (dep_fam : Π (a : A), B a -> ppred_fst.fam a -> Type _) 
   (dep_base : dep_fam a₀ b₀ ppred_fst.base) 
+
+attribute [reducible] dep_ppred.dep_fam
 
 @[hott]
 def is_dep_id_system {A : Type _} {a₀ : A} {B : A -> Type _} 
