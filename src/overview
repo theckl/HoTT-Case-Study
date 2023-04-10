@@ -1,7 +1,7 @@
 Compiling files, in order of dependencies:
 ------------------------------------------
-init2       :   766
-types2      :   456 
+init2       :   775
+types2      :   460 
 prop_axioms :   614
 prop_logic  :   208
 sets
@@ -11,10 +11,10 @@ sets
   axioms    :   340
   algebra   :   239
   quotients :   205
-  * theories  :   695
+  theories  :   715
 categories  
-  basic     :   776 (A new version will include the characterisation of 
-                     identity types of precategories)
+  * basic     :   776 (A new version will include the characterisation of 
+                       identity types of precategories)
   examples  :   824
   adjoints  :   398
   strict_cat:   824 (change as described below already started, 
