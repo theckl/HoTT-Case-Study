@@ -4,7 +4,8 @@ universes v v' v'' v''' u u' u'' u''' w
 hott_theory
 
 namespace hott
-open hott.eq hott.sigma hott.set hott.subset hott.is_trunc hott.is_equiv
+open hott.eq hott.sigma hott.set hott.subset hott.is_trunc 
+     hott.is_equiv hott.equiv
 
 /-
 We introduce precategories and categories following the HoTT book, 
@@ -58,6 +59,20 @@ structure Precategory :=
   has_coe_to_sort.mk Type.{u} Precategory.obj
 
 attribute [instance] Precategory.struct
+
+@[hott]
+def Precat_sig := Σ (obj : Type u), is_precat obj 
+
+@[hott, reducible] 
+def Precat_str_equiv_sig : Precategory ≃ Precat_sig :=
+begin
+  fapply equiv.mk,
+  { exact λ C, ⟨C.obj, C.struct⟩ },
+  { fapply adjointify,
+    { exact λ C_sig, Precategory.mk C_sig.1 C_sig.2 },
+    { intro C_sig, hsimp, rwr sigma.eta },
+    { intro C, hsimp, hinduction C, hsimp } }
+end
 
 section
 variables (C : Precategory) (D : Precategory) (E : Precategory)
@@ -589,15 +604,7 @@ end
 structure precat_iso (C D : Precategory) :=
   (functor : C ⥤ D) 
   (ff : is_fully_faithful_functor functor) 
-  (eqv : is_equiv functor.obj)
-
-@[hott]
-def idtoprecat_iso (C D : Precategory) : (C = D) -> (precat_iso C D) :=
-begin  
-  intro p, hinduction p, fapply precat_iso.mk, 
-  exact id_functor C, exact @id_functor_is_fully_faithful C, 
-  exact is_equiv_id C.obj      
-end
+  (equiv : is_equiv functor.obj)
 
 @[hott]
 def precat_isotoid : Π (C D : Precategory), (precat_iso C D) -> (C = D)
@@ -605,7 +612,7 @@ def precat_isotoid : Π (C D : Precategory), (precat_iso C D) -> (C = D)
 begin 
   intro pc_iso, 
   have p : obj_C = obj_D, from 
-    ua (equiv.mk pc_iso.functor.obj pc_iso.eqv),
+    ua (equiv.mk pc_iso.functor.obj pc_iso.equiv),
   hinduction p,
   fapply ap (Precategory.mk obj_C), 
   hinduction struct_C with struct_C id_comp_C comp_id_C assoc_C, 
@@ -630,15 +637,90 @@ begin
 end
 
 @[hott]
-def is_eqv_idtoprecat_iso (C D : Precategory) : 
-  is_equiv (idtoprecat_iso C D) :=
-sorry  
+structure precat_obj_iso (C₀ : Precategory) (C : Type _) :=
+  (map : C₀.obj -> C)
+  (equiv : is_equiv map)
 
 @[hott]
-def id_eqv_precat_iso (C D : Precategory) : (C = D) ≃ (precat_iso C D) :=
-  equiv.mk (idtoprecat_iso C D) (is_eqv_idtoprecat_iso C D)      
+structure precat_iso_of_obj {C₀ C : Precategory} 
+  (pc_obj : precat_obj_iso C₀ C.obj) :=
+  (hom_map      : Π {x y : C₀}, (x ⟶ y) → 
+                             ((pc_obj.map x) ⟶ (pc_obj.map y)))
+  (hom_map_id   : ∀ (x : C₀), hom_map (𝟙 x) = 𝟙 (pc_obj.map x))
+  (hom_map_comp : ∀ {x y z : C₀} (f : x ⟶ y) (g : y ⟶ z), 
+                   hom_map (f ≫ g) = (hom_map f) ≫ (hom_map g))
+  (ff : is_fully_faithful_functor (functor.mk pc_obj.map @hom_map
+                                      hom_map_id @hom_map_comp)) 
+
+@[hott]
+def precat_iso_of_obj_equiv_iso (C₀ C : Precategory) :
+  (Σ (pc_obj : precat_obj_iso C₀ C.obj), @precat_iso_of_obj C₀ 
+     (Precategory.mk C.obj C.struct) pc_obj) ≃ precat_iso C₀ C :=
+begin
+  fapply equiv.mk,
+  { intro pc_oi_sig, fapply precat_iso.mk,
+    { exact functor.mk pc_oi_sig.1.map pc_oi_sig.2.hom_map
+                       pc_oi_sig.2.hom_map_id 
+                       pc_oi_sig.2.hom_map_comp },
+    { exact pc_oi_sig.2.ff },
+    { exact pc_oi_sig.1.equiv } },
+  { fapply adjointify,
+    { intro pc_iso, fapply sigma.mk, 
+      { exact precat_obj_iso.mk pc_iso.functor.obj pc_iso.equiv },
+      { exact precat_iso_of_obj.mk pc_iso.functor.map
+          pc_iso.functor.map_id pc_iso.functor.map_comp pc_iso.ff } },
+    { intro pc_iso, hinduction pc_iso with functor ff equiv,
+      hinduction functor with obj map map_id map_comp, hsimp },
+    { intro pc_oi_sig, hinduction pc_oi_sig with pc_oi pc_io, 
+      hinduction pc_oi with map equiv, 
+      hinduction pc_io, hsimp } }  
+end
+
+@[hott, reducible]
+def precat_obj_ppred (C₀ : Precategory) : ppred C₀.obj :=
+  ppred.mk (λ C : Type _, precat_obj_iso C₀ C) 
+           (precat_obj_iso.mk (@id C₀.obj) (is_equiv_id C₀.obj))
+
+@[hott, reducible]
+def precat_dep_ppred (C₀ : Precategory) : dep_ppred C₀.obj C₀.struct :=              
+  dep_ppred.mk (precat_obj_ppred C₀) 
+    (λ C pc_str_C pc_obj, @precat_iso_of_obj C₀ 
+                             (Precategory.mk C pc_str_C) pc_obj) 
+    (precat_iso_of_obj.mk (id_functor C₀).map (id_functor C₀).map_id
+       (id_functor C₀).map_comp (@id_functor_is_fully_faithful C₀)) 
+
+@[hott]
+def precat_sig_equiv_obj_iso (C₀ C : Precategory) : 
+  ((Precat_str_equiv_sig C₀) = (Precat_str_equiv_sig C)) ≃
+  (Σ (pc_obj : precat_obj_iso C₀ C.obj), @precat_iso_of_obj C₀ 
+                     (Precategory.mk C.obj C.struct) pc_obj) :=
+begin
+  fapply struct_id_char_of_contr C₀.struct (precat_dep_ppred C₀)
+                                 _ _ (Precat_str_equiv_sig C),
+  { fapply is_contr.mk, 
+    { exact ⟨C₀.obj, (precat_dep_ppred _).ppred_fst.base⟩ },
+    { intro C_obj_iso, hinduction C_obj_iso with C_obj pc_oi_C,
+      change precat_obj_iso _ C_obj at pc_oi_C,
+      hinduction pc_oi_C with map is_equiv,
+      change dpair C₀.obj (precat_obj_iso.mk (@id C₀.obj) 
+                                     (is_equiv_id C₀.obj)) = _, 
+      let p : C₀.obj = C_obj := ua (equiv.mk map is_equiv),  
+      have q : map = (equiv_of_eq p), by rwr equiv_of_eq_ua, 
+      fapply sigma.sigma_eq, 
+      { exact p },
+      { apply pathover_of_tr_eq, fapply apd0111'', sorry } } },
+  { sorry }
+end   
+
+@[hott]
+def precat_id_equiv_iso (C D : Precategory) : 
+  (C = D) ≃ (precat_iso C D) :=
+(eq_equiv_fn_eq_of_equiv Precat_str_equiv_sig C D) ⬝e
+(precat_sig_equiv_obj_iso C D) ⬝e
+(precat_iso_of_obj_equiv_iso C D)
 
 end precategories
+
 
 open precategories
 namespace categories
