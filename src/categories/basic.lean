@@ -161,17 +161,17 @@ calc   i = iso.mk i.hom i.inv i.r_inv i.l_inv : iso.eta i
      ... = j : (iso.eta j)⁻¹
 
 @[hott, hsimp]
-def id_is_iso {C : Type u} [precategory.{v} C] (a : C) : a ≅ a := 
+def id_iso {C : Type u} [precategory.{v} C] (a : C) : a ≅ a := 
   have inv_eq : 𝟙 a ≫ 𝟙 a = 𝟙 a, from precategory.id_comp (𝟙 a),
   iso.mk (𝟙 a) (𝟙 a) inv_eq inv_eq
 
 @[hott, hsimp]
 def idtoiso {C : Type u} [precategory.{v} C] {a b : C} : (a = b) -> (a ≅ b) :=
-  begin intro eq, exact eq ▸[λ c, a ≅ c] id_is_iso a end
+  begin intro eq, exact eq ▸[λ c, a ≅ c] id_iso a end
 
 /- `idtoiso` is natural. -/
 @[hott, hsimp]
-def idtoiso_refl_eq {C : Type u} [precategory.{v} C] (a : C) : idtoiso (refl a) = id_is_iso a :=
+def idtoiso_refl_eq {C : Type u} [precategory.{v} C] (a : C) : idtoiso (refl a) = id_iso a :=
   by hsimp
 
 @[hott]
@@ -225,7 +225,7 @@ is_equiv.left_inv (@idtoiso _ _ a b)
 
 @[hott]
 def isotoid_id_refl {obj : Type u} [category.{v} obj] :
-  Π (a : obj), category.isotoid (id_is_iso a) = refl a :=
+  Π (a : obj), category.isotoid (id_iso a) = refl a :=
 begin intro a, rwr <- idtoiso_refl_eq a, exact category.idtoiso_linv (refl a) end 
 
 @[hott]
@@ -403,9 +403,9 @@ end
 
 @[hott] 
 def idp_subobj_to_iso_mono {C : Type u} [category.{v} C] {c : C} (s : subobject c) :
-  equal_subobj_to_iso_mono s s idp = iso_of_monos.mk s.is_mono s.is_mono (id_is_iso s.obj) 
+  equal_subobj_to_iso_mono s s idp = iso_of_monos.mk s.is_mono s.is_mono (id_iso s.obj) 
                                                      (precategory.id_comp s.hom) :=
-begin apply iso_of_monos_eq, change idtoiso idp = id_is_iso s.obj, rwr idtoiso_refl_eq end                                                     
+begin apply iso_of_monos_eq, change idtoiso idp = id_iso s.obj, rwr idtoiso_refl_eq end                                                     
 
 @[hott]
 def iso_mono_to_equal_subobj {C : Type u} [category.{v} C] {c : C} (s₁ s₂ : subobject c) :
@@ -456,7 +456,7 @@ begin
       change idtoiso (idtoiso⁻¹ᶠ _) = _, rwr category.idtoiso_rinv },
     { intro p, hinduction p, --hinduction s₁ with obj₁ hom₁ is_mono₁, 
       rwr idp_subobj_to_iso_mono, 
-      change (subobject_eta _) ⬝ (apd0111 subobject.mk (category.isotoid (id_is_iso s₁.obj)) _ _) ⬝ 
+      change (subobject_eta _) ⬝ (apd0111 subobject.mk (category.isotoid (id_iso s₁.obj)) _ _) ⬝ 
                                                                                               _ = _, 
       apply con_eq_of_eq_con_inv, apply con_eq_of_eq_inv_con, rwr idp_con, 
       rwr con.right_inv, apply subobject_eq_idp, rwr isotoid_id_refl } }
@@ -734,7 +734,7 @@ begin
     change (idtoiso (idtoiso⁻¹ᶠ (ind_type_iso_iso f i))).hom = i.hom,
     rwr category.idtoiso_rinv (ind_type_iso_iso f i) },
   { intro p, hinduction p, rwr idtoiso_refl_eq d₁, 
-    have H : ind_type_iso_iso f (id_is_iso d₁) = id_is_iso (f d₁), from 
+    have H : ind_type_iso_iso f (id_iso d₁) = id_iso (f d₁), from 
       begin apply hom_eq_to_iso_eq, refl end,
     rwr H, rwr isotoid_id_refl, exact inj_idp d₁ }
 end    
