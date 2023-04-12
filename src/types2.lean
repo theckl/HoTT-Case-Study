@@ -266,7 +266,7 @@ def tot_map_eqv_fam_eqv {A : Type _} {B C : A -> Type _}
 /- Now we can show the second pair of implications in [Rijke-Book, Thm.11.2.2]. 
    In particular, we can apply them to the canonical maps from the identity
    pointed predicate to arbitrary pointed predicates. -/
-@[hott]
+@[hott, reducible]
 def can_ppmap {A : Type _} {a₀ : A} (R : ppred a₀) : 
   ppmap (id_ppred a₀) R :=
 ⟨λ (a : A) (p : a₀ = a), p ▸[λ a : A, R.fam a] R.base, idp⟩  
@@ -437,7 +437,7 @@ begin
     exact id_sys_tot_space_contr _ id_sys }
 end    
 
-@[hott]
+@[hott,reducible]
 def struct_id_char_of_contr {A : Type _} {a₀ : A} {B : A -> Type _} 
   (b₀ : B a₀) (D : dep_ppred a₀ b₀) : 
   is_contr (Σ (a : A), D.ppred_fst.fam a) -> 
@@ -456,5 +456,19 @@ begin
       tot_space_contr_id_sys D.ppred_fst is_contr_fst, 
     apply struct_id_dep_contr_to_contr D id_sys_fst is_contr_dep }
 end 
+
+/- A useful fact when we want to apply characterizations of identity types -/
+@[hott]
+def obj_char_id_eq {A : Type _} {a₀ : A} {B : A -> Type _}
+  (f : Π {a : A}, (a₀ = a) ≃ B a) : 
+  Π (a : A) (Ha : B a), @f a₀ (refl a₀) =[(@f a)⁻¹ᶠ Ha] Ha :=
+begin
+  intros a Ha, 
+  have Hp : Π (p : a₀ = a), @f a₀ (refl a₀) =[p] @f a p, by
+    intro p; hinduction p; exact idpo, 
+  have HHa : Ha = @f a ((@f a)⁻¹ᶠ Ha), by 
+    rwr is_equiv.right_inv (@f a) Ha,
+  exact concato_eq (Hp ((@f a)⁻¹ᶠ Ha)) HHa⁻¹
+end  
 
 end hott
