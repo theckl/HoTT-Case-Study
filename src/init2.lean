@@ -110,6 +110,13 @@ def ap0111 {A : Type u} {B : Type v} {C D : A -> B -> Type _} {E : Type _}
   f a₁ b₁ c₁ d₁ = f a₂ b₂ c₂ d₂ := 
 begin hinduction p₁, hinduction p₂, hinduction p₃, hinduction p₄, refl end  
 
+@[hott]
+def ap0111' {A B C : Type _} {D : Type _} (f : A -> B -> C -> D)
+  {a₁ a₂ : A} {b₁ b₂ : B} {c₁ c₂ : C} (p₁ : a₁ = a₂) 
+  (p₂ : b₁ = b₂) (p₃ : c₁ = c₂) :
+  f a₁ b₁ c₁ = f a₂ b₂ c₂ := 
+begin hinduction p₁, hinduction p₂, hinduction p₃, refl end
+
 @[hott] 
 def apd0111' {A : Type _} {B C : A -> Type _} {D : Type _} 
   (f : Π (a : A), B a -> C a → D) {a₁ a₂ : A} {b₁ : B a₁} {b₂ : B a₂} {c₁ : C a₁} 
