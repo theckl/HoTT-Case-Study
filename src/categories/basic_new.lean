@@ -28,6 +28,36 @@ class has_hom (obj : Type u) : Type (max u (v+1)) :=
 
 infixr ` ⟶ `:10 := has_hom.hom  -- type as \h
 
+/- A characterisation of equality of hom-structures. -/
+@[hott]
+def bij_hom_map {C : Type _} (hh₁ hh₂ : has_hom C) :=
+  Π x y : C, bijection (@has_hom.hom _ hh₁ x y) 
+                       (@has_hom.hom _ hh₂ x y)
+
+@[hott, reducible]
+def bij_hom_map_id {C : Type _} (hh : has_hom C) : bij_hom_map hh hh :=
+  λ x y, identity (@has_hom.hom _ hh x y)  
+
+@[hott, reducible]
+def hom_ppred {C : Type} (hh₀ : has_hom C) : ppred hh₀ :=
+  ppred.mk (λ hh : has_hom C, bij_hom_map hh₀ hh) 
+           (bij_hom_map_id hh₀)
+
+@[hott]
+def is_contr_hom {C : Type} (hh₀ : has_hom C) :
+  is_contr (Σ hh : has_hom C, bij_hom_map hh₀ hh) :=
+begin 
+  fapply is_contr.mk, 
+  { exact ⟨hh₀, bij_hom_map_id hh₀⟩ },
+  { intro hb, hinduction hb with hh bij,
+    hinduction hh₀ with hom₀, hinduction hh with hom, 
+    fapply sigma.sigma_eq, 
+    { apply ap has_hom.mk, apply eq_of_homotopy2, intros x y, 
+      exact (@set_eq_equiv_bij (hom₀ x y) (hom x y))⁻¹ᶠ (bij x y) },
+    { apply pathover_of_tr_eq, apply eq_of_homotopy2, intros x y,
+      apply bijection_eq_from_map_eq, sorry } }
+end              
+
 /-- A preliminary structure on the way to defining a precategory,
 containing the data, but none of the axioms. -/
 @[hott]
@@ -267,339 +297,9 @@ end
 
 /- Equalities of precategories can be characterized by 
    fully faithful functors that induce an equivalence on the types of 
-   the objects. Following the proof in [HoTT-Book, Lem.9.4.15] we split 
-   up equalities of precageories and isomorphisms of precategories into
-   components and use univalence to show their equivalence. -/
-@[hott] 
-structure has_hom_eq_comp {obj : Type} (hh₁ hh₂ : has_hom obj) := 
-  (pₕ : Π (a b : obj), @has_hom.hom _ hh₁ a b = @has_hom.hom _ hh₂ a b)  
-
-@[hott, reducible]
-def hh_eqtocomp {obj : Type} {hh₁ hh₂ : has_hom obj} : 
-  hh₁ = hh₂ -> has_hom_eq_comp hh₁ hh₂ :=
-begin 
-  intro p, hinduction p, 
-  exact has_hom_eq_comp.mk (homotopy2.refl (@has_hom.hom _ hh₁))
-end
-
-@[hott, reducible]
-def hh_comptoeq {obj : Type} {hh₁ hh₂ : has_hom obj} :
-  has_hom_eq_comp hh₁ hh₂ -> hh₁ = hh₂ :=
-begin
-  hinduction hh₁ with h₁, hinduction hh₂ with h₂,
-  intro pc, hinduction pc, 
-  exact ap has_hom.mk (eq_of_homotopy2 pₕ)
-end
-
-@[hott]
-def ap_hh_eqtocomp {obj : Type} {hh₁ hh₂ : has_hom obj} 
-  (pₕ : Π (a b : obj), @has_hom.hom _ hh₁ a b = 
-                                           @has_hom.hom _ hh₂ a b) :
-  Π {a b : obj}, ap (λ (hh : has_hom obj), @has_hom.hom _ hh a b) 
-                 (hh_comptoeq (has_hom_eq_comp.mk pₕ)) = pₕ a b := 
-begin 
-  intros a b, hinduction hh₁ with h₁, hinduction hh₂ with h₂, 
-  rwr <- ap_compose, hsimp, rwr ap_ev_eq_of_hty2_ev 
-end
-
-@[hott]
-def hh_hom_eq {obj : Type} {hh₁ hh₂ : has_hom obj} 
-  (pₕ : Π (a b : obj), @has_hom.hom _ hh₁ a b = 
-                                           @has_hom.hom _ hh₂ a b) :
-  Π {a b : obj} (f : @has_hom.hom _ hh₁ a b), 
-    (hh_comptoeq (has_hom_eq_comp.mk pₕ)) ▸ f = pₕ a b ▸ f := 
-begin
-  intros a b f, hinduction hh₁ with h₁, hinduction hh₂ with h₂, 
-  rwr tr_ap_id, rwr <- ap_compose, 
-  change ap ((λ A, trunctype.carrier A) ∘ (λ h : obj -> obj -> Set, h a b)) 
-            (eq_of_homotopy2 (λ a b : obj, pₕ a b)) ▸[id] f = _,
-  rwr ap_compose (λ A, trunctype.carrier A) 
-                                    (λ h : obj -> obj -> Set, h a b),
-  rwr ap_ev_eq_of_hty2_ev (λ (a b : obj), pₕ a b), rwr <- tr_ap_id
-end
-
-@[hott]
-def hh_hom_eq_inv {obj : Type} {hh₁ hh₂ : has_hom obj} 
-  (pₕ : Π (a b : obj), @has_hom.hom _ hh₁ a b = 
-                                           @has_hom.hom _ hh₂ a b) :
-  Π {a b : obj} (f' : @has_hom.hom _ hh₂ a b), 
-    (hh_comptoeq (has_hom_eq_comp.mk pₕ))⁻¹ ▸ f' = (pₕ a b)⁻¹ ▸ f' := 
-begin 
-  intros a b f', hinduction hh₁ with h₁, hinduction hh₂ with h₂, 
-  rwr <- ap_inv, rwr tr_ap_id, rwr <- ap_compose, 
-  rwr eq_of_homotopy2_inv, 
-  change ap ((λ A, trunctype.carrier A) ∘ (λ h : obj -> obj -> Set, h a b)) 
-            (eq_of_homotopy2 (λ a b : obj, (pₕ a b)⁻¹)) ▸[id] f' = _,
-  rwr ap_compose (λ A, trunctype.carrier A) 
-                                    (λ h : obj -> obj -> Set, h a b),
-  rwr ap_ev_eq_of_hty2_ev (λ (a b : obj), hott.eq.inverse (pₕ a b)),
-  rwr <- tr_ap_id
-end 
-
-@[hott]
-def hh_eq_rinv {obj : Type} {hh₁ hh₂ : has_hom obj} :
-  Π hhc : has_hom_eq_comp hh₁ hh₂, hh_eqtocomp (hh_comptoeq hhc) = hhc :=
-begin
-  hinduction hh₁ with h₁, hinduction hh₂ with h₂,
-  intro hhc, hinduction hhc with pₕ,
-  apply homotopy2.rec_idp, 
-  apply ap has_hom_eq_comp.mk, apply eq_of_homotopy2, 
-  intros a b, exact ap_hh_eqtocomp pₕ
-end
-
-@[hott]
-def hh_eq_linv {obj : Type} {hh₁ hh₂ : has_hom obj} :
-  Π hh_eq: hh₁ = hh₂, hh_comptoeq (hh_eqtocomp hh_eq) = hh_eq :=
-begin 
-  intro hh_eq, hinduction hh_eq, hinduction hh₁ with h₁, 
-  change ap has_hom.mk _ = ap has_hom.mk idp, rwr ap_idp, 
-  change ap has_hom.mk (eq_of_homotopy2 (apd100 (@idp _ 
-    (@has_hom.hom _ (has_hom.mk h₁))))) = _,
-  rwr hty2_of_ap100_eq_inv
-end    
-
-@[hott, hsimp]
-def cs_hom {obj : Type} :
-  category_struct obj -> (obj -> obj -> Set) :=
-λ cat_str : category_struct obj, @has_hom.hom _ cat_str.to_has_hom  
-
-@[hott, hsimp]
-def cs_id {obj : Type} :
-  Π cs : category_struct obj, Π a : obj, cs_hom cs a a :=
-λ cs : category_struct obj, λ a : obj, @category_struct.id _ cs a
-
-@[hott, hsimp]
-def cs_comp {obj : Type} :
-  Π cs : category_struct obj, Π {a b c : obj} (f : cs_hom cs a b) 
-                                (g : cs_hom cs b c), cs_hom cs a c :=
-λ cs : category_struct obj, λ (a b c : obj) (f : cs_hom cs a b) 
-          (g : cs_hom cs b c), @category_struct.comp _ cs _ _ _ f g   
-
-@[hott] 
-structure cat_str_eq_comp {obj : Type} (cat_str₁ cat_str₂ : category_struct obj) :=
-  (pₕ : Π (a b : obj), (cs_hom cat_str₁) a b = (cs_hom cat_str₂) a b)
-  (pᵢ : Π a : obj, ((pₕ a a) ▸ cs_id cat_str₁ a) = cs_id cat_str₂ a)
-  (pc : Π {a b c : obj} (f : cs_hom cat_str₁ a b) (g : cs_hom cat_str₁ b c), 
-          ((pₕ a c) ▸ (cs_comp cat_str₁ f g)) = 
-                        cs_comp cat_str₂ ((pₕ a b) ▸ f) ((pₕ b c) ▸ g))
-
-@[hott, reducible]
-def cs_eqtohom_eq {obj : Type} {cat_str₁ cat_str₂ : category_struct obj} :
-  (cat_str₁ = cat_str₂) -> cat_str₁.to_has_hom = cat_str₂.to_has_hom :=
-λ p, ap (@category_struct.to_has_hom _) p 
-
-@[hott]
-def cs_eqtoid_eq {obj : Type} {cat_str₁ cat_str₂ : category_struct obj} :
-  Π p : cat_str₁ = cat_str₂, cat_str₁.id =[cs_eqtohom_eq p; 
-                               λ (hh : has_hom obj), Π (a : obj), 
-                                 @has_hom.hom _ hh a a] cat_str₂.id :=
-  λ p, pathover_ap (λ hh : has_hom obj, Π a : obj, @has_hom.hom _ hh a a) 
-       (@category_struct.to_has_hom _) (apd (@category_struct.id _) p)
-
-@[hott]
-def cs_eqtocomp_eq {obj : Type} {cat_str₁ cat_str₂ : category_struct obj} :
-  Π p : cat_str₁ = cat_str₂, cat_str₁.comp =[cs_eqtohom_eq p; 
-                          λ (hh : has_hom obj), Π (a b c : obj) 
-                            (f : @has_hom.hom _ hh a b) (g : @has_hom.hom _ hh b c), 
-                          @has_hom.hom _ hh a c] cat_str₂.comp :=
-λ p, pathover_ap (λ hh : has_hom obj, Π (a b c: obj)
-                  (f : @has_hom.hom _ hh a b) (g : @has_hom.hom _ hh b c), 
-                  @has_hom.hom _ hh a c) 
-      (@category_struct.to_has_hom _) (apd (@category_struct.comp _) p)
-
-@[hott]
-def cs_ideq_fntoev {obj : Type} {hh₁ hh₂ : has_hom obj} (p : hh₁ = hh₂) 
-  (id₁ : Π a : obj, @has_hom.hom _ hh₁ a a) : Π a : obj, 
-  (p ▸ id₁) a = ap (λ hh : has_hom obj, @has_hom.hom _ hh a a) p ▸
-                                                           id₁ a :=   
-begin intro a, hinduction p, refl end
-
-@[hott] 
-def cs_compeq_fntoev {obj : Type} {hh₁ hh₂ : has_hom obj} (p : hh₁ = hh₂)
-  (comp₁ : Π {a b c : obj}, (@has_hom.hom _ hh₁ a b) -> 
-             (@has_hom.hom _ hh₁ b c) -> (@has_hom.hom _ hh₁ a c)) :
-  Π (a b c : obj) (f : @has_hom.hom _ hh₁ a b) (g : @has_hom.hom _ hh₁ b c), 
-    (p ▸[λ hh, (@has_hom.hom _ hh a b) -> (@has_hom.hom _ hh b c) -> 
-               (@has_hom.hom _ hh a c)] comp₁) (p ▸ f) (p ▸ g) = 
-    ap (λ hh, (@has_hom.hom _ hh a c)) p ▸ comp₁ f g :=
-begin intros a b c f g, hinduction p, refl end      
-
-@[hott] 
-def cs_compeq_fntoev' {obj : Type} {hh₁ hh₂ : has_hom obj} (p : hh₁ = hh₂)
-  (comp₁ : Π {a b c : obj}, (@has_hom.hom _ hh₁ a b) -> 
-             (@has_hom.hom _ hh₁ b c) -> (@has_hom.hom _ hh₁ a c)) :
-  Π (a b c : obj) (f : @has_hom.hom _ hh₂ a b) (g : @has_hom.hom _ hh₂ b c), 
-    (p ▸[λ hh, Π a b c, (@has_hom.hom _ hh a b) -> (@has_hom.hom _ hh b c) -> 
-               (@has_hom.hom _ hh a c)] @comp₁) a b c f g = 
-    ap (λ hh, (@has_hom.hom _ hh a c)) p ▸ comp₁ (p⁻¹ ▸ f) (p⁻¹ ▸ g) :=
-begin intros a b c f g, hinduction p, refl end 
-
-@[hott]
-def cs_hom_eq {obj : Type} {hh₁ hh₂ : has_hom obj} (p : hh₁ = hh₂) :
-  Π (a b : obj) (f : @has_hom.hom _ hh₁ a b), 
-    ap (λ hh, (@has_hom.hom _ hh a b)) p ▸ f = p ▸ f :=
-begin 
-  intros a b f, rwr tr_ap_id, rwr <- ap_compose, rwr <- tr_ap_id 
-end
-
-@[hott]
-def cs_eqtocomp {obj : Type} {cat_str₁ cat_str₂ : category_struct obj} :
-  (cat_str₁ = cat_str₂) -> cat_str_eq_comp cat_str₁ cat_str₂ :=
-begin
-  hinduction cat_str₁ with hh₁ id₁ comp₁, 
-  hinduction cat_str₂ with hh₂ id₂ comp₂,
-  intro p,        
-  fapply cat_str_eq_comp.mk,
-  { exact (hh_eqtocomp (cs_eqtohom_eq p)).pₕ },
-  { hsimp, intro a, rwr <- cs_ideq_fntoev (cs_eqtohom_eq p) id₁ a,  
-    exact apd10 (tr_eq_of_pathover (cs_eqtoid_eq p)) a },
-  { hsimp, intros a b c f g, 
-    rwr <- cs_compeq_fntoev (cs_eqtohom_eq p) @comp₁ a b c f g,
-    rwr cs_hom_eq, rwr cs_hom_eq,
-    apply ap100, apply tr_eq_of_pathover, 
-    exact po_fn_ev (cs_eqtohom_eq p) c (po_fn_ev (cs_eqtohom_eq p) b 
-          (po_fn_ev (cs_eqtohom_eq p) a (cs_eqtocomp_eq p))) }
-end  
-
-@[hott]
-def cs_comptoeq {obj : Type} {cat_str₁ cat_str₂ : category_struct obj} :
-  cat_str_eq_comp cat_str₁ cat_str₂ -> (cat_str₁ = cat_str₂) :=
-begin
-  hinduction cat_str₁ with hh₁ id₁ comp₁, 
-  hinduction cat_str₂ with hh₂ id₂ comp₂,
-  intro cs_comp, hinduction cs_comp,
-  change Π a : obj, pₕ a a ▸ id₁ a = id₂ a at pᵢ,
-  change Π (a b c : obj) f g, pₕ a c ▸ comp₁ f g = 
-                                   comp₂ (pₕ a b ▸f) (pₕ b c ▸g) at pc, 
-  fapply apd0111' (@category_struct.mk obj),
-  { exact hh_comptoeq (has_hom_eq_comp.mk pₕ) },
-  { apply pathover_of_tr_eq, apply eq_of_homotopy, intro a, 
-    rwr cs_ideq_fntoev, rwr ap_hh_eqtocomp, rwr <- pᵢ a },
-  { apply pathover_of_tr_eq, apply eq_of_homotopy3, intros a b c,
-    apply eq_of_homotopy2, intros f' g',
-    rwr cs_compeq_fntoev', rwr hh_hom_eq_inv, rwr hh_hom_eq_inv, 
-    rwr <- cs_compeq_fntoev _ @comp₁, rwr tr_fn2_eval_tr,         
-    rwr inv_tr_tr, rwr inv_tr_tr, rwr hh_hom_eq, rwr pc,
-    rwr tr_inv_tr, rwr tr_inv_tr }
-end
-
-def cscomp_to_hheq {obj : Type _} {cs₁ cs₂ : category_struct obj} : 
-  Π csc : cat_str_eq_comp cs₁ cs₂, 
-    cs_eqtohom_eq (cs_comptoeq csc) =
-    hh_comptoeq (has_hom_eq_comp.mk csc.pₕ) :=
-begin 
-  hinduction cs₁ with hh₁ id₁ comp₁, 
-  hinduction cs₂ with hh₂ id₂ comp₂,
-  intro csc, hinduction csc,
-  change ap _ (apd0111' (@category_struct.mk obj) _ _ _) = _,
-  let HP : Π hh id comp, @category_struct.to_has_hom obj 
-    (@category_struct.mk _ hh id comp) = hh := λ hh id comp, idp,  
-  rwr ap_apd0111' _ _ _ _ (@category_struct.to_has_hom obj) HP, 
-  rwr idp_con
-end  
-
-@[hott]
-def cs_eq_rinv {obj : Type _} {cs₁ cs₂ : category_struct obj} :
-  Π csc : cat_str_eq_comp cs₁ cs₂, cs_eqtocomp (cs_comptoeq csc) = csc :=
-begin
-  intro csc, hinduction csc with pₕ pᵢ pc, 
-  hinduction cs₁ with hh₁ id₁ comp₁, hinduction cs₂ with hh₂ id₂ comp₂,
-  hinduction hh₁ with h₁, hinduction hh₂ with h₂,  
-  change Π a : obj, pₕ a a ▸ id₁ a = id₂ a at pᵢ,
-  change Π (a b c : obj) f g, pₕ a c ▸ comp₁ f g = 
-                                comp₂ (pₕ a b ▸ f) (pₕ b c ▸ g) at pc,
-  --change cat_str_eq_comp.mk _ _ _ = _,
-  --fapply apd0111' cat_str_eq_comp.mk, 
-  --{ rwr cscomp_to_hheq, rwr hh_eq_rinv },
-  --{ rwr idp_inv, rwr cast_def, rwr idp_tr, 
-    --rwr cscomp_to_hheq, 
-    --sorry },
-  --{ sorry }
-  sorry
-end 
-
-@[hott]
-def cs_eq_linv {obj : Type _} {cs₁ cs₂ : category_struct obj} :
-  Π ceq : cs₁ = cs₂, cs_comptoeq (cs_eqtocomp ceq) = ceq :=
-begin
-  intro ceq, hinduction ceq, sorry
-end
-
-@[hott]
-def is_precat_eq_comp {obj : Type _} 
-  (precat₁ precat₂ : is_precat obj) :=
-  cat_str_eq_comp (precat₁.to_category_struct) 
-                          (precat₂.to_category_struct)
-
-@[hott]
-def is_precat_eqtocomp {obj : Type _} {precat₁ precat₂ : is_precat obj} : 
-  precat₁ = precat₂ -> is_precat_eq_comp precat₁ precat₂ :=
-λ p, cs_eqtocomp (ap (@is_precat.to_category_struct obj) p)
-
-@[hott]
-def is_precat_comptoeq {obj : Type _} {precat₁ precat₂ : is_precat obj} : 
-  is_precat_eq_comp precat₁ precat₂ -> precat₁ = precat₂ :=
-begin
-   intro pc_comp, 
-   hinduction precat₁ with cat₁ ic₁ ci₁ as₁,
-   hinduction precat₂ with cat₂ ic₂ ci₂ as₂,
-   fapply apd01111' (@is_precat.mk obj),   
-   { exact cs_comptoeq pc_comp },
-   all_goals { apply pathover_of_tr_eq, exact is_prop.elim _ _ }  
-end
-
-@[hott]
-def is_precat_eq_rinv {obj : Type _} (precat₁ precat₂ : is_precat obj) :
-  Π (pc_comp : is_precat_eq_comp precat₁ precat₂), 
-    is_precat_eqtocomp (is_precat_comptoeq pc_comp) = pc_comp :=
-begin
-  intro pc_comp,
-  hinduction precat₁ with cat₁ ic₁ ci₁ as₁,
-  hinduction precat₂ with cat₂ ic₂ ci₂ as₂,
-  change cs_eqtocomp (ap _ (apd01111' (@is_precat.mk obj) _ _ _ _)) = _,
-  let HP : Π cs ic ci as, @is_precat.to_category_struct obj 
-        (@is_precat.mk _ cs ic ci as) = cs := λ cs ic ci as, idp,
-  rwr ap_apd01111' _ _ _ _ _ _ HP, rwr idp_con, rwr idp_inv, rwr con_idp,
-  rwr cs_eq_rinv
-end
-
-@[hott]
-structure precat_eq_comp (C D : Precategory) :=
-  (pₒ : C.obj = D.obj)
-  (pc_p : is_precat_eq_comp (pₒ ▸ C.struct) D.struct)
-
-@[hott]
-def precat_eqtocomp {C D : Precategory} : C = D -> precat_eq_comp C D :=
-begin
-  intro p, fapply precat_eq_comp.mk, 
-  { exact ap Precategory.obj p },
-  { apply is_precat_eqtocomp, apply tr_eq_of_pathover, 
-    apply pathover_ap, exact apd Precategory.struct p }
-end
-
-@[hott]
-def precat_comptoeq {C D : Precategory} : precat_eq_comp C D -> C = D :=
-begin
-  hinduction C with obj_C precat_C, hinduction D with obj_D precat_D,
-  intro pcc, hinduction pcc,
-  change obj_C = obj_D at pₒ, hinduction pₒ, hsimp at pc_p,
-  apply apd011 Precategory.mk idp, 
-  exact pathover_idp_of_eq _ (is_precat_comptoeq pc_p)
-end
-
-@[hott]
-def precat_eq_rinv {C D : Precategory} : Π pcc : precat_eq_comp C D, 
-  precat_eqtocomp (precat_comptoeq pcc) = pcc :=
-begin
-  hinduction C with obj_C precat_C, hinduction D with obj_D precat_D,
-  intro pcc, hinduction pcc,
-  change obj_C = obj_D at pₒ, hinduction pₒ, 
-  change is_precat_eq_comp precat_C precat_D at pc_p, 
-  change precat_eq_comp.mk _ _ = _, fapply apd011 precat_eq_comp.mk,  
-  { exact ap_apd011 Precategory.mk _ _ Precategory.obj (λ obj pc, idp) },
-  { sorry }
-end
-
+   the objects. We use the Structure Identity Principle twice, on
+   precategories and on category structures to deduce this 
+   characterisation from univalence of the underlying types. -/
 @[hott]
 structure precat_iso (C D : Precategory) :=
   (functor : C ⥤ D) 
@@ -607,66 +307,122 @@ structure precat_iso (C D : Precategory) :=
   (equiv : is_equiv functor.obj)
 
 @[hott]
-def precat_isotoid : Π (C D : Precategory), (precat_iso C D) -> (C = D)
-| (Precategory.mk obj_C struct_C) (Precategory.mk obj_D struct_D) :=
+structure pc_hom_laws {C : Type _} (cat_str : category_struct C) :=
+  (id_comp : ∀ {a b : C} (f : a ⟶ b), 𝟙 a ≫ f = f)
+  (comp_id : ∀ {a b : C} (f : a ⟶ b), f ≫ 𝟙 b = f)
+  (assoc   : ∀ {a b c d : C} (f : a ⟶ b) (g : b ⟶ c) (h : c ⟶ d),
+               (f ≫ g) ≫ h = f ≫ (g ≫ h))
+
+@[hott, instance]
+def pc_hom_laws_is_prop {C : Type _} (cat_str : category_struct C) :
+  is_prop (pc_hom_laws cat_str) :=
 begin 
-  intro pc_iso, 
-  have p : obj_C = obj_D, from 
-    ua (equiv.mk pc_iso.functor.obj pc_iso.equiv),
-  hinduction p,
-  fapply ap (Precategory.mk obj_C), 
-  hinduction struct_C with struct_C id_comp_C comp_id_C assoc_C, 
-  hinduction struct_D with struct_D id_comp_D comp_id_D assoc_D, 
-  fapply apd01111' (@is_precat.mk obj_C), 
-  { hinduction struct_C with has_hom_C id_C comp_C, 
-    hinduction struct_D with has_hom_D id_D comp_D, 
-    have ph : has_hom_C = has_hom_D, from 
-      begin 
-        hinduction has_hom_C with hom_C, 
-        hinduction has_hom_D with hom_D,
-        apply ap (@has_hom.mk obj_C),
-        apply eq_of_homotopy2, intros a b, 
-        apply bij_to_set_eq, 
-        exact bijection.mk (pc_iso.functor.map) (@pc_iso.ff a b) 
-      end,
-    hinduction ph,
-    fapply ap011 (@category_struct.mk _ has_hom_C),
-    { sorry },
-    { sorry } },
-  all_goals { apply pathover_of_tr_eq, exact is_prop.elim _ _ }
+  fapply is_prop.mk, intros hl₁ hl₂, 
+  hinduction hl₁ with ic₁ ci₁ as₁, hinduction hl₂ with ic₂ ci₂ as₂, 
+  fapply ap0111', 
+  all_goals { exact is_prop.elim _ _ } 
 end
 
+@[hott, reducible]
+def pc_str_sig (C : Type _) := 
+  Σ (cat_str : category_struct C), pc_hom_laws cat_str 
+
+@[hott, reducible]
+def precat_str_eqv_sig (C : Type _) : 
+    (is_precat C) ≃ (pc_str_sig C) :=
+begin
+  fapply equiv.mk,
+  { intro pc_str,  
+    exact dpair pc_str.to_category_struct (@pc_hom_laws.mk _ 
+                pc_str.to_category_struct pc_str.id_comp 
+                pc_str.comp_id pc_str.assoc) },
+  { fapply adjointify, 
+    { intro pc_str_sig, hinduction pc_str_sig with cat_str pc_hom_laws,
+      exact @is_precat.mk _ cat_str pc_hom_laws.id_comp 
+                        pc_hom_laws.comp_id pc_hom_laws.assoc },
+    { intro pc_str_sig, hinduction pc_str_sig with cat_str pc_hom_laws,
+      hsimp, hinduction pc_hom_laws, hsimp },
+    { intro pc_str, hinduction pc_str with cat_str ic ci as, 
+      hsimp } }
+end
+
+@[hott, reducible]
+def pc_str_sig_eq_eqv_cat_str_eq {C : Type _} :
+  Π (pc_str_sig₁ pc_str_sig₂ : pc_str_sig C), 
+    (pc_str_sig₁ = pc_str_sig₂) ≃ ((pc_str_sig₁.1) = pc_str_sig₂.1) :=
+λ pc_str_sig₁ pc_str_sig₂, subtype_eq_equiv _ _
+
+/- This reduces the equality of precategory structures to the
+   equality of the underlying category structures. -/
 @[hott]
-structure precat_obj_iso (C₀ : Precategory) (C : Type _) :=
-  (map : C₀.obj -> C)
-  (equiv : is_equiv map)
+def precat_str_eqv_cat_str (C : Type _) 
+                           (pc_str₁ pc_str₂ : is_precat C) : 
+    (pc_str₁ = pc_str₂) ≃ pc_str₁.to_category_struct =
+                           pc_str₂.to_category_struct :=
+eq_equiv_fn_eq_of_equiv (precat_str_eqv_sig C) pc_str₁ pc_str₂ ⬝e
+pc_str_sig_eq_eqv_cat_str_eq (precat_str_eqv_sig C pc_str₁) 
+                             (precat_str_eqv_sig C pc_str₂)
 
 @[hott]
 structure precat_iso_of_obj {C₀ C : Precategory} 
-  (pc_obj : precat_obj_iso C₀ C.obj) :=
+  (obj_eqv : C₀ ≃ C.obj) :=
   (hom_map      : Π {x y : C₀}, (x ⟶ y) → 
-                             ((pc_obj.map x) ⟶ (pc_obj.map y)))
-  (hom_map_id   : ∀ (x : C₀), hom_map (𝟙 x) = 𝟙 (pc_obj.map x))
+                             ((obj_eqv x) ⟶ (obj_eqv y)))
+  (hom_map_id   : ∀ {x : C₀}, hom_map (𝟙 x) = 𝟙 (obj_eqv x))
   (hom_map_comp : ∀ {x y z : C₀} (f : x ⟶ y) (g : y ⟶ z), 
-                   hom_map (f ≫ g) = (hom_map f) ≫ (hom_map g))
-  (ff : is_fully_faithful_functor (functor.mk pc_obj.map @hom_map
-                                      hom_map_id @hom_map_comp)) 
+                   hom_map (f ≫ g) = (hom_map f) ≫ (hom_map g)) 
+  (ff : Π {x y : C₀}, is_set_bijective (@hom_map x y) )
+
+@[hott] 
+structure pc_hom_ops {C : Type _} (hh : has_hom C) :=
+  (id       : Π a : C, a ⟶ a)
+  (comp     : Π {a b c : C}, (a ⟶ b) → (b ⟶ c) → (a ⟶ c))
+
+@[hott]
+def cat_str_sig (C : Type _) := Σ (hh : has_hom C), pc_hom_ops hh
+
+@[hott]
+def cat_str_eqv_sig (C : Type _) : (category_struct C) ≃ (cat_str_sig C) :=
+begin
+  fapply equiv.mk,
+  { intro cat_str, 
+    exact dpair cat_str.to_has_hom (@pc_hom_ops.mk _ 
+                   cat_str.to_has_hom cat_str.id cat_str.comp) },
+  { fapply adjointify,
+    { intro cat_str_sig, 
+      exact @category_struct.mk _ cat_str_sig.1 cat_str_sig.2.id 
+                                              cat_str_sig.2.comp },
+    { intro cat_str_sig, hinduction cat_str_sig with hh hom_ops, 
+      hinduction hom_ops with id comp, hsimp },
+    { intro cat_str, hinduction cat_str with hh id comp, hsimp } }
+end
+
+@[hott, reducible]
+def cat_str_dep_ppred {C : Type} (cat_str₀ : cat_str_sig C) :           
+  dep_ppred cat_str₀.1 cat_str₀.2 :=
+dep_ppred.mk (hom_ppred cat_str₀.1) (λ hh hh_ops bhm, sorry) sorry
+
+@[hott]
+def precat_streq_eqv_iso_obj {C₀ : Precategory} (str : is_precat C₀) :
+  (C₀.struct = str) ≃ @precat_iso_of_obj C₀ 
+                  (Precategory.mk C₀.obj str) (@equiv.rfl C₀) :=
+sorry     
 
 @[hott]
 def precat_iso_of_obj_equiv_iso (C₀ C : Precategory) :
-  (Σ (pc_obj : precat_obj_iso C₀ C.obj), @precat_iso_of_obj C₀ 
-     (Precategory.mk C.obj C.struct) pc_obj) ≃ precat_iso C₀ C :=
+  (Σ (obj_eqv : C₀ ≃ C.obj), @precat_iso_of_obj C₀ 
+     (Precategory.mk C.obj C.struct) obj_eqv) ≃ precat_iso C₀ C :=
 begin
   fapply equiv.mk,
   { intro pc_oi_sig, fapply precat_iso.mk,
-    { exact functor.mk pc_oi_sig.1.map pc_oi_sig.2.hom_map
+    { exact functor.mk pc_oi_sig.1 pc_oi_sig.2.hom_map
                        pc_oi_sig.2.hom_map_id 
                        pc_oi_sig.2.hom_map_comp },
     { exact pc_oi_sig.2.ff },
-    { exact pc_oi_sig.1.equiv } },
+    { exact pc_oi_sig.1.to_is_equiv } },
   { fapply adjointify,
     { intro pc_iso, fapply sigma.mk, 
-      { exact precat_obj_iso.mk pc_iso.functor.obj pc_iso.equiv },
+      { exact equiv.mk pc_iso.functor.obj pc_iso.equiv },
       { exact precat_iso_of_obj.mk pc_iso.functor.map
           pc_iso.functor.map_id pc_iso.functor.map_comp pc_iso.ff } },
     { intro pc_iso, hinduction pc_iso with functor ff equiv,
@@ -678,8 +434,7 @@ end
 
 @[hott, reducible]
 def precat_obj_ppred (C₀ : Precategory) : ppred C₀.obj :=
-  ppred.mk (λ C : Type _, precat_obj_iso C₀ C) 
-           (precat_obj_iso.mk (@id C₀.obj) (is_equiv_id C₀.obj))
+  ppred.mk (λ C : Type _, C₀ ≃ C) (@equiv.rfl C₀)
 
 @[hott, reducible]
 def precat_dep_ppred (C₀ : Precategory) : dep_ppred C₀.obj C₀.struct :=              
@@ -692,24 +447,28 @@ def precat_dep_ppred (C₀ : Precategory) : dep_ppred C₀.obj C₀.struct :=
 @[hott]
 def precat_sig_equiv_obj_iso (C₀ C : Precategory) : 
   ((Precat_str_equiv_sig C₀) = (Precat_str_equiv_sig C)) ≃
-  (Σ (pc_obj : precat_obj_iso C₀ C.obj), @precat_iso_of_obj C₀ 
+  (Σ (pc_obj : C₀ ≃ C.obj), @precat_iso_of_obj C₀ 
                      (Precategory.mk C.obj C.struct) pc_obj) :=
 begin
   fapply struct_id_char_of_contr C₀.struct (precat_dep_ppred C₀)
                                  _ _ (Precat_str_equiv_sig C),
   { fapply is_contr.mk, 
-    { exact ⟨C₀.obj, (precat_dep_ppred _).ppred_fst.base⟩ },
+    { exact ⟨C₀.obj, @equiv.rfl C₀⟩ },
     { intro C_obj_iso, hinduction C_obj_iso with C_obj pc_oi_C,
-      change precat_obj_iso _ C_obj at pc_oi_C,
-      hinduction pc_oi_C with map is_equiv,
-      change dpair C₀.obj (precat_obj_iso.mk (@id C₀.obj) 
-                                     (is_equiv_id C₀.obj)) = _, 
-      let p : C₀.obj = C_obj := ua (equiv.mk map is_equiv),  
-      have q : map = (equiv_of_eq p), by rwr equiv_of_eq_ua, 
+      change _ ≃ C_obj at pc_oi_C,
+      change dpair C₀.obj (@equiv.rfl C₀) = _,   
       fapply sigma.sigma_eq, 
-      { exact p },
-      { apply pathover_of_tr_eq, fapply apd0111'', sorry } } },
-  { sorry }
+      { exact ua pc_oi_C },
+      { fapply obj_char_id_eq (eq_equiv_equiv C₀.obj) } } },
+  { fapply is_contr.mk, 
+    { exact ⟨C₀.struct, (precat_dep_ppred _).dep_base⟩ },
+    { --have p : (precat_dep_ppred C₀).ppred_fst.base = @equiv.rfl C₀, from rfl,
+      intro pc_str_iso, hinduction pc_str_iso with pc_str pc_iso,
+      --change precat_iso_of_obj _ at pc_iso, rwr p at pc_iso,
+      fapply sigma.sigma_eq, 
+      { exact (precat_streq_eqv_iso_obj pc_str)⁻¹ᶠ pc_iso },
+      { fapply obj_char_id_eq (@precat_streq_eqv_iso_obj C₀) 
+                              pc_str pc_iso } } }
 end   
 
 @[hott]
