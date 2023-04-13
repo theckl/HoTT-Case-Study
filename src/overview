@@ -1,7 +1,7 @@
 Compiling files, in order of dependencies:
 ------------------------------------------
-init2       :   782
-types2      :   475 
+init2       :   788
+types2      :   487 
 prop_axioms :   614
 prop_logic  :   208
 sets
