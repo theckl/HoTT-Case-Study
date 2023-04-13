@@ -29,33 +29,78 @@ class has_hom (obj : Type u) : Type (max u (v+1)) :=
 infixr ` ⟶ `:10 := has_hom.hom  -- type as \h
 
 /- A characterisation of equality of hom-structures. -/
+@[hott, reducible]
+def has_hom_eqv_hom {C : Type _} (hh₁ hh₂ : has_hom C) :
+  (hh₁ = hh₂) ≃ ((@has_hom.hom _ hh₁) = (@has_hom.hom _ hh₂)) :=
+begin
+  hinduction hh₁ with h₁, hinduction hh₂ with h₂, hsimp,
+  fapply equiv.mk,
+  { intro hh_eq, exact ap (@has_hom.hom _) hh_eq },
+  { fapply adjointify,
+    { intro hom_eq, exact ap has_hom.mk hom_eq },
+    { intro hom_eq, hsimp, rwr <- ap_compose, hsimp },
+    { intro hh_eq,  
+      let HP : Π hh : has_hom C, has_hom.mk (@has_hom.hom C hh) = hh := 
+        begin intro hh, hinduction hh, refl end,
+      have q : ap has_hom.mk (ap (@has_hom.hom C) hh_eq) =
+               (HP (has_hom.mk h₁)) ⬝ hh_eq ⬝ (HP (has_hom.mk h₂))⁻¹, from  
+        begin exact ap_ap01 (@has_hom.hom C) hh_eq has_hom.mk HP end,  
+      change _ = idp ⬝ hh_eq ⬝ idp⁻¹ at q, 
+      rwr idp_con at q, rwr idp_inv at q, rwr con_idp at q, 
+      exact q } }
+end
+
+@[hott, reducible]
+def hom_eqv_hom_bij {C : Type _} (h₁ h₂ : C -> C -> Set) :
+  (h₁ = h₂) ≃ (Π x y : C, bijection (h₁ x y) (h₂ x y)) :=
+begin
+  fapply equiv.mk,
+  { intro h_eq, intros x y, exact set_eq_to_bij (ap100 h_eq x y) },
+  { fapply adjointify,
+    { intro hom_bij, fapply eq_of_homotopy2, intros x y,
+      exact bij_to_set_eq (hom_bij x y) },
+    { intro hom_bij, apply eq_of_homotopy2, intros x y, hsimp,
+      rwr ap100_eq_of_hty2_inv, hsimp, 
+      exact is_equiv.right_inv (set_eq_to_bij) (hom_bij x y) },
+    { intro h_eq, hsimp, 
+      apply λ r, r ⬝ (hty2_of_ap100_eq_inv h_eq), 
+      apply ap eq_of_homotopy2, apply eq_of_homotopy2, intros x y,
+      exact is_equiv.left_inv (set_eq_to_bij) (ap100 h_eq x y) } }
+end
+
 @[hott]
 def bij_hom_map {C : Type _} (hh₁ hh₂ : has_hom C) :=
   Π x y : C, bijection (@has_hom.hom _ hh₁ x y) 
                        (@has_hom.hom _ hh₂ x y)
 
 @[hott, reducible]
+def has_hom_eqv_bij {C : Type _} (hh₁ hh₂ : has_hom C) :
+  (hh₁ = hh₂) ≃ (bij_hom_map hh₁ hh₂) :=
+has_hom_eqv_hom hh₁ hh₂ ⬝e hom_eqv_hom_bij _ _
+
+@[hott, reducible]
 def bij_hom_map_id {C : Type _} (hh : has_hom C) : bij_hom_map hh hh :=
   λ x y, identity (@has_hom.hom _ hh x y)  
 
 @[hott, reducible]
-def hom_ppred {C : Type} (hh₀ : has_hom C) : ppred hh₀ :=
+def hom_ppred {C : Type _} (hh₀ : has_hom C) : ppred hh₀ :=
   ppred.mk (λ hh : has_hom C, bij_hom_map hh₀ hh) 
            (bij_hom_map_id hh₀)
 
 @[hott]
-def is_contr_hom {C : Type} (hh₀ : has_hom C) :
+def is_contr_hom {C : Type _} (hh₀ : has_hom C) :
   is_contr (Σ hh : has_hom C, bij_hom_map hh₀ hh) :=
 begin 
-  fapply is_contr.mk, 
-  { exact ⟨hh₀, bij_hom_map_id hh₀⟩ },
-  { intro hb, hinduction hb with hh bij,
-    hinduction hh₀ with hom₀, hinduction hh with hom, 
-    fapply sigma.sigma_eq, 
-    { apply ap has_hom.mk, apply eq_of_homotopy2, intros x y, 
-      exact (@set_eq_equiv_bij (hom₀ x y) (hom x y))⁻¹ᶠ (bij x y) },
-    { apply pathover_of_tr_eq, apply eq_of_homotopy2, intros x y,
-      apply bijection_eq_from_map_eq, sorry } }
+  fapply ppmap_id_eqv_tot_space_contr' (hom_ppred hh₀), 
+  { intro hh, exact has_hom_eqv_bij hh₀ hh },
+  { change (hom_eqv_hom_bij _ _).to_fun ((has_hom_eqv_hom hh₀ hh₀) idp)
+                                            = bij_hom_map_id hh₀,
+    hsimp, apply eq_of_homotopy2, intros x y, hsimp, 
+    hinduction hh₀ with h₀,
+    change set_eq_to_bij (ap100 (ap (@has_hom.hom _) idp) x y) = _,
+    rwr ap_idp, 
+    change set_eq_to_bij (@idp _ (h₀ x y)) = identity (h₀ x y), 
+    rwr idp_to_identity }
 end              
 
 /-- A preliminary structure on the way to defining a precategory,
