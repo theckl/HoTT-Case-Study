@@ -30,25 +30,20 @@ infixr ` ⟶ `:10 := has_hom.hom  -- type as \h
 
 /- A characterisation of equality of hom-structures. -/
 @[hott, reducible]
-def has_hom_eqv_hom {C : Type _} (hh₁ hh₂ : has_hom C) :
-  (hh₁ = hh₂) ≃ ((@has_hom.hom _ hh₁) = (@has_hom.hom _ hh₂)) :=
+def has_hom_eqv_hom {C : Type _} : (has_hom C) ≃ (C -> C -> Set) :=
 begin
-  hinduction hh₁ with h₁, hinduction hh₂ with h₂, hsimp,
   fapply equiv.mk,
-  { intro hh_eq, exact ap (@has_hom.hom _) hh_eq },
+  { intro hh, exact @has_hom.hom _ hh },
   { fapply adjointify,
-    { intro hom_eq, exact ap has_hom.mk hom_eq },
-    { intro hom_eq, hsimp, rwr <- ap_compose, hsimp },
-    { intro hh_eq,  
-      let HP : Π hh : has_hom C, has_hom.mk (@has_hom.hom C hh) = hh := 
-        begin intro hh, hinduction hh, refl end,
-      have q : ap has_hom.mk (ap (@has_hom.hom C) hh_eq) =
-               (HP (has_hom.mk h₁)) ⬝ hh_eq ⬝ (HP (has_hom.mk h₂))⁻¹, from  
-        begin exact ap_ap01 (@has_hom.hom C) hh_eq has_hom.mk HP end,  
-      change _ = idp ⬝ hh_eq ⬝ idp⁻¹ at q, 
-      rwr idp_con at q, rwr idp_inv at q, rwr con_idp at q, 
-      exact q } }
+    { intro h, exact has_hom.mk h },
+    { intro h, refl },
+    { intro hh, hinduction hh, refl } }
 end
+
+@[hott, reducible]
+def has_hom_eq_eqv_hom_eq {C : Type _} (hh₁ hh₂ : has_hom C) :
+  (hh₁ = hh₂) ≃ ((@has_hom.hom _ hh₁) = (@has_hom.hom _ hh₂)) :=
+eq_equiv_fn_eq_of_equiv has_hom_eqv_hom hh₁ hh₂ 
 
 @[hott, reducible]
 def hom_eqv_hom_bij {C : Type _} (h₁ h₂ : C -> C -> Set) :
@@ -76,8 +71,9 @@ def bij_hom_map {C : Type _} (hh₁ hh₂ : has_hom C) :=
 @[hott, reducible]
 def has_hom_eqv_bij {C : Type _} (hh₁ hh₂ : has_hom C) :
   (hh₁ = hh₂) ≃ (bij_hom_map hh₁ hh₂) :=
-has_hom_eqv_hom hh₁ hh₂ ⬝e hom_eqv_hom_bij _ _
+has_hom_eq_eqv_hom_eq hh₁ hh₂ ⬝e hom_eqv_hom_bij _ _
 
+/- This is needed for characterising the equalities of category structures. -/
 @[hott, reducible]
 def bij_hom_map_id {C : Type _} (hh : has_hom C) : bij_hom_map hh hh :=
   λ x y, identity (@has_hom.hom _ hh x y)  
@@ -93,8 +89,8 @@ def is_contr_hom {C : Type _} (hh₀ : has_hom C) :
 begin 
   fapply ppmap_id_eqv_tot_space_contr' (hom_ppred hh₀), 
   { intro hh, exact has_hom_eqv_bij hh₀ hh },
-  { change (hom_eqv_hom_bij _ _).to_fun ((has_hom_eqv_hom hh₀ hh₀) idp)
-                                            = bij_hom_map_id hh₀,
+  { change (hom_eqv_hom_bij _ _).to_fun 
+      ((has_hom_eq_eqv_hom_eq hh₀ hh₀) idp) = bij_hom_map_id hh₀,
     hsimp, apply eq_of_homotopy2, intros x y, hsimp, 
     hinduction hh₀ with h₀,
     change set_eq_to_bij (ap100 (ap (@has_hom.hom _) idp) x y) = _,
@@ -114,6 +110,100 @@ extends has_hom.{v} obj : Type (max u (v+1)) :=
 notation `𝟙` := category_struct.id -- type as \b1
 infixr ` ≫ `:80 := category_struct.comp -- type as \gg
 
+/- A characterisation of equalities between category structures. -/
+@[hott] 
+structure cat_hom_ops {C : Type _} (hh : has_hom C) :=
+  (id       : Π a : C, a ⟶ a)
+  (comp     : Π {a b c : C}, (a ⟶ b) → (b ⟶ c) → (a ⟶ c))
+
+@[hott]
+def cat_str_sig (C : Type _) := Σ (hh : has_hom C), cat_hom_ops hh
+
+@[hott]
+def cat_str_eqv_sig (C : Type _) : (category_struct C) ≃ (cat_str_sig C) :=
+begin
+  fapply equiv.mk,
+  { intro cat_str, 
+    exact dpair cat_str.to_has_hom (@cat_hom_ops.mk _ 
+                   cat_str.to_has_hom cat_str.id cat_str.comp) },
+  { fapply adjointify,
+    { intro cat_str_sig, 
+      exact @category_struct.mk _ cat_str_sig.1 cat_str_sig.2.id 
+                                              cat_str_sig.2.comp },
+    { intro cat_str_sig, hinduction cat_str_sig with hh hom_ops, 
+      hinduction hom_ops with id comp, hsimp },
+    { intro cat_str, hinduction cat_str with hh id comp, hsimp } }
+end
+
+@[hott]
+structure cat_map_laws {C : Type _} {str₁ str₂ : cat_str_sig C}
+  (hom_map : Π {x y : C}, (@has_hom.hom _ str₁.1 x y) → 
+                               (@has_hom.hom _ str₂.1 x y)) :=
+  (hom_map_id   : ∀ {x : C}, hom_map (str₁.2.id x) = (str₂.2.id x))
+  (hom_map_comp : ∀ {x y z : C} (f : @has_hom.hom _ str₁.1 x y) 
+                                (g : @has_hom.hom _ str₁.1 y z), 
+    hom_map (str₁.2.comp f g) = str₂.2.comp (hom_map f) (hom_map g))
+
+@[hott, instance]
+def cat_map_laws_is_prop {C : Type _} {str₁ str₂ : cat_str_sig C}
+  (hom_map : Π {x y : C}, (@has_hom.hom _ str₁.1 x y) → 
+                                  (@has_hom.hom _ str₂.1 x y)) :
+  is_prop (cat_map_laws @hom_map) :=
+begin 
+  fapply is_prop.mk, intros ml₁ ml₂, 
+  hinduction ml₁ with mi₁ ci₁, hinduction ml₂ with mi₂ ci₂, 
+  fapply ap011, 
+  all_goals { exact is_prop.elim _ _ } 
+end
+
+@[hott]
+def cat_idmap_laws {C : Type _} (str : cat_str_sig C) : 
+  cat_map_laws (λ x y, (bij_hom_map_id str.1 x y).map) :=
+cat_map_laws.mk (λ x, idp) (λ x y z f g, idp)
+
+@[hott, reducible]
+def cat_str_dep_ppred {C : Type _} (hh₀ : has_hom C) 
+  (hh_ops₀ : cat_hom_ops hh₀) : dep_ppred hh₀ hh_ops₀ :=
+dep_ppred.mk (hom_ppred hh₀) 
+             (λ hh hh_ops bhm, @cat_map_laws _ ⟨hh₀, hh_ops₀⟩ 
+                            ⟨hh, hh_ops⟩ (λ x y, (bhm x y).map)) 
+             (cat_idmap_laws ⟨hh₀, hh_ops₀⟩)
+
+@[hott, reducible] 
+def cat_str_sig_iso {C : Type _} (str₁ str₂ : cat_str_sig C) :=
+  Σ (bhm : bij_hom_map str₁.1 str₂.1), 
+                  @cat_map_laws _ ⟨str₁.1, str₁.2⟩ ⟨str₂.1, str₂.2⟩
+                                          (λ x y, (bhm x y).map)
+
+@[hott, reducible]
+def cat_str_sig_eq_eqv_iso {C : Type _} (str₁ str₂ : cat_str_sig C) :
+  (str₁ = str₂) ≃ (cat_str_sig_iso str₁ str₂) :=
+begin
+  hinduction str₁ with hh₁ hh_ops₁,
+  fapply struct_id_char_of_contr hh_ops₁ 
+                        (cat_str_dep_ppred hh₁ hh_ops₁) _ _ str₂,
+  { exact is_contr_hom hh₁ },
+  { hsimp, fapply is_contr.mk,
+    { exact ⟨hh_ops₁, cat_idmap_laws ⟨hh₁, hh_ops₁⟩⟩ },
+    { intro cat_hom_map, hinduction cat_hom_map with hom_ops hom_laws,
+      hinduction hh_ops₁ with id₁ comp₁, hinduction hom_ops with id comp,
+      fapply sigma.sigma_eq, 
+      { hsimp, fapply ap011 cat_hom_ops.mk, 
+        { apply eq_of_homotopy, exact hom_laws.hom_map_id },
+        { apply eq_of_homotopy3, intros x y z, 
+          apply eq_of_homotopy2, intros f g, 
+          exact hom_laws.hom_map_comp f g } },
+      { hsimp, apply pathover_of_tr_eq, exact is_prop.elim _ _ } } }
+end
+
+@[hott, reducible]
+def cat_str_eq_eqv_iso {C : Type _} 
+  (str₁ str₂ : category_struct C) :
+  (str₁ = str₂) ≃ (cat_str_sig_iso (cat_str_eqv_sig C str₁) 
+                                   (cat_str_eqv_sig C str₂)) :=
+eq_equiv_fn_eq_of_equiv (cat_str_eqv_sig C) _ _ ⬝e
+cat_str_sig_eq_eqv_iso _ _
+
 /-- The structure of a precategory. -/
 @[hott, class]
 structure is_precat (obj : Type u) 
@@ -125,6 +215,65 @@ extends category_struct.{v} obj : Type (max u (v+1)) :=
 
 attribute [hsimp] is_precat.id_comp is_precat.comp_id is_precat.assoc
 
+/- We reduce the equality of precategory structures to the
+   equality of the underlying category structures. -/
+@[hott]
+structure pc_hom_laws {C : Type _} (cat_str : category_struct C) :=
+  (id_comp : ∀ {a b : C} (f : a ⟶ b), 𝟙 a ≫ f = f)
+  (comp_id : ∀ {a b : C} (f : a ⟶ b), f ≫ 𝟙 b = f)
+  (assoc   : ∀ {a b c d : C} (f : a ⟶ b) (g : b ⟶ c) (h : c ⟶ d),
+               (f ≫ g) ≫ h = f ≫ (g ≫ h))
+
+@[hott, instance]
+def pc_hom_laws_is_prop {C : Type _} (cat_str : category_struct C) :
+  is_prop (pc_hom_laws cat_str) :=
+begin 
+  fapply is_prop.mk, intros hl₁ hl₂, 
+  hinduction hl₁ with ic₁ ci₁ as₁, hinduction hl₂ with ic₂ ci₂ as₂, 
+  fapply ap0111', 
+  all_goals { exact is_prop.elim _ _ } 
+end
+
+@[hott, reducible]
+def pc_str_sig (C : Type _) := 
+  Σ (cat_str : category_struct C), pc_hom_laws cat_str 
+
+@[hott, reducible]
+def precat_str_eqv_sig (C : Type _) : 
+    (is_precat C) ≃ (pc_str_sig C) :=
+begin
+  fapply equiv.mk,
+  { intro pc_str,  
+    exact dpair pc_str.to_category_struct (@pc_hom_laws.mk _ 
+                pc_str.to_category_struct pc_str.id_comp 
+                pc_str.comp_id pc_str.assoc) },
+  { fapply adjointify, 
+    { intro pc_str_sig, hinduction pc_str_sig with cat_str pc_hom_laws,
+      exact @is_precat.mk _ cat_str pc_hom_laws.id_comp 
+                        pc_hom_laws.comp_id pc_hom_laws.assoc },
+    { intro pc_str_sig, hinduction pc_str_sig with cat_str pc_hom_laws,
+      hsimp, hinduction pc_hom_laws, hsimp },
+    { intro pc_str, hinduction pc_str with cat_str ic ci as, 
+      hsimp } }
+end
+
+@[hott, reducible]
+def pc_str_sig_eq_eqv_cat_str_eq {C : Type _} :
+  Π (pc_str_sig₁ pc_str_sig₂ : pc_str_sig C), 
+    (pc_str_sig₁ = pc_str_sig₂) ≃ ((pc_str_sig₁.1) = pc_str_sig₂.1) :=
+λ pc_str_sig₁ pc_str_sig₂, subtype_eq_equiv _ _
+
+@[hott]
+def precat_str_eqv_cat_str (C : Type _) 
+                           (pc_str₁ pc_str₂ : is_precat C) : 
+    (pc_str₁ = pc_str₂) ≃ pc_str₁.to_category_struct =
+                           pc_str₂.to_category_struct :=
+eq_equiv_fn_eq_of_equiv (precat_str_eqv_sig C) pc_str₁ pc_str₂ ⬝e
+pc_str_sig_eq_eqv_cat_str_eq (precat_str_eqv_sig C pc_str₁) 
+                             (precat_str_eqv_sig C pc_str₂)
+
+/- Now we bundle up precategories as a structure and show its 
+   equivalence to the corresponding Σ-type. -/
 @[hott]
 structure Precategory :=
   (obj : Type u)
@@ -352,63 +501,6 @@ structure precat_iso (C D : Precategory) :=
   (equiv : is_equiv functor.obj)
 
 @[hott]
-structure pc_hom_laws {C : Type _} (cat_str : category_struct C) :=
-  (id_comp : ∀ {a b : C} (f : a ⟶ b), 𝟙 a ≫ f = f)
-  (comp_id : ∀ {a b : C} (f : a ⟶ b), f ≫ 𝟙 b = f)
-  (assoc   : ∀ {a b c d : C} (f : a ⟶ b) (g : b ⟶ c) (h : c ⟶ d),
-               (f ≫ g) ≫ h = f ≫ (g ≫ h))
-
-@[hott, instance]
-def pc_hom_laws_is_prop {C : Type _} (cat_str : category_struct C) :
-  is_prop (pc_hom_laws cat_str) :=
-begin 
-  fapply is_prop.mk, intros hl₁ hl₂, 
-  hinduction hl₁ with ic₁ ci₁ as₁, hinduction hl₂ with ic₂ ci₂ as₂, 
-  fapply ap0111', 
-  all_goals { exact is_prop.elim _ _ } 
-end
-
-@[hott, reducible]
-def pc_str_sig (C : Type _) := 
-  Σ (cat_str : category_struct C), pc_hom_laws cat_str 
-
-@[hott, reducible]
-def precat_str_eqv_sig (C : Type _) : 
-    (is_precat C) ≃ (pc_str_sig C) :=
-begin
-  fapply equiv.mk,
-  { intro pc_str,  
-    exact dpair pc_str.to_category_struct (@pc_hom_laws.mk _ 
-                pc_str.to_category_struct pc_str.id_comp 
-                pc_str.comp_id pc_str.assoc) },
-  { fapply adjointify, 
-    { intro pc_str_sig, hinduction pc_str_sig with cat_str pc_hom_laws,
-      exact @is_precat.mk _ cat_str pc_hom_laws.id_comp 
-                        pc_hom_laws.comp_id pc_hom_laws.assoc },
-    { intro pc_str_sig, hinduction pc_str_sig with cat_str pc_hom_laws,
-      hsimp, hinduction pc_hom_laws, hsimp },
-    { intro pc_str, hinduction pc_str with cat_str ic ci as, 
-      hsimp } }
-end
-
-@[hott, reducible]
-def pc_str_sig_eq_eqv_cat_str_eq {C : Type _} :
-  Π (pc_str_sig₁ pc_str_sig₂ : pc_str_sig C), 
-    (pc_str_sig₁ = pc_str_sig₂) ≃ ((pc_str_sig₁.1) = pc_str_sig₂.1) :=
-λ pc_str_sig₁ pc_str_sig₂, subtype_eq_equiv _ _
-
-/- This reduces the equality of precategory structures to the
-   equality of the underlying category structures. -/
-@[hott]
-def precat_str_eqv_cat_str (C : Type _) 
-                           (pc_str₁ pc_str₂ : is_precat C) : 
-    (pc_str₁ = pc_str₂) ≃ pc_str₁.to_category_struct =
-                           pc_str₂.to_category_struct :=
-eq_equiv_fn_eq_of_equiv (precat_str_eqv_sig C) pc_str₁ pc_str₂ ⬝e
-pc_str_sig_eq_eqv_cat_str_eq (precat_str_eqv_sig C pc_str₁) 
-                             (precat_str_eqv_sig C pc_str₂)
-
-@[hott]
 structure precat_iso_of_obj {C₀ C : Precategory} 
   (obj_eqv : C₀ ≃ C.obj) :=
   (hom_map      : Π {x y : C₀}, (x ⟶ y) → 
@@ -416,42 +508,7 @@ structure precat_iso_of_obj {C₀ C : Precategory}
   (hom_map_id   : ∀ {x : C₀}, hom_map (𝟙 x) = 𝟙 (obj_eqv x))
   (hom_map_comp : ∀ {x y z : C₀} (f : x ⟶ y) (g : y ⟶ z), 
                    hom_map (f ≫ g) = (hom_map f) ≫ (hom_map g)) 
-  (ff : Π {x y : C₀}, is_set_bijective (@hom_map x y) )
-
-@[hott] 
-structure pc_hom_ops {C : Type _} (hh : has_hom C) :=
-  (id       : Π a : C, a ⟶ a)
-  (comp     : Π {a b c : C}, (a ⟶ b) → (b ⟶ c) → (a ⟶ c))
-
-@[hott]
-def cat_str_sig (C : Type _) := Σ (hh : has_hom C), pc_hom_ops hh
-
-@[hott]
-def cat_str_eqv_sig (C : Type _) : (category_struct C) ≃ (cat_str_sig C) :=
-begin
-  fapply equiv.mk,
-  { intro cat_str, 
-    exact dpair cat_str.to_has_hom (@pc_hom_ops.mk _ 
-                   cat_str.to_has_hom cat_str.id cat_str.comp) },
-  { fapply adjointify,
-    { intro cat_str_sig, 
-      exact @category_struct.mk _ cat_str_sig.1 cat_str_sig.2.id 
-                                              cat_str_sig.2.comp },
-    { intro cat_str_sig, hinduction cat_str_sig with hh hom_ops, 
-      hinduction hom_ops with id comp, hsimp },
-    { intro cat_str, hinduction cat_str with hh id comp, hsimp } }
-end
-
-@[hott, reducible]
-def cat_str_dep_ppred {C : Type} (cat_str₀ : cat_str_sig C) :           
-  dep_ppred cat_str₀.1 cat_str₀.2 :=
-dep_ppred.mk (hom_ppred cat_str₀.1) (λ hh hh_ops bhm, sorry) sorry
-
-@[hott]
-def precat_streq_eqv_iso_obj {C₀ : Precategory} (str : is_precat C₀) :
-  (C₀.struct = str) ≃ @precat_iso_of_obj C₀ 
-                  (Precategory.mk C₀.obj str) (@equiv.rfl C₀) :=
-sorry     
+  (ff : Π {x y : C₀}, is_set_bijective (@hom_map x y) )   
 
 @[hott]
 def precat_iso_of_obj_equiv_iso (C₀ C : Precategory) :
@@ -507,11 +564,9 @@ begin
       { fapply obj_char_id_eq (eq_equiv_equiv C₀.obj) } } },
   { fapply is_contr.mk, 
     { exact ⟨C₀.struct, (precat_dep_ppred _).dep_base⟩ },
-    { --have p : (precat_dep_ppred C₀).ppred_fst.base = @equiv.rfl C₀, from rfl,
-      intro pc_str_iso, hinduction pc_str_iso with pc_str pc_iso,
-      --change precat_iso_of_obj _ at pc_iso, rwr p at pc_iso,
+    { intro pc_str_iso, hinduction pc_str_iso with pc_str pc_iso,
       fapply sigma.sigma_eq, 
-      { exact (precat_streq_eqv_iso_obj pc_str)⁻¹ᶠ pc_iso },
+      { hsimp, sorry },
       { fapply obj_char_id_eq (@precat_streq_eqv_iso_obj C₀) 
                               pc_str pc_iso } } }
 end   
