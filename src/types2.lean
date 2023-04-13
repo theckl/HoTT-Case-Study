@@ -283,6 +283,19 @@ begin
 end
 
 @[hott]
+def ppmap_id_eqv_tot_space_contr' {A : Type _} {a₀ : A} (R : ppred a₀) : 
+  Π eqv_fam : Π (a : A), (a₀ = a) ≃ (R.fam a), eqv_fam a₀ idp = R.base -> 
+    is_contr (Σ (a : A), R.fam a) := 
+begin
+  intros eqv_fam base_eq,
+  fapply ppmap_id_eqv_tot_space_contr R, 
+  { fapply ppmap.mk,
+    { intro a, exact eqv_fam a },
+    { exact base_eq } },
+  { intro a, exact (eqv_fam a).to_is_equiv }
+end
+
+@[hott]
 def tot_space_contr_ppmap_id_eqv {A : Type _} {a₀ : A} (R : ppred a₀) : 
   Π (f : ppmap (id_ppred a₀) R), is_contr (Σ (a : A), R.fam a) -> 
   Π (a : A), is_equiv (f.fam_map a) := 
