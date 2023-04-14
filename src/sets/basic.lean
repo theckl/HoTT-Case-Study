@@ -204,6 +204,11 @@ has_coe_to_fun.mk (λ _, A -> B) (λ f, f.map)
 attribute [instance] bijection.bij 
 
 @[hott]
+def bijection.eta {A : Set} {B : Set} : Π (f : bijection A B),
+  f = bijection.mk f.map f.bij :=
+begin intro f, hinduction f, refl end
+
+@[hott]
 def bijection_eq_from_map_eq {A : Set} {B : Set}: 
   forall f g : bijection A B, bijection.map f = bijection.map g -> f = g  
 | (bijection.mk map1 bij1) (bijection.mk map2 bij2) := 
