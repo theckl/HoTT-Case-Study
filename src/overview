@@ -5,17 +5,19 @@ types2      :   487
 prop_axioms :   614
 prop_logic  :   208
 sets
-  basic     :   665
+  basic     :   670
   finite    :   206
   subset    :   408
   axioms    :   340
   algebra   :   239
   quotients :   205
   theories  :   715
-categories  
-  * basic     :   776 (A new version will include the characterisation of 
-                       identity types of precategories)
-  examples  :   824
+categories
+  precat    :   629  
+  basic     :   236 
+  subobj    :   443
+  subcat    :   124
+  * examples  :   824
   adjoints  :   398
   strict_cat:   824 (change as described below already started, 
                      but yet unsuccessful)
