@@ -299,15 +299,15 @@ begin
 end
 
 section
-variables (C : Precategory) (D : Precategory) (E : Precategory)
-
-/- Functors are defined between precategories. -/
+/- Functors are defined between precategories. But we cannot use
+   `Precategory` as parameters because coercion from `Category` does
+   not work.  -/   
 @[hott]
-structure functor (A : Type _) [is_precat A] (B : Type _) [is_precat B] :=
-(obj      : A → B)
-(map      : Π {x y : A}, (x ⟶ y) → ((obj x) ⟶ (obj y)))
-(map_id   : ∀ (x : A), map (𝟙 x) = 𝟙 (obj x))
-(map_comp : ∀ {x y z : A} (f : x ⟶ y) (g : y ⟶ z), map (f ≫ g) = (map f) ≫ (map g))
+structure functor (C : Type _) [is_precat C] (D : Type _) [is_precat D] :=
+(obj      : C → D)
+(map      : Π {x y : C}, (x ⟶ y) → ((obj x) ⟶ (obj y)))
+(map_id   : ∀ (x : C), map (𝟙 x) = 𝟙 (obj x))
+(map_comp : ∀ {x y z : C} (f : x ⟶ y) (g : y ⟶ z), map (f ≫ g) = (map f) ≫ (map g))
 
 infixr ` ⥤ ` :26 := functor       
 
@@ -315,19 +315,58 @@ attribute [hsimp] functor.map_id
 attribute [hsimp] functor.map_comp
 
 @[hott]
-def functor_eta {A : Type _} [is_precat A] {B : Type _} [is_precat B] (F : A ⥤ B) : 
-  F = functor.mk F.obj F.map F.map_id F.map_comp :=
-begin hinduction F, refl end 
+structure functor_ops (C : Type _) [is_precat C] (D : Type _) [is_precat D] :=
+(obj      : C → D)
+(map      : Π {x y : C}, (x ⟶ y) → ((obj x) ⟶ (obj y)))
 
 @[hott]
-def functor_eta_mk {A : Type _} [HA : is_precat A] {B : Type _} [HB : is_precat B] :
-  Π obj map map_id map_comp, functor_eta (@functor.mk _ HA _ HB obj map map_id map_comp) = idp :=
-assume obj map map_id map_comp, rfl  
+def functor_to_ops {C : Type _} [is_precat C] {D : Type _} [is_precat D] :
+  (functor C D) -> (functor_ops C D) :=
+λ F, functor_ops.mk F.obj F.map
 
 @[hott]
-def functor_mk_obj {A : Type _} [HA : is_precat A] {B : Type _} [HB : is_precat B] : 
-  Π obj map map_id map_comp, @functor.obj A _ B _ (functor.mk obj map map_id map_comp) = obj :=
-assume obj map map_id map_comp, rfl   
+structure functor_laws {C : Type _} [is_precat C] {D : Type _} [is_precat D]
+  (ops : functor_ops C D) :=
+(map_id   : ∀ (x : C), ops.map (𝟙 x) = 𝟙 (ops.obj x))
+(map_comp : ∀ {x y z : C} (f : x ⟶ y) (g : y ⟶ z), 
+              ops.map (f ≫ g) = (ops.map f) ≫ (ops.map g))
+
+@[hott, instance]
+def functor_laws_is_prop (C : Type _) [is_precat C] (D : Type _) 
+  [is_precat D] (ops : functor_ops C D) : is_prop (functor_laws ops) :=
+begin
+  apply is_prop.mk, intros laws₁ laws₂, 
+  hinduction laws₁ with map_id₁ map_comp₁, 
+  hinduction laws₂ with map_id₂ map_comp₂,
+  fapply ap011 functor_laws.mk, all_goals {exact is_prop.elim _ _}
+end  
+
+@[hott]
+def functor_sig (C : Type _) [is_precat C] (D : Type _) [is_precat D] :=
+  Σ (ops : functor_ops C D), functor_laws ops
+
+@[hott]
+def functor_eqv_sig (C : Type _) [is_precat C] (D : Type _) [is_precat D] :
+  (functor C D) ≃ (functor_sig C D) :=
+begin
+  fapply equiv.mk,
+  { intro F, exact dpair (functor_to_ops F) 
+                         (functor_laws.mk F.map_id F.map_comp) },
+  { fapply adjointify,
+    { intro F_sig, exact functor.mk F_sig.1.obj F_sig.1.map
+                                    F_sig.2.map_id F_sig.2.map_comp },
+    { intro F_sig, hinduction F_sig, hsimp, fapply sigma.sigma_eq,
+      { hsimp, hinduction fst, refl },
+      { hsimp, hinduction fst, hinduction snd, exact idpo } },
+    { intro F, hinduction F, hsimp, refl } }
+end
+
+@[hott]
+def functor_eq_eqv_ops_eq {C : Type _} [is_precat C] {D : Type _} 
+  [is_precat D] : Π (F G : functor C D), 
+  (F = G) ≃ (functor_to_ops F = functor_to_ops G) :=
+λ F G, eq_equiv_fn_eq_of_equiv (functor_eqv_sig C D) _ _ ⬝e 
+       subtype_eq_equiv _ _  
 
 /- Functors are equal if their maps of objects and arrows are equal. -/
 @[hott]
@@ -336,87 +375,25 @@ def functor_eq {A : Type _} [is_precat A] {B : Type _} [is_precat B]
     (F.map =[p; λ f : A -> B, Π (x y : A), (x ⟶ y) -> 
                                 (f x ⟶ f y)] G.map) -> F = G :=
 begin 
-  intros p q, 
-  exact (functor_eta F) ⬝ (apd01111_v2 functor.mk p q 
-          (pathover_of_tr_eq (is_prop.elim _ _))  (pathover_of_tr_eq (is_prop.elim _ _)))
-        ⬝ (functor_eta G)⁻¹  
-end  
-
-@[hott]
-def functor_eq_idp' {A : Type _} [is_precat A] {B : Type _} [is_precat B] {obj : A -> B} 
-  (map : Π (c₁ c₂ : A), (c₁ ⟶ c₂) -> (obj c₁ ⟶ obj c₂)) :
-  Π mi mc, functor_eq (@idp _ (functor.mk obj map mi mc).obj) idpo = idp :=
-begin 
-  intros mi mc,                                          
-  change idp ⬝ (apd01111_v2 functor.mk idp idpo 
-           (pathover_of_tr_eq (is_prop.elim _ _)) (pathover_of_tr_eq (is_prop.elim _ _))) 
-         ⬝ inverse idp = _, 
-  rwr idp_con, rwr idp_inv, rwr con_idp,             
-  have H1 : pathover_of_tr_eq (is_prop.elim (apd011 (λ (a : A → B) 
-              (b : Π {x y : A}, (x ⟶ y) → (a x ⟶ a y)), 
-              Π (x : A), b (𝟙 x) = 𝟙 (a x)) idp idpo ▸[id] mi) mi) = idpo, 
-            by apply dep_set_eq_eq,
-  have H2 : pathover_of_tr_eq (is_prop.elim (apd011 (λ (a : A → B) 
-            (b : Π {x y : A}, (x ⟶ y) → (a x ⟶ a y)), 
-            Π (x y z : A) (f : x ⟶ y) (g : y ⟶ z), 
-              b (f ≫ g) = b f ≫ b g) idp idpo ▸[id] @mc) @mc) = idpo,
-    by apply dep_set_eq_eq,        
-  rwr H1, rwr H2
-end
-
-@[hott]
-def functor_eq_idp {A : Type _} [is_precat A] {B : Type _} [is_precat B] 
-  {F : A ⥤ B} : functor_eq (@idp _ F.obj) idpo = idp :=
-begin hinduction F, rwr functor_eq_idp' end
-
-@[hott]
-def functor_eq_obj {A : Type _} [is_precat A] {B : Type _} [is_precat B] 
-  {F G : A ⥤ B} :
-  Π (p : F.obj = G.obj) q, (ap functor.obj (functor_eq p q)) = p :=
-begin 
-  intros p q, 
-  change (ap _ ((functor_eta F) ⬝ (apd01111_v2 functor.mk p q 
-          (pathover_of_tr_eq (is_prop.elim _ _))  (pathover_of_tr_eq (is_prop.elim _ _)))
-        ⬝ (functor_eta G)⁻¹)) = p, 
-  rwr ap_con, rwr ap_con, hinduction F, hinduction G, 
-  rwr functor_eta_mk, rwr functor_eta_mk, rwr idp_inv, rwr ap_idp, rwr ap_idp, rwr con_idp,
-  rwr idp_con, rwr ap_apd01111_v2 _ _ _ _ _ _ (functor_mk_obj),  
-  change idp ⬝ p ⬝ idp⁻¹ = p, rwr idp_inv, rwr con_idp, rwr idp_con  
-end    
-
-@[hott]
-def functor_eq_change_path {F G : C ⥤ D} 
-  {p p' : F.obj = G.obj} (q : p = p')
-  (r : (F.map =[p; λ f : C -> D, Π (x y : C), (x ⟶ y) -> (f x ⟶ f y)] G.map)) :
-  functor_eq p' (change_path q r) = functor_eq p r :=
-begin hinduction q, rwr change_path_idp end  
-
-@[hott]
-def functor_eq_eta {F G : C ⥤ D} (p : F = G) :
-  functor_eq (ap functor.obj p) 
-             (pathover_ap (λ f : C -> D, Π (x y : C), (x ⟶ y) -> (f x ⟶ f y)) 
-                          functor.obj (apd functor.map p)) = p :=
-begin 
-  hinduction p, rwr apd_idp, 
-  change functor_eq (ap functor.obj (refl F)) 
-                    (change_path (ap_idp F functor.obj)⁻¹ idpo) = _, 
-  rwr functor_eq_change_path, rwr functor_eq_idp
+  intros obj_eq map_eq, apply (functor_eq_eqv_ops_eq F G)⁻¹ᶠ, 
+  exact apd011 functor_ops.mk obj_eq map_eq 
 end  
 
 @[hott, reducible]
-def constant_functor (d : D) : 
-  C ⥤ D := 
+def constant_functor {C : Type u} [is_precat C] {D : Type u'} 
+  [is_precat D](d : D) : C ⥤ D := 
 have id_hom_eq : ∀ d : D, 𝟙 d = 𝟙 d ≫ 𝟙 d, by intro d; hsimp,  
 functor.mk (λ c : C, d) (λ c₁ c₂ f, 𝟙 d) (λ c, rfl) 
   (λ c₁ c₂ c₃ f g, (id_hom_eq d))
 
 @[hott]
-def constant_functor_map (d : D) :
-  ∀ {c₁ c₂ : C} (h : c₁ ⟶ c₂), (constant_functor C D d).map h = 𝟙 d :=
+def constant_functor_map {C : Type u} [is_precat C] {D : Type u'} 
+  [is_precat D] (d : D) : ∀ {c₁ c₂ : C} (h : c₁ ⟶ c₂), 
+  (constant_functor d).map h = 𝟙 d :=
 assume c₁ c₂ h, rfl  
 
 @[hott, reducible]
-def id_functor : C ⥤ C :=
+def id_functor (C : Type u) [is_precat C] : C ⥤ C :=
   functor.mk (λ c : C, c) (λ c₁ c₂ f, f) (λ c, idp) (λ c₁ c₂ c₃ f g, idp)  
 
 
@@ -429,21 +406,25 @@ structure nat_trans {A : Type _} [is_precat A] {B : Type _}
 
 infixr ` ⟹ `:10 := nat_trans
 
-end
-
-section
-variables {B : Precategory} {C : Precategory} {D : Precategory} {E : Precategory}
-
 @[hott]
-def is_faithful_functor (F : C ⥤ D) := 
+def is_faithful_functor {C : Type u} [is_precat C] {D : Type u'} 
+  [is_precat D] (F : C ⥤ D) := 
   Π {x y : C}, is_set_injective (@functor.map C _ D _ F x y) 
 
 @[hott]
-def is_fully_faithful_functor (F : C ⥤ D) := 
+def is_fully_faithful_functor {C : Type u} [is_precat C] {D : Type u'} 
+  [is_precat D] (F : C ⥤ D) := 
   Π {x y : C}, is_set_bijective (@functor.map C _ D _ F x y)
 
+@[hott, reducible]
+def is_fully_faithful_functor' {C : Type u} [is_precat C] {D : Type u'} 
+  [is_precat D] {F : C ⥤ D} : is_fully_faithful_functor F ->
+  Π (x y : C), bijection (x ⟶ y) (F.obj x ⟶ F.obj y) :=
+λ ff x y, bijection.mk (@functor.map C _ D _ F x y) (@ff x y) 
+
 @[hott]
-def id_functor_is_fully_faithful : is_fully_faithful_functor (id_functor C) :=
+def id_functor_is_fully_faithful {C : Type u} [is_precat C] : 
+  is_fully_faithful_functor (id_functor C) :=
   λ x y : C, (identity (x ⟶ y)).bij   
 
 /- The composition of functors -/
@@ -462,8 +443,8 @@ end
 infixr ` ⋙ `:25 := functor_comp 
 
 @[hott]
-def funct_id_comp (F : C ⥤ D) : 
-  (id_functor C ⋙ F) = F :=
+def funct_id_comp {C : Type u} [is_precat C] {D : Type u'} 
+  [is_precat D] (F : C ⥤ D) : (id_functor C ⋙ F) = F :=
 begin 
   fapply functor_eq, 
   { apply eq_of_homotopy, intro c, hsimp },
@@ -473,8 +454,8 @@ begin
 end  
 
 @[hott]
-def funct_comp_id (F : C ⥤ D) : 
-  (F ⋙ id_functor D) = F :=
+def funct_comp_id {C : Type u} [is_precat C] {D : Type u'} 
+  [is_precat D] (F : C ⥤ D) : (F ⋙ id_functor D) = F :=
 begin 
   fapply functor_eq, 
   { apply eq_of_homotopy, intro c, hsimp },
@@ -484,7 +465,9 @@ begin
 end 
 
 @[hott]
-def funct_comp_assoc (F : C ⥤ D) (G : D ⥤ E) (H : E ⥤ B) : 
+def funct_comp_assoc {C : Type _} [is_precat C] {D : Type _} 
+  [is_precat D] {E : Type _} [is_precat E] {B : Type _} 
+  [is_precat B] (F : C ⥤ D) (G : D ⥤ E) (H : E ⥤ B) : 
   ((F ⋙ G) ⋙ H) = (F ⋙ (G ⋙ H)) :=
 begin
   fapply functor_eq, 
@@ -587,7 +570,7 @@ def precat_dep_ppred (C₀ : Precategory) : dep_ppred C₀.obj C₀.struct :=
     (λ C pc_str_C pc_obj, @precat_iso_of_obj C₀ 
                              (Precategory.mk C pc_str_C) pc_obj) 
     (precat_iso_of_obj.mk (id_functor C₀).map (id_functor C₀).map_id
-       (id_functor C₀).map_comp (@id_functor_is_fully_faithful C₀)) 
+       (id_functor C₀).map_comp (@id_functor_is_fully_faithful C₀ _)) 
 
 @[hott]
 def precat_sig_equiv_obj_iso (C₀ C : Precategory) : 
