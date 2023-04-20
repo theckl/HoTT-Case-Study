@@ -415,7 +415,7 @@ end
 def set_eq_to_car_eq {A B : Set} : (A = B) -> ((car A) = car B) :=
   λ p, ap trunctype.carrier p
 
-@[hott]
+@[hott, reducible]
 def set_eq_equiv_car_eq {A B : Set} : (A = B) ≃ ((car A) = car B) :=
 begin
   fapply equiv.mk,
