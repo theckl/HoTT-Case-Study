@@ -20,92 +20,99 @@ namespace categories
 
 /- Definition of categorical isomorphisms. -/
 @[hott]
-structure iso {C : Type u} [is_precat.{v} C] (a b : C) :=
-  (hom : a ⟶ b)
-  (inv : b ⟶ a) 
-  (r_inv : inv ≫ hom = 𝟙 b) 
-  (l_inv : hom ≫ inv = 𝟙 a) 
-
-postfix `⁻¹ʰ`:std.prec.max_plus := iso.inv
-
-infix ` ≅ `:25 := iso
-
-@[hott]
 structure is_iso {C : Type u} [is_precat.{v} C] {a b : C} (f : a ⟶ b) :=
   (inv : b ⟶ a)
   (r_inv : inv ≫ f = 𝟙 b)
   (l_inv : f ≫ inv = 𝟙 a)
 
-@[hott]
-def is_iso_to_iso {C : Type u} [is_precat.{v} C] {a b : C} (f : a ⟶ b) 
-  (H : is_iso f) : a ≅ b := iso.mk f H.inv H.r_inv H.l_inv
+@[hott, instance]
+def is_iso_is_prop {C : Type u} [HP :is_precat.{v} C] {a b : C} 
+  (f : a ⟶ b) : is_prop (is_iso f) :=
+begin
+  apply is_prop.mk, intros is_iso₁ is_iso₂,
+  hinduction is_iso₁ with inv₁ r_inv₁ l_inv₁,
+  hinduction is_iso₂ with inv₂ r_inv₂ l_inv₂,
+  fapply apd0111' is_iso.mk, 
+  { rwr <- @is_precat.comp_id _ HP _ _ inv₁, rwr <- l_inv₂,
+    rwr <- @is_precat.assoc _ HP, rwr r_inv₁, 
+    rwr @is_precat.id_comp _ HP _ _ inv₂ },
+  all_goals { apply pathover_of_tr_eq, exact is_prop.elim _ _ }
+end
 
 @[hott]
-def iso_to_is_iso {C : Type u} [is_precat.{v} C] {a b : C} (f : a ≅ b) : 
-  is_iso f.hom := is_iso.mk f.inv f.r_inv f.l_inv  
+structure iso {C : Type u} [is_precat.{v} C] (a b : C) :=
+  (hom : a ⟶ b)
+  (ih : is_iso hom)
+
+infix ` ≅ `:25 := iso
 
 @[hott]
-def iso.eta {C : Type u} [is_precat.{v} C] {a b : C} (i : a ≅ b) : 
-  i = iso.mk i.hom i.inv i.r_inv i.l_inv :=
-begin hinduction i, hsimp end  
+instance iso_to_hom {C : Type u} [is_precat.{v} C] (a b : C) : 
+  has_coe_to_fun (a ≅ b) :=
+has_coe_to_fun.mk (λ _, a ⟶ b) (λ i, i.hom)
 
 @[hott, hsimp]
 def inv_iso {C : Type u} [is_precat.{v} C] {a b : C} (i : a ≅ b) : b ≅ a :=
-  iso.mk i.inv i.hom i.l_inv i.r_inv
+  iso.mk i.ih.inv 
+         (is_iso.mk i.hom i.ih.l_inv i.ih.r_inv)
+
+postfix `⁻¹ʰ`:std.prec.max_plus := inv_iso 
 
 /- Calculation rules for isomorphisms. -/
 @[hott, hsimp]
 def iso_inv_inv {C : Type u} [is_precat.{v} C] {a b : C} (i : a ≅ b) :
-  (inv_iso i)⁻¹ʰ = i.hom :=
-by hsimp 
+  (inv_iso i)⁻¹ʰ = i :=
+by hinduction i with hom iso_hom; hinduction iso_hom; hsimp 
 
 @[hott, hsimp]
 def iso_rcancel {C : Type u} [is_precat.{v} C] {a b c : C} (i : a ≅ b)
   {g h : c ⟶ a} : g ≫ i.hom = h ≫ i.hom -> g = h :=
 assume pc, 
-have pc_inv : (g ≫ i.hom) ≫ i.inv = (h ≫ i.hom) ≫ i.inv, from 
-  ap (λ h : c ⟶ b, h ≫ i.inv) pc,
+have pc_inv : (g ≫ i.hom) ≫ i.ih.inv = (h ≫ i.hom) ≫ i.ih.inv, from 
+  ap (λ h : c ⟶ b, h ≫ i.ih.inv) pc,
 calc   g = g ≫ 𝟙 a : by hsimp
-     ... = g ≫ (i.hom ≫ i.inv) : by rwr <-i.l_inv
-     ... = (g ≫ i.hom) ≫ i.inv : by hsimp
-     ... = (h ≫ i.hom) ≫ i.inv : by rwr pc_inv
-     ... = h ≫ (i.hom ≫ i.inv) : by hsimp
-     ... = h ≫ 𝟙 a : by rwr i.l_inv     
+     ... = g ≫ (i.hom ≫ i.ih.inv) : by rwr <- i.ih.l_inv
+     ... = (g ≫ i.hom) ≫ i.ih.inv : by hsimp
+     ... = (h ≫ i.hom) ≫ i.ih.inv : by rwr pc_inv
+     ... = h ≫ (i.hom ≫ i.ih.inv) : by hsimp
+     ... = h ≫ 𝟙 a : by rwr i.ih.l_inv     
      ... = h : by hsimp 
 
 @[hott, hsimp]
 def iso_lcancel {C : Type u} [is_precat.{v} C] {a b c : C} (i : a ≅ b)
   {g h : b ⟶ c} : i.hom ≫ g = i.hom ≫ h -> g = h :=
 assume cp, 
-have cp_inv : i.inv ≫ (i.hom ≫ g) = i.inv ≫ (i.hom ≫ h), from 
-  ap (λ h : a ⟶ c, i.inv ≫ h) cp,
+have cp_inv : i.ih.inv ≫ (i.hom ≫ g) = i.ih.inv ≫ (i.hom ≫ h), from 
+  ap (λ h : a ⟶ c, i.ih.inv ≫ h) cp,
 calc   g = 𝟙 b ≫ g : by hsimp
-     ... = (i.inv ≫ i.hom) ≫ g : by rwr <-i.r_inv
-     ... = i.inv ≫ (i.hom ≫ g) : by hsimp
-     ... = i.inv ≫ (i.hom ≫ h) : by rwr cp_inv
-     ... = (i.inv ≫ i.hom) ≫ h : by hsimp
-     ... = 𝟙 b ≫ h : by rwr i.r_inv     
+     ... = (i.ih.inv ≫ i.hom) ≫ g : by rwr <-i.ih.r_inv
+     ... = i.ih.inv ≫ (i.hom ≫ g) : by hsimp
+     ... = i.ih.inv ≫ (i.hom ≫ h) : by rwr cp_inv
+     ... = (i.ih.inv ≫ i.hom) ≫ h : by hsimp
+     ... = 𝟙 b ≫ h : by rwr i.ih.r_inv     
      ... = h : by hsimp 
 
 @[hott, hsimp]
 def iso_move_lr {C : Type u} [is_precat.{v} C] {a b c : C} (i : a ≅ b)
-  (g : b ⟶ c) (h : a ⟶ c) : i.hom ≫ g = h -> g = i.inv ≫ h :=
+  (g : b ⟶ c) (h : a ⟶ c) : i.hom ≫ g = h -> g = i.ih.inv ≫ h :=
 assume pcr,
-have i.inv ≫ i.hom ≫ g = i.inv ≫ h, from ap (λ h : a ⟶ c, i.inv ≫ h) pcr,
+have i.ih.inv ≫ i.hom ≫ g = i.ih.inv ≫ h, from 
+  ap (λ h : a ⟶ c, i.ih.inv ≫ h) pcr,
 calc g   = 𝟙 b ≫ g : by hsimp
-     ... = (i.inv ≫ i.hom) ≫ g : by rwr <-i.r_inv
-     ... = i.inv ≫ (i.hom ≫ g) : by hsimp
-     ... = i.inv ≫ h : by rwr pcr   
+     ... = (i.ih.inv ≫ i.hom) ≫ g : by rwr <- i.ih.r_inv
+     ... = i.ih.inv ≫ (i.hom ≫ g) : by hsimp
+     ... = i.ih.inv ≫ h : by rwr pcr   
 
 @[hott, hsimp]
 def iso_move_rl {C : Type u} [is_precat.{v} C] {a b c : C} (i : a ≅ b)
-  (g : c ⟶ a) (h : c ⟶ b) : g ≫ i.hom = h -> g = h ≫ i.inv :=
+  (g : c ⟶ a) (h : c ⟶ b) : g ≫ i.hom = h -> g = h ≫ i.ih.inv :=
 assume pcl,
-have (g ≫ i.hom) ≫ i.inv = h ≫ i.inv, from ap (λ h : c ⟶ b, h ≫ i.inv) pcl,
+have (g ≫ i.hom) ≫ i.ih.inv = h ≫ i.ih.inv, from 
+  ap (λ h : c ⟶ b, h ≫ i.ih.inv) pcl,
 calc g   = g ≫ 𝟙 a : by hsimp
-     ... = g ≫ (i.hom ≫ i.inv) : by rwr <-i.l_inv
-     ... = (g ≫ i.hom) ≫ i.inv : by hsimp
-     ... = h ≫ i.inv : by rwr pcl     
+     ... = g ≫ (i.hom ≫ i.ih.inv) : by rwr <-i.ih.l_inv
+     ... = (g ≫ i.hom) ≫ i.ih.inv : by hsimp
+     ... = h ≫ i.ih.inv : by rwr pcl     
 
 /- Isomorphisms are uniquely determined by their underlying homomorphism:
    The inverse map by functorial equalities, and the functorial equalities 
@@ -113,29 +120,16 @@ calc g   = g ≫ 𝟙 a : by hsimp
 @[hott]
 def hom_eq_to_iso_eq {C : Type u} [is_precat.{v} C] {a b : C} {i j : a ≅ b} :
   i.hom = j.hom -> i = j :=
-assume hom_eq, 
-have inv_eq : i.inv = j.inv, from 
-  calc i.inv = i.inv ≫ 𝟙 a : by hsimp
-       ...   = i.inv ≫ (j.hom ≫ j.inv) : by rwr j.l_inv⁻¹ 
-       ...   = (i.inv ≫ j.hom) ≫ j.inv : by hsimp
-       ...   = (i.inv ≫ i.hom) ≫ j.inv : by rwr hom_eq⁻¹
-       ...   = 𝟙 b ≫ j.inv : by rwr i.r_inv
-       ...   = j.inv : by hsimp,
-let R := λ (f : a ⟶ b) (g : b ⟶ a), g ≫ f = 𝟙 b,
-    L := λ (f : a ⟶ b) (g : b ⟶ a), f ≫ g = 𝟙 a in
-have r_inv_eq : i.r_inv =[ap011 R hom_eq inv_eq; id] j.r_inv, from 
-  begin apply pathover_of_tr_eq, apply is_set.elim end,
-have l_inv_eq : i.l_inv =[ap011 L hom_eq inv_eq; id] j.l_inv, from 
-  begin apply pathover_of_tr_eq, apply is_set.elim end, 
-calc   i = iso.mk i.hom i.inv i.r_inv i.l_inv : iso.eta i 
-     ... = iso.mk j.hom j.inv j.r_inv j.l_inv : 
-                                        ap0111 iso.mk hom_eq inv_eq r_inv_eq l_inv_eq
-     ... = j : (iso.eta j)⁻¹
+begin
+  hinduction i, hinduction j,
+  intro hom_eq, fapply apd011 iso.mk, 
+  exact hom_eq, apply pathover_of_tr_eq, exact is_prop.elim _ _
+end
 
 @[hott, hsimp]
 def id_iso {C : Type u} [is_precat.{v} C] (a : C) : a ≅ a := 
   have inv_eq : 𝟙 a ≫ 𝟙 a = 𝟙 a, from is_precat.id_comp (𝟙 a),
-  iso.mk (𝟙 a) (𝟙 a) inv_eq inv_eq
+  iso.mk (𝟙 a) (is_iso.mk (𝟙 a) inv_eq inv_eq)
 
 @[hott, hsimp]
 def idtoiso {C : Type u} [is_precat.{v} C] {a b : C} : (a = b) -> (a ≅ b) :=
@@ -153,13 +147,13 @@ begin hinduction p, refl end
 
 /- The next two facts correspond to [HoTT-Book, Lem.9.1.9]. -/
 @[hott]
-def id_hom_tr_comp {C : Type u} [is_precat.{v} C] {c₁ c₂ d : C} (p : c₁ = c₂)
-  (h : c₁ ⟶ d) : p ▸ h = (idtoiso p)⁻¹ʰ ≫ h :=
+def id_hom_tr_comp {C : Type u} [is_precat.{v} C] {c₁ c₂ d : C} 
+  (p : c₁ = c₂) (h : c₁ ⟶ d) : p ▸ h = (idtoiso p)⁻¹ʰ.hom ≫ h :=
 begin hinduction p, hsimp end   
 
 @[hott]
-def id_hom_tr_comp' {C : Type u} [is_precat.{v} C] {c₁ c₂ d : C} (p : c₁ = c₂)
-  (h : d ⟶ c₁) : p ▸ h = h ≫ (idtoiso p).hom :=
+def id_hom_tr_comp' {C : Type u} [is_precat.{v} C] {c₁ c₂ d : C}
+  (p : c₁ = c₂) (h : d ⟶ c₁) : p ▸ h = h ≫ (idtoiso p).hom :=
 begin hinduction p, hsimp end 
 
 /-- The structure of a category and the bundled category. -/
@@ -216,7 +210,7 @@ begin intro a, rwr <- idtoiso_refl_eq a, exact category.idtoiso_linv (refl a) en
 
 @[hott]
 def iso_hom_tr_comp {C : Category} {c₁ c₂ d : C} (i : c₁ ≅ c₂)
-  (h : c₁ ⟶ d) : (idtoiso⁻¹ᶠ i) ▸ h = i⁻¹ʰ ≫ h :=
+  (h : c₁ ⟶ d) : (idtoiso⁻¹ᶠ i) ▸ h = i⁻¹ʰ.hom ≫ h :=
 begin 
   rwr <-(category.idtoiso_rinv i),  
   rwr category.idtoiso_linv (idtoiso⁻¹ᶠ i),
@@ -231,6 +225,20 @@ begin
   rwr category.idtoiso_linv (idtoiso⁻¹ᶠ i),
   exact id_hom_tr_comp' (idtoiso⁻¹ᶠ i) h
 end 
+
+/- A modified criterion for equality of functors -/
+@[hott]
+def functor_eq' {A : Type _} [is_precat A] {B : Type _} [is_precat B] 
+  {F G : A ⥤ B} : Π (p : Π (x : A), F.obj x = G.obj x), 
+    (Π {x y : A} (f : x ⟶ y), (idtoiso (p x)⁻¹).hom ≫ F.map f ≫ 
+       (idtoiso (p y)).hom = G.map f) -> F = G :=
+begin
+  intros obj_eq map_eq, fapply functor_eq,
+  { exact eq_of_homotopy obj_eq },
+  { fapply dep_eq_of_homotopy3, intros x y h,
+    apply pathover_of_tr_eq, rwr <- map_eq h,
+    sorry }
+end
 
 end categories
 
