@@ -328,7 +328,7 @@ begin
 end     
 
 @[hott, instance]
-def functor_category [is_precat.{v} C] [HD : is_cat.{v'} D] : is_cat (C ⥤ D) :=
+def functor_is_cat [is_precat.{v} C] [HD : is_cat.{v'} D] : is_cat (C ⥤ D) :=
 begin
   apply is_cat.mk, intros F G, fapply adjointify, 
   { exact functor_isotoid },
@@ -347,6 +347,10 @@ begin
       rwr functor_isoid_to_isoids, rwr isotoid_id_refl },
     { apply pathover_of_tr_eq, exact is_prop.elim _ _ } }
 end
+
+@[hott]
+def functor_Category (C : Type _) [is_precat.{v} C] (D : Type _) 
+  [is_cat.{v'} D] : Category := Category.mk (C ⥤ D) functor_is_cat
 
 /- Whiskering of natural transformations with functors: [HoTT-Book, Def.9.2.7] -/
 @[hott]
@@ -402,7 +406,7 @@ end
 /- The composition of functors has left and right neutral and is associative. 
    We construct these equalities from natural isomorphisms. -/
 @[hott, reducible]
-def l_neutral_funct_iso {C D : Precategory} (F : C ⥤ D) :
+def l_neutral_funct_iso {C D : Type _} [is_precat C] [is_precat D] (F : C ⥤ D) :
   (id_functor C ⋙ F) ≅ F :=
 begin 
   fapply iso.mk,
@@ -419,16 +423,16 @@ begin
 end  
 
 @[hott]
-def l_neutral_funct {C : Precategory} {D : Category} (F : C ⥤ D) :
+def l_neutral_funct {C D : Type _} [is_precat C] [is_cat D] (F : C ⥤ D) :
   (id_functor C ⋙ F) = F :=
 have i : (id_functor C ⋙ F) ≅ F, from 
-  @l_neutral_funct_iso C (to_Precat D) F,
-@category.isotoid (Category.mk (C ⥤ D) (functor_category)) 
+  l_neutral_funct_iso F,
+@category.isotoid (Category.mk (C ⥤ D) (functor_is_cat)) 
                                         (id_functor C ⋙ F) F i
 
 @[hott, reducible]
-def r_neutral_funct_iso {C D : Precategory} (F : C ⥤ D) :
-  (F ⋙ id_functor D) ≅ F :=
+def r_neutral_funct_iso {C D : Type _} [is_precat C] [is_precat D] 
+  (F : C ⥤ D) : (F ⋙ id_functor D) ≅ F :=
 begin 
   fapply iso.mk,
   { fapply nat_trans.mk, 
@@ -444,14 +448,15 @@ begin
 end 
 
 @[hott]
-def r_neutral_funct {C : Precategory} {D : Category} (F : C ⥤ D) :
-  (F ⋙ id_functor (to_Precat D)) = F :=
-@category.isotoid (Category.mk (C ⥤ D) (functor_category)) _ _
-  (@r_neutral_funct_iso C (to_Precat D) F)
+def r_neutral_funct {C D : Type _} [is_precat C] [is_cat D] 
+  (F : C ⥤ D) : (F ⋙ id_functor D) = F :=
+@category.isotoid (Category.mk (C ⥤ D) (functor_is_cat)) _ _
+  (r_neutral_funct_iso F)
 
 @[hott, reducible]
-def assoc_funct_iso {C D E F : Precategory} (G : C ⥤ D) 
-  (H : D ⥤ E) (I : E ⥤ F) : ((G ⋙ H) ⋙ I) ≅ (G ⋙ (H ⋙ I)) :=
+def assoc_funct_iso {C D E F : Type _} [is_precat C] [is_precat D] 
+  [is_precat E] [is_precat F] (G : C ⥤ D) (H : D ⥤ E) (I : E ⥤ F) : 
+  ((G ⋙ H) ⋙ I) ≅ (G ⋙ (H ⋙ I)) :=
 begin
   fapply iso.mk,
   { fapply nat_trans.mk,
@@ -467,11 +472,11 @@ begin
 end   
 
 @[hott]
-def assoc_funct {C D E : Precategory} {F : Category}
-  (G : C ⥤ D) (H : D ⥤ E) (I : E ⥤ F) : 
+def assoc_funct {C D E : Type _} [is_precat C] [is_precat D] 
+  [is_precat E] {F : Category} (G : C ⥤ D) (H : D ⥤ E) (I : E ⥤ F) : 
   ((G ⋙ H) ⋙ I) = (G ⋙ (H ⋙ I)) := 
-@category.isotoid (Category.mk (C ⥤ F) (functor_category)) _ _ 
-  (@assoc_funct_iso _ _ _ (to_Precat F) G H I)
+@category.isotoid (Category.mk (C ⥤ F) (functor_is_cat)) _ _ 
+  (assoc_funct_iso G H I)
 
 
 /- The power set `𝒫 A` of a set `A` is a is_precat, with inclusions of 
@@ -602,22 +607,27 @@ end
 
 @[hott, hsimp]
 def Set_isotoid_eq_hom {A B : Set.{u}} (i : A ≅ B) : 
-  ∀ a : A.carrier, (Set_isotoid i) ▸[λ A : Set.{u}, A.carrier] a = i.hom a :=
-assume a, 
+  ∀ a : A, (Set_isotoid i) ▸[λ A : Set.{u}, A.carrier] a = i.hom a :=
+assume a,
+have p : ((set_eq_to_car_eq (car_eq_to_set_eq (ua (Set_isotocareqv i))))) = 
+         (ua (Set_isotocareqv i)), by 
+    exact @is_equiv.right_inv _ _ _ 
+           set_eq_equiv_car_eq.to_is_equiv (ua (Set_isotocareqv i)),
 calc (Set_isotoid i) ▸ a = ((ap (trunctype.carrier) (Set_isotoid i)) ▸[λ A : Type u, A] a) : 
            (tr_ap (λ A : Type u, A) (trunctype.carrier) _ a)⁻¹
-     ... = ((set_eq_to_car_eq (Set_isotoid i)) ▸[λ A : Type u, A] a) : 
-           rfl      
+     ... = ((set_eq_to_car_eq (car_eq_to_set_eq (ua (Set_isotocareqv i)))) 
+                                      ▸[λ A : Type u, A] a) : rfl      
      ... = ((ua (Set_isotocareqv i)) ▸[λ A : Type u, A] a) : 
-           by rwr rinv_set_eq_car_eq _
+           by rwr p
      ... = (equiv_of_eq (ua (Set_isotocareqv i))).to_fun a : cast_def _ _
      ... = i.hom a : cast_ua (Set_isotocareqv i) a
 
 @[hott, hsimp]
-def Set_isotoid_eq_refl {A : Set.{u}} : Set_isotoid (id_is_iso A) = refl A :=
-  calc Set_isotoid (id_is_iso A) = car_eq_to_set_eq (ua (equiv.refl ↥A)) : rfl
+def Set_isotoid_eq_refl {A : Set.{u}} : 
+  Set_isotoid (id_iso A) = refl A :=
+  calc Set_isotoid (id_iso A) = car_eq_to_set_eq (ua (equiv.refl ↥A)) : rfl
        ... = car_eq_to_set_eq (idpath ↥A) : by rwr ua_refl
-       ... = refl A : idp_car_to_idp_set  
+       ... = refl A : car_idp_to_set_idp 
 
 @[hott]
 def Set_id_iso_rinv {A B : Set.{u}} : ∀ i : A ≅ B, idtoiso (Set_isotoid i) = i :=
@@ -634,10 +644,13 @@ begin
 end  
 
 @[hott, instance]
-def Set_category : category Set.{u} :=
+def Set_is_cat : is_cat Set.{u} :=
   have ideqviso : ∀ A B : Set.{u}, is_equiv (@idtoiso _ _ A B), from assume A B,
     adjointify idtoiso Set_isotoid Set_id_iso_rinv Set_id_iso_linv,
-  category.mk ideqviso  
+  is_cat.mk ideqviso  
+
+@[hott]
+def Set_Category : Category := Category.mk Set.{u} Set_is_cat
 
 end categories
 
