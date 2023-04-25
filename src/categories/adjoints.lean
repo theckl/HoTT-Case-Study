@@ -45,7 +45,7 @@ structure is_right_adjoint {C : Type u} {D : Type u'} [is_precat C]
 def left_adjoint_iso {C : Type u} {D : Type u'} [is_precat C] 
   [is_precat D] (L L' : C ⥤ D) (R : D ⥤ C) (adj : adjoint_functors L R)
   (adj' : adjoint_functors L' R) : L ⟶ L' :=
-(l_neutral_funct_iso L).inv ≫ tr_whisk_r adj'.unit L ≫ 
+(l_neutral_funct_iso L).ih.inv ≫ tr_whisk_r adj'.unit L ≫ 
   (assoc_funct_iso L' R L).hom ≫ tr_whisk_l L' adj.counit ≫ 
   (r_neutral_funct_iso L').hom
 
@@ -53,8 +53,8 @@ def left_adjoint_iso {C : Type u} {D : Type u'} [is_precat C]
 def right_adjoint_iso {C : Type u} {D : Type u'} [is_precat C] 
   [is_precat D] (L : C ⥤ D) (R R' : D ⥤ C) (adj : adjoint_functors L R)
   (adj' : adjoint_functors L R') : R ⟶ R' :=
-(r_neutral_funct_iso R).inv ≫ tr_whisk_l R adj'.unit ≫ 
-  (assoc_funct_iso R L R').inv ≫ tr_whisk_r adj.counit R' ≫ 
+(r_neutral_funct_iso R).ih.inv ≫ tr_whisk_l R adj'.unit ≫ 
+  (assoc_funct_iso R L R').ih.inv ≫ tr_whisk_r adj.counit R' ≫ 
   (l_neutral_funct_iso R').hom  
 
 @[hott]
@@ -140,14 +140,14 @@ begin hinduction p, hsimp, rwr tr_whisk_l_id, rwr is_precat.comp_id η end
 def counit_tr_L {C : Type u} {D : Type u'} [is_precat C] 
   [is_precat D] {L L' : C ⥤ D} {R : D ⥤ C} (p : L = L') 
   (ε : R ⋙ L ⟶ id_functor D) : 
-  p ▸[λ S, R ⋙ S ⟶ id_functor D] ε = (tr_whisk_l R (idtoiso p).inv) ≫ ε :=
+  p ▸[λ S, R ⋙ S ⟶ id_functor D] ε = (tr_whisk_l R (idtoiso p).ih.inv) ≫ ε :=
 begin hinduction p, hsimp, rwr tr_whisk_l_id, rwr is_precat.id_comp ε end
 
 @[hott]
 def counit_tr_R {C : Type u} {D : Type u'} [is_precat C] 
   [is_precat D] {L : C ⥤ D} {R R' : D ⥤ C} (p : R = R') 
   (ε : R ⋙ L ⟶ id_functor D) : 
-  p ▸[λ S, S ⋙ L ⟶ id_functor D] ε = (tr_whisk_r (idtoiso p).inv L) ≫ ε :=
+  p ▸[λ S, S ⋙ L ⟶ id_functor D] ε = (tr_whisk_r (idtoiso p).ih.inv L) ≫ ε :=
 begin hinduction p, hsimp, rwr tr_whisk_r_id, rwr is_precat.id_comp ε end 
 
 @[hott]
@@ -158,10 +158,10 @@ begin
   hinduction R_adj with L adj, hinduction R_adj' with L' adj', 
   fapply apd011, 
   { exact @category.isotoid (functor_Category C D) _ _ 
-                           (iso.mk (left_adjoint_iso L L' R adj adj')
-                                   (left_adjoint_iso L' L R adj' adj)
+                (iso.mk (left_adjoint_iso L L' R adj adj')
+                        (is_iso.mk (left_adjoint_iso L' L R adj' adj)
                                    (left_adjoint_iso_inv L' L R adj' adj)
-                                   (left_adjoint_iso_inv L L' R adj adj')) },
+                                   (left_adjoint_iso_inv L L' R adj adj'))) },
   { hinduction adj with η ε zzL zzR, hinduction adj' with η' ε' zzL' zzR', 
     fapply apdo011111 (λ L, @adjoint_functors.mk _ _ _ _ L R) _, 
     { apply pathover_of_tr_eq, rwr unit_tr_L, 
@@ -201,10 +201,10 @@ begin
   hinduction R_adj with R adj, hinduction R_adj' with R' adj', 
   fapply apd011, 
   { exact @category.isotoid (functor_Category D C) _ _
-                           (iso.mk (right_adjoint_iso L R R' adj adj')
-                                   (right_adjoint_iso L R' R adj' adj)
+              (iso.mk (right_adjoint_iso L R R' adj adj')
+                      (is_iso.mk   (right_adjoint_iso L R' R adj' adj)
                                    (right_adjoint_iso_inv L R' R adj' adj)
-                                   (right_adjoint_iso_inv L R R' adj adj')) },
+                                   (right_adjoint_iso_inv L R R' adj adj'))) },
   { hinduction adj with η ε zzL zzR, hinduction adj' with η' ε' zzL' zzR', 
     fapply apdo011111 (@adjoint_functors.mk _ _ _ _ L) _, 
     { apply pathover_of_tr_eq, rwr unit_tr_R, 
