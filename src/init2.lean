@@ -57,6 +57,11 @@ begin
 end
 
 
+@[hott]
+def ap10_eq_of_homotopy {A B : Type _} {f g : A -> B} (Hp : f ~ g) :
+  ap10 (eq_of_homotopy Hp) = Hp :=
+begin change apd10 _ = _, exact apd10_eq_of_homotopy Hp end
+
 @[reducible,hott]
 def ap100 {A B C : Type _} {f g : A → B -> C} (H : f = g) : f ~2 g := apd100 H
 
@@ -783,6 +788,18 @@ def fn2_po_of_tr_eq' {A C : Type _} {b₁ b₂ : A -> A -> C} (p : b₁ = b₂) 
 begin 
   hinduction p, intro q, apply pathover_idp_of_eq, apply eq_of_homotopy3, 
   intros a b c, exact eq_of_homotopy2 (q a b c) 
+end
+
+@[hott]
+def tr_fn2_of_ap_tr_ap_tr {A B : Type _} {f g : A -> B} {a₁ a₂ : A} 
+  (p : f = g) {C : B -> B -> Type _}  (h₁ : C (f a₁) (f a₂))
+  (h₂ : C (g a₁) (g a₂)) : 
+  (ap10 p a₂) ▸[λ b : B, C (g a₁) b] 
+               ((ap10 p a₁) ▸[λ b : B, C b (f a₂)] h₁) = h₂ ->
+               p ▸[λ f : A -> B, C (f a₁) (f a₂)] h₁ = h₂ :=
+begin 
+  hinduction p, rwr ap10_idp, rwr ap10_idp, 
+  rwr idp_tr, rwr idp_tr, rwr idp_tr, intro q, assumption 
 end
 
 end hott
