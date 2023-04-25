@@ -31,10 +31,10 @@ begin
 def isos_are_mono {C : Category} {c₁ c₂ : C} (i : c₁ ≅ c₂) : is_mono i.hom :=  
   assume d g₁ g₂ eq_comp, 
   calc g₁ = g₁ ≫ 𝟙 c₁ : by rwr is_precat.comp_id
-       ... = g₁ ≫ (i.hom ≫ i.inv) : by rwr iso.l_inv
-       ... = (g₁ ≫ i.hom) ≫ i.inv : by rwr is_precat.assoc
-       ... = (g₂ ≫ i.hom) ≫ i.inv : by rwr eq_comp
-       ... = g₂ : by rwr is_precat.assoc; rwr iso.l_inv; rwr is_precat.comp_id   
+       ... = g₁ ≫ (i.hom ≫ i.ih.inv) : by rwr is_iso.l_inv
+       ... = (g₁ ≫ i.hom) ≫ i.ih.inv : by rwr is_precat.assoc
+       ... = (g₂ ≫ i.hom) ≫ i.ih.inv : by rwr eq_comp
+       ... = g₂ : by rwr is_precat.assoc; rwr is_iso.l_inv; rwr is_precat.comp_id   
 
 @[hott]
 structure hom_of_monos {C : Category} {c d₁ d₂: C} {f : d₁ ⟶ c} 
@@ -77,16 +77,17 @@ begin
   { intro homs, let sh₁ := homs.1, let sh₂ := homs.2, fapply iso_of_monos.mk, 
     { fapply iso.mk, 
       { exact sh₁.hom_obj },
-      { exact sh₂.hom_obj },
-      { apply Hg d₂ (sh₂.hom_obj ≫ sh₁.hom_obj) (𝟙 d₂), rwr is_precat.assoc, 
+      { fapply is_iso.mk,
+        { exact sh₂.hom_obj },
+        { apply Hg d₂ (sh₂.hom_obj ≫ sh₁.hom_obj) (𝟙 d₂), rwr is_precat.assoc, 
         rwr sh₁.fac, rwr sh₂.fac, hsimp },
-      { apply Hf d₁ (sh₁.hom_obj ≫ sh₂.hom_obj) (𝟙 d₁), rwr is_precat.assoc, 
-        rwr sh₂.fac, rwr sh₁.fac, hsimp } },
+        { apply Hf d₁ (sh₁.hom_obj ≫ sh₂.hom_obj) (𝟙 d₁), rwr is_precat.assoc, 
+        rwr sh₂.fac, rwr sh₁.fac, hsimp } } },
     { hsimp, rwr sh₁.fac } },
   { fapply adjointify, 
     { intro i, fapply pair, 
       { fapply hom_of_monos.mk, exact i.iso_obj.hom, exact i.fac },
-      { fapply hom_of_monos.mk, exact i.iso_obj.inv, rwr iso_move_lr _ _ _ i.fac } },
+      { fapply hom_of_monos.mk, exact i.iso_obj.ih.inv, rwr iso_move_lr _ _ _ i.fac } },
     { intro im, hinduction im with i fac, apply iso_of_monos_eq _ _, 
       { apply hom_eq_to_iso_eq, hsimp } },
     { intro hm, hinduction hm with hm₁ hm₂, 
@@ -177,11 +178,11 @@ begin
   { apply pathover_of_tr_eq, 
     change idtoiso⁻¹ᶠ im.iso_obj ▸[λ (d : C), ↥(d ⟶ c)] s₁.hom = s₂.hom, 
     rwr iso_hom_tr_comp, 
-    calc (im.iso_obj)⁻¹ʰ ≫ s₁.hom = (im.iso_obj)⁻¹ʰ ≫ im.iso_obj.hom ≫ s₂.hom : 
+    calc im.iso_obj.ih.inv ≫ s₁.hom = im.iso_obj.ih.inv ≫ im.iso_obj.hom ≫ s₂.hom : 
                                                                            by rwr im.fac
-         ... = ((im.iso_obj)⁻¹ʰ ≫ im.iso_obj.hom) ≫ s₂.hom : 
+         ... = ((im.iso_obj.ih.inv) ≫ im.iso_obj.hom) ≫ s₂.hom : 
                by rwr is_precat.assoc
-         ... = 𝟙 s₂.obj ≫ s₂.hom : by rwr iso.r_inv 
+         ... = 𝟙 s₂.obj ≫ s₂.hom : by rwr is_iso.r_inv 
          ... = s₂.hom : by rwr is_precat.id_comp },
   { apply pathover_of_tr_eq, apply eq_of_homotopy3, intros d g₁ g₂, 
     apply eq_of_homotopy, intro comp_eq, exact is_prop.elim _ _ } 
@@ -274,9 +275,9 @@ def iso_of_monos_to_iso {C : Category} {c : C} (a b : subobject c) :
 begin 
   intro im, fapply iso.mk, 
   { fapply hom_of_monos.mk, exact im.iso_obj.hom, exact im.fac }, 
-  { fapply hom_of_monos.mk, exact im.iso_obj.inv, apply eq.inverse, apply iso_move_lr, 
-    exact im.fac },
-  exact is_prop.elim _ _, exact is_prop.elim _ _ 
+  { fapply is_iso.mk,
+    fapply hom_of_monos.mk, exact im.iso_obj.ih.inv, apply eq.inverse, apply iso_move_lr, 
+    exact im.fac, exact is_prop.elim _ _, exact is_prop.elim _ _ } 
 end
 
 @[hott]
@@ -284,8 +285,10 @@ def iso_to_iso_of_monos {C : Category} {c : C} (a b : subobject c) :
   (a ≅ b) -> (iso_of_monos a.is_mono b.is_mono) :=
 begin 
   intro i, fapply iso_of_monos.mk, 
-  { fapply iso.mk, exact i.hom.hom_obj, exact i.inv.hom_obj, 
-    exact ap hom_of_monos.hom_obj i.r_inv, exact ap hom_of_monos.hom_obj i.l_inv },
+  { fapply iso.mk, exact i.hom.hom_obj, fapply is_iso.mk, 
+    exact i.ih.inv.hom_obj, 
+    exact ap hom_of_monos.hom_obj i.ih.r_inv, 
+    exact ap hom_of_monos.hom_obj i.ih.l_inv },
   { exact i.hom.fac }
 end    
 
@@ -324,7 +327,7 @@ begin
   intros i j , 
   have iso_ab : a ≅ b, from 
     begin 
-      fapply iso.mk, exact i, exact j, 
+      fapply iso.mk, exact i, fapply is_iso.mk, exact j, 
       exact @is_prop.elim _ (subobject_hom_is_prop b b) _ _, 
       exact @is_prop.elim _ (subobject_hom_is_prop a a) _ _ 
     end,  
