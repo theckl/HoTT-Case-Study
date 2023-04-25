@@ -1,6 +1,6 @@
 Compiling files, in order of dependencies:
 ------------------------------------------
-init2       :   788
+init2       :   805
 types2      :   487 
 prop_axioms :   614
 prop_logic  :   208
@@ -13,14 +13,14 @@ sets
   quotients :   205
   theories  :   715
 categories
-  precat    :   612  
-  * basic     :   236 (redefine isomorphisms)
-  subobj    :   443
+  precat    :   674  
+  basic     :   266 
+  subobj    :   446
   subcat    :   124
-  examples  :   657 
+  examples  :   656 
   adjoints  :   410 
-  strict_cat:   824 (change as described below already started, 
-                     but yet unsuccessful)
+  * strict_cat:   824 (change as described below already started, 
+                       but yet unsuccessful)
   diagrams  :   442
   limits    :   626
   pullbacks :   403 (contains 2 sorries, for symmetry of intersection
