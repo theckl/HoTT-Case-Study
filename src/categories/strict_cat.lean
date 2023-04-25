@@ -38,18 +38,13 @@ end
 def functors_of_strict_cat_is_set (D₁ D₂ : Precategory) 
   [is_strict D₁] [HD₂ : is_strict D₂]: is_set (D₁ ⥤ D₂) :=
 begin 
-  fapply is_set.mk, intros F G p q, 
-  rwr <- functor_eq_eta p, rwr <- functor_eq_eta q, 
-  fapply apd011 functor_eq, 
-  { apply is_set.elim _ _, exact @is_set_map D₁ (Set.mk D₂ HD₂.set) },
-  { apply pathover_of_tr_eq, 
-    apply @set_po_eq (D₁ -> D₂) 
-                     (λ f, Set.mk (Π (x y : D₁), (x ⟶ y) → (f x ⟶ f y)) _)
-                     _ _ (ap functor.obj q) _ _ _ _, 
-    change is_trunc 0 (Π (x : D₁), Set.mk (Π (y : D₁), (x ⟶ y) → (f x ⟶ f y)) _), 
-    apply is_set_dmap, 
-    change is_trunc 0 (Π (y : D₁), Set.mk ((x ⟶ y) → (f x ⟶ f y)) _),
-    apply is_set_dmap, exact is_set_map }
+  apply is_trunc_equiv_closed_rev 0 (functor_eqv_sig D₁ D₂),
+  fapply dprod_of_Sets_is_set' _ _,
+  { apply is_trunc_equiv_closed_rev 0 (functor_ops_eqv_sig D₁ D₂),
+    fapply dprod_of_Sets_is_set' _ _,
+    { apply_instance },
+    { intro map, apply_instance } },
+  { intro map, apply_instance }
 end    
 
 @[hott]
@@ -117,7 +112,7 @@ def strict_cat_iso (C D : strict_Category) :=
   precat_iso C.Precat D.Precat
 
 @[hott, reducible]
-def strict_cat_id_equiv_iso (C D : strict_Category) : 
+def strict_cat_eq_equiv_iso (C D : strict_Category) : 
   (C = D) ≃ (strict_cat_iso C D) :=  
 strict_cat_eq_eqv_precat_eq C D ⬝e precat_id_equiv_iso _ _
 
@@ -133,13 +128,13 @@ begin
     apply (inv_bijection_of (is_fully_faithful_functor' @ff 
                    (obj_inv x) (obj_inv y))).map, 
     exact (idtoiso (@is_equiv.right_inv _ _ _ equiv x)).hom ≫ g 
-          ≫ (idtoiso (@is_equiv.right_inv _ _ _ equiv y)).inv },
+          ≫ (idtoiso (@is_equiv.right_inv _ _ _ equiv y)).ih.inv },
   { intro x, apply hott.eq.inverse, apply bijection_l_to_r, 
     change funct.map _ = _, rwr funct.map_id, 
     apply concat _ (ap (λ h : x ⟶ funct.obj (obj_inv x), 
            (idtoiso (@is_equiv.right_inv _ _ _ equiv x)).hom ≫ h) 
            (hott.eq.inverse (@is_precat.id_comp _ D.Precat.struct x _ _))),
-    hsimp, rwr iso.l_inv },
+    hsimp, rwr is_iso.l_inv },
   { intros x y z f g, apply hott.eq.inverse, apply bijection_l_to_r,
     change funct.map _ = _, rwr funct.map_comp,  
     let hxy := is_fully_faithful_functor' @ff (obj_inv x) (obj_inv y),
@@ -151,37 +146,87 @@ begin
     rwr <- as _ g _, 
     rwr as (idtoiso (@is_equiv.right_inv _ _ _ equiv x)).hom _ _, 
     rwr as f _ _, 
-    rwr <- as (idtoiso (@is_equiv.right_inv _ _ _ equiv y)).inv _ _,
-    rwr <- as _ _ g, rwr iso.r_inv, 
+    rwr <- as (idtoiso (@is_equiv.right_inv _ _ _ equiv y)).ih.inv _ _,
+    rwr <- as _ _ g, rwr is_iso.r_inv, 
     rwr @is_precat.id_comp _ D.Precat.struct y _ _, rwr <- as f _ _ }
 end
 
 @[hott]
-def strict_cat_iso_to_iso {C D : strict_Category} :
+def strict_cat_iso_to_iso (C D : strict_Category) :
   strict_cat_iso C D -> C ≅ D :=
 begin
   intro sc_iso, fapply iso.mk, 
-  { exact sc_iso.functor },
-  { exact strict_cat_iso.inv sc_iso },
-  { fapply functor_eq, 
-    { apply eq_of_homotopy, intro x, 
-      hinduction sc_iso with funct ff equiv,
-      exact @is_equiv.right_inv _ _ _ equiv x },
-    { sorry } },
-  { fapply functor_eq, 
-    { sorry },
-    { sorry } }
+  { exact sc_iso.functor }, 
+  { fapply is_iso.mk,
+    { exact strict_cat_iso.inv sc_iso },
+    { fapply functor_eq', 
+      { intro x, hinduction sc_iso with funct ff equiv,
+        exact @is_equiv.right_inv _ _ _ equiv x },
+      { intros x y g,  
+        change _ ≫ sc_iso.functor.map (sc_iso.inv.map g) ≫ _ = g, 
+        hinduction sc_iso with funct ff equiv,
+        let obj_inv := @is_equiv.inv _ _ _ equiv,
+        change _ ≫ ((is_fully_faithful_functor' @ff (obj_inv x)
+                         (obj_inv y))) ((inv_bijection_of 
+                      (is_fully_faithful_functor' @ff (obj_inv x)
+                         (obj_inv y))) (_ ≫ g ≫ _)) ≫ _ = _,
+        rwr inv_bij_r_inv (is_fully_faithful_functor' @ff (obj_inv x)
+                         (obj_inv y)),          
+        rwr <- is_precat.assoc, rwr <- is_precat.assoc _ g _, 
+        rwr <- is_precat.assoc _ (_ ≫ g) _, 
+        rwr <- is_precat.assoc _ _ g, rwr id_inv_iso_inv,
+        change ((((idtoiso _).ih.inv ≫ _) ≫ g) ≫ _) ≫ _  = _,
+        rwr is_iso.r_inv, rwr is_precat.id_comp, rwr is_precat.assoc,
+        rwr is_iso.r_inv, rwr is_precat.comp_id } },
+    { fapply functor_eq', 
+      { intro x, hinduction sc_iso with funct ff equiv,
+        exact @is_equiv.left_inv _ _ _ equiv x },
+      { intros x y f, 
+        change _ ≫ sc_iso.inv.map (sc_iso.functor.map f) ≫ _ = f,
+        hinduction sc_iso with funct ff equiv, 
+        let obj_inv := @is_equiv.inv _ _ _ equiv,
+        change _ ≫ (inv_bijection_of (is_fully_faithful_functor' 
+          @ff (obj_inv (funct.obj x)) (obj_inv (funct.obj y))) 
+          ((idtoiso (@is_equiv.right_inv _ _ _ equiv 
+                                          (funct.obj x))).hom ≫ 
+                                     funct.map f ≫ _)) ≫ _ = _,
+        have r : funct.map (idtoiso (@is_equiv.left_inv _ _ _ 
+                                                equiv x)).hom = 
+          (idtoiso (@is_equiv.right_inv _ _ _ equiv 
+                                          (funct.obj x))).hom, from 
+          sorry,
+        rwr <- r,
+        sorry } } }
+end
+
+@[hott]
+def iso_to_strict_cat_iso (C D : strict_Category) :
+  C ≅ D -> strict_cat_iso C D :=
+begin 
+  intro i, hinduction i with hom is_iso, 
+  induction is_iso with inv l_inv r_inv, 
+  fapply precat_iso.mk, 
+  { exact hom },
+  { intros x y, sorry },
+  { sorry }
 end
 
 @[hott]
 def strict_cat_iso_eqv_iso (C D : strict_Category) :
   (strict_cat_iso C D) ≃ (C ≅ D) :=
-sorry
+begin
+  fapply equiv.mk,
+  { exact strict_cat_iso_to_iso C D },
+  { fapply adjointify,
+    { exact iso_to_strict_cat_iso C D },
+    { sorry },
+    { sorry } }
+end
 
 @[hott]
 def strict_cat_eq_eqv_iso {C D : strict_Category} :
   (C = D) ≃ (C ≅ D) :=
-strict_cat_id_equiv_iso _ _ ⬝e strict_cat_iso_eqv_iso _ _ 
+strict_cat_eq_equiv_iso _ _ ⬝e strict_cat_iso_eqv_iso _ _ 
 
 @[hott]
 def idtoiso_strictcattoiso (C D : strict_Category) :
