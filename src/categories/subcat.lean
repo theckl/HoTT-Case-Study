@@ -48,10 +48,10 @@ def ind_type_iso_iso {C : Category} {D : Type u'} (f : D -> C)
   {d₁ d₂ : ind_cat_type f} : (d₁ ≅ d₂) -> (f d₁ ≅ f d₂) := 
 begin
   intro i, fapply iso.mk,  
-  { exact i.hom },
-  { exact i.inv },
-  { exact i.r_inv },
-  { exact i.l_inv }
+  { exact i.hom }, fapply is_iso.mk,
+  { exact i.ih.inv },
+  { exact i.ih.r_inv },
+  { exact i.ih.l_inv }
 end  
 
 @[hott]
