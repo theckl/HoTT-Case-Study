@@ -320,9 +320,30 @@ structure functor_ops (C : Type _) [is_precat C] (D : Type _) [is_precat D] :=
 (map      : Π {x y : C}, (x ⟶ y) → ((obj x) ⟶ (obj y)))
 
 @[hott]
+def functor_ops_sig (C : Type _) [is_precat C] (D : Type _) [is_precat D] :=
+  Σ (obj : C -> D), Π {x y : C}, (x ⟶ y) → ((obj x) ⟶ (obj y)) 
+
+@[hott]
+def functor_ops_eqv_sig (C : Type _) [is_precat C] (D : Type _) [is_precat D] :
+  (functor_ops C D) ≃ (functor_ops_sig C D) :=
+begin
+  fapply equiv.mk,
+  { intro F, exact dpair F.obj F.map },
+  { fapply adjointify,
+    { intro F_sig, exact functor_ops.mk F_sig.1 F_sig.2 },
+    { intro F_sig, hinduction F_sig, refl },
+    { intro F, hinduction F, refl } }
+end  
+
+@[hott]
 def functor_to_ops {C : Type _} [is_precat C] {D : Type _} [is_precat D] :
   (functor C D) -> (functor_ops C D) :=
 λ F, functor_ops.mk F.obj F.map
+
+@[hott, reducible]
+def functor_obj_ops {C : Type _} [is_precat C] {D : Type _} [is_precat D] :
+  Π F, functor.obj F = (functor_ops.obj ∘ (@functor_to_ops C _ D _)) F :=
+λ F, rfl
 
 @[hott]
 structure functor_laws {C : Type _} [is_precat C] {D : Type _} [is_precat D]
@@ -366,7 +387,13 @@ def functor_eq_eqv_ops_eq {C : Type _} [is_precat C] {D : Type _}
   [is_precat D] : Π (F G : functor C D), 
   (F = G) ≃ (functor_to_ops F = functor_to_ops G) :=
 λ F G, eq_equiv_fn_eq_of_equiv (functor_eqv_sig C D) _ _ ⬝e 
-       subtype_eq_equiv _ _  
+       subtype_eq_equiv _ _ 
+
+@[hott]
+def functor_eq_obj_ops {C : Type _} [is_precat C] {D : Type _} 
+  [is_precat D] {F G : C ⥤ D} : Π (p : F = G),
+  ap functor.obj p = ap functor_ops.obj (functor_eq_eqv_ops_eq F G p) := 
+begin intro p, hinduction p, rwr ap_idp end  
 
 /- Functors are equal if their maps of objects and arrows are equal. -/
 @[hott]
@@ -378,6 +405,41 @@ begin
   intros obj_eq map_eq, apply (functor_eq_eqv_ops_eq F G)⁻¹ᶠ, 
   exact apd011 functor_ops.mk obj_eq map_eq 
 end  
+
+@[hott]
+def functor_eq_idp {A : Type _} [is_precat A] {B : Type _} 
+  [is_precat B] (F : A ⥤ B) : functor_eq (idpath F.obj) idpo = idp :=
+begin 
+  change (functor_eq_eqv_ops_eq F F)⁻¹ᶠ (apd011 functor_ops.mk 
+                                       (idpath F.obj) idpo) = idp,
+  have p : (functor_eq_eqv_ops_eq F F)⁻¹ᶠ (apd011 functor_ops.mk 
+                                (idpath F.obj) (idpatho F.map)) =
+           (functor_eq_eqv_ops_eq F F)⁻¹ᶠ idp, from rfl,
+  rwr p, change _ = idpath F,
+  rwr <- is_equiv.left_inv (functor_eq_eqv_ops_eq F F).to_fun 
+                                                    (idpath F) 
+end
+
+@[hott]
+def functor_eq_obj {A : Type _} [is_precat A] {B : Type _} [is_precat B] 
+  {F G : A ⥤ B} (p : F.obj = G.obj) 
+  (q : F.map =[p; λ f : A -> B, Π (x y : A), (x ⟶ y) -> 
+                                (f x ⟶ f y)] G.map) : 
+  ap functor.obj (functor_eq p q) = p :=
+begin
+  hinduction F with F_obj F_map F_mi F_mc,
+  hinduction G with G_obj G_map G_mi G_mc, 
+  change F_obj = G_obj at p, 
+  change @F_map =[p; λ f : A -> B, Π (x y : A), (x ⟶ y) -> 
+                                      (f x ⟶ f y)] @G_map at q, 
+  hinduction p, hinduction q, 
+  let F := functor.mk F_obj @F_map @F_mi @F_mc,
+  let G := functor.mk F_obj @F_map @G_mi @G_mc,
+  change ap _ ((functor_eq_eqv_ops_eq F G)⁻¹ᶠ (idpath (functor_ops.mk 
+                          F_obj @F_map))) = _,
+  rwr functor_eq_obj_ops, 
+  rwr is_equiv.right_inv (functor_eq_eqv_ops_eq F G) 
+end
 
 @[hott, reducible]
 def constant_functor {C : Type u} [is_precat C] {D : Type u'} 
