@@ -145,6 +145,16 @@ def id_inv_iso_inv {C : Type u} [is_precat.{v} C] {c₁ c₂ : C} (p : c₁ = c�
   idtoiso p⁻¹ = inv_iso (idtoiso p) := 
 begin hinduction p, refl end 
 
+/- `idtoiso` commutes with functors -/
+@[hott]
+def funct_idtoiso {C : Type _} [is_precat C] {c₁ c₂ : C} 
+  {D : Type _} [is_precat D] (F : C ⥤ D) (p : c₁ = c₂) :
+  F.map (idtoiso p).hom = (idtoiso (ap F.obj p)).hom :=
+begin 
+  hinduction p, rwr idtoiso_refl_eq, rwr ap_idp, 
+  rwr idtoiso_refl_eq, change F.map (𝟙 c₁) = _, rwr F.map_id 
+end  
+
 /- The next two facts correspond to [HoTT-Book, Lem.9.1.9]. -/
 @[hott]
 def id_hom_tr_comp {C : Type u} [is_precat.{v} C] {c₁ c₂ d : C} 
@@ -236,9 +246,20 @@ begin
   intros obj_eq map_eq, fapply functor_eq,
   { exact eq_of_homotopy obj_eq },
   { fapply dep_eq_of_homotopy3, intros x y h,
-    apply pathover_of_tr_eq, rwr <- map_eq h,
-    sorry }
+    apply pathover_of_tr_eq, 
+    apply @tr_fn2_of_ap_tr_ap_tr _ _ _ _ _ _ (eq_of_homotopy obj_eq) 
+            (λ b₁ b₂, b₁ ⟶ b₂) (F.map h) (G.map h), 
+    rwr <- map_eq h, rwr ap10_eq_of_homotopy, rwr id_hom_tr_comp,
+    rwr id_hom_tr_comp', rwr <- id_inv_iso_inv, rwr is_precat.assoc }
 end
+
+@[hott]
+def functor_eq_obj' {A : Type _} [is_precat A] {B : Type _} [is_precat B] 
+  {F G : A ⥤ B} (p : Π (x : A), F.obj x = G.obj x) 
+    (q : Π {x y : A} (f : x ⟶ y), (idtoiso (p x)⁻¹).hom ≫ F.map f ≫ 
+       (idtoiso (p y)).hom = G.map f) : 
+  ap functor.obj (functor_eq' p @q) = eq_of_homotopy p :=
+begin change ap _ (functor_eq _ _) = _, rwr functor_eq_obj end
 
 end categories
 
