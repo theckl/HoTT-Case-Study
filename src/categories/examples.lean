@@ -135,10 +135,13 @@ def iso_to_iso_op [is_precat.{v} C] : ∀ {a b : Cᵒᵖ}, (unop a ≅ unop b) -
 begin 
   intros a b i,
   fapply iso.mk, 
-    rwr <- op_unop a, rwr <- op_unop b, exact hom_op i.inv,
+    rwr <- op_unop a, rwr <- op_unop b, exact hom_op i.ih.inv,
+    fapply is_iso.mk,
     rwr <- op_unop a, rwr <- op_unop b, exact hom_op i.hom,
-    change hom_op (i.inv ≫ i.hom) = hom_op (𝟙 (unop b)), apply ap hom_op, exact i.r_inv,
-    change hom_op (i.hom ≫ i.inv) = hom_op (𝟙 (unop a)), apply ap hom_op, exact i.l_inv   
+    change hom_op (i.ih.inv ≫ i.hom) = hom_op (𝟙 (unop b)), 
+    apply ap hom_op, exact i.ih.r_inv,
+    change hom_op (i.hom ≫ i.ih.inv) = hom_op (𝟙 (unop a)), 
+    apply ap hom_op, exact i.ih.l_inv   
 end
 
 @[hott, hsimp]
@@ -146,12 +149,12 @@ def iso_op_to_iso [is_precat.{v} C] : ∀ {a b : Cᵒᵖ}, (a ≅ b) -> (unop a 
 begin
   intros a b i,
   fapply iso.mk,
-    exact hom_unop i.inv,
+    exact hom_unop i.ih.inv, fapply is_iso.mk,
     exact hom_unop i.hom,
-  { rwr <- @hom_unop_op _ _ _ _ (hom_unop i.hom ≫ hom_unop i⁻¹ʰ),  
-    rwr <- @hom_unop_op _ _ _ _ (𝟙 (unop b)), exact ap hom_unop (i.r_inv) },
-  { rwr <- @hom_unop_op _ _ _ _ (hom_unop i⁻¹ʰ ≫ hom_unop i.hom),  
-    rwr <- @hom_unop_op _ _ _ _ (𝟙 (unop a)), exact ap hom_unop (i.l_inv) }
+  { rwr <- @hom_unop_op _ _ _ _ (hom_unop i.hom ≫ hom_unop i.ih.inv),  
+    rwr <- @hom_unop_op _ _ _ _ (𝟙 (unop b)), exact ap hom_unop (i.ih.r_inv) },
+  { rwr <- @hom_unop_op _ _ _ _ (hom_unop i.ih.inv ≫ hom_unop i.hom),  
+    rwr <- @hom_unop_op _ _ _ _ (𝟙 (unop a)), exact ap hom_unop (i.ih.l_inv) }
 end  
 
 @[hott, instance]
@@ -282,16 +285,16 @@ begin
     rwr is_precat.assoc }
 end  
 
-/- If the target of the functors is a category, the is_precat of functors is a category. -/
+/- If the target of the functors is a category, the precategory of functors is a category. -/
 @[hott]
 def functor_iso_to_isos [is_precat.{v} C] [is_precat.{v'} D] 
   {F G : C ⥤ D} : (F ≅ G) -> Π c : C, F.obj c ≅ G.obj c :=
 begin 
   intros i c, fapply iso.mk,
-  { exact i.hom.app c },
-  { exact i.inv.app c },
-  { change (i.inv ≫ i.hom).app c = _, rwr i.r_inv },
-  { change (i.hom ≫ i.inv).app c = _, rwr i.l_inv }
+  { exact i.hom.app c }, fapply is_iso.mk,
+  { exact i.ih.inv.app c },
+  { change (i.ih.inv ≫ i.hom).app c = _, rwr i.ih.r_inv },
+  { change (i.hom ≫ i.ih.inv).app c = _, rwr i.ih.l_inv }
 end     
 
 @[hott] 
@@ -310,17 +313,12 @@ begin hinduction p, rwr idtoiso_refl_eq end
 def functor_isotoid [is_precat.{v} C] [HD : is_cat.{v'} D] {F G : C ⥤ D} :
   (F ≅ G) -> F = G :=
 begin
-  have Q : Π (H₂ : C -> D) (p : F.obj = H₂) (c₁ c₂ : C) (h : c₁ ⟶ c₂), 
-            (p ▸[λ H : C -> D, Π (c₁ c₂ : C) (h : c₁ ⟶ c₂), H c₁ ⟶ H c₂] F.map) c₁ c₂ h = 
-               (idtoiso (apd10 p c₁)).inv ≫ F.map h ≫ (idtoiso (apd10 p c₂)).hom, from 
-    begin intros H₂ p c₁ c₂ h, hinduction p, hsimp end,
-  intro i, fapply functor_eq, 
-  { apply eq_of_homotopy, intro c, 
+  intro i, fapply functor_eq', 
+  { intro c, 
     exact @category.isotoid (Category.mk D HD) _ _ 
-                               (@functor_iso_to_isos _ _ _ _ F G i c) },
-  { apply pathover_of_tr_eq, apply eq_of_homotopy3, intros c₁ c₂ h, rwr Q, 
-    rwr homotopy_eq_rinv, 
-    change (idtoiso (idtoiso⁻¹ᶠ (functor_iso_to_isos i c₁)))⁻¹ʰ ≫ _ ≫
+                            (@functor_iso_to_isos _ _ _ _ F G i c) },
+  { intros c₁ c₂ h, rwr id_inv_iso_inv, 
+    change (idtoiso (idtoiso⁻¹ᶠ (functor_iso_to_isos i c₁))).ih.inv ≫ _ ≫
            (idtoiso (idtoiso⁻¹ᶠ (functor_iso_to_isos i c₂))).hom = _, 
     rwr @category.idtoiso_rinv (Category.mk D HD), 
     rwr @category.idtoiso_rinv (Category.mk D HD), apply eq.inverse, 
@@ -332,13 +330,14 @@ def functor_is_cat [is_precat.{v} C] [HD : is_cat.{v'} D] : is_cat (C ⥤ D) :=
 begin
   apply is_cat.mk, intros F G, fapply adjointify, 
   { exact functor_isotoid },
-  { intro i, apply hom_eq_to_iso_eq, apply nat_trans_eq, apply eq_of_homotopy, intro c, 
-    rwr functor_idtoiso_comp, 
-    change (idtoiso (@apd10 _ _ F.obj G.obj (ap functor.obj (functor_eq _ _)) c)).hom = _,
-    rwr functor_eq_obj, rwr homotopy_eq_rinv,
+  { intro i, apply hom_eq_to_iso_eq, apply nat_trans_eq, apply eq_of_homotopy, 
+    intro c, rwr functor_idtoiso_comp, 
+    change (idtoiso (@apd10 _ _ F.obj G.obj (ap functor.obj (functor_eq' _ _)) c)).hom = _,
+    rwr functor_eq_obj', rwr homotopy_eq_rinv,
     change (idtoiso (idtoiso⁻¹ᶠ (functor_iso_to_isos i c))).hom = _, 
     rwr @category.idtoiso_rinv (Category.mk D HD) },
-  { intro p, hinduction p, rwr idtoiso_refl_eq, change functor_eq _ _ = idp, 
+  { intro p, hinduction p, rwr idtoiso_refl_eq, 
+    change functor_eq' _ _ = idp, 
     rwr <- functor_eq_idp, fapply apd011 (functor_eq), 
     { change eq_of_homotopy (λ (c : C), @category.isotoid (Category.mk D HD) _ _ 
                                (@functor_iso_to_isos C _ _ _ _ _ (id_iso F) c)) = idpath _,
@@ -412,7 +411,7 @@ begin
   fapply iso.mk,
   { fapply nat_trans.mk, 
     { intro c, exact 𝟙 (F.obj c) },
-    { intros c c' f, hsimp } },
+    { intros c c' f, hsimp } }, fapply is_iso.mk,
   { fapply nat_trans.mk, 
     { intro c, exact 𝟙 (F.obj c) },
     { intros c c' f, hsimp } },
@@ -437,7 +436,7 @@ begin
   fapply iso.mk,
   { fapply nat_trans.mk, 
     { intro c, exact 𝟙 (F.obj c) },
-    { intros c c' f, hsimp } },
+    { intros c c' f, hsimp } }, fapply is_iso.mk,
   { fapply nat_trans.mk, 
     { intro c, exact 𝟙 (F.obj c) },
     { intros c c' f, hsimp } },
@@ -461,7 +460,7 @@ begin
   fapply iso.mk,
   { fapply nat_trans.mk,
     { intro c, exact 𝟙 (I.obj (H.obj (G.obj c))) },
-    { intros c c' f, hsimp } },
+    { intros c c' f, hsimp } }, fapply is_iso.mk,
   { fapply nat_trans.mk,
     { intro c, exact 𝟙 (I.obj (H.obj (G.obj c))) },
     { intros c c' f, hsimp } },
@@ -585,11 +584,11 @@ def Set_is_precat : is_precat Set.{u} :=
 def Set_isotocareqv {A B : Set.{u}} : (A ≅ B) -> (A ≃ B) :=
     assume i,
   have eqv_iso : is_equiv i.hom, from 
-    have r_inv : ∀ b : B, i.hom (i.inv b) = b, from 
-      assume b, homotopy_of_eq i.r_inv b,
-    have l_inv : ∀ a : A, i.inv (i.hom a) = a, from 
-      assume a, homotopy_of_eq i.l_inv a,
-    adjointify i.hom i.inv r_inv l_inv,
+    have r_inv : ∀ b : B, i.hom (i.ih.inv b) = b, from 
+      assume b, homotopy_of_eq i.ih.r_inv b,
+    have l_inv : ∀ a : A, i.ih.inv (i.hom a) = a, from 
+      assume a, homotopy_of_eq i.ih.l_inv a,
+    adjointify i.hom i.ih.inv r_inv l_inv,
   equiv.mk i.hom eqv_iso 
 
 @[hott, hsimp, reducible]
