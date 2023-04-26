@@ -145,6 +145,12 @@ def id_inv_iso_inv {C : Type u} [is_precat.{v} C] {c₁ c₂ : C} (p : c₁ = c�
   idtoiso p⁻¹ = inv_iso (idtoiso p) := 
 begin hinduction p, refl end 
 
+@[hott]
+def idtoiso_comp_eq {C : Type u} [is_precat.{v} C] {c₁ c₂ c₃ : C} 
+  (p : c₁ = c₂) (q : c₂ = c₃) : 
+  (idtoiso p).hom ≫ (idtoiso q).hom = (idtoiso (p ⬝ q)).hom :=
+begin hinduction p, hinduction q, hsimp end   
+
 /- `idtoiso` commutes with functors -/
 @[hott]
 def funct_idtoiso {C : Type _} [is_precat C] {c₁ c₂ : C} 
@@ -165,6 +171,15 @@ begin hinduction p, hsimp end
 def id_hom_tr_comp' {C : Type u} [is_precat.{v} C] {c₁ c₂ d : C}
   (p : c₁ = c₂) (h : d ⟶ c₁) : p ▸ h = h ≫ (idtoiso p).hom :=
 begin hinduction p, hsimp end 
+
+/- We can use `idtoiso` to describe equality of the maps on 
+   homorphisms induced by an equality of functors. -/
+@[hott]
+def functor_map_eq {C : Type _} [is_precat C] {D : Type _} 
+  [is_precat D] {F G : C ⥤ D} (p : F = G) {x y : C} : Π (f : x ⟶ y), 
+  G.map f = (idtoiso (ap10 (ap functor.obj p) x)⁻¹).hom ≫
+            F.map f ≫ (idtoiso (ap10 (ap functor.obj p) y)).hom :=   
+begin intro f, hinduction p, hsimp end
 
 /-- The structure of a category and the bundled category. -/
 @[hott]
