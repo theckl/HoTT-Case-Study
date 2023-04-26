@@ -470,6 +470,21 @@ begin
     apply struct_id_dep_contr_to_contr D id_sys_fst is_contr_dep }
 end 
 
+@[hott,reducible]
+def struct_id_char_of_contr_idp {A : Type _} {a₀ : A} {B : A -> Type _} 
+  (b₀ : B a₀) (D : dep_ppred a₀ b₀)  
+  (contr : is_contr (Σ (a : A), D.ppred_fst.fam a)) 
+  (contr_dep : is_contr (Σ (b : B a₀), D.dep_fam a₀ b D.ppred_fst.base)) :
+  struct_id_char_of_contr b₀ D contr contr_dep ⟨a₀, b₀⟩ idp = 
+  ⟨D.ppred_fst.base, D.dep_base⟩ :=
+begin 
+  change ((can_ppmap (@ppred.mk _ (dpair a₀ b₀) 
+              (λ ab, Σ (c : D.ppred_fst.fam ab.fst), 
+                            D.dep_fam ab.fst ab.snd c) 
+       ⟨D.ppred_fst.base, D.dep_base⟩)).fam_map ⟨a₀, b₀⟩) idp = _, 
+  hsimp 
+end
+
 /- A useful fact when we want to apply characterizations of identity types -/
 @[hott]
 def obj_char_id_eq {A : Type _} {a₀ : A} {B : A -> Type _}
