@@ -280,8 +280,8 @@ sigma.mk g (is_set_inverse_of.mk r_inv_f l_inv_f)
 
 /- Functions with inverses are bijective. -/
 @[hott, reducible, hsimp]
-def has_inverse_to_bijection {A : Set} {B : Set} (f : A -> B) (g : B -> A) :
-  is_set_inverse_of f g -> bijection A B :=
+def has_inverse_to_is_bijective {A : Set} {B : Set} (f : A -> B) 
+  (g : B -> A) : is_set_inverse_of f g -> is_set_bijective f :=
 assume inv_f_g,
 have f_inj : is_set_injective f, from assume a1 a2 feq,
   calc a1 = g (f a1) : by rwr (@is_set_inverse_of.l_inv _ _ f g inv_f_g a1)
@@ -291,8 +291,13 @@ have f_surj : is_set_surjective f, from assume b,
   have af : fiber f b, from 
     fiber.mk (g b) (@is_set_inverse_of.r_inv _ _ f g inv_f_g b),
   tr af,
-have is_bij : is_set_bijective f, from is_set_bijective.mk f_inj f_surj,
-bijection.mk f is_bij
+is_set_bijective.mk f_inj f_surj
+
+@[hott, reducible, hsimp]
+def has_inverse_to_bijection {A : Set} {B : Set} (f : A -> B) (g : B -> A) :
+  is_set_inverse_of f g -> bijection A B :=
+assume inv_f_g, 
+bijection.mk f (has_inverse_to_is_bijective f g inv_f_g) 
 
 /- The inverse of a bijection is a bijection, and the inverse of the inverse is 
    the bijection itself. -/
