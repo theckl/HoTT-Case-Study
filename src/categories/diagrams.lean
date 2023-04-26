@@ -4,8 +4,8 @@ universes v v' u u' w
 hott_theory
 
 namespace hott
-open hott.eq hott.set hott.subset hott.is_trunc hott.is_equiv hott.equiv hott.categories
-     hott.categories.adjoints 
+open hott.eq hott.set hott.subset hott.is_trunc hott.is_equiv hott.equiv 
+     hott.precategories hott.categories hott.categories.adjoints 
 
 namespace categories                
 
@@ -30,7 +30,7 @@ def discrete_cat_struct (A : Set) : category_struct (discrete A) :=
                      (λ (a b c: discrete A) (f : a ⟶ b) (g : b ⟶ c), f ⬝ g)
 
 @[hott, instance]
-def discrete_precategory (A : Set) : precategory (discrete A) :=
+def discrete_precategory (A : Set) : is_precat (discrete A) :=
   have ic : Π (a b : discrete A) (f : a ⟶ b), 𝟙 a ≫ f = f, from 
     assume a b f, idp_con f,
   have ci : Π (a b : discrete A) (f : a ⟶ b), f ≫ 𝟙 b = f, from 
@@ -38,10 +38,10 @@ def discrete_precategory (A : Set) : precategory (discrete A) :=
   have as : Π (a b c d : discrete A) (f : a ⟶ b) (g : b ⟶ c) (h : c ⟶ d),
              (f ≫ g) ≫ h = f ≫ (g ≫ h), from 
     assume a b c d f g h, con.assoc f g h,
-  precategory.mk ic ci as
+  is_precat.mk ic ci as
 
 @[hott]
-def discrete.functor {C : Type u} [category.{v} C] {J : Set.{u'}} 
+def discrete.functor {C : Type u} [is_cat C] {J : Set.{u'}} 
   (f : J -> C) : (discrete J) ⥤ C :=
 let map := λ {j₁ j₂ : discrete J} (h : j₁ ⟶ j₂), 
              h ▸[λ k : discrete J, f j₁ ⟶ f k] 𝟙 (f j₁) in 
@@ -57,10 +57,10 @@ have map_comp : ∀ {j₁ j₂ j₃ : discrete J} (g : j₁ ⟶ j₂) (h : j₂ 
                 ... = h ▸ (g ▸[λ k : discrete J, f j₁ ⟶ f k] 𝟙 (f j₁)) : 
                       con_tr g h (𝟙 (f j₁))     
                 ... = (map g) ≫ (map h) : tr_map_comp g h,                 
-functor.mk f @map map_id @map_comp
+precategories.functor.mk f @map map_id @map_comp
 
 @[hott]
-def discrete.nat_trans {C : Type u} [category.{v} C] {J : Set.{u'}} 
+def discrete.nat_trans {C : Type u} [is_cat C] {J : Set.{u'}} 
   {F G : (discrete J) ⥤ C} (app : Π j : J, F.obj j ⟶ G.obj j) :
   F ⟹ G :=  
 have natural : ∀ (j j' : J) (f : j ⟶ j'), 
@@ -80,53 +80,46 @@ inductive ow_node : Type u
 | base
 | upper
 
-@[hott]
-def own_code : ow_node -> ow_node -> Prop :=
+@[hott, hsimp]
+def own_ppred (n₁ : ow_node) : ppred n₁ :=
 begin 
-  intros n₁ n₂, hinduction n₁, 
-  { hinduction n₂, exact True, exact False, exact False },
-  { hinduction n₂, exact False, exact True, exact False },
-  { hinduction n₂, exact False, exact False, exact True } 
-end
-
-@[hott]
-def own_code_refl : Π n : ow_node, own_code n n :=
-begin intro n, hinduction n, all_goals { hsimp, exact true.intro } end 
-
-@[hott]
-def encode : Π {n₁ n₂ : ow_node}, n₁ = n₂ -> own_code n₁ n₂ :=
-  assume n₁ n₂ p, p ▸[λ n, own_code n₁ n] (own_code_refl n₁)
-
-@[hott]
-def decode : Π {n₁ n₂ : ow_node}, own_code n₁ n₂ -> n₁ = n₂ :=
-begin  
-  intros n₁ n₂ ownc, hinduction n₁,
-  { hinduction n₂, refl, hinduction ownc, hinduction ownc },
-  { hinduction n₂, hinduction ownc, refl, hinduction ownc },
-  { hinduction n₂, hinduction ownc, hinduction ownc, refl }
-end  
-
-@[hott]
-def own_code_is_contr_to_refl  (n₁ : ow_node) : 
-  Π (n_code : Σ (n₂ : ow_node), own_code n₁ n₂), n_code = ⟨n₁, own_code_refl n₁⟩ :=
-begin 
-  intro n_code, fapply sigma.sigma_eq, 
-  { exact (decode n_code.2)⁻¹ },
-  { apply pathover_of_tr_eq, exact is_prop.elim _ _ } 
+  fapply ppred.mk,
+  { intro n₂, hinduction n₁, 
+    { hinduction n₂, exact True, exact False, exact False },
+    { hinduction n₂, exact False, exact True, exact False },
+    { hinduction n₂, exact False, exact False, exact True } },
+  { hinduction n₁, all_goals { exact true.intro } }
 end
 
 @[hott, instance]
-def own_code_is_contr (n₁ : ow_node) : is_contr (Σ (n₂ : ow_node), own_code n₁ n₂) :=
-  is_contr.mk _ (λ n_code, (own_code_is_contr_to_refl n₁ n_code)⁻¹)  
+def own_ppred_fam_is_prop : Π (n₁ n₂ : ow_node), 
+  is_prop ((own_ppred n₁).fam n₂) :=
+begin 
+  intros n₁ n₂, hinduction n₁,
+  all_goals {hinduction n₂, all_goals { hsimp, apply_instance } }
+end  
+
+@[hott, instance]
+def own_ppred_is_contr (n₁ : ow_node) : 
+  is_contr (Σ (n₂ : ow_node), (own_ppred n₁).fam n₂) :=
+begin
+  fapply is_contr.mk,  
+  { fapply dpair, exact n₁, hinduction n₁, all_goals {exact true.intro} },
+  { intro own_pair, hinduction own_pair with n₂ ppred₂, 
+    hinduction n₁, 
+    all_goals { hinduction n₂, all_goals {hinduction ppred₂ }, 
+                fapply sigma.sigma_eq, exact idp, 
+                apply pathover_idp_of_eq, exact idp } }
+end
 
 @[hott, instance]
 def own_is_set : is_set ow_node :=
-begin
+begin 
   apply is_trunc_succ_intro, intros n₁ n₂, 
-    have eqv : (n₁ = n₂) ≃ (own_code n₁ n₂), from 
-    equiv.mk _ (tot_space_contr_id_equiv ⟨(λ n, own_code n₁ n), own_code_refl n₁⟩ 
-                                         (own_code_is_contr n₁) n₂), 
-  exact is_trunc_equiv_closed_rev -1 eqv (own_code n₁ n₂).struct
+  fapply @is_trunc_equiv_closed_rev (n₁ = n₂) ((own_ppred n₁).fam n₂),
+  exact tot_space_contr_ppmap_id_eqv' (own_ppred n₁) (can_ppmap _)
+          (own_ppred_is_contr n₁) n₂, 
+  apply_instance
 end
 
 @[hott]
@@ -233,8 +226,64 @@ def orthogonal_wedge.assoc : Π {s t u v : orthogonal_wedge}
 begin intros s t u v f g h, exact is_prop.elim _ _ end 
 
 @[hott, instance]
-def orthogonal_wedge_precategory : precategory orthogonal_wedge :=
-  precategory.mk @orthogonal_wedge.id_comp @orthogonal_wedge.comp_id @orthogonal_wedge.assoc
+def orthogonal_wedge_precategory : is_precat orthogonal_wedge :=
+  is_precat.mk @orthogonal_wedge.id_comp @orthogonal_wedge.comp_id @orthogonal_wedge.assoc
+
+/- An `infinite orthogonal wedge` has legs to the base 
+   parametrized by arbitrary and possibly infinite sets. -/
+@[hott]
+inductive inf_ow_node (A : Set.{u}) : Type u 
+  | tip : A -> inf_ow_node 
+  | base : inf_ow_node
+
+@[hott, hsimp]
+def inf_own_ppred {A : Set} (n₁ : inf_ow_node A) : ppred n₁ :=
+begin 
+  fapply ppred.mk,
+  { intro n₂, hinduction n₁ with a₁ base, 
+    { hinduction n₂ with a₂ base, exact (a₁ = a₂), exact False, },
+    { hinduction n₂ with a₂ base, exact False, exact True } },
+  { hinduction n₁, hsimp, exact true.intro }
+end
+
+@[hott, instance]
+def inf_own_ppred_fam_is_prop {A : Set}: Π (n₁ n₂ : inf_ow_node A), 
+  is_prop ((inf_own_ppred n₁).fam n₂) :=
+begin 
+  intros n₁ n₂, hinduction n₁,
+  all_goals {hinduction n₂, all_goals { hsimp, apply_instance } }
+end 
+
+@[hott, instance]
+def inf_own_ppred_is_contr {A : Set} (n₁ : inf_ow_node A) : 
+  is_contr (Σ (n₂ : inf_ow_node A), (inf_own_ppred n₁).fam n₂) :=
+begin
+  fapply is_contr.mk,  
+  { fapply dpair, exact n₁, hinduction n₁, 
+    all_goals { hsimp, try {exact true.intro}} },
+  { intro own_pair, hinduction own_pair with n₂ ppred₂, 
+    hinduction n₁, 
+    all_goals { hinduction n₂, all_goals {hinduction ppred₂ }, 
+                fapply sigma.sigma_eq, exact idp, 
+                apply pathover_idp_of_eq, exact idp } }
+end
+
+@[hott, instance]
+def inf_own_is_set (A : Set) : is_set (inf_ow_node A) :=
+begin 
+  apply is_trunc_succ_intro, intros n₁ n₂, 
+  fapply @is_trunc_equiv_closed_rev (n₁ = n₂) 
+                                    ((inf_own_ppred n₁).fam n₂),
+  exact tot_space_contr_ppmap_id_eqv' (inf_own_ppred n₁) 
+          (can_ppmap _) (inf_own_ppred_is_contr n₁) n₂, 
+  apply_instance
+end
+
+@[hott]
+def inf_orthogonal_wedge (A : Set.{u}) : Set :=
+Set.mk (inf_ow_node.{u} A) (inf_own_is_set.{u u} A)
+
+/- Now we construct the precategory structure on `inf_orthogonal_wedge`. -/
 
 
 /- [walking_parallel_pair] is the indexing category for (co-)equalizers.  -/
@@ -433,8 +482,8 @@ begin
 end
 
 @[hott, instance]
-def walking_parallel_pair_precategory : precategory walking_parallel_pair :=
- precategory.mk @walking_parallel_pair.id_comp @walking_parallel_pair.comp_id
+def walking_parallel_pair_precategory : is_precat walking_parallel_pair :=
+ is_precat.mk @walking_parallel_pair.id_comp @walking_parallel_pair.comp_id
                 @walking_parallel_pair.assoc
 
 end categories
