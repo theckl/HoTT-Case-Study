@@ -1,11 +1,13 @@
-import sets.algebra init2 sets.axioms sets.theories categories.basic categories.adjoints
+import sets.algebra init2 sets.axioms sets.theories categories.basic 
+       categories.adjoints categories.strict_cat 
 
 universes v v' u u' w 
 hott_theory
 
 namespace hott
 open hott.eq hott.set hott.subset hott.is_trunc hott.is_equiv hott.equiv 
-     hott.precategories hott.categories hott.categories.adjoints 
+     hott.precategories hott.categories hott.categories.adjoints
+     hott.categories.strict
 
 namespace categories                
 
@@ -68,176 +70,21 @@ have natural : ∀ (j j' : J) (f : j ⟶ j'),
   begin intros j j' f, hinduction f, hsimp end,
 nat_trans.mk app natural  
 
-/- [orthogonal_wedge] is the indexing category for pullbacks. 
 
+/- An `infinite wedge` has legs to a base node from leaf nodes
+   parametrized by arbitrary and possibly infinite sets. 
+   
    Better automatisation of the definitions and calculations is desirable.
    The trick in mathlib to define the homomorphisms as an inductive type
    does not work because in HoTT precategories we need to define sets of
    homomorphisms. -/
 @[hott]
-inductive ow_node : Type u
-| left
-| base
-| upper
+inductive inf_w_node (A : Set.{u}) : Type u 
+  | tip : A -> inf_w_node 
+  | base : inf_w_node
 
 @[hott, hsimp]
-def own_ppred (n₁ : ow_node) : ppred n₁ :=
-begin 
-  fapply ppred.mk,
-  { intro n₂, hinduction n₁, 
-    { hinduction n₂, exact True, exact False, exact False },
-    { hinduction n₂, exact False, exact True, exact False },
-    { hinduction n₂, exact False, exact False, exact True } },
-  { hinduction n₁, all_goals { exact true.intro } }
-end
-
-@[hott, instance]
-def own_ppred_fam_is_prop : Π (n₁ n₂ : ow_node), 
-  is_prop ((own_ppred n₁).fam n₂) :=
-begin 
-  intros n₁ n₂, hinduction n₁,
-  all_goals {hinduction n₂, all_goals { hsimp, apply_instance } }
-end  
-
-@[hott, instance]
-def own_ppred_is_contr (n₁ : ow_node) : 
-  is_contr (Σ (n₂ : ow_node), (own_ppred n₁).fam n₂) :=
-begin
-  fapply is_contr.mk,  
-  { fapply dpair, exact n₁, hinduction n₁, all_goals {exact true.intro} },
-  { intro own_pair, hinduction own_pair with n₂ ppred₂, 
-    hinduction n₁, 
-    all_goals { hinduction n₂, all_goals {hinduction ppred₂ }, 
-                fapply sigma.sigma_eq, exact idp, 
-                apply pathover_idp_of_eq, exact idp } }
-end
-
-@[hott, instance]
-def own_is_set : is_set ow_node :=
-begin 
-  apply is_trunc_succ_intro, intros n₁ n₂, 
-  fapply @is_trunc_equiv_closed_rev (n₁ = n₂) ((own_ppred n₁).fam n₂),
-  exact tot_space_contr_ppmap_id_eqv' (own_ppred n₁) (can_ppmap _)
-          (own_ppred_is_contr n₁) n₂, 
-  apply_instance
-end
-
-@[hott]
-def orthogonal_wedge : Set :=
-Set.mk ow_node.{u} own_is_set.{u u}
-
-/- Now we construct the precategory structure on `orthogonal_wedge`. -/
-@[hott, hsimp]
-def orthogonal_wedge_hom : Π s t : orthogonal_wedge.{u}, Set.{u} :=
-λ s t, match s, t with
-       | ow_node.left, ow_node.left := One_Set --id
-       | ow_node.left, ow_node.base := One_Set --right arrow
-       | ow_node.left, ow_node.upper := Zero_Set
-       | ow_node.base, ow_node.left := Zero_Set
-       | ow_node.base, ow_node.base := One_Set --id
-       | ow_node.base, ow_node.upper := Zero_Set
-       | ow_node.upper, ow_node.left := Zero_Set
-       | ow_node.upper, ow_node.base := One_Set --down arrow
-       | ow_node.upper, ow_node.upper := One_Set --id
-       end 
-
-@[hott, instance]
-def orthogonal_wedge_has_hom : has_hom orthogonal_wedge := 
-  ⟨orthogonal_wedge_hom⟩
-
-@[hott, instance]
-def ow_hom_is_prop : Π (s t : orthogonal_wedge), is_prop (s ⟶ t) :=
-λ s t, match s, t with
-       | ow_node.left, ow_node.left := One_is_prop 
-       | ow_node.left, ow_node.base := One_is_prop
-       | ow_node.left, ow_node.upper := Zero_is_prop
-       | ow_node.base, ow_node.left := Zero_is_prop
-       | ow_node.base, ow_node.base := One_is_prop
-       | ow_node.base, ow_node.upper := Zero_is_prop
-       | ow_node.upper, ow_node.left := Zero_is_prop
-       | ow_node.upper, ow_node.base := One_is_prop
-       | ow_node.upper, ow_node.upper := One_is_prop
-       end  
-
-@[hott]
-def ow_left : orthogonal_wedge := ow_node.left
-
-@[hott]
-def ow_base : orthogonal_wedge := ow_node.base
-
-@[hott]
-def ow_upper : orthogonal_wedge := ow_node.upper
-
-@[hott]
-def ow_right : ow_left ⟶ ow_base := One.star
-
-@[hott]
-def ow_down : ow_upper ⟶ ow_base := One.star
-
-@[hott]
-def orthogonal_wedge.id : Π (s : orthogonal_wedge), s ⟶ s :=
-λ s, match s with 
-     | ow_node.left := One.star
-     | ow_node.base := One.star
-     | ow_node.upper := One.star
-     end
-
-@[hott, hsimp]
-def orthogonal_wedge.comp : Π {s t u : orthogonal_wedge} 
-  (f : s ⟶ t) (g : t ⟶ u), s ⟶ u := 
-λ s t u, match s, t, u with
-       | ow_node.left, ow_node.left, ow_node.left := assume f g, orthogonal_wedge.id ow_node.left 
-                                                                                  --id ≫ id = id
-       | ow_node.left, ow_node.left, ow_node.base := assume f g, g --id ≫ right = right
-       | ow_node.left, ow_node.base, ow_node.base := assume f g, f --right ≫ id = right 
-       | ow_node.base, ow_node.base, ow_node.base := assume f g, orthogonal_wedge.id ow_node.base
-                                                                                  --id ≫ id = id
-       | ow_node.upper, ow_node.base, ow_node.base := assume f g, f --down ≫ id = down
-       | ow_node.upper, ow_node.upper, ow_node.base := assume f g, g --id ≫ down = down
-       | ow_node.upper, ow_node.upper, ow_node.upper := assume f g, orthogonal_wedge.id ow_node.upper 
-                                                                                 --id ≫ id = id
-       | ow_node.left, ow_node.upper, _ := assume f g, begin hinduction f end --empty cases
-       | ow_node.base, ow_node.left, _ := assume f g, begin hinduction f end 
-       | ow_node.base, ow_node.upper, _ := assume f g, begin hinduction f end 
-       | ow_node.upper, ow_node.left, _ := assume f g, begin hinduction f end 
-       | _, ow_node.left, ow_node.upper := assume f g, begin hinduction g end 
-       | _, ow_node.base, ow_node.left := assume f g, begin hinduction g end 
-       | _, ow_node.base, ow_node.upper := assume f g, begin hinduction g end 
-       | _, ow_node.upper, ow_node.left := assume f g, begin hinduction g end                                                                         
-       end     
-
-@[hott, instance]
-def orthogonal_wedge.cat_struct : category_struct orthogonal_wedge :=
-  category_struct.mk orthogonal_wedge.id @orthogonal_wedge.comp  
-
-@[hott, hsimp]
-def orthogonal_wedge.id_comp : Π {s t : orthogonal_wedge} 
-  (f : s ⟶ t), 𝟙 s ≫ f = f :=
- begin intros s t f, exact is_prop.elim _ _ end   
-
-@[hott, hsimp]
-def orthogonal_wedge.comp_id : Π {s t : orthogonal_wedge} 
-  (f : s ⟶ t), f ≫ 𝟙 t = f :=
-begin intros s t f, exact is_prop.elim _ _ end 
-
-@[hott, hsimp]
-def orthogonal_wedge.assoc : Π {s t u v : orthogonal_wedge} 
-  (f : s ⟶ t) (g : t ⟶ u) (h : u ⟶ v), (f ≫ g) ≫ h = f ≫ (g ≫ h) :=
-begin intros s t u v f g h, exact is_prop.elim _ _ end 
-
-@[hott, instance]
-def orthogonal_wedge_precategory : is_precat orthogonal_wedge :=
-  is_precat.mk @orthogonal_wedge.id_comp @orthogonal_wedge.comp_id @orthogonal_wedge.assoc
-
-/- An `infinite orthogonal wedge` has legs to the base 
-   parametrized by arbitrary and possibly infinite sets. -/
-@[hott]
-inductive inf_ow_node (A : Set.{u}) : Type u 
-  | tip : A -> inf_ow_node 
-  | base : inf_ow_node
-
-@[hott, hsimp]
-def inf_own_ppred {A : Set} (n₁ : inf_ow_node A) : ppred n₁ :=
+def inf_wn_ppred {A : Set} (n₁ : inf_w_node A) : ppred n₁ :=
 begin 
   fapply ppred.mk,
   { intro n₂, hinduction n₁ with a₁ base, 
@@ -247,16 +94,16 @@ begin
 end
 
 @[hott, instance]
-def inf_own_ppred_fam_is_prop {A : Set}: Π (n₁ n₂ : inf_ow_node A), 
-  is_prop ((inf_own_ppred n₁).fam n₂) :=
+def inf_wn_ppred_fam_is_prop {A : Set}: Π (n₁ n₂ : inf_w_node A), 
+  is_prop ((inf_wn_ppred n₁).fam n₂) :=
 begin 
   intros n₁ n₂, hinduction n₁,
   all_goals {hinduction n₂, all_goals { hsimp, apply_instance } }
 end 
 
 @[hott, instance]
-def inf_own_ppred_is_contr {A : Set} (n₁ : inf_ow_node A) : 
-  is_contr (Σ (n₂ : inf_ow_node A), (inf_own_ppred n₁).fam n₂) :=
+def inf_wn_ppred_is_contr {A : Set} (n₁ : inf_w_node A) : 
+  is_contr (Σ (n₂ : inf_w_node A), (inf_wn_ppred n₁).fam n₂) :=
 begin
   fapply is_contr.mk,  
   { fapply dpair, exact n₁, hinduction n₁, 
@@ -269,21 +116,208 @@ begin
 end
 
 @[hott, instance]
-def inf_own_is_set (A : Set) : is_set (inf_ow_node A) :=
+def inf_wn_is_set (A : Set) : is_set (inf_w_node A) :=
 begin 
   apply is_trunc_succ_intro, intros n₁ n₂, 
   fapply @is_trunc_equiv_closed_rev (n₁ = n₂) 
-                                    ((inf_own_ppred n₁).fam n₂),
-  exact tot_space_contr_ppmap_id_eqv' (inf_own_ppred n₁) 
-          (can_ppmap _) (inf_own_ppred_is_contr n₁) n₂, 
+                                    ((inf_wn_ppred n₁).fam n₂),
+  exact tot_space_contr_ppmap_id_eqv' (inf_wn_ppred n₁) 
+          (can_ppmap _) (inf_wn_ppred_is_contr n₁) n₂, 
   apply_instance
 end
 
 @[hott]
-def inf_orthogonal_wedge (A : Set.{u}) : Set :=
-Set.mk (inf_ow_node.{u} A) (inf_own_is_set.{u u} A)
+def inf_wedge (A : Set.{u}) : Set :=
+Set.mk (inf_w_node.{u} A) (inf_wn_is_set.{u u} A)
 
-/- Now we construct the precategory structure on `inf_orthogonal_wedge`. -/
+@[hott]
+def inf_w_tip {A : Set} (a : A) : inf_wedge A := inf_w_node.tip a
+
+@[hott]
+def inf_w_base {A : Set} : inf_wedge A := inf_w_node.base A
+
+/- Now we construct the precategory structure on `inf_wedge`. -/
+@[hott, hsimp]
+def inf_wedge_hom {A : Set} : 
+  Π s t : inf_wedge.{u} A, Set.{u} :=
+λ s t, match s, t with
+       | inf_w_node.tip a₁, inf_w_node.tip a₂ := 
+           trunctype.mk (a₁ = a₂) (is_trunc_eq 0 a₁ a₂) --id
+       | inf_w_node.tip a, inf_w_node.base A := One_Set --leg arrow
+       | inf_w_node.base A, inf_w_node.tip a := Zero_Set
+       | inf_w_node.base A, inf_w_node.base _ := One_Set --id
+       end 
+
+@[hott, instance]
+def inf_wedge_has_hom (A : Set) : 
+  has_hom (inf_wedge A) := ⟨inf_wedge_hom⟩
+
+@[hott, instance]
+def inf_w_hom_is_prop {A : Set} : Π (s t : inf_wedge A), 
+  is_prop (s ⟶ t) :=
+λ s t, match s, t with
+       | inf_w_node.tip a₁, inf_w_node.tip a₂ := 
+           is_trunc_eq -1 a₁ a₂
+       | inf_w_node.tip a, inf_w_node.base A := One_is_prop
+       | inf_w_node.base A, inf_w_node.tip a := Zero_is_prop
+       | inf_w_node.base A, inf_w_node.base _ := One_is_prop
+       end  
+
+@[hott]
+def inf_w_leg {A : Set} (a : A) : inf_w_tip a ⟶ inf_w_base :=
+  One.star
+
+@[hott, hsimp]
+def inf_wedge.id {A : Set} : 
+  Π (s : inf_wedge A), s ⟶ s :=
+λ s, match s with 
+     | inf_w_node.tip a := idp
+     | inf_w_node.base A := One.star
+     end
+
+@[hott, hsimp]
+def inf_wedge.comp {A : Set} : 
+  Π {s t u : inf_wedge A} (f : s ⟶ t) (g : t ⟶ u), 
+  s ⟶ u := 
+λ s t u, match s, t, u with
+       | inf_w_node.tip a₁, inf_w_node.tip a₂, inf_w_node.tip a₃ := 
+         assume f g, f ⬝ g                                              
+       | inf_w_node.tip a₁, inf_w_node.tip a₂, inf_w_node.base A := 
+         assume f g, begin  hinduction f, exact g end
+       | inf_w_node.tip a₁, inf_w_node.base A, inf_w_node.base _ := 
+         assume f g, f  
+       | inf_w_node.base A, inf_w_node.base _, inf_w_node.base _ := 
+         assume f g, f                                                                                  --id ≫ id = id
+       | _, inf_w_node.base A, inf_w_node.tip a₂ := 
+         assume f g, begin hinduction g end
+       | inf_w_node.base A, inf_w_node.tip a₁, _ := 
+         assume f g, begin hinduction f end 
+       end     
+
+@[hott, instance]
+def inf_wedge.cat_struct {A : Set} : 
+  category_struct (inf_wedge A) :=
+  category_struct.mk inf_wedge.id (@inf_wedge.comp A)   
+
+@[hott, hsimp]
+def inf_wedge.id_comp {A : Set} : 
+  Π {s t : inf_wedge A} (f : s ⟶ t), 𝟙 s ≫ f = f :=
+ begin intros s t f, exact is_prop.elim _ _ end   
+
+@[hott, hsimp]
+def inf_wedge.comp_id {A : Set} : 
+  Π {s t : inf_wedge A} (f : s ⟶ t), f ≫ 𝟙 t = f :=
+begin intros s t f, exact is_prop.elim _ _ end 
+
+@[hott, hsimp]
+def inf_wedge.assoc {A : Set} : 
+  Π {s t u v : inf_wedge A} (f : s ⟶ t) (g : t ⟶ u)
+    (h : u ⟶ v), (f ≫ g) ≫ h = f ≫ (g ≫ h) :=
+begin intros s t u v f g h, exact is_prop.elim _ _ end 
+
+@[hott, instance]
+def inf_wedge_precat {A : Set} : is_precat (inf_wedge A) :=
+  is_precat.mk (@inf_wedge.id_comp A) (@inf_wedge.comp_id A) 
+               (@inf_wedge.assoc A)
+
+@[hott]
+def Inf_Wedge (A : Set) : Precategory := 
+  Precategory.mk (inf_wedge A) inf_wedge_precat 
+
+@[hott, instance]
+def Inf_Wedge_is_strict {A : Set} : is_strict (Inf_Wedge A) :=
+  is_strict.mk (inf_wedge A).struct                 
+
+/- [orthogonal_wedge] is the indexing category for pullbacks. 
+   We construct it as an instance of the general `infinite wedge`, 
+   but try to maintain names to address nodes and legs. -/
+@[hott]
+inductive ow_node : Type u
+| left
+| upper
+
+@[hott, hsimp]
+def own_Two : ow_node.{u} -> Two.{u} :=
+  λ s, match s with
+       | ow_node.left := Two.zero
+       | ow_node.upper := Two.one
+       end
+
+@[hott, hsimp]
+def Two_own : Two.{u} -> ow_node.{u} :=
+  λ t, match t with
+       | Two.zero := ow_node.left
+       | Two.one := ow_node.upper
+       end
+
+@[hott, instance]
+def own_is_set : is_set ow_node.{u} :=
+  have r_inv : ∀ t : Two, own_Two (Two_own t) = t, by  
+    intro t; hinduction t; hsimp; hsimp,  
+  have l_inv : ∀ s : ow_node, Two_own (own_Two s) = s, by
+    intro s; hinduction s; hsimp; hsimp,
+  have own_eqv_Two: is_equiv own_Two, from
+    adjointify own_Two Two_own r_inv l_inv,
+  @is_trunc_is_equiv_closed_rev.{u u} _ _ 0 own_Two own_eqv_Two Two_is_set
+
+@[hott]
+def ow_leg_node : Set :=
+Set.mk ow_node.{u} own_is_set.{u u}
+
+@[hott]
+def orthogonal_wedge : Set := inf_wedge ow_leg_node
+
+@[hott]
+def ow_left : orthogonal_wedge := inf_w_tip ow_node.left
+
+@[hott]
+def ow_upper : orthogonal_wedge := inf_w_tip ow_node.upper
+
+@[hott]
+def ow_base : orthogonal_wedge := inf_w_base 
+
+@[hott]
+def ow_right := inf_w_leg ow_left 
+
+@[hott]
+def ow_down := inf_w_leg ow_upper 
+
+@[hott, instance]
+def orthogonal_wedge_precat : is_precat orthogonal_wedge :=
+  inf_wedge_precat
+
+@[hott]
+def Orthogonal_Wedge : Precategory := 
+  Precategory.mk orthogonal_wedge orthogonal_wedge_precat
+
+@[hott, instance]
+def Orthogonal_Wedge_is_strict {A : Set} : 
+  is_strict Orthogonal_Wedge := is_strict.mk orthogonal_wedge.struct   
+
+/- We define infinite and orthogonal cowedges as opposite 
+   precategories of infinite and orthogonal wedges. -/
+@[hott]
+def inf_cowedge (A : Set) : Set := 
+  op_Set (inf_wedge A)
+
+@[hott]
+def Inf_Cowedge (A : Set) : Precategory := 
+  Precategory.mk (inf_cowedge A) is_precat.opposite
+
+@[hott, instance]
+def Inf_Cowedge_is_strict {A : Set} : is_strict (Inf_Cowedge A) :=
+  is_strict.mk (inf_cowedge A).struct
+
+@[hott]
+def orthogonal_cowedge := op_Set orthogonal_wedge
+
+@[hott]
+def Orthogonal_Cowedge : Precategory := 
+  Precategory.mk orthogonal_cowedge is_precat.opposite
+
+@[hott]
+def Orthogonal_Cowedge_is_strict : is_strict Orthogonal_Cowedge :=
+  is_strict.mk orthogonal_cowedge.struct
 
 
 /- [walking_parallel_pair] is the indexing category for (co-)equalizers.  -/
