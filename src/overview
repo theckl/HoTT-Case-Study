@@ -19,9 +19,9 @@ categories
   subcat    :   124
   examples  :   656 
   adjoints  :   410 
-  strict_cat:   381 (7375)
-  * diagrams  :   435 (changes as listed below started)
-  limits    :   626
+  strict_cat:   381 
+  diagrams  :   525 
+  * limits    :   641 (change as sketched below started)
   pullbacks :   403 (contains 2 sorries, for symmetry of intersection
                      of subobjects & for construction of implications
                      as subobjects)
@@ -39,11 +39,8 @@ categories.pullbacks : Heyting property
 categories.pullbacks : implication of subobjects
 categories.pullbacks : symmetry of intersection of subobjects
 categories.pullbacks : symmetry of pullbacks
-categories.colimits : isomorphisms of diagrams induce isomorphisms of colimits
-categories.limits : isomorphisms of diagrams induce isomorphisms of limits
-categories.diagrams : isomorphism of infinite (co)wedge diagrams
-categories.diagrams : infinite wedge, 
-                      (infinite) cowedge: as opposite precategories 
-                                          of (infinite) wedges?
-                      (co)wedge as instannce of infinite (co)wedge?
+categories.colimits : isomorphisms of diagrams induce isomorphisms 
+                      of colimits
+categories.limits   : isomorphisms of diagrams induce isomorphisms 
+                      of limits
                       
