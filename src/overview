@@ -19,9 +19,9 @@ categories
   subcat    :   124
   examples  :   656 
   adjoints  :   410 
-  strict_cat:   381 
-  diagrams  :   525 
-  * limits    :   641 (change as sketched below started)
+  strict_cat:   390 
+  diagrams  :   544 
+  * limits    :   646 (change as sketched below started)
   pullbacks :   403 (contains 2 sorries, for symmetry of intersection
                      of subobjects & for construction of implications
                      as subobjects)
@@ -42,5 +42,4 @@ categories.pullbacks : symmetry of pullbacks
 categories.colimits : isomorphisms of diagrams induce isomorphisms 
                       of colimits
 categories.limits   : isomorphisms of diagrams induce isomorphisms 
-                      of limits
-                      
+                      of limits                     
