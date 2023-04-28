@@ -70,6 +70,10 @@ have natural : ∀ (j j' : J) (f : j ⟶ j'),
   begin intros j j' f, hinduction f, hsimp end,
 nat_trans.mk app natural  
 
+@[hott, instance]
+def discrete_is_strict_cat (A : Set) : is_strict_cat (discrete A) :=
+  is_strict_cat.mk (discrete A).struct  
+
 
 /- An `infinite wedge` has legs to a base node from leaf nodes
    parametrized by arbitrary and possibly infinite sets. 
@@ -225,8 +229,8 @@ def Inf_Wedge (A : Set) : Precategory :=
   Precategory.mk (inf_wedge A) inf_wedge_precat 
 
 @[hott, instance]
-def Inf_Wedge_is_strict {A : Set} : is_strict (Inf_Wedge A) :=
-  is_strict.mk (inf_wedge A).struct                 
+def Inf_Wedge_is_strict_cat {A : Set} : is_strict_cat (Inf_Wedge A) :=
+  is_strict_cat.mk (inf_wedge A).struct                 
 
 /- [orthogonal_wedge] is the indexing category for pullbacks. 
    We construct it as an instance of the general `infinite wedge`, 
@@ -291,8 +295,8 @@ def Orthogonal_Wedge : Precategory :=
   Precategory.mk orthogonal_wedge orthogonal_wedge_precat
 
 @[hott, instance]
-def Orthogonal_Wedge_is_strict {A : Set} : 
-  is_strict Orthogonal_Wedge := is_strict.mk orthogonal_wedge.struct   
+def Orthogonal_Wedge_is_strict_cat {A : Set} : 
+  is_strict_cat Orthogonal_Wedge := is_strict_cat.mk orthogonal_wedge.struct   
 
 /- We define infinite and orthogonal cowedges as opposite 
    precategories of infinite and orthogonal wedges. -/
@@ -305,8 +309,8 @@ def Inf_Cowedge (A : Set) : Precategory :=
   Precategory.mk (inf_cowedge A) is_precat.opposite
 
 @[hott, instance]
-def Inf_Cowedge_is_strict {A : Set} : is_strict (Inf_Cowedge A) :=
-  is_strict.mk (inf_cowedge A).struct
+def Inf_Cowedge_is_strict_cat {A : Set} : is_strict_cat (Inf_Cowedge A) :=
+  is_strict_cat.mk (inf_cowedge A).struct
 
 @[hott]
 def orthogonal_cowedge := op_Set orthogonal_wedge
@@ -316,86 +320,91 @@ def Orthogonal_Cowedge : Precategory :=
   Precategory.mk orthogonal_cowedge is_precat.opposite
 
 @[hott]
-def Orthogonal_Cowedge_is_strict : is_strict Orthogonal_Cowedge :=
-  is_strict.mk orthogonal_cowedge.struct
+def Orthogonal_Cowedge_is_strict_cat : is_strict_cat Orthogonal_Cowedge :=
+  is_strict_cat.mk orthogonal_cowedge.struct
 
 
 /- [walking_parallel_pair] is the indexing category for (co-)equalizers.  -/
 @[hott]
-inductive wp_pair : Type u
+inductive wp_pair : Type
 | up
 | down
 
 @[hott]
-inductive wp_pair_hom : Type u
+inductive wp_pair_hom : Type
 | left
 | right
 
 /- `wp_pair` and `wp_pair_hom` are sets because they are equivalent to `Two`. -/
 @[hott, hsimp]
-def wpp_Two : wp_pair.{u} -> Two.{u} :=
+def wpp_Two : wp_pair -> Two.{0} :=
   λ s, match s with
        | wp_pair.up := Two.zero
        | wp_pair.down := Two.one
        end
 
 @[hott, hsimp]
-def wpph_Two : wp_pair_hom.{u} -> Two.{u} :=
+def wpph_Two : wp_pair_hom -> Two.{0} :=
   λ s, match s with
        | wp_pair_hom.left := Two.zero
        | wp_pair_hom.right := Two.one
        end
 
 @[hott, hsimp]
-def Two_wpp : Two.{u} -> wp_pair.{u} :=
+def Two_wpp : Two.{0} -> wp_pair :=
   λ t, match t with
        | Two.zero := wp_pair.up
        | Two.one := wp_pair.down
        end
 
 @[hott, hsimp]
-def Two_wpph : Two.{u} -> wp_pair_hom.{u} :=
+def Two_wpph : Two.{0} -> wp_pair_hom :=
   λ t, match t with
        | Two.zero := wp_pair_hom.left
        | Two.one := wp_pair_hom.right
        end
 
 @[hott, instance]
-def wpp_is_set : is_set wp_pair.{u} :=
-  have r_inv : ∀ t : Two, wpp_Two (Two_wpp t) = t, by  
+def wpp_is_set : is_set wp_pair :=
+  have r_inv : ∀ t : Two.{0}, wpp_Two (Two_wpp t) = t, by  
     intro t; hinduction t; hsimp; hsimp,  
   have l_inv : ∀ s : wp_pair, Two_wpp (wpp_Two s) = s, by
     intro s; hinduction s; hsimp; hsimp,
   have wpp_eqv_Two: is_equiv wpp_Two, from
     adjointify wpp_Two Two_wpp r_inv l_inv,
-  @is_trunc_is_equiv_closed_rev.{u u} _ _ 0 wpp_Two wpp_eqv_Two Two_is_set
+  @is_trunc_is_equiv_closed_rev _ _ 0 wpp_Two wpp_eqv_Two Two_is_set.{0 0}
 
 @[hott, instance]
-def wpph_is_set : is_set wp_pair_hom.{u} :=
-  have r_inv : ∀ t : Two, wpph_Two (Two_wpph t) = t, by  
+def wpph_is_set : is_set wp_pair_hom :=
+  have r_inv : ∀ t : Two.{0}, wpph_Two (Two_wpph t) = t, by  
     intro t; hinduction t; hsimp; hsimp,  
   have l_inv : ∀ s : wp_pair_hom, Two_wpph (wpph_Two s) = s, by
     intro s; hinduction s; hsimp; hsimp,
   have wpph_eqv_Two: is_equiv wpph_Two, from
     adjointify wpph_Two Two_wpph r_inv l_inv,
-  @is_trunc_is_equiv_closed_rev.{u u} _ _ 0 wpph_Two wpph_eqv_Two Two_is_set
+  @is_trunc_is_equiv_closed_rev _ _ 0 wpph_Two wpph_eqv_Two Two_is_set.{0 0}
 
 @[hott]
 def walking_parallel_pair : Set :=
-Set.mk wp_pair.{u} wpp_is_set.{u u}
+Set.mk wp_pair wpp_is_set
 
 @[hott]
 def wpph_Set : Set :=
-Set.mk wp_pair_hom.{u} wpph_is_set.{u u}
+Set.mk wp_pair_hom wpph_is_set
 
 /- Now we construct the precategory structure on `walking_parallel_pair`. -/
 @[hott, hsimp]
-def walking_parallel_pair_hom : Π s t : walking_parallel_pair.{u}, Set.{u} :=
+def walking_parallel_pair_hom : Π s t : walking_parallel_pair, Set.{0} :=
+--begin
+--  intros s t, hinduction s with su sd, 
+--  { hinduction t with tu td, exact One_Set, exact wpph_Set },
+--  { hinduction t with tu td, exact Zero_Set, exact One_Set }
+--end
 λ s t, match s, t with
-       | wp_pair.up, wp_pair.up := One_Set
+       | wp_pair.up, wp_pair.up := One_Set.{0}
        | wp_pair.up, wp_pair.down := wpph_Set
-       | wp_pair.down, wp_pair.up := Zero_Set
-       | wp_pair.down, wp_pair.down := One_Set
+       | wp_pair.down, wp_pair.up := Zero_Set.{0}
+       | wp_pair.down, wp_pair.down := One_Set.{0}
        end 
 
 @[hott, instance]
@@ -516,9 +525,19 @@ begin
 end
 
 @[hott, instance]
-def walking_parallel_pair_precategory : is_precat walking_parallel_pair :=
+def walking_parallel_pair_is_precat : is_precat walking_parallel_pair :=
  is_precat.mk @walking_parallel_pair.id_comp @walking_parallel_pair.comp_id
                 @walking_parallel_pair.assoc
+
+@[hott, instance]
+def walking_parallel_pair_is_strict_cat : 
+  is_strict_cat ↥walking_parallel_pair :=
+  @is_strict_cat.mk walking_parallel_pair walking_parallel_pair_is_precat 
+                    wpp_is_set
+
+@[hott]
+def Walking_parallel_pair : strict_Category :=
+  strict_Category.mk walking_parallel_pair walking_parallel_pair_is_strict_cat
 
 end categories
 
