@@ -1,12 +1,12 @@
 import sets.algebra categories.subobj categories.subcat categories.examples 
-       categories.diagrams 
+       categories.strict_cat categories.diagrams 
 
 universes v v' u u' w
 hott_theory
 
 namespace hott
 open hott.eq hott.is_trunc hott.trunc hott.set hott.subset 
-     hott.precategories hott.categories 
+     hott.precategories hott.categories hott.categories.strict
 
 /- We introduce limits of diagrams mapped to categories, by using cones to 
    pick the universal object and encode the universal property.
@@ -18,19 +18,19 @@ namespace categories.limits
 set_option pp.universes false
 
 @[hott]
-structure cone {J : Set.{u'}} [is_precat.{v'} J] {C : Type u} 
-  [is_precat.{v} C] (F : J ⥤ C) :=
+structure cone {J : Type _} [is_strict_cat J] {C : Type _} 
+  [is_precat C] (F : J ⥤ C) :=
 (X : C)
 (π : (@constant_functor J _ C _ X) ⟹ F)
 
 @[hott]
-def cone.fac {J : Set.{u'}} [is_precat.{v'} J] {C : Type u} 
+def cone.fac {J : Type _} [is_strict_cat J] {C : Type u} 
   [is_precat.{v} C] {F : J ⥤ C} (s : cone F) : 
   ∀ {j k : J} (f : j ⟶ k), s.π.app j ≫ F.map f = s.π.app k :=
 begin intros j k f, rwr <- s.π.naturality f, hsimp end   
 
 @[hott]
-structure is_limit {J : Set.{u'}} [is_precat.{v'} J] {C : Type u} 
+structure is_limit {J : Type _} [is_strict_cat J] {C : Type u} 
   [is_precat.{v} C] {F : J ⥤ C} (t : cone F) :=
 (lift : Π (s : cone F), s.X ⟶ t.X)
 (fac  : ∀ (s : cone F) (j : J), lift s ≫ t.π.app j = s.π.app j)
@@ -38,14 +38,14 @@ structure is_limit {J : Set.{u'}} [is_precat.{v'} J] {C : Type u}
           (w : ∀ j : J, m ≫ t.π.app j = s.π.app j), m = lift s)
 
 @[hott] 
-def lift_itself_id {J : Set.{u'}} [is_precat.{v'} J] {C : Type u} 
+def lift_itself_id {J : Type _} [is_strict_cat J] {C : Type u} 
   [is_precat.{v} C] 
   {F : J ⥤ C} {t : cone F} (l : is_limit t) : l.lift t = 𝟙 t.X :=
 have t_fac : ∀ j : J, 𝟙 t.X ≫ t.π.app j = t.π.app j, by intro j; hsimp,  
 (l.uniq _ _ t_fac)⁻¹             
 
 @[hott]
-def limit_cone_point_iso {J : Set.{u'}} [is_precat.{v'} J] {C : Type u} 
+def limit_cone_point_iso {J : Type _} [is_strict_cat J] {C : Type u} 
   [is_precat.{v} C] {F : J ⥤ C} {s t : cone F} (lₛ : is_limit s) 
   (lₜ : is_limit t) : Σ i : s.X ≅ t.X, i.hom = lₜ.lift s :=
 let st := lₜ.lift s, ts := lₛ.lift t in 
@@ -64,7 +64,7 @@ have comp_t : ts ≫ st = 𝟙 t.X, from lₜ.uniq _ _ t_fac ⬝ lift_itself_id 
 /- `limit_cone F` contains a cone over `F` together with the information that 
    it is a limit. -/
 @[hott]
-structure limit_cone {J : Set.{u'}} [is_precat.{v'} J] {C : Type u} 
+structure limit_cone {J : Type _} [is_strict_cat J] {C : Type u} 
   [is_precat.{v} C] (F : J ⥤ C) :=
 (cone : cone F)
 (is_limit : is_limit cone)
@@ -72,12 +72,12 @@ structure limit_cone {J : Set.{u'}} [is_precat.{v'} J] {C : Type u}
 /- `has_limit F` represents the mere existence of a limit for `F`. This allows
    to define it as a class with instances. -/ 
 @[hott]   
-class has_limit {J : Set.{u'}} [is_precat.{v'} J] {C : Type u} 
+class has_limit {J : Type _} [is_strict_cat J] {C : Type u} 
   [is_precat.{v} C] (F : J ⥤ C) :=
 mk' :: (exists_limit : ∥limit_cone F∥)
 
 @[hott]
-def has_limit.mk {J : Set.{u'}} [is_precat.{v'} J] {C : Type u} 
+def has_limit.mk {J : Type _} [is_strict_cat J] {C : Type u} 
   [is_precat.{v} C] {F : J ⥤ C} (d : limit_cone F) :=
 has_limit.mk' (tr d)  
 
@@ -89,7 +89,7 @@ has_limit.mk' (tr d)
    
    Thus, we can produce a `limit_cone F` from `has_limit F`. -/
 @[hott]
-def limit_cone_is_unique {J : Set.{u'}} [is_precat.{v'} J] 
+def limit_cone_is_unique {J : Type _} [is_strict_cat J] 
   {C : Type u} [is_cat.{v} C] (F : J ⥤ C) : 
   ∀ lc₁ lc₂ : limit_cone F, lc₁ = lc₂ :=
 begin
@@ -103,7 +103,7 @@ begin
     { exact idtoiso⁻¹ᶠ lcp_iso.1 },
     { hinduction π₁ with app₁ nat₁, hinduction π₂ with app₂ nat₂, 
       fapply apdo0111 (λ c : C, @nat_trans.mk _ _ _ _ 
-                              (@constant_functor ↥J _ C _ c) F),
+                              (@constant_functor J _ C _ c) F),
       { apply pathover_of_tr_eq, apply eq_of_homotopy, 
         intro j, rwr tr_fn_tr_eval,
         change idtoiso⁻¹ᶠ lcp_iso.1 ▸[λ X : C, X ⟶ F.obj j] app₁ j = app₂ j, 
@@ -137,43 +137,43 @@ begin
 end    
 
 @[hott, instance]
-def limit_cone_is_prop {J : Set.{u'}} [is_precat.{v'} J] {C : Type u} 
+def limit_cone_is_prop {J : Type _} [is_strict_cat J] {C : Type u} 
   [is_cat.{v} C] (F : J ⥤ C) : is_trunc -1 (limit_cone F) :=
 is_prop.mk (limit_cone_is_unique F)
 
 @[hott]
-def get_limit_cone {J : Set.{u'}} [is_precat.{v'} J] {C : Type u} 
+def get_limit_cone {J : Type _} [is_strict_cat J] {C : Type u} 
   [is_cat.{v} C] (F : J ⥤ C) [has_limit F] : limit_cone F :=
 untrunc_of_is_trunc (has_limit.exists_limit F)  
 
 @[hott]
-def limit.cone {J : Set.{u'}} [is_precat.{v'} J] {C : Type u} 
+def limit.cone {J : Type _} [is_strict_cat J] {C : Type u} 
   [is_cat.{v} C] (F : J ⥤ C) [has_limit F] : cone F := 
 (get_limit_cone F).cone
 
 @[hott]
-def limit {J : Set.{u'}} [is_precat.{v'} J] {C : Type u} [is_cat.{v} C]
+def limit {J : Type _} [is_strict_cat J] {C : Type u} [is_cat.{v} C]
   (F : J ⥤ C) [has_limit F] := (limit.cone F).X
 
 @[hott]
-def limit_leg {J : Set.{u'}} [is_precat.{v'} J] {C : Type u} 
+def limit_leg {J : Type _} [is_strict_cat J] {C : Type u} 
   [is_cat.{v} C] (F : J ⥤ C) (j : J) [has_limit F] : 
   limit F ⟶ F.obj j := (limit.cone F).π.app j 
 
 @[hott]
-class has_limits_of_shape (J : Set.{u'}) [is_precat.{v'} J] 
+class has_limits_of_shape (J : Type _) [is_strict_cat J] 
   (C : Type u) [is_cat.{v} C] :=
 (has_limit : Π F : J ⥤ C, has_limit F)
 
 @[hott, priority 100]
 instance has_limit_of_has_limits_of_shape
-  {J : Set.{u'}} [is_precat.{v'} J] (C : Type u) [is_cat.{v} C] 
+  {J : Type _} [is_strict_cat J] (C : Type u) [is_cat.{v} C] 
   [has_limits_of_shape J C] (F : J ⥤ C) : has_limit F :=
 has_limits_of_shape.has_limit F
 
 @[hott]
 class has_limits (C : Type u) [is_cat.{v} C] :=
-  (has_limit_of_shape : Π (J : Set.{u'}) [is_precat.{v'} J], 
+  (has_limit_of_shape : Π {J : Type _} [is_strict_cat J], 
                                        has_limits_of_shape J C )  
 
 @[hott]
@@ -306,16 +306,16 @@ calc pi.lift (λ j, pi.π f j ≫ i₁ j) ≫ pi.lift (λ j, pi.π g j ≫ i₂ 
 /- `parallel_pair f g` is the diagram in `C` consisting of the two morphisms `f` and `g` with
     common domain and codomain. -/
 @[hott, hsimp]
-def parallel_pair_obj {C : Type u} [is_cat.{v} C] {a b : C} 
-  (f g : a ⟶ b) : walking_parallel_pair.{u} -> C :=
+def parallel_pair_obj {C : Type _} [is_cat C] {a b : C} 
+  (f g : a ⟶ b) : walking_parallel_pair -> C :=
 λ s, match s with
      | wp_pair.up := a
      | wp_pair.down := b
      end    
 
 @[hott, hsimp]
-def parallel_pair_map {C : Type u} [is_cat.{v} C] {a b : C} 
-  (f g : a ⟶ b) : Π {s t : walking_parallel_pair.{u}}, 
+def parallel_pair_map {C : Type _} [is_cat C] {a b : C} 
+  (f g : a ⟶ b) : Π {s t : walking_parallel_pair}, 
   (s ⟶ t) -> (parallel_pair_obj f g s ⟶ parallel_pair_obj f g t) :=
 assume s t h, 
 begin
@@ -331,14 +331,14 @@ begin
 end 
 
 @[hott, hsimp]
-def parallel_pair_map_id {C : Type u} [is_cat.{v} C] {a b : C} 
-  (f g : a ⟶ b) : ∀ s : walking_parallel_pair.{u}, 
+def parallel_pair_map_id {C : Type _} [is_cat C] {a b : C} 
+  (f g : a ⟶ b) : ∀ s : walking_parallel_pair, 
   parallel_pair_map f g (𝟙 s) = 𝟙 (parallel_pair_obj f g s) :=
 by intro s; hinduction s; hsimp; hsimp   
 
 @[hott, hsimp]
-def parallel_pair_map_comp {C : Type u} [is_cat.{v} C] 
-  {a b : C} (f g : a ⟶ b) : ∀ {s t u : walking_parallel_pair.{u}} 
+def parallel_pair_map_comp {C : Type _} [is_cat C] 
+  {a b : C} (f g : a ⟶ b) : ∀ {s t u : walking_parallel_pair} 
   (h : s ⟶ t) (i : t ⟶ u), parallel_pair_map f g (h ≫ i) = 
                   (parallel_pair_map f g h) ≫ (parallel_pair_map f g i) :=
 assume s t u h i,
@@ -355,21 +355,26 @@ begin
 end  
 
 @[hott]
-def parallel_pair {C : Type u} [is_cat.{v} C] {a b : C} 
-  (f g : a ⟶ b) : walking_parallel_pair.{u} ⥤ C :=
+def parallel_pair {C : Type _} [is_cat C] {a b : C} 
+  (f g : a ⟶ b) : walking_parallel_pair ⥤ C :=
 precategories.functor.mk (parallel_pair_obj f g) 
                            (@parallel_pair_map _ _ _ _ f g) 
                            (parallel_pair_map_id f g) 
                            (@parallel_pair_map_comp _ _ _ _ f g)   
 
+set_option trace.class_instances true
+set_option pp.universes true
+
 /- A cone over a parallel pair is called a `fork`. -/
 @[hott]
-abbreviation fork {C : Type u} [is_cat.{v} C] {a b : C} (f g : a ⟶ b) := 
-  cone (parallel_pair f g) 
+abbreviation fork {C : Type _} [is_cat C] {a b : C} (f g : a ⟶ b) := 
+  @cone walking_parallel_pair _ _ _ (parallel_pair f g) 
+
+set_option trace.class_instances false
 
 @[hott] 
 def fork_map {C : Type u} [is_cat.{v} C] {a b : C} {f g : a ⟶ b} (fk : fork f g) :
-  fk.X ⟶ a := fk.π.app wp_up
+  ↥(fk.X ⟶ a) := fk.π.app wp_up
 
 @[hott]
 def fork_eq {C : Type u} [is_cat.{v} C] {a b : C} {f g : a ⟶ b} (fk : fork f g) :
@@ -499,12 +504,12 @@ end
    Also not that the cone must live in a universe both containing the diagram set 
    and the sets ordered according to the diagram. -/
 @[hott]
-def set_limit_pred {J : Set.{u'}} [is_precat.{v'} J] (F : J ⥤ Set) : 
-  Subset (Sections F.obj) :=
+def set_limit_pred {J : Type _} [H : is_strict_cat J] (F : J ⥤ Set) : 
+  Subset (@Sections (Set.mk J H.set) F.obj) :=
 λ s, prop_resize (to_Prop (∀ (j k : J) (f : j ⟶ k), F.map f (s j) = s k)) 
 
 @[hott, reducible]
-def set_cone {J : Set.{u'}} [is_precat.{v'} J] (F : J ⥤ Set) : cone F :=
+def set_cone {J : Type _} [H : is_strict_cat J] (F : J ⥤ Set) : cone F :=
 begin
   fapply cone.mk, 
   /- The limit cone vertex set -/
@@ -519,7 +524,7 @@ begin
 end  
 
 @[hott, reducible]
-def set_cone_is_limit {J : Set} [is_precat J] (F : J ⥤ Set) :
+def set_cone_is_limit {J : Type _} [H : is_strict_cat J] (F : J ⥤ Set) :
   is_limit (set_cone F) :=
 begin 
   fapply is_limit.mk,
@@ -539,15 +544,15 @@ begin
 end
 
 @[hott, reducible]
-def set_limit_cone {J : Set} [is_precat J] (F : J ⥤ Set) : limit_cone F :=
+def set_limit_cone {J : Type _} [H : is_strict_cat J] (F : J ⥤ Set) : limit_cone F :=
   limit_cone.mk (set_cone F) (set_cone_is_limit F)
 
 @[hott, instance]
-def set_has_limit {J : Set} [is_precat J] (F : J ⥤ Set) : has_limit F :=
+def set_has_limit {J : Type _} [H : is_strict_cat J] (F : J ⥤ Set) : has_limit F :=
   has_limit.mk (set_limit_cone F)
 
 @[hott, instance]
-def set_has_limits_of_shape (J : Set) [is_precat J] : has_limits_of_shape J Set :=
+def set_has_limits_of_shape {J : Type _} [H : is_strict_cat J] : has_limits_of_shape J Set :=
   has_limits_of_shape.mk (λ F, set_has_limit F)     
 
 @[hott, instance]
@@ -578,12 +583,12 @@ end
 /- The full subcategory on a subtype of a category with limits has limits if the limit
    of a diagram of objects of the subtype is also in the subtype. -/
 @[hott]
-def limit_closed_subtype {J : Set.{u'}} [is_precat.{v'} J] {C : Type u} [is_cat.{v} C]   
+def limit_closed_subtype {J : Type _} [H : is_strict_cat J] {C : Type u} [is_cat.{v} C]   
   (P : C -> trunctype.{0} -1) (F : J ⥤ (sigma.subtype (λ c : C, ↥(P c)))) :=
 ∀ (lc : limit_cone (embed F)), (P lc.cone.X).carrier
 
 @[hott] 
-def emb_cone {J : Set.{u'}} [is_precat.{v'} J] {C : Type u} [is_cat.{v} C]   
+def emb_cone {J : Type _} [H : is_strict_cat J] {C : Type u} [is_cat.{v} C]   
   {P : C -> trunctype.{0} -1} {F : J ⥤ (sigma.subtype (λ c : C, ↥(P c)))} 
   (s : cone F) : cone (embed F) :=
 begin
@@ -595,7 +600,7 @@ begin
 end  
 
 @[hott]
-def subcat_limit_cone {J : Set.{u'}} [is_precat.{v'} J] {C : Type u} [is_cat.{v} C]   
+def subcat_limit_cone {J : Type _} [H : is_strict_cat J] {C : Type u} [is_cat.{v} C]   
   {P : C -> trunctype.{0} -1} {F : J ⥤ (sigma.subtype (λ c : C, ↥(P c)))} 
   (lc : limit_cone (embed F)) (lim_clos : (P lc.cone.X).carrier) : 
   limit_cone F :=
@@ -613,14 +618,14 @@ begin
 end  
 
 @[hott, instance]
-def subcat_has_limit {J : Set} [is_precat J] {C : Type u} [is_cat.{v} C]   
+def subcat_has_limit {J : Type _} [H : is_strict_cat J] {C : Type u} [is_cat.{v} C]   
   {P : C -> trunctype.{0} -1} {F : J ⥤ (sigma.subtype (λ c : C, ↥(P c)))} 
   [has_limit (embed F)] (lim_clos : limit_closed_subtype P F) : has_limit F :=
 has_limit.mk (subcat_limit_cone (get_limit_cone (embed F)) 
              (lim_clos (get_limit_cone (embed F))))
 
 @[hott, instance]
-def subcat_has_limits_of_shape (J : Set) [is_precat J] {C : Type u} [is_cat.{v} C]   
+def subcat_has_limits_of_shape {J : Type _} [H : is_strict_cat J] {C : Type u} [is_cat.{v} C]   
   {P : C -> trunctype.{0} -1} [has_limits_of_shape J C] 
   (lim_clos : ∀ F : J ⥤ (sigma.subtype (λ c : C, ↥(P c))), 
                                                   @limit_closed_subtype J _ _ _ P F) : 
