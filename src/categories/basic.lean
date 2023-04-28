@@ -197,7 +197,7 @@ structure Category :=
   has_coe_to_sort.mk Type.{u} Category.obj
 
 @[hott] 
-def to_Precat : Category -> Precategory :=
+def Cat.to_Precat : Category -> Precategory :=
   λ C, Precategory.mk C.obj C.struct.to_is_precat
 
 attribute [instance] Category.struct
