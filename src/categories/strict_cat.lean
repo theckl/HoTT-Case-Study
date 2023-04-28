@@ -21,22 +21,14 @@ namespace strict
    straightforward way. The strictness is needed to show that homomorphisms =
    functors are sets. -/
 @[hott]
-class is_strict (C : Precategory) :=
-  (set : is_set C)
+class is_strict_cat (obj : Type u) extends is_precat.{v} obj :=
+  (set : is_set obj)
 
-attribute [instance] is_strict.set
-
-@[hott, instance] 
-def is_strict_is_prop (C : Precategory) : is_prop (is_strict C) :=
-begin
-  fapply is_prop.mk, intros s₁ s₂, 
-  hinduction s₁ with s₁, hinduction s₂ with s₂, 
-  fapply ap is_strict.mk, exact is_prop.elim _ _
-end
+attribute [instance] is_strict_cat.set
 
 @[hott, instance]
-def functors_of_strict_cat_is_set (D₁ D₂ : Precategory) 
-  [is_strict D₁] [HD₂ : is_strict D₂]: is_set (D₁ ⥤ D₂) :=
+def functors_of_strict_cat_is_set (D₁ D₂ : Type _) 
+  [is_strict_cat D₁] [HD₂ : is_strict_cat D₂] : is_set (D₁ ⥤ D₂) :=
 begin 
   apply is_trunc_equiv_closed_rev 0 (functor_eqv_sig D₁ D₂),
   fapply dprod_of_Sets_is_set' _ _,
@@ -49,43 +41,50 @@ end
 
 @[hott]
 structure strict_Category :=
-  (Precat : Precategory)
-  (strict : is_strict Precat)
+  (obj : Type _)
+  (strict_cat : is_strict_cat obj)
 
 @[hott] instance : has_coe_to_sort strict_Category := 
-  has_coe_to_sort.mk Type.{u} (λ D, D.Precat.obj)
+  has_coe_to_sort.mk Type.{u} (λ D, D.obj)
 
-attribute [instance] strict_Category.strict
+attribute [instance] strict_Category.strict_cat
+
+@[hott] 
+def strict_Cat.to_Precat : strict_Category -> Precategory :=
+  λ C, Precategory.mk C.obj (is_strict_cat.to_is_precat C)
 
 @[hott]
-def strict_cat_sig := Σ (C : Precategory), is_strict C
+def strict_cat_sig := Σ (pc_sig : Precat_sig), is_set pc_sig.1
 
 @[hott]
 def strict_cat_eqv_sig : strict_Category ≃ strict_cat_sig :=
 begin
   fapply equiv.mk,
-  { intro C, exact ⟨C.Precat, C.strict⟩ },
+  { intro C, exact ⟨⟨C, is_strict_cat.to_is_precat C⟩, C.strict_cat.set⟩ },
   { fapply adjointify,
-    { intro C_sig, exact strict_Category.mk C_sig.1 C_sig.2 },
-    { intro C_sig, hsimp, hinduction C_sig, hsimp },
-    { intro C, hinduction C, hsimp } }
+    { intro C_sig, exact strict_Category.mk C_sig.1.1 
+                        (@is_strict_cat.mk C_sig.1.1 C_sig.1.2 C_sig.2) },
+    { intro C_sig, hsimp, hinduction C_sig, hsimp, hinduction fst, refl },
+    { intro C, hinduction C, hsimp, hinduction strict_cat, refl } }
 end
 
 @[hott]
-def strict_cat_sig_eq_eqv_precat_eq (D₁ D₂ : strict_cat_sig) :
+def strict_cat_sig_eq_eqv_pc_sig_eq (D₁ D₂ : strict_cat_sig) :
   (D₁ = D₂) ≃ (D₁.1 = D₂.1) :=
 sigma.subtype_eq_equiv _ _ 
 
 @[hott]
 def strict_cat_eq_eqv_precat_eq (D₁ D₂ : strict_Category) :
-  (D₁ = D₂) ≃ (D₁.Precat = D₂.Precat) :=
+  (D₁ = D₂) ≃ (strict_Cat.to_Precat D₁ = strict_Cat.to_Precat D₂) :=
 eq_equiv_fn_eq_of_equiv strict_cat_eqv_sig _ _ ⬝e
-strict_cat_sig_eq_eqv_precat_eq _ _
+strict_cat_sig_eq_eqv_pc_sig_eq _ _ ⬝e
+(eq_equiv_fn_eq_of_equiv Precat_str_equiv_sig _ _)⁻¹ᵉ 
 
 @[hott, instance]
 def strict_cat_has_hom : has_hom (strict_Category) :=
   has_hom.mk (λ D₁ D₂ : strict_Category, Set.mk (D₁ ⥤ D₂) 
-               (functors_of_strict_cat_is_set D₁.Precat D₂.Precat))     
+                (functors_of_strict_cat_is_set 
+                  (strict_Cat.to_Precat D₁) (strict_Cat.to_Precat D₂)))     
 
 @[hott, instance]
 def strict_cat_cat_str : category_struct strict_Category :=
@@ -109,7 +108,7 @@ is_precat.mk (λ D₁ D₂ F, funct_id_comp F)
    in [categories.precat]. We reformulate it for strict categories. -/
 @[hott]
 def strict_cat_iso (C D : strict_Category) := 
-  precat_iso C.Precat D.Precat
+  precat_iso (strict_Cat.to_Precat C) (strict_Cat.to_Precat D)
 
 @[hott, reducible]
 def strict_cat_eq_equiv_iso (C D : strict_Category) : 
@@ -133,7 +132,8 @@ begin
     change funct.map _ = _, rwr funct.map_id, 
     apply concat _ (ap (λ h : x ⟶ funct.obj (obj_inv x), 
            (idtoiso (@is_equiv.right_inv _ _ _ equiv x)).hom ≫ h) 
-           (hott.eq.inverse (@is_precat.id_comp _ D.Precat.struct x _ _))),
+           (hott.eq.inverse (@is_precat.id_comp _ 
+                             (strict_Cat.to_Precat D).struct x _ _))),
     hsimp, rwr is_iso.l_inv },
   { intros x y z f g, apply hott.eq.inverse, apply bijection_l_to_r,
     change funct.map _ = _, rwr funct.map_comp,  
@@ -142,13 +142,14 @@ begin
     change (hxy ((inv_bijection_of hxy) _)) ≫ 
                (hyz ((inv_bijection_of hyz) _)) = _,
     rwr inv_bij_r_inv, rwr inv_bij_r_inv, 
-    let as := @is_precat.assoc _ D.Precat.struct,
+    let as := @is_precat.assoc _ (strict_Cat.to_Precat D).struct,
     rwr <- as _ g _, 
     rwr as (idtoiso (@is_equiv.right_inv _ _ _ equiv x)).hom _ _, 
     rwr as f _ _, 
     rwr <- as (idtoiso (@is_equiv.right_inv _ _ _ equiv y)).ih.inv _ _,
     rwr <- as _ _ g, rwr is_iso.r_inv, 
-    rwr @is_precat.id_comp _ D.Precat.struct y _ _, rwr <- as f _ _ }
+    rwr @is_precat.id_comp _ (strict_Cat.to_Precat D).struct y _ _, 
+    rwr <- as f _ _ }
 end
 
 @[hott]
@@ -199,7 +200,8 @@ begin
     have p : funct.map (idtoiso (obj_linv x)).hom = 
                        (idtoiso (obj_rinv (funct.obj x))).hom, from 
     begin 
-      rwr funct_idtoiso, exact ap (iso.hom ∘ idtoiso) (is_set.elim _ _) 
+      rwr funct_idtoiso, exact ap (iso.hom ∘ idtoiso) 
+           (@is_set.elim D _ _ _ _ _) 
     end,
     have q : funct.map (idtoiso (obj_linv y)).ih.inv = 
                     (idtoiso (obj_rinv (funct.obj y))).ih.inv, from 
@@ -207,7 +209,7 @@ begin
       change funct.map (idtoiso (obj_linv y))⁻¹ʰ.hom = 
              (idtoiso (obj_rinv (funct.obj y)))⁻¹ʰ.hom, 
       rwr <- id_inv_iso_inv, rwr funct_idtoiso, rwr <- id_inv_iso_inv,
-      exact ap (iso.hom ∘ idtoiso) (is_set.elim _ _) 
+      exact ap (iso.hom ∘ idtoiso) (@is_set.elim D _ _ _ _ _) 
     end,  
     rwr <- p, rwr <- q, rwr <- functor.map_comp, rwr <- functor.map_comp,
     change _ ≫ (inv_bijection_of (is_fully_faithful_functor' @ff 
@@ -256,9 +258,9 @@ begin
         rwr funct_idtoiso, rwr idtoiso_comp_eq, 
         change (iso.hom ∘ idtoiso) _  ≫ g ≫ (iso.hom ∘ idtoiso) _ = _, 
         rwr ap (iso.hom ∘ idtoiso) 
-                        (@is_set.elim _ D.strict.set _ _ _ idp),
+                        (@is_set.elim D _ _ _ _ idp),
         rwr ap (iso.hom ∘ idtoiso) 
-                (@is_set.elim _ D.strict.set _ _ _ (idpath (hom.obj y))),
+                (@is_set.elim D _ _ _ _ (idpath (hom.obj y))),
         change iso.hom (idtoiso idp)  ≫ g ≫ iso.hom (idtoiso idp) = _,
         hsimp },
       { intro g, change _ ≫ (hom ≫ inv).map _ ≫ _ = _, 
@@ -268,9 +270,9 @@ begin
         rwr idtoiso_comp_eq, 
         change (iso.hom ∘ idtoiso) _  ≫ g ≫ (iso.hom ∘ idtoiso) _ = _, 
         rwr ap (iso.hom ∘ idtoiso) 
-                        (@is_set.elim _ C.strict.set _ _ _ idp),
+                        (@is_set.elim C _ _ _ _ idp),
         rwr ap (iso.hom ∘ idtoiso) 
-                (@is_set.elim _ C.strict.set _ _ _ (idpath y)),
+                (@is_set.elim C _ _ _ _ (idpath y)),
         change iso.hom (idtoiso idp)  ≫ g ≫ iso.hom (idtoiso idp) = _,
         hsimp } } },
   { fapply adjointify,
@@ -294,8 +296,8 @@ begin
         change (iso.hom ∘ idtoiso) _ ≫ hom.map f ≫ 
                                     (iso.hom ∘ idtoiso) _ = hom.map f, 
         rwr ap (iso.hom ∘ idtoiso) 
-                        (@is_set.elim _ D.strict.set _ _ _ idp),
-        rwr ap (iso.hom ∘ idtoiso) (@is_set.elim _ D.strict.set 
+                        (@is_set.elim D _ _ _ _ idp),
+        rwr ap (iso.hom ∘ idtoiso) (@is_set.elim D _ 
                                     _ _ _ (idpath (hom.obj y))),
         change iso.hom (idtoiso idp) ≫ hom.map f ≫ 
                                       iso.hom (idtoiso idp) = _,
@@ -306,8 +308,8 @@ begin
         change (iso.hom ∘ idtoiso) _ ≫ sc_iso.functor.map f ≫ 
                                       (iso.hom ∘ idtoiso) _ = _,
         rwr ap (iso.hom ∘ idtoiso) 
-                        (@is_set.elim _ D.strict.set _ _ _ idp),
-        rwr ap (iso.hom ∘ idtoiso) (@is_set.elim _ D.strict.set 
+                        (@is_set.elim D _ _ _ _ idp),
+        rwr ap (iso.hom ∘ idtoiso) (@is_set.elim D _ 
                         _ _ _ (idpath (sc_iso.functor.obj y))),
         change iso.hom (idtoiso idp) ≫ sc_iso.functor.map f ≫ 
                                       iso.hom (idtoiso idp) = _,
@@ -330,33 +332,40 @@ begin
   rwr equiv.to_fun_trans, hinduction p,
   rwr idtoiso_refl_eq, 
   change _ = (strict_cat_iso_eqv_iso C C).to_fun
-             ((precat_iso_of_obj_equiv_iso C.Precat C.Precat).to_fun
+             ((precat_iso_of_obj_equiv_iso (strict_Cat.to_Precat C) 
+                                    (strict_Cat.to_Precat C)).to_fun
               ((_ ⬝e _).to_fun idp)),
   rwr equiv.to_fun_trans, 
   change _ = (strict_cat_iso_eqv_iso C C).to_fun
-      ((precat_iso_of_obj_equiv_iso C.Precat C.Precat).to_fun
-         ((precat_sig_equiv_obj_iso C.Precat C.Precat).to_fun idp)),
+      ((precat_iso_of_obj_equiv_iso _ _).to_fun
+         ((precat_sig_equiv_obj_iso _ _).to_fun idp)),
   apply hom_eq_to_iso_eq,
-  change 𝟙 C = ((precat_iso_of_obj_equiv_iso C.Precat C.Precat).to_fun
-          ((precat_sig_equiv_obj_iso C.Precat C.Precat).to_fun idp)).functor, 
+  change 𝟙 C = ((precat_iso_of_obj_equiv_iso (strict_Cat.to_Precat C)
+                                        (strict_Cat.to_Precat C)).to_fun
+          ((precat_sig_equiv_obj_iso _ _).to_fun idp)).functor, 
   fapply functor_eq',
   { intro x, hsimp,
-    have r : ((precat_sig_equiv_obj_iso C.Precat C.Precat).to_fun 
-             (refl ⟨C.Precat.obj, C.Precat.struct⟩)).fst = @equiv.rfl C,
-    from precat_sig_equiv_obj_iso_idp C.Precat C.Precat, 
+    have r : ((precat_sig_equiv_obj_iso _ _).to_fun 
+               (refl ⟨(strict_Cat.to_Precat C).obj, 
+                   (strict_Cat.to_Precat C).struct⟩)).fst = @equiv.rfl C,
+    from precat_sig_equiv_obj_iso_idp (strict_Cat.to_Precat C) 
+                                      (strict_Cat.to_Precat C), 
     rwr r },
   { intros x y f,
     change (iso.hom ∘ idtoiso) _ ≫ f ≫ (iso.hom ∘ idtoiso) _ = _, 
     rwr ap (iso.hom ∘ idtoiso) 
-                        (@is_set.elim _ C.strict.set _ _ _ idp),
+                        (@is_set.elim C _ _ _ _ idp),
     rwr ap (iso.hom ∘ idtoiso) 
-                 (@is_set.elim _ C.strict.set _ _ _ (idpath y)),                    
+                 (@is_set.elim C _ _ _ _ (idpath y)),                    
     change iso.hom (idtoiso idp) ≫ f ≫ iso.hom (idtoiso idp) = _,
     hsimp, 
-    change _ = ((precat_sig_equiv_obj_iso C.Precat C.Precat).to_fun idp).snd.hom_map f,
-    have r : ((precat_sig_equiv_obj_iso C.Precat C.Precat).to_fun idp).snd.hom_map =
+    change _ = ((precat_sig_equiv_obj_iso (strict_Cat.to_Precat C) 
+                    (strict_Cat.to_Precat C)).to_fun idp).snd.hom_map f,
+    have r : ((precat_sig_equiv_obj_iso (strict_Cat.to_Precat C)
+                      (strict_Cat.to_Precat C)).to_fun idp).snd.hom_map =
              (id_functor C).map, from 
-      precat_sig_equiv_obj_iso_idp_map C.Precat C.Precat, 
+      precat_sig_equiv_obj_iso_idp_map (strict_Cat.to_Precat C) 
+                                       (strict_Cat.to_Precat C), 
     rwr r } 
 end
 
