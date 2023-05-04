@@ -5,7 +5,7 @@ universes v v' u u' w
 hott_theory
 
 namespace hott
-open hott.eq hott.is_trunc hott.trunc hott.set hott.subset 
+open hott.eq hott.is_trunc hott.trunc hott.is_equiv hott.set hott.subset 
      hott.precategories hott.categories hott.categories.strict
 
 /- We introduce limits of diagrams mapped to categories, by using cones to 
@@ -15,19 +15,39 @@ open hott.eq hott.is_trunc hott.trunc hott.set hott.subset
 
 namespace categories.limits
 
-set_option pp.universes false
-
 @[hott]
 structure cone {J : Type _} [is_strict_cat J] {C : Type _} 
   [is_precat C] (F : J ⥤ C) :=
 (X : C)
 (π : (@constant_functor J _ C _ X) ⟹ F)
 
+@[hott, reducible, hsimp]
+def cone.leg {J : Type _} [is_strict_cat J] {C : Type _} 
+  [is_precat C] {F : J ⥤ C} (cF : cone F) : 
+  Π j : J, cF.X ⟶ F.obj j := 
+begin intro j, exact cF.π.app j end
+
 @[hott]
 def cone.fac {J : Type _} [is_strict_cat J] {C : Type u} 
   [is_precat.{v} C] {F : J ⥤ C} (s : cone F) : 
   ∀ {j k : J} (f : j ⟶ k), s.π.app j ≫ F.map f = s.π.app k :=
 begin intros j k f, rwr <- s.π.naturality f, hsimp end   
+
+@[hott]
+def cone_eq {J : Type _} [is_strict_cat J] {C : Type _} 
+  [is_precat C] {F : J ⥤ C} (cF₁ cF₂ : cone F) :
+  Π (p : cF₁.X = cF₂.X), (Π j : J, cone.leg cF₁ j =[p; λ c, c ⟶ F.obj j] 
+                                   cone.leg cF₂ j) -> cF₁ = cF₂ :=
+begin 
+  hinduction cF₁ with X₁ π₁, hinduction cF₂ with X₂ π₂,
+  intro vertex_eq, change X₁ = X₂ at vertex_eq, hinduction vertex_eq, 
+  intro legs_eq,  
+  fapply apd011 cone.mk, exact idp, apply pathover_idp_of_eq,
+  hinduction π₁ with app₁ nat₁, hinduction π₂ with app₂ nat₂,
+  fapply apd011 nat_trans.mk, 
+  { apply eq_of_homotopy, intro j, exact eq_of_pathover_idp (legs_eq j) },
+  { apply pathover_of_tr_eq, exact is_prop.elim _ _ } 
+end
 
 @[hott]
 structure is_limit {J : Type _} [is_strict_cat J] {C : Type u} 
@@ -152,6 +172,11 @@ def limit.cone {J : Type _} [is_strict_cat J] {C : Type u}
 (get_limit_cone F).cone
 
 @[hott]
+def limitcone_is_limit  {J : Type _} [is_strict_cat J] {C : Type u} 
+  [is_cat.{v} C] (F : J ⥤ C) [has_limit F] : is_limit (limit.cone F) :=
+(get_limit_cone F).is_limit
+
+@[hott]
 def limit {J : Type _} [is_strict_cat J] {C : Type u} [is_cat.{v} C]
   (F : J ⥤ C) [has_limit F] := (limit.cone F).X
 
@@ -160,6 +185,112 @@ def limit_leg {J : Type _} [is_strict_cat J] {C : Type u}
   [is_cat.{v} C] (F : J ⥤ C) (j : J) [has_limit F] : 
   limit F ⟶ F.obj j := (limit.cone F).π.app j 
 
+
+/- Limits are natural under functors of shapes. In particular, limits 
+   of isomorphic shapes are naturally isomorphic. -/
+@[hott, hsimp]
+def diagram_hom_on_cone {J₁ J₂: Type _} [is_strict_cat J₁]
+  [is_strict_cat J₂] (H : J₁ ⥤ J₂) {C : Type u} [is_cat.{v} C]
+  {F : J₂ ⥤ C} (cF : cone F) : cone (H ⋙ F) :=
+begin
+  fapply cone.mk, exact cF.X,
+  fapply nat_trans.mk,
+  { intro j, exact cF.π.app (H.obj j) },
+  { intros j j' h, rwr cF.π.naturality }
+end
+
+@[hott]
+def diagram_iso_on_cone {J₁ J₂ : Strict_Categories} {C : Type u} [is_cat.{v} C]
+  (H : J₁ ≅ J₂) {F : J₂.obj ⥤ C} : cone F ≃ cone (H.hom ⋙ F) :=
+begin
+  fapply equiv.mk,
+  { intro cF, exact diagram_hom_on_cone H.hom cF },
+  { fapply adjointify,
+    { intro cHF, fapply cone.mk, exact cHF.X,
+      fapply nat_trans.mk, 
+      { intro j₂,  
+        exact H.ih.r_inv ▸[λ G : J₂.obj ⥤ J₂.obj, cHF.X ⟶ F.obj (G.obj j₂)] 
+                                                (cHF.π.app (H.ih.inv.obj j₂)) },
+      { intros j₂ j₂' h, change 𝟙 cHF.X ≫ _ = _, rwr is_precat.id_comp, 
+        rwr <- cone.fac cHF (H.ih.inv.map h),  
+        change H.ih.r_inv ▸[λ G : J₂.obj ⥤ J₂.obj, cHF.X ⟶ F.obj (G.obj j₂')] 
+                (cHF.π.app (H.ih.inv.obj j₂) ≫ F.map ((H.ih.inv ≫ H.hom).map h)) = _,
+        apply eq.concat (@tr_fn2_ev_fn2_ev_tr_tr _
+                (λ G : J₂.obj ⥤ J₂.obj, cHF.X ⟶ F.obj (G.obj j₂)) 
+                (λ G : J₂.obj ⥤ J₂.obj, F.obj (G.obj j₂) ⟶ F.obj (G.obj j₂'))
+                (λ G : J₂.obj ⥤ J₂.obj, cHF.X ⟶ F.obj (G.obj j₂')) _ _
+                H.ih.r_inv _ _ (λ (G : J₂.obj ⥤ J₂.obj) h₁ h₂, h₁ ≫ h₂)),
+        change _ ≫ _ = _, 
+        apply ap (category_struct.comp (H.ih.r_inv ▸[λ G : J₂.obj ⥤ J₂.obj, 
+                  cHF.X ⟶ F.obj (G.obj j₂)] cHF.π.app (H.ih.inv.obj j₂))), 
+        apply eq.concat (tr_fn_fn_ev_fn_tr_fn H.ih.r_inv 
+                    (λ (G : J₂.obj ⥤ J₂.obj) (h : j₂ ⟶ j₂'), G.map h) 
+                    (λ (G : J₂.obj ⥤ J₂.obj) (h : G.obj j₂ ⟶ G.obj j₂'), 
+                      @precategories.functor.map _ _ _ _ F (G.obj j₂) (G.obj j₂') h)), 
+        apply ap (@precategories.functor.map _ _ _ _ F j₂ j₂'),
+        apply eq.concat (eq.inverse (tr_fn_ev_tr_fn_ev H.ih.r_inv 
+                    (λ (G : J₂.obj ⥤ J₂.obj) (h : j₂ ⟶ j₂'), G.map h))), 
+        apply eq.concat (apdt (λ (G : J₂.obj ⥤ J₂.obj), G.map h) H.ih.r_inv),  
+        refl } },
+    { intro cHF, fapply cone_eq, refl, 
+      intro j, apply pathover_idp_of_eq, 
+      change H.ih.r_inv ▸[λ (G : J₂.obj ⥤ J₂.obj), cHF.X ⟶ F.obj (G.obj (H.hom.obj j))] 
+                             cHF.π.app ((H.hom ≫ H.ih.inv).obj j) = cHF.π.app j,
+      apply tr_eq_of_eq_inv_tr, 
+      apply eq.concat (eq.inverse 
+             (@apdt _ (λ (G : J₁.obj ⥤ J₁.obj), cHF.X ⟶ F.obj (H.hom.obj (G.obj j))) 
+                      (λ (G : J₁.obj ⥤ J₁.obj), cHF.π.app (G.obj j)) _ _ H.ih.l_inv⁻¹)),
+      apply inv_tr_eq_of_eq_tr, change cHF.π.app j = _, 
+      apply @eq_tr_of_inv_tr_eq _ 
+              (λ (G : J₁.obj ⥤ J₁.obj), cHF.X ⟶ F.obj (H.hom.obj (G.obj j))) _ _ H.ih.l_inv _ _,
+      rwr tr_compose (λ j₂ : J₂.obj, cHF.X ⟶ F.obj j₂), 
+      rwr tr_compose (λ j₂ : J₂.obj, cHF.X ⟶ F.obj j₂) 
+                     (λ (G : J₂.obj ⥤ J₂.obj), G.obj (H.hom.obj j)) (H.ih.r_inv)⁻¹ (cHF.π.app j), 
+      have q : ap (λ (G' : J₁.obj ⥤ J₁.obj), H.hom.obj (G'.obj j)) (H.ih.l_inv)⁻¹ =
+               ap (λ (G : J₂.obj ⥤ J₂.obj), G.obj (H.hom.obj j)) (H.ih.r_inv)⁻¹, from
+        is_prop.elim _ _,
+      apply eq_tr_tr q _ },
+    { intro cF, fapply cone_eq, refl,
+      intro j, apply pathover_idp_of_eq, 
+      change H.ih.r_inv ▸[λ (G : J₂.obj ⥤ J₂.obj), cF.X ⟶ F.obj (G.obj j)] 
+                             cF.π.app ((H.ih.inv ≫ H.hom).obj j) = cF.π.app j, 
+      apply eq.concat (@apdt _ (λ (G : J₂.obj ⥤ J₂.obj), cF.X ⟶ F.obj (G.obj j)) 
+                       (λ (G : J₂.obj ⥤ J₂.obj), cF.π.app (G.obj j)) _ _ H.ih.r_inv),                       
+      refl } }
+end
+
+@[hott]
+def diag_iso_limit_to_limit {J₁ J₂ : Strict_Categories} {C : Type u} [is_cat.{v} C]
+  (H : J₁ ≅ J₂) {F : J₂.obj ⥤ C} {cF : cone F} : 
+  is_limit cF -> is_limit (diagram_hom_on_cone H.hom cF) :=
+begin
+  have P : Π {J₁ J₂ : Strict_Categories} (p : J₁ = J₂) (F : J₂.obj ⥤ C),
+             p⁻¹ ▸[λ J : Strict_Categories, J.obj ⥤ C] F = 
+             ((idtoiso p).hom ⋙ F), from 
+  begin 
+    intros J₁ J₂ p F, hinduction p, hsimp, 
+    change _ = (id_functor J₁.obj ⋙ _), rwr funct_id_comp
+  end,  
+  let Hp := @category.isotoid Strict_Categories _ _ H,
+  have r : idtoiso Hp = H, from 
+  begin 
+    change idtoiso (idtoiso⁻¹ᶠ H) = _,
+    rwr @category.idtoiso_rinv Strict_Categories _ _ H
+  end,
+  let HpF := Hp⁻¹ ▸[λ J : Strict_Categories, J.obj ⥤ C] F,
+  have q : HpF = (H.hom ⋙ F), by change Hp⁻¹ ▸ _ = _; rwr P Hp; rwr r,
+  let qc := ap cone q,
+  have trc : cone F = cone HpF, from sorry,
+  have Hs : Π (s : cone F), qc ▸ (trc ▸[id] s) = diagram_hom_on_cone H.hom s, from 
+    sorry,
+  have lim_trc : Π (s : cone F), is_limit s -> is_limit (trc ▸[id] s), from sorry,
+  have lim_qc : Π (s : cone HpF), is_limit s -> is_limit (qc ▸[id] s), from sorry,
+  rwr <- Hs (limit.cone F), apply lim_qc (trc ▸[id] (limit.cone F)),
+  apply lim_trc (limit.cone F), exact limitcone_is_limit F
+end
+
+
+/- More general classes of existence of limits -/
 @[hott]
 class has_limits_of_shape (J : Type _) [is_strict_cat J] 
   (C : Type u) [is_cat.{v} C] :=
@@ -361,9 +492,6 @@ precategories.functor.mk (parallel_pair_obj f g)
                            (@parallel_pair_map _ _ _ _ f g) 
                            (parallel_pair_map_id f g) 
                            (@parallel_pair_map_comp _ _ _ _ f g)   
-
-set_option trace.class_instances true
-set_option pp.universes true
 
 /- A cone over a parallel pair is called a `fork`. -/
 @[hott]
