@@ -428,7 +428,12 @@ begin hinduction p, hinduction q₁, hinduction q₂, hinduction r₁, hinductio
 def tr_fn_tr_eval {A B : Type _} {C : A -> B -> Type _} {a₁ a₂ : A}
   (f : Π (b : B), C a₁ b) (p : a₁ = a₂) (b : B) :
   (p ▸ f) b = p ▸ (f b) :=
-begin hinduction p, refl end   
+begin hinduction p, refl end 
+
+@[hott]
+def tr_fn_ev_tr_fn_ev {A B : Type _} {C : A -> Type _} {a₁ a₂ : A} {b : B} 
+  (p : a₁ = a₂) (g : Π (a : A), B -> C a) : p ▸ ((g a₁) b) = (p ▸ (g a₁)) b :=
+begin hinduction p, refl end  
 
 @[hott]
 def fn_tr_tr_ev {A : Type _} {B C : A -> Type _} (f : Π {a : A}, B a -> C a) {a₁ a₂ : A}
@@ -440,6 +445,12 @@ def fn2_tr_tr_ev {A B : Type _} {C D : A -> B -> Type _}
   (f : Π (a : A) (b : B), C a b -> D a b) {b₁ b₂ : B} (p : b₁ = b₂) (a : A) (c : C a b₁) :
   f a b₂ (p ▸ c) = p ▸ (f a b₁ c) :=
 begin hinduction p, refl end
+
+@[hott]
+def tr_fn2_ev_fn2_ev_tr_tr {A : Type _} {B C D : A -> Type _} {a₁ a₂ : A} (p : a₁ = a₂)
+  (b₁ : B a₁) (c₁ : C a₁) (f : Π (a : A) (b : B a) (c : C a), D a) :
+  p ▸ f a₁ b₁ c₁ = f a₂ (p ▸ b₁) (p ▸ c₁) :=
+begin hinduction p, refl end 
 
 @[hott]
 def tr_fn_eval_tr {A B C : Type _} {f : A -> C} (p : A = B) (b : B) : 
@@ -517,6 +528,12 @@ tr_compose (λ b : Type _, b) B p b₁
 @[hott]
 def fn_ev_tr_tr_fn_ev {A : Type _} {B C : A -> Type _} {f : Π (a : A), B a -> C a} 
   {a a' : A} (p : a = a') (b : B a) : f a' (p ▸ b) = p ▸ (f a b) :=
+begin hinduction p, refl end  
+
+@[hott]
+def tr_fn_fn_ev_fn_tr_fn {A B : Type _} {C D : A -> Type _} {a₁ a₂ : A} {b : B} 
+  (p : a₁ = a₂) (g : Π (a : A), B -> C a) (f : Π (a : A), C a -> D a) : 
+  p ▸ f a₁ ((g a₁) b) = f a₂ ((p ▸ (g a₁)) b) :=
 begin hinduction p, refl end  
 
 @[hott]
@@ -801,5 +818,10 @@ begin
   hinduction p, rwr ap10_idp, rwr ap10_idp, 
   rwr idp_tr, rwr idp_tr, rwr idp_tr, intro q, assumption 
 end
+
+@[hott]
+def eq_tr_tr {A : Type _} {P : A -> Type _} {a₁ a₂ : A} {p q : a₁ = a₂} (r : p = q) 
+  (b : P a₁) : p ▸ b = q ▸ b := 
+begin hinduction r, refl end
 
 end hott
