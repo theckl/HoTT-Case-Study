@@ -382,7 +382,7 @@ begin
 end                 
 
 @[hott]
-def Category_of_strict_Categories : Category :=
+def Strict_Categories : Category :=
   Category.mk strict_Category strict_cat_is_cat
 
 end categories
