@@ -240,6 +240,24 @@ inductive ow_node : Type u
 | left
 | upper
 
+/- We need a detailed description which nodes are equal and which not. -/
+@[hott]
+def own_code : ow_node -> ow_node -> Set :=
+λ n₁ n₂, match n₁, n₂ with
+         | ow_node.left, ow_node.left := One_Set
+         | ow_node.upper, ow_node.upper := One_Set
+         | _ , _ := Zero_Set
+         end
+
+@[hott]
+def refl_own_code : Π (n : ow_node), own_code n n :=
+begin intro n, hinduction n, exact One.star, exact One.star end
+
+@[hott]
+def own_encode : Π {n₁ n₂ : ow_node}, (n₁ = n₂) -> own_code n₁ n₂ :=
+begin intros n₁ n₂ p, hinduction p, exact refl_own_code n₁ end
+
+/- We also need to know that the nodes form a set. -/
 @[hott, hsimp]
 def own_Two : ow_node.{u} -> Two.{u} :=
   λ s, match s with
@@ -289,6 +307,10 @@ def ow_down := inf_w_leg ow_upper
 @[hott, instance]
 def orthogonal_wedge_precat : is_precat orthogonal_wedge :=
   inf_wedge_precat
+
+@[hott, instance]
+def orthogonal_wedge_strict_cat : is_strict_cat orthogonal_wedge :=
+  Inf_Wedge_is_strict_cat
 
 @[hott]
 def Orthogonal_Wedge : Precategory := 
