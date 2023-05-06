@@ -32,12 +32,12 @@ def functors_of_strict_cat_is_set (D₁ D₂ : Type _)
 begin 
   apply is_trunc_equiv_closed_rev 0 (functor_eqv_sig D₁ D₂),
   fapply dprod_of_Sets_is_set' _ _,
-  { apply is_trunc_equiv_closed_rev 0 (functor_ops_eqv_sig D₁ D₂),
-    fapply dprod_of_Sets_is_set' _ _,
-    { apply_instance },
+  { apply is_trunc_equiv_closed_rev 0 (functor_ops_eqv_sig D₁ D₂), 
+    fapply dprod_of_Sets_is_set' _ _, 
+    { apply_instance }, 
     { intro map, apply_instance } },
-  { intro map, apply_instance }
-end    
+  { apply_instance }
+end  
 
 @[hott]
 structure strict_Category :=
