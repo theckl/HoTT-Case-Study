@@ -1,6 +1,6 @@
 Compiling files, in order of dependencies:
 ------------------------------------------
-init2       :   827
+init2       :   848
 types2      :   502 
 prop_axioms :   614
 prop_logic  :   208
@@ -21,11 +21,11 @@ categories
   adjoints  :   410 
   strict_cat:   390 
   diagrams  :   544 
-  * limits    :   641 (change as sketched below started)
+  limits    :   641 
+  * colimits  :   458 (change as sketched below started)
   pullbacks :   403 (contains 2 sorries, for symmetry of intersection
                      of subobjects & for construction of implications
                      as subobjects)
-  colimits  :   458
   structures:   613
               -----
                9900
@@ -40,6 +40,4 @@ categories.pullbacks : implication of subobjects
 categories.pullbacks : symmetry of intersection of subobjects
 categories.pullbacks : symmetry of pullbacks
 categories.colimits : isomorphisms of diagrams induce isomorphisms 
-                      of colimits
-categories.limits   : isomorphisms of diagrams induce isomorphisms 
-                      of limits                     
+                      of colimits                    
