@@ -20,10 +20,10 @@ categories
   examples  :   656 
   adjoints  :   410 
   strict_cat:   390 
-  diagrams  :   544 
-  limits    :   641 
-  * colimits  :   458 (change as sketched below started)
-  pullbacks :   403 (contains 2 sorries, for symmetry of intersection
+  diagrams  :   562 
+  limits    :   722 
+  colimits  :   514 
+  * pullbacks :   403 (contains 2 sorries, for symmetry of intersection
                      of subobjects & for construction of implications
                      as subobjects)
   structures:   613
@@ -38,6 +38,4 @@ categories.pullbacks : complements, instance
 categories.pullbacks : Heyting property
 categories.pullbacks : implication of subobjects
 categories.pullbacks : symmetry of intersection of subobjects
-categories.pullbacks : symmetry of pullbacks
-categories.colimits : isomorphisms of diagrams induce isomorphisms 
-                      of colimits                    
+categories.pullbacks : symmetry of pullbacks                   
