@@ -12,71 +12,83 @@ namespace categories.pullbacks
 /- `orthogonal_pair f g` is the diagram in `C` consisting of the two morphisms `f` and `g` with
    common codomain. -/
 @[hott, hsimp]
-def orthogonal_pair_obj {C : Type u} [category.{v} C] {a b c: C} 
-  (f : a ⟶ c) (g : b ⟶ c) : orthogonal_wedge.{u} -> C :=
+def orthogonal_pair_obj {C : Type _} [is_cat C] {a b c : C} 
+  (f : a ⟶ c) (g : b ⟶ c) : orthogonal_wedge -> C :=
 λ s, match s with
-     | ow_node.left := a
-     | ow_node.base := c
-     | ow_node.upper := b
+     | inf_w_node.tip ow_node.left := a
+     | inf_w_node.tip ow_node.upper := b
+     | inf_w_node.base ow_leg_node := c
+     
      end    
 
 @[hott, hsimp]
-def orthogonal_pair_map {C : Type u} [category.{v} C] {a b c : C} 
-  (f : a ⟶ c) (g : b ⟶ c) : Π {s t : orthogonal_wedge.{u}}, 
+def orthogonal_pair_map {C : Type _} [is_cat C] {a b c : C} 
+  (f : a ⟶ c) (g : b ⟶ c) : Π {s t : orthogonal_wedge}, 
   (s ⟶ t) -> (orthogonal_pair_obj f g s ⟶ orthogonal_pair_obj f g t) :=
 assume s t, 
 match s, t with
-  | ow_node.left, ow_node.left := assume h, 𝟙 a --id
-  | ow_node.left, ow_node.base := assume h, f --right arrow
-  | ow_node.left, ow_node.upper := begin intro h, hinduction h end
-  | ow_node.base, ow_node.left := begin intro h, hinduction h end
-  | ow_node.base, ow_node.base := assume h, 𝟙 c --id
-  | ow_node.base, ow_node.upper := begin intro h, hinduction h end
-  | ow_node.upper, ow_node.left := begin intro h, hinduction h end
-  | ow_node.upper, ow_node.base := assume h, g --down arrow
-  | ow_node.upper, ow_node.upper := assume h, 𝟙 b --id
+  | inf_w_node.tip ow_node.left, inf_w_node.tip ow_node.left := assume h, 𝟙 a --id
+  | inf_w_node.tip ow_node.left, inf_w_node.base ow_leg_node := assume h, f --right arrow
+  | inf_w_node.tip ow_node.left, inf_w_node.tip ow_node.upper := 
+      begin intro h, hinduction (own_encode h) end
+  | inf_w_node.base ow_leg_node , inf_w_node.tip ow_node.left := 
+      begin intro h, hinduction h end    
+  | inf_w_node.base ow_leg_node, inf_w_node.base _ := assume h, 𝟙 c --id
+  | inf_w_node.base ow_leg_node , inf_w_node.tip ow_node.upper :=    
+      begin intro h, hinduction h end
+  | inf_w_node.tip ow_node.upper, inf_w_node.tip ow_node.left := 
+      begin intro h, hinduction (own_encode h) end
+  | inf_w_node.tip ow_node.upper, inf_w_node.base ow_leg_node := assume h, g --down arrow
+  | inf_w_node.tip ow_node.upper, inf_w_node.tip ow_node.upper := assume h, 𝟙 b --id
 end 
 
 @[hott, hsimp]
-def orthogonal_pair_map_id {C : Type u} [category.{v} C] {a b c : C} 
-  (f : a ⟶ c) (g : b ⟶ c) : ∀ s : orthogonal_wedge.{u}, 
+def orthogonal_pair_map_id {C : Type _} [is_cat C] {a b c : C} 
+  (f : a ⟶ c) (g : b ⟶ c) : ∀ s : orthogonal_wedge, 
   orthogonal_pair_map f g (𝟙 s) = 𝟙 (orthogonal_pair_obj f g s) :=
-begin intro s, hinduction s, hsimp, hsimp, hsimp end 
+begin intro s, hinduction s with n, hinduction n, all_goals { hsimp } end 
 
 @[hott, hsimp]
-def orthogonal_pair_map_comp {C : Type u} [category.{v} C] {a b c : C} 
-  (f : a ⟶ c) (g : b ⟶ c) : ∀ {s t u : orthogonal_wedge.{u}} 
+def orthogonal_pair_map_comp {C : Type _} [is_cat C] {a b c : C} 
+  (f : a ⟶ c) (g : b ⟶ c) : ∀ {s t u : orthogonal_wedge} 
   (h : s ⟶ t) (i : t ⟶ u), orthogonal_pair_map f g (h ≫ i) = 
                   (orthogonal_pair_map f g h) ≫ (orthogonal_pair_map f g i) :=
 begin 
-  intros s t u h i; hinduction s; hinduction t; hinduction u; 
-  hsimp; hinduction i; hinduction h 
+  intros s t u h i; 
+  hinduction s with n₁, hinduction n₁, 
+  all_goals { hinduction t with n₂, try { hinduction n₂} },
+  all_goals { hinduction u with n₃, try { hinduction n₃} },
+  all_goals { try { solve1 { hsimp } } }, 
+  all_goals { try { solve1 { hinduction (own_encode i) } } }, 
+  all_goals { try { solve1 { hinduction (own_encode h) } } },
+  all_goals { try { solve1 { hinduction i } } },
+  all_goals { try { solve1 { hinduction h } } } 
 end
 
 @[hott]
-def orthogonal_pair {C : Type u} [category.{v} C] {a b c : C} 
-  (f : a ⟶ c) (g : b ⟶ c) : orthogonal_wedge.{u} ⥤ C :=
-categories.functor.mk (orthogonal_pair_obj f g) 
+def orthogonal_pair {C : Type _} [is_cat C] {a b c : C} 
+  (f : a ⟶ c) (g : b ⟶ c) : orthogonal_wedge ⥤ C :=
+precategories.functor.mk (orthogonal_pair_obj f g) 
                            (@orthogonal_pair_map _ _ _ _ _ f g) 
                            (orthogonal_pair_map_id f g) 
                            (@orthogonal_pair_map_comp _ _ _ _ _ f g)  
 
 /- Limits of orthogonal pairs are `pullbacks`. -/
 @[hott]
-class has_pullback {C : Type u} [category.{v} C] {a b c : C} (f : a ⟶ c) (g : b ⟶ c) := 
+class has_pullback {C : Type _} [is_cat C] {a b c : C} (f : a ⟶ c) (g : b ⟶ c) := 
   (has_limit : has_limit (orthogonal_pair f g))
 
 @[hott, priority 100]
-instance has_limit_of_has_pullback {C : Type u} [category.{v} C] {a b c : C} (f : a ⟶ c)
+instance has_limit_of_has_pullback {C : Type _} [is_cat C] {a b c : C} (f : a ⟶ c)
   (g : b ⟶ c) [has_pullback f g] : has_limit (orthogonal_pair f g) := 
 has_pullback.has_limit f g 
 
 @[hott]
-def pullback {C : Type u} [category.{v} C] {a b c : C} (f : a ⟶ c) (g : b ⟶ c) 
+def pullback {C : Type _} [is_cat C] {a b c : C} (f : a ⟶ c) (g : b ⟶ c) 
   [has_pullback f g] := limit (orthogonal_pair f g)   
 
 @[hott]
-def pullback_homo_l {C : Type u} [category.{v} C] {a b c : C} (f : a ⟶ c) (g : b ⟶ c) 
+def pullback_homo_l {C : Type u} [is_cat C] {a b c : C} (f : a ⟶ c) (g : b ⟶ c) 
   [has_pullback f g] : pullback f g ⟶ a :=
 limit_leg (orthogonal_pair f g) ow_node.left  
 
