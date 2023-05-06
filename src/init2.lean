@@ -824,4 +824,25 @@ def eq_tr_tr {A : Type _} {P : A -> Type _} {a₁ a₂ : A} {p q : a₁ = a₂} 
   (b : P a₁) : p ▸ b = q ▸ b := 
 begin hinduction r, refl end
 
+@[hott]
+def fn2_ev_fn2_tr {A : Type _} {a₁ a₂ : A} (p : a₁ = a₂) {B : A -> Type _} (b₁ : B a₁) 
+  (f : Π (a : A), B a -> Type _) : f a₁ b₁ = f a₂ (p ▸ b₁) :=
+begin hinduction p, refl end
+
+@[hott]
+def fn2_ev_fn2_tr' {A C : Type _} {a₁ a₂ : A} (p : a₁ = a₂) {B : A -> Type _} (b₁ : B a₁) 
+  (f : Π (a : A), B a -> C) : f a₁ b₁ = f a₂ (p ▸ b₁) :=
+begin hinduction p, refl end
+
+@[hott]
+def fn3_ev_fn3_tr {A : Type _} {a₁ a₂ : A} (p : a₁ = a₂) {B : A -> Type _} (b₁ : B a₁) 
+  {C : Π (a : A), B a -> Type _} (c₁ : C a₁ b₁) (f : Π (a : A) (b : B a), C a b -> Type _) : 
+  f a₁ b₁ c₁ = f a₂ (p ▸ b₁) ((fn2_ev_fn2_tr p b₁ C) ▸[id] c₁) :=
+begin hinduction p, refl end
+
+def fn3_ev_fn3_tr' {A D : Type _} {a₁ a₂ : A} (p : a₁ = a₂) {B : A -> Type _} (b₁ : B a₁) 
+  {C : Π (a : A), B a -> Type _} (c₁ : C a₁ b₁) (f : Π (a : A) (b : B a), C a b -> D) : 
+  f a₁ b₁ c₁ = f a₂ (p ▸ b₁) ((fn2_ev_fn2_tr p b₁ C) ▸[id] c₁) :=
+begin hinduction p, refl end
+
 end hott
