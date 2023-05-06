@@ -89,9 +89,9 @@ def is_set_map {A : Type _} {B : Set} : is_set (A -> B) :=
 have H : forall (f g : A -> B) (p q : f = g), p = q, from   
   assume f g p q, 
   have eq_eqv_hom : (f = g) ≃ (f ~ g), from 
-    eq_equiv_homotopy f g, /- uses function extensionality -/ 
+    eq_equiv_homotopy f g, /- uses function extensionality, makes `is_set_map` non-computable -/ 
   have is_prop_hom : is_prop (f ~ g), from 
-    have pP : forall a : A, is_prop (f a = g a), from 
+    have pP : forall a : A, is_prop (f a = g a), from
       assume a, is_trunc_eq -1 (f a) (g a),
     @is_prop_dprod _ (λ a : A, f a = g a) pP, 
   have H_eqv : is_prop (f = g), from 
