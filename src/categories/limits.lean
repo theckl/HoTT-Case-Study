@@ -130,9 +130,7 @@ begin
         have r : idtoiso⁻¹ᶠ lcp_iso.1 ▸[λ X : C, X ⟶ F.obj j] app₁ j = 
                  (inv_iso lcp_iso.1).hom ≫ app₁ j, from
           @iso_hom_tr_comp (Category.mk C _) X₁ X₂ _ lcp_iso.1 (app₁ j),
-        rwr r,
-        apply inverse, 
-        apply iso_move_lr,
+        rwr r, apply inverse, apply iso_move_lr,
         exact (ap (λ h : X₁ ⟶ X₂, h ≫ app₂ j) lcp_iso.2) ⬝ 
               (is_limit₂.fac _ j)},
       { apply pathover_of_tr_eq, apply eq_of_homotopy3, intros c c' f, 
@@ -221,7 +219,7 @@ begin
   exact phl ▸[id] hlF
 end
 
-@[hott, instance, reducible]
+@[hott, instance]
 def diag_iso_has_lim_to_has_lim' {J₁ J₂ : Strict_Categories} {C : Type u} [is_cat.{v} C]
   (H : J₁ ≅ J₂) {F : J₂.obj ⥤ C} [hlF : has_limit F] : has_limit (H.hom ⋙ F) :=
 begin rwr <- diag_iso_on_cone H F, exact @diag_iso_has_lim_to_has_lim _ _ _ _ H F hlF end
