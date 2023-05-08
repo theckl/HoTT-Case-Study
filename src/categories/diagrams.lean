@@ -236,7 +236,7 @@ def Inf_Wedge_is_strict_cat {A : Set} : is_strict_cat (Inf_Wedge A) :=
    We construct it as an instance of the general `infinite wedge`, 
    but try to maintain names to address nodes and legs. -/
 @[hott]
-inductive ow_node : Type u
+inductive ow_node : Type
 | left
 | upper
 
@@ -244,9 +244,9 @@ inductive ow_node : Type u
 @[hott]
 def own_code : ow_node -> ow_node -> Set :=
 λ n₁ n₂, match n₁, n₂ with
-         | ow_node.left, ow_node.left := One_Set
-         | ow_node.upper, ow_node.upper := One_Set
-         | _ , _ := Zero_Set
+         | ow_node.left, ow_node.left := One_Set.{0}
+         | ow_node.upper, ow_node.upper := One_Set.{0}
+         | _ , _ := Zero_Set.{0}
          end
 
 @[hott]
@@ -259,32 +259,32 @@ begin intros n₁ n₂ p, hinduction p, exact refl_own_code n₁ end
 
 /- We also need to know that the nodes form a set. -/
 @[hott, hsimp]
-def own_Two : ow_node.{u} -> Two.{u} :=
+def own_Two : ow_node -> Two.{0} :=
   λ s, match s with
        | ow_node.left := Two.zero
        | ow_node.upper := Two.one
        end
 
 @[hott, hsimp]
-def Two_own : Two.{u} -> ow_node.{u} :=
+def Two_own : Two.{0} -> ow_node :=
   λ t, match t with
        | Two.zero := ow_node.left
        | Two.one := ow_node.upper
        end
 
 @[hott, instance]
-def own_is_set : is_set ow_node.{u} :=
-  have r_inv : ∀ t : Two, own_Two (Two_own t) = t, by  
+def own_is_set : is_set ow_node :=
+  have r_inv : ∀ t : Two.{0}, own_Two (Two_own t) = t, by  
     intro t; hinduction t; hsimp; hsimp,  
   have l_inv : ∀ s : ow_node, Two_own (own_Two s) = s, by
     intro s; hinduction s; hsimp; hsimp,
   have own_eqv_Two: is_equiv own_Two, from
     adjointify own_Two Two_own r_inv l_inv,
-  @is_trunc_is_equiv_closed_rev.{u u} _ _ 0 own_Two own_eqv_Two Two_is_set
+  @is_trunc_is_equiv_closed_rev _ _ 0 own_Two own_eqv_Two Two_is_set.{0 0}
 
 @[hott]
 def ow_leg_node : Set :=
-Set.mk ow_node.{u} own_is_set.{u u}
+Set.mk ow_node own_is_set
 
 @[hott]
 def orthogonal_wedge : Set := inf_wedge ow_leg_node
@@ -317,7 +317,7 @@ def Orthogonal_Wedge : Precategory :=
   Precategory.mk orthogonal_wedge orthogonal_wedge_precat
 
 @[hott, instance]
-def Orthogonal_Wedge_is_strict_cat {A : Set} : 
+def Orthogonal_Wedge_is_strict_cat : 
   is_strict_cat Orthogonal_Wedge := is_strict_cat.mk orthogonal_wedge.struct   
 
 /- We define infinite and orthogonal cowedges as opposite 
