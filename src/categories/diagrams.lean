@@ -135,7 +135,7 @@ def inf_wedge (A : Set.{u}) : Set :=
 Set.mk (inf_w_node.{u} A) (inf_wn_is_set.{u u} A)
 
 @[hott]
-def inf_w_tip {A : Set} (a : A) : inf_wedge A := inf_w_node.tip a
+abbreviation inf_w_tip {A : Set} (a : A) : inf_wedge A := inf_w_node.tip a
 
 @[hott]
 def inf_w_base {A : Set} : inf_wedge A := inf_w_node.base A
@@ -313,12 +313,63 @@ def orthogonal_wedge_strict_cat : is_strict_cat orthogonal_wedge :=
   Inf_Wedge_is_strict_cat
 
 @[hott]
-def Orthogonal_Wedge : Precategory := 
-  Precategory.mk orthogonal_wedge orthogonal_wedge_precat
+def Orthogonal_Wedge : strict_Category := 
+  strict_Category.mk orthogonal_wedge.carrier orthogonal_wedge_strict_cat
 
 @[hott, instance]
 def Orthogonal_Wedge_is_strict_cat : 
   is_strict_cat Orthogonal_Wedge := is_strict_cat.mk orthogonal_wedge.struct   
+
+/- The two legs of an orthogonal wedge can be interchanged. -/
+@[hott] 
+def orthogonal_wedge_iso_hom : Orthogonal_Wedge ⟶ Orthogonal_Wedge :=
+begin
+  fapply precategories.functor.mk, 
+  { intro ow, hinduction ow with n, hinduction n, 
+    exact inf_w_tip ow_node.upper, exact inf_w_tip ow_node.left, exact inf_w_base },
+  { intros ow₁ ow₂, hinduction ow₁ with n₁, hinduction n₁,
+    all_goals { hinduction ow₂ with n₂, hinduction n₂ }, 
+    all_goals { intro h, try { solve1 { hsimp } } },
+    all_goals { try { solve1 { hinduction (own_encode h) } } },
+    all_goals { try { solve1 { hinduction h } } },
+    exact inf_w_leg ow_node.upper, exact inf_w_leg ow_node.left, exact One.star },
+  { intro ow, hinduction ow with n, hinduction n, all_goals { refl } },
+  { intros ow₁ ow₂ ow₃ f g, hinduction ow₁ with n₁, hinduction n₁,
+    all_goals { hinduction ow₂ with n₂, hinduction n₂ },
+    all_goals { hinduction ow₃ with n₃, hinduction n₃ },
+    all_goals { try { solve1 { hsimp} } },
+    all_goals { try { solve1 { hinduction (own_encode f) } } },
+    all_goals { try { solve1 { hinduction f } } },
+    all_goals { try { solve1 { hinduction (own_encode g) } } },
+    all_goals { try { solve1 { hinduction g } } } }
+end
+
+@[hott] 
+def orthogonal_wedge_iso_hom_inv : 
+  (orthogonal_wedge_iso_hom ≫ orthogonal_wedge_iso_hom) = 𝟙 Orthogonal_Wedge :=
+begin  
+  fapply functor_eq,
+  { apply eq_of_homotopy, intro ow, hinduction ow with n, hinduction n, 
+    all_goals { refl } },
+  { apply pathover_of_tr_eq, apply eq_of_homotopy3, intros ow₁ ow₂ h, 
+    hinduction ow₁ with n₁, hinduction n₁,
+    all_goals { hinduction ow₂ with n₂, hinduction n₂ }, 
+    all_goals { try { solve1 { hinduction (own_encode h) } } },
+    all_goals { try { solve1 { hinduction h } } },
+    all_goals { try { solve1 { exact is_prop.elim _ _ } } } }
+end
+
+@[hott] 
+def orthogonal_wedge_iso : Orthogonal_Wedge ≅ Orthogonal_Wedge :=
+begin
+  fapply iso.mk,
+  { exact orthogonal_wedge_iso_hom },
+  { fapply is_iso.mk,
+    { exact orthogonal_wedge_iso_hom },
+    { exact orthogonal_wedge_iso_hom_inv },
+    { exact orthogonal_wedge_iso_hom_inv } } 
+end
+
 
 /- We define infinite and orthogonal cowedges as opposite 
    precategories of infinite and orthogonal wedges. -/
