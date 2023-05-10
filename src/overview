@@ -1,6 +1,6 @@
 Compiling files, in order of dependencies:
 ------------------------------------------
-init2       :   848
+init2       :   867
 types2      :   502 
 prop_axioms :   614
 prop_logic  :   208
@@ -20,10 +20,10 @@ categories
   examples  :   656 
   adjoints  :   410 
   strict_cat:   390 
-  diagrams  :   562 
+  diagrams  :   617 
   limits    :   722 
-  colimits  :   514 
-  * pullbacks :   403 (contains 2 sorries, for symmetry of intersection
+  colimits  :   514 (9879)
+  pullbacks :   403 (contains 2 sorries, for symmetry of intersection
                      of subobjects & for construction of implications
                      as subobjects)
   structures:   613
@@ -38,4 +38,4 @@ categories.pullbacks : complements, instance
 categories.pullbacks : Heyting property
 categories.pullbacks : implication of subobjects
 categories.pullbacks : symmetry of intersection of subobjects
-categories.pullbacks : symmetry of pullbacks                   
+categories.pullbacks : symmetry of pullbacks                  
