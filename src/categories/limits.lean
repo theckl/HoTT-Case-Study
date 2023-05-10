@@ -185,6 +185,12 @@ def diag_eq_lim_eq_lim {J : Strict_Categories} {C : Type _} [is_cat C]
 fn2_ev_fn2_tr' p hlF (λ (F : J.obj ⥤ C) (hlF : has_limit F), @limit _ _ _ _ F hlF)
 
 @[hott]
+def diag_eq_lim_eq_lim' {J : Strict_Categories} {C : Type _} [is_cat C]
+  (F : J.obj ⥤ C) (hlF : has_limit F) (hlF' : has_limit F) : 
+  @limit _ _ _ _ F hlF = @limit _ _ _ _ F hlF' :=
+sorry
+
+@[hott]
 def limit_leg {J : Type _} [is_strict_cat J] {C : Type u} 
   [is_cat.{v} C] (F : J ⥤ C) (j : J) [has_limit F] : 
   limit F ⟶ F.obj j := (limit.cone F).π.app j 
@@ -220,17 +226,18 @@ begin
 end
 
 @[hott, instance]
-def diag_iso_has_lim_to_has_lim' {J₁ J₂ : Strict_Categories} {C : Type u} [is_cat.{v} C]
+def diag_iso_has_lim_to_has_lim' {J₁ J₂ : strict_Category} {C : Type u} [is_cat.{v} C]
   (H : J₁ ≅ J₂) {F : J₂.obj ⥤ C} [hlF : has_limit F] : has_limit (H.hom ⋙ F) :=
 begin rwr <- diag_iso_on_cone H F, exact @diag_iso_has_lim_to_has_lim _ _ _ _ H F hlF end
 
 @[hott]
-def diag_iso_lim_eq_lim {J₁ J₂ : Strict_Categories} {C : Type _} [is_cat C]
-  (H : J₁ ≅ J₂) {F : J₂.obj ⥤ C} [hlF : has_limit F] : limit F = limit (H.hom ⋙ F) :=
+def diag_iso_lim_eq_lim {J₁ J₂ : strict_Category} {C : Type u} [is_cat.{v} C]
+  (H : J₁ ≅ J₂) {F : J₂.obj ⥤ C} [hlF : has_limit F] : 
+  limit F = @limit _ _ _ _ (H.hom ⋙ F) (diag_iso_has_lim_to_has_lim' H) :=
 begin
   change (λ (J : Strict_Categories) (F : J.obj ⥤ C) (hlF : has_limit F), 
             @limit _ _ _ _ F hlF) J₂ F hlF = _,
-  rwr fn3_ev_fn3_tr' (category.isotoid H)⁻¹ F hlF (λ (J : Strict_Categories) 
+  rwr fn3_ev_fn3_tr' (@category.isotoid Strict_Categories _ _ H)⁻¹ F hlF (λ (J : strict_Category) 
                           (F : J.obj ⥤ C) (hlF : has_limit F), @limit _ _ _ _ F hlF),
   exact diag_eq_lim_eq_lim (diag_iso_on_cone H F)⁻¹⁻¹
 end
