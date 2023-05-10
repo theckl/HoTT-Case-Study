@@ -577,7 +577,19 @@ def deq_of_homotopy3 {A B C : Type _} {h₁ h₂ : A -> B -> C -> Type _} {p : h
 begin 
   hinduction p, hsimp, intro hty, apply pathover_idp_of_eq, 
   exact eq_of_homotopy3 (λ (a : A) (b : B) (c : C), eq_of_pathover_idp (hty a b c)) 
-end  
+end 
+
+@[hott]
+def deq_of_homotopy3' {A C : Type _} {f₁ f₂ : A -> C} (p : f₁ = f₂) {B : A -> A -> Type _} 
+  {D : Π (f : A -> C), Π (a₁ a₂ : A), B a₁ a₂ -> Type _} 
+  {g₁ : Π (a₁ a₂ : A) (b : B a₁ a₂), D f₁ a₁ a₂ b} 
+  {g₂ : Π (a₁ a₂ : A) (b : B a₁ a₂), D f₂ a₁ a₂ b} : 
+  (Π (a₁ a₂ : A) (b : B a₁ a₂), g₁ a₁ a₂ b =[p; λ (f : A -> C), D f a₁ a₂ b] g₂ a₁ a₂ b) -> 
+      g₁ =[p; λ (f : A -> C), Π (a₁ a₂ : A) (b : B a₁ a₂), D f a₁ a₂ b] g₂ :=
+begin 
+  hinduction p, intro hty, apply pathover_idp_of_eq, 
+  exact eq_of_homotopy3 (λ (a₁ a₂ : A) (b : B a₁ a₂), eq_of_pathover_idp (hty a₁ a₂ b))  
+end
 
 @[hott]
 def dep_eq_of_homotopy {A : Type _} {P : A -> A -> Type _} {b b' : A} (p : b = b') 
@@ -843,6 +855,13 @@ begin hinduction p, refl end
 def fn3_ev_fn3_tr' {A D : Type _} {a₁ a₂ : A} (p : a₁ = a₂) {B : A -> Type _} (b₁ : B a₁) 
   {C : Π (a : A), B a -> Type _} (c₁ : C a₁ b₁) (f : Π (a : A) (b : B a), C a b -> D) : 
   f a₁ b₁ c₁ = f a₂ (p ▸ b₁) ((fn2_ev_fn2_tr p b₁ C) ▸[id] c₁) :=
+begin hinduction p, refl end
+
+@[hott]
+def fn_eq_tr_fn2 {A B : Type _} {a₁ a₂ : A} {f₁ f₂ : A -> B} (p : f₁ = f₂) 
+  {C : B -> B -> Type _} {c₁ : C (f₁ a₁) (f₁ a₂)} : 
+  p ▸ c₁ = ((ap10 p a₂) ▸[λ b : B, C (f₂ a₁) b] 
+                           ((ap10 p a₁) ▸[λ b : B, C b (f₁ a₂)] c₁)) :=
 begin hinduction p, refl end
 
 end hott
