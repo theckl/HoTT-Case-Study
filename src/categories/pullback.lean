@@ -71,7 +71,39 @@ def orthogonal_pair {C : Type _} [is_cat C] {a b c : C}
 precategories.functor.mk (orthogonal_pair_obj f g) 
                            (@orthogonal_pair_map _ _ _ _ _ f g) 
                            (orthogonal_pair_map_id f g) 
-                           (@orthogonal_pair_map_comp _ _ _ _ _ f g)  
+                           (@orthogonal_pair_map_comp _ _ _ _ _ f g) 
+
+/- Symmetry of orthogonal pairs -/
+@[hott]
+def sym_orthogonal_pair_obj {C : Type _} [is_cat C] {a b c : C} 
+  (f : a ⟶ c) (g : b ⟶ c) : Π (ow : orthogonal_wedge), 
+  (orthogonal_pair g f).obj ow = 
+  (orthogonal_wedge_iso.hom ⋙ orthogonal_pair f g).obj ow :=
+begin
+  exact (λ (ow : ↥orthogonal_wedge), 
+              inf_w_node.rec (λ (n : ↥ow_leg_node), ow_node.rec idp idp n) idp ow)
+end              
+
+@[hott]
+def sym_orthogonal_pair {C : Type _} [is_cat C] {a b c : C} 
+  (f : a ⟶ c) (g : b ⟶ c) : 
+  orthogonal_pair g f = (orthogonal_wedge_iso.hom ⋙ orthogonal_pair f g) :=
+begin
+  fapply functor_eq, 
+  { exact eq_of_homotopy (sym_orthogonal_pair_obj f g) },
+  { apply deq_of_homotopy3', intros ow₁ ow₂ h, 
+    hinduction ow₁ with n₁, hinduction n₁,
+    all_goals { hinduction ow₂ with n₂, hinduction n₂ }, 
+    all_goals { try { solve1 { hinduction (own_encode h) } } },
+    all_goals { try { solve1 { hinduction h } } }, 
+    all_goals { try { solve1 { apply pathover_of_tr_eq, 
+      apply eq.concat (@fn_eq_tr_fn2 orthogonal_wedge C _ _ (orthogonal_pair g f).obj 
+              (orthogonal_wedge_iso.hom ⋙ orthogonal_pair f g).obj 
+              (eq_of_homotopy (sym_orthogonal_pair_obj f g)) (λ c₁ c₂ : C, c₁ ⟶ c₂) 
+              ((orthogonal_pair g f).map h)), 
+      rwr ap10_eq_of_homotopy } } } }
+end
+ 
 
 /- Limits of orthogonal pairs are `pullbacks`. -/
 @[hott]
@@ -196,8 +228,35 @@ have w : Π (ow : orthogonal_wedge), h ≫ (limit.cone (orthogonal_pair f g)).π
       rwr <- is_precat.assoc, change (h ≫ pullback_homo_l f g) ≫ _ = _, rwr pl, 
       change _ = S.π.app inf_w_base, rwr <- cone.fac S (inf_w_leg ow_node.left) }, 
   end,
-(get_limit_cone (orthogonal_pair f g)).is_limit.uniq S h w   
+(get_limit_cone (orthogonal_pair f g)).is_limit.uniq S h w 
 
+/- Pullbacks are symmetric in the two legs.
+   
+   The existence of the symmetric pullback derived from an instance of the pullback
+   cannot be set up as an instance because this would cause infinite loops when 
+   determining class instances. 
+   
+   Usually, we just assume that all pullbacks exist in a category. -/
+@[hott]
+def has_sym_pullback {C : Type u} [is_cat.{v} C] {a b c : C} (f : a ⟶ c) (g : b ⟶ c)
+  [pull_fg : has_pullback f g] : has_pullback g f :=
+begin
+  apply has_pullback.mk, rwr sym_orthogonal_pair f g, 
+  exact @diag_iso_has_lim_to_has_lim'.{v u 0 0 0 0} _ _ _ _ orthogonal_wedge_iso _
+        pull_fg.has_limit        
+end
+
+@[hott]
+def sym_pullback_eq {C : Type u} [is_cat.{v} C] {a b c : C} {f : a ⟶ c} {g : b ⟶ c}
+  [has_pullback.{u v} f g] [has_pullback.{u v} g f] : pullback f g = pullback g f :=
+begin
+  change limit _ = limit _,
+  apply eq.concat (diag_iso_lim_eq_lim.{v u 0 0 0 0} orthogonal_wedge_iso),
+  let p := @diag_eq_lim_eq_lim.{0 0 0} Orthogonal_Wedge _ _ _ _ 
+            (@eq.inverse (orthogonal_wedge ⥤ C) _ _ (sym_orthogonal_pair f g)) 
+            (@diag_iso_has_lim_to_has_lim'.{v u 0 0 0 0} _ _ _ _ orthogonal_wedge_iso _ _),
+  apply eq.concat p, sorry
+end
 
 /- The stability of monomorphisms under pullbacks can be used to construct pullbacks 
    of subobjects. -/
@@ -255,10 +314,14 @@ def subobj_intersect {C : Category} {c : C} (a b : subobject c)
   [has_pullback a.hom b.hom] : subobject c :=
 subobj_trans a (pullback_subobject a.hom b)  
 
+set_option trace.class_instances true
+
 @[hott, instance]
 def subobj_has_inter {C : Category} {c : C} [has_pullbacks C] :
   has_inter (subobject c) :=
 has_inter.mk (λ a b, subobj_intersect a b) 
+
+set_option trace.class_instances false
 
 @[hott]
 def subobj_inter_symm {C : Category} {c : C} [has_pullbacks C]
