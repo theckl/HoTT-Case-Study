@@ -185,10 +185,11 @@ def diag_eq_lim_eq_lim {J : Strict_Categories} {C : Type _} [is_cat C]
 fn2_ev_fn2_tr' p hlF (λ (F : J.obj ⥤ C) (hlF : has_limit F), @limit _ _ _ _ F hlF)
 
 @[hott]
-def diag_eq_lim_eq_lim' {J : Strict_Categories} {C : Type _} [is_cat C]
+def diag_eq_lim_eq_lim' {J : strict_Category} {C : Type _} [is_cat C]
   (F : J.obj ⥤ C) (hlF : has_limit F) (hlF' : has_limit F) : 
   @limit _ _ _ _ F hlF = @limit _ _ _ _ F hlF' :=
-sorry
+ap cone.X (ap limit_cone.cone (limit_cone_is_unique F 
+                 (@get_limit_cone _ _ _ _ F hlF) (@get_limit_cone _ _ _ _ F hlF')))
 
 @[hott]
 def limit_leg {J : Type _} [is_strict_cat J] {C : Type u} 
