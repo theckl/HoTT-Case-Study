@@ -15,20 +15,20 @@ sets
 categories
   precat    :   740  
   basic     :   281 
-  subobj    :   446
+  subobj    :   429
   subcat    :   124
   examples  :   656 
   adjoints  :   410 
   strict_cat:   390 
   diagrams  :   617 
-  limits    :   722 
-  colimits  :   514 (9879)
-  pullbacks :   403 (contains 2 sorries, for symmetry of intersection
+  limits    :   728 
+  colimits  :   514 
+  * pullbacks :   403 (contains 2 sorries, for symmetry of intersection
                      of subobjects & for construction of implications
                      as subobjects)
   structures:   613
               -----
-               9900
+               
 
 
 Planned changes in Files, from bottom to top: 
@@ -37,5 +37,4 @@ categories.models : is_interpretable_in-class
 categories.pullbacks : complements, instance
 categories.pullbacks : Heyting property
 categories.pullbacks : implication of subobjects
-categories.pullbacks : symmetry of intersection of subobjects
-categories.pullbacks : symmetry of pullbacks                  
+categories.pullbacks : symmetry of intersection of subobjects                
