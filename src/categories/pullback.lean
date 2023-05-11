@@ -255,7 +255,8 @@ begin
   let p := @diag_eq_lim_eq_lim.{0 0 0} Orthogonal_Wedge _ _ _ _ 
             (@eq.inverse (orthogonal_wedge ⥤ C) _ _ (sym_orthogonal_pair f g)) 
             (@diag_iso_has_lim_to_has_lim'.{v u 0 0 0 0} _ _ _ _ orthogonal_wedge_iso _ _),
-  apply eq.concat p, sorry
+  apply eq.concat p, 
+  exact @diag_eq_lim_eq_lim' Orthogonal_Wedge _ _ (orthogonal_pair g f) _ _
 end
 
 /- The stability of monomorphisms under pullbacks can be used to construct pullbacks 
@@ -314,14 +315,10 @@ def subobj_intersect {C : Category} {c : C} (a b : subobject c)
   [has_pullback a.hom b.hom] : subobject c :=
 subobj_trans a (pullback_subobject a.hom b)  
 
-set_option trace.class_instances true
-
 @[hott, instance]
 def subobj_has_inter {C : Category} {c : C} [has_pullbacks C] :
   has_inter (subobject c) :=
 has_inter.mk (λ a b, subobj_intersect a b) 
-
-set_option trace.class_instances false
 
 @[hott]
 def subobj_inter_symm {C : Category} {c : C} [has_pullbacks C]
