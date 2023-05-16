@@ -21,9 +21,9 @@ categories
   adjoints  :   410 
   strict_cat:   390 
   diagrams  :   617 
-  limits    :   728 
+  * limits    :   734 (as below)
   colimits  :   514 
-  * pullbacks :   403 (contains 2 sorries, for symmetry of intersection
+  pullbacks :   403 (contains 2 sorries, for symmetry of intersection
                      of subobjects & for construction of implications
                      as subobjects)
   structures:   613
@@ -37,4 +37,6 @@ categories.models : is_interpretable_in-class
 categories.pullbacks : complements, instance
 categories.pullbacks : Heyting property
 categories.pullbacks : implication of subobjects
-categories.pullbacks : symmetry of intersection of subobjects                
+categories.pullbacks : symmetry of intersection of subobjects
+categories.colimits : redefinition of colimits
+categories.limits : redefinition of limits                
