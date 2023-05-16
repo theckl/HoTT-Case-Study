@@ -190,7 +190,7 @@ calc (square_left S) ≫ f = (S.π.app (inf_w_tip ow_node.left)) ≫ (orthogonal
      ... = (square_top S) ≫ g : rfl
 
 @[hott] 
-def pullback_eq {C : Type _} [is_cat C] {a b c : C} {f : a ⟶ c} {g : b ⟶ c} 
+def pullback_eq {C : Type _} [is_cat C] {a b c : C} (f : a ⟶ c) (g : b ⟶ c) 
   [has_pullback f g] : pullback_homo_l f g ≫ f = pullback_homo_t f g ≫ g :=
 square_eq (limit.cone (orthogonal_pair f g))  
 
@@ -249,15 +249,21 @@ end
 @[hott]
 def sym_pullback_eq {C : Type u} [is_cat.{v} C] {a b c : C} {f : a ⟶ c} {g : b ⟶ c}
   [has_pullback.{u v} f g] [has_pullback.{u v} g f] : pullback f g = pullback g f :=
+(diag_iso_lim_eq_lim.{v u 0 0 0 0} orthogonal_wedge_iso _) ⬝ 
+(@diag_eq_lim_eq_lim Orthogonal_Wedge _ _ _ (orthogonal_pair g f) 
+  (sym_orthogonal_pair f g)⁻¹ 
+  (diag_iso_has_lim_to_has_lim'.{v u 0 0 0 0} orthogonal_wedge_iso) _)
+
+@[hott]
+def sym_pullback_legs_eq {C : Type u} [is_cat.{v} C] {a b c : C} (f : a ⟶ c) 
+  (g : b ⟶ c) [has_pullback.{u v} f g] [has_pullback.{u v} g f] : 
+  (idtoiso sym_pullback_eq).hom ≫ pullback_homo_l g f = pullback_homo_t f g :=
 begin
-  change limit _ = limit _,
-  apply eq.concat (diag_iso_lim_eq_lim.{v u 0 0 0 0} orthogonal_wedge_iso),
-  let p := @diag_eq_lim_eq_lim.{0 0 0} Orthogonal_Wedge _ _ _ _ 
-            (@eq.inverse (orthogonal_wedge ⥤ C) _ _ (sym_orthogonal_pair f g)) 
-            (@diag_iso_has_lim_to_has_lim'.{v u 0 0 0 0} _ _ _ _ orthogonal_wedge_iso _ _),
-  apply eq.concat p, 
-  exact @diag_eq_lim_eq_lim' Orthogonal_Wedge _ _ (orthogonal_pair g f) _ _
+  change (idtoiso (diag_iso_lim_eq_lim _ _ ⬝ _)).hom ≫ _ = _, rwr <- idtoiso_comp_eq, 
+  rwr is_precat.assoc,
+  sorry
 end
+
 
 /- The stability of monomorphisms under pullbacks can be used to construct pullbacks 
    of subobjects. -/
@@ -324,9 +330,12 @@ has_inter.mk (λ a b, subobj_intersect a b)
 def subobj_inter_symm {C : Category} {c : C} [has_pullbacks C]
   (a b : subobject c) : a ∩ b = b ∩ a :=
 begin 
-  fapply iso_mono_to_equal_subobj, fapply iso_of_monos.mk, 
-  { change pullback a.hom b.hom ≅ pullback b.hom a.hom, sorry },
-  { sorry }
+  fapply subobject_eq, 
+  { exact sym_pullback_eq },
+  { apply pathover_of_tr_eq, rwr <- category.idtoiso_linv sym_pullback_eq, 
+    rwr iso_hom_tr_comp, apply eq.inverse, apply iso_move_lr, 
+    change _ ≫ pullback_homo_l b.hom a.hom ≫ _ = pullback_homo_l a.hom b.hom ≫ _, 
+    rwr pullback_eq a.hom b.hom, rwr <- is_precat.assoc, rwr sym_pullback_legs_eq }
 end  
 
 @[hott]
