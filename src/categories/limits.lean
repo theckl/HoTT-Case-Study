@@ -50,35 +50,60 @@ begin
 end
 
 @[hott]
+structure cone_map {J : Type _} [is_strict_cat J] {C : Type _} 
+  [is_precat C] {F : J ⥤ C} (cF₁ cF₂ : cone F) :=
+(v_lift : cF₁.X ⟶ cF₂.X)
+(fac : Π (j : J), v_lift ≫ cF₂.π.app j = cF₁.π.app j)
+
+@[hott]
+def cone_map_eq {J : Type _} [is_strict_cat J] {C : Type _} 
+  [is_precat C] {F : J ⥤ C} {cF₁ cF₂ : cone F} (m₁ m₂ : cone_map cF₁ cF₂) :
+  m₁.v_lift = m₂.v_lift -> m₁ = m₂ :=
+begin
+  hinduction m₁ with vl₁ fac₁, hinduction m₂ with vl₂ fac₂, intro v_lift_eq,
+  fapply apd011, exact v_lift_eq, 
+  apply pathover_of_tr_eq, apply eq_of_homotopy, intro j, exact is_prop.elim _ _
+end
+
+@[hott]
 structure is_limit {J : Type _} [is_strict_cat J] {C : Type u} 
   [is_precat.{v} C] {F : J ⥤ C} (t : cone F) :=
-(lift : Π (s : cone F), s.X ⟶ t.X)
-(fac  : ∀ (s : cone F) (j : J), lift s ≫ t.π.app j = s.π.app j)
-(uniq : ∀ (s : cone F) (m : s.X ⟶ t.X) 
-          (w : ∀ j : J, m ≫ t.π.app j = s.π.app j), m = lift s)
+(lift : Π (s : cone F), cone_map s t)
+(uniq : ∀ (s : cone F) (m : cone_map s t), m.v_lift = (lift s).v_lift)
+
+@[hott, instance]
+def is_limit_is_prop {J : Type _} [is_strict_cat J] {C : Type u} 
+  [is_precat.{v} C] {F : J ⥤ C} (t : cone F) : is_prop (is_limit t) :=
+begin
+  apply is_prop.mk, intros l₁ l₂, 
+  hinduction l₁ with lift₁ uniq₁, hinduction l₂ with lift₂ uniq₂,
+  fapply apd011,
+  { apply eq_of_homotopy, intro s, apply cone_map_eq, exact uniq₂ s (lift₁ s) },
+  { apply pathover_of_tr_eq, apply eq_of_homotopy2, intros s m, exact is_prop.elim _ _ }
+end
 
 @[hott] 
 def lift_itself_id {J : Type _} [is_strict_cat J] {C : Type u} 
-  [is_precat.{v} C] 
-  {F : J ⥤ C} {t : cone F} (l : is_limit t) : l.lift t = 𝟙 t.X :=
+  [is_precat.{v} C] {F : J ⥤ C} {t : cone F} (l : is_limit t) : 
+  (l.lift t).v_lift = 𝟙 t.X :=
 have t_fac : ∀ j : J, 𝟙 t.X ≫ t.π.app j = t.π.app j, by intro j; hsimp,  
-(l.uniq _ _ t_fac)⁻¹             
+(l.uniq _ (cone_map.mk (𝟙 t.X) t_fac))⁻¹             
 
 @[hott]
 def limit_cone_point_iso {J : Type _} [is_strict_cat J] {C : Type u} 
   [is_precat.{v} C] {F : J ⥤ C} {s t : cone F} (lₛ : is_limit s) 
-  (lₜ : is_limit t) : Σ i : s.X ≅ t.X, i.hom = lₜ.lift s :=
-let st := lₜ.lift s, ts := lₛ.lift t in 
+  (lₜ : is_limit t) : Σ i : s.X ≅ t.X, i.hom = (lₜ.lift s).v_lift :=
+let st := (lₜ.lift s).v_lift, ts := (lₛ.lift t).v_lift in 
 have s_fac : ∀ j : J, (st ≫ ts) ≫ s.π.app j = s.π.app j, from assume j,
   calc (st ≫ ts) ≫ s.π.app j = st ≫ (ts ≫ s.π.app j) : is_precat.assoc _ _ _
-       ... = st ≫ t.π.app j : by rwr lₛ.fac t j
-       ... = s.π.app j : by rwr lₜ.fac s j,
+       ... = st ≫ t.π.app j : by rwr (lₛ.lift t).fac j
+       ... = s.π.app j : by rwr (lₜ.lift s).fac j,
 have t_fac : ∀ j : J, (ts ≫ st) ≫ t.π.app j = t.π.app j, from assume j, 
   calc (ts ≫ st) ≫ t.π.app j = ts ≫ (st ≫ t.π.app j) : is_precat.assoc _ _ _
-       ... = ts ≫ s.π.app j : by rwr lₜ.fac s j 
-       ... = t.π.app j : by rwr lₛ.fac t j,
-have comp_s : st ≫ ts = 𝟙 s.X, from lₛ.uniq _ _ s_fac ⬝ lift_itself_id lₛ, 
-have comp_t : ts ≫ st = 𝟙 t.X, from lₜ.uniq _ _ t_fac ⬝ lift_itself_id lₜ,
+       ... = ts ≫ s.π.app j : by rwr (lₜ.lift s).fac j 
+       ... = t.π.app j : by rwr (lₛ.lift t).fac j,
+have comp_s : st ≫ ts = 𝟙 s.X, from (lₛ.uniq _ (cone_map.mk _ s_fac)) ⬝ lift_itself_id lₛ, 
+have comp_t : ts ≫ st = 𝟙 t.X, from (lₜ.uniq _ (cone_map.mk _ t_fac)) ⬝ lift_itself_id lₜ,
 ⟨iso.mk st (is_iso.mk ts comp_t comp_s), rfl⟩
 
 /- `limit_cone F` contains a cone over `F` together with the information that 
@@ -88,6 +113,16 @@ structure limit_cone {J : Type _} [is_strict_cat J] {C : Type u}
   [is_precat.{v} C] (F : J ⥤ C) :=
 (cone : cone F)
 (is_limit : is_limit cone)
+
+@[hott]
+def limit_cone_eq {J : Type _} [is_strict_cat J] 
+  {C : Type u} [is_precat.{v} C] (F : J ⥤ C) (lc₁ lc₂ : limit_cone F) :
+  lc₁.cone = lc₂.cone -> lc₁ = lc₂ :=
+begin
+  hinduction lc₁ with cone₁ is_limit₁, hinduction lc₂ with cone₂ is_limit₂,
+  intro cone_eq, fapply apd011, exact cone_eq,
+  apply pathover_of_tr_eq, exact is_prop.elim _ _
+end
 
 /- `has_limit F` represents the mere existence of a limit for `F`. This allows
    to define it as a class with instances. -/ 
@@ -101,7 +136,7 @@ def has_limit.mk {J : Type _} [is_strict_cat J] {C : Type u}
   [is_precat.{v} C] {F : J ⥤ C} (d : limit_cone F) :=
 has_limit.mk' (tr d)  
 
-/- If `C` is a category, the limit cone points of two instances of 
+/- If `C` is a category, the limit cone vertices of two instances of 
   `limit_cone F` are equal since they are determined up to isomorphism. Then 
    the "legs" of the cones and the lifts of the universal property are 
    determined up to composition with the automorphism associated to this 
@@ -115,43 +150,15 @@ def limit_cone_is_unique {J : Type _} [is_strict_cat J]
 begin
   intros lc₁ lc₂, 
   hinduction lc₁ with cone₁ is_limit₁, hinduction lc₂ with cone₂ is_limit₂,
-  have cone_id : cone₁ = cone₂, from 
-  begin
-    hinduction cone₁ with X₁ π₁, hinduction cone₂ with X₂ π₂,  
-    let lcp_iso := limit_cone_point_iso is_limit₁ is_limit₂,
-    fapply apd011 cone.mk,
-    { exact idtoiso⁻¹ᶠ lcp_iso.1 },
-    { hinduction π₁ with app₁ nat₁, hinduction π₂ with app₂ nat₂, 
-      fapply apdo0111 (λ c : C, @nat_trans.mk _ _ _ _ 
-                              (@constant_functor J _ C _ c) F),
-      { apply pathover_of_tr_eq, apply eq_of_homotopy, 
-        intro j, rwr tr_fn_tr_eval,
-        change idtoiso⁻¹ᶠ lcp_iso.1 ▸[λ X : C, X ⟶ F.obj j] app₁ j = app₂ j, 
-        have r : idtoiso⁻¹ᶠ lcp_iso.1 ▸[λ X : C, X ⟶ F.obj j] app₁ j = 
-                 (inv_iso lcp_iso.1).hom ≫ app₁ j, from
-          @iso_hom_tr_comp (Category.mk C _) X₁ X₂ _ lcp_iso.1 (app₁ j),
-        rwr r, apply inverse, apply iso_move_lr,
-        exact (ap (λ h : X₁ ⟶ X₂, h ≫ app₂ j) lcp_iso.2) ⬝ 
-              (is_limit₂.fac _ j)},
-      { apply pathover_of_tr_eq, apply eq_of_homotopy3, intros c c' f, 
-        apply is_set.elim } }
-  end,
-  have is_limit_id : is_limit₁ =[cone_id] is_limit₂, from 
-  begin 
-    hinduction cone_id,
-    hinduction is_limit₁ with lift₁ fac₁ uniq₁,
-    hinduction is_limit₂ with lift₂ fac₂ uniq₂, 
-    fapply apdo01111 (@is_limit.mk _ _ _ _ _),
-    { apply pathover_of_tr_eq, hsimp, apply eq_of_homotopy, intro s,
-      apply uniq₂, exact fac₁ s },
-    { apply pathover_of_tr_eq, apply eq_of_homotopy2, intros s j, 
-        apply is_set.elim },
-    { apply pathover_of_tr_eq, apply eq_of_homotopy3, intros s m id, 
-        apply is_set.elim }
-  end,
-  fapply apd011 limit_cone.mk,
-  { exact cone_id },
-  { exact is_limit_id }
+  let lcp_iso := limit_cone_point_iso is_limit₁ is_limit₂,
+  apply limit_cone_eq, fapply cone_eq,
+  { exact idtoiso⁻¹ᶠ lcp_iso.1 },
+  { intro j, apply pathover_of_tr_eq,
+    change idtoiso⁻¹ᶠ lcp_iso.1 ▸[λ c : C, c ⟶ F.obj j] (cone.leg cone₁ j) = _, 
+    apply eq.concat (@iso_hom_tr_comp (Category.mk C _) _ _ _ lcp_iso.1 (cone.leg cone₁ j)),
+    apply inverse, apply iso_move_lr, 
+    have p : lcp_iso.fst.hom = (is_limit₂.lift cone₁).v_lift, from lcp_iso.2,
+    rwr p, exact (is_limit₂.lift _).fac _ }
 end    
 
 @[hott, instance]
@@ -178,27 +185,74 @@ def limitcone_is_limit  {J : Type _} [is_strict_cat J] {C : Type u}
 def limit {J : Type _} [is_strict_cat J] {C : Type u} [is_cat.{v} C]
   (F : J ⥤ C) [has_limit F] := (limit.cone F).X
 
-@[hott]
-def diag_eq_lim_eq_lim {J : Strict_Categories} {C : Type _} [is_cat C]
-  {F F' : J.obj ⥤ C} (p : F = F') [hlF : has_limit F] : 
-  limit F = @limit _ _ _ _ F' (p ▸ hlF) :=
-fn2_ev_fn2_tr' p hlF (λ (F : J.obj ⥤ C) (hlF : has_limit F), @limit _ _ _ _ F hlF)
-
-@[hott]
-def diag_eq_lim_eq_lim' {J : strict_Category} {C : Type _} [is_cat C]
-  (F : J.obj ⥤ C) (hlF : has_limit F) (hlF' : has_limit F) : 
-  @limit _ _ _ _ F hlF = @limit _ _ _ _ F hlF' :=
-ap cone.X (ap limit_cone.cone (limit_cone_is_unique F 
-                 (@get_limit_cone _ _ _ _ F hlF) (@get_limit_cone _ _ _ _ F hlF')))
 
 @[hott]
 def limit_leg {J : Type _} [is_strict_cat J] {C : Type u} 
   [is_cat.{v} C] (F : J ⥤ C) (j : J) [has_limit F] : 
   limit F ⟶ F.obj j := (limit.cone F).π.app j 
 
+@[hott]
+def diag_eq_lim_eq_lim' {J : strict_Category} {C : Type _} [is_cat C]
+  {F F' : J.obj ⥤ C} (p : F = F') [hlF : has_limit F] : 
+  limit F = @limit _ _ _ _ F' (p ▸ hlF) :=
+fn2_ev_fn2_tr' p hlF (λ (F : J.obj ⥤ C) (hlF : has_limit F), @limit _ _ _ _ F hlF)
 
-/- Limits are natural under functors of shapes. In particular, limits 
-   of isomorphic shapes are naturally isomorphic. -/
+@[hott]
+def diag_eq_lim_eq_lim'' {J : strict_Category} {C : Type _} [is_cat C]
+  (F : J.obj ⥤ C) (hlF : has_limit F) (hlF' : has_limit F) : 
+  @limit _ _ _ _ F hlF = @limit _ _ _ _ F hlF' :=
+ap cone.X (ap limit_cone.cone (limit_cone_is_unique F 
+                 (@get_limit_cone _ _ _ _ F hlF) (@get_limit_cone _ _ _ _ F hlF')))
+
+@[hott]
+def diag_eq_lim_eq_lim {J : strict_Category} {C : Type _} [is_cat C]
+  {F F' : J.obj ⥤ C} (p : F = F') [hlF : has_limit F] [hlF' : has_limit F'] : 
+  limit F = limit F' :=
+(diag_eq_lim_eq_lim' p) ⬝ (diag_eq_lim_eq_lim'' F' (p ▸ hlF) (hlF'))
+
+
+/- Limits of diagrams of shapes with a functor between them are not necessarily naturally
+   mapped to each other. But limits of diagrams of isomorphic shapes are naturally 
+   isomorphic and hence equal. -/
+@[hott]
+def cone_to_diag_iso_cone {J₁ J₂ : Strict_Categories} {C : Type u} [is_cat.{v} C]
+  (H : J₁ ≅ J₂) {F : J₂.obj ⥤ C} (cF : cone F) : cone (H.hom ⋙ F) :=
+begin
+  revert J₁ J₂ H F cF, 
+  apply @iso_ind _ (λ {J₁ J₂ : Strict_Categories} H, Π {F : J₂.obj ⥤ C}, 
+                                                         cone F → cone (H.hom ⋙ F)),
+  intros J₁ F cF, change cone (id_functor J₁.obj ⋙ F), rwr funct_id_comp, 
+  exact cF
+end 
+
+@[hott]
+def diag_id_iso_cone {J : Strict_Categories} {C : Type u} [is_cat.{v} C] 
+  {F : J.obj ⥤ C} (cF : cone F) : 
+  cone_to_diag_iso_cone (id_iso J) cF = eq.inverse (funct_id_comp F) ▸ cF :=
+sorry
+
+@[hott]
+def diag_iso_cone_to_cone {J₁ J₂ : Strict_Categories} {C : Type u} [is_cat.{v} C]
+  (H : J₁ ≅ J₂) {F : J₂.obj ⥤ C} (cHF : cone (H.hom ⋙ F)) : cone F :=
+begin
+  revert J₁ J₂ H F cHF, 
+  apply @iso_ind _ (λ {J₁ J₂ : Strict_Categories} H, Π {F : J₂.obj ⥤ C}, 
+                                                         cone (H.hom ⋙ F) -> cone F),
+  intros J₁ F, hsimp, change cone (id_functor J₁.obj ⋙ F) -> _, rwr funct_id_comp,
+  exact id
+end 
+
+@[hott]
+def diag_iso_cone_is_lim {J₁ J₂ : strict_Category} {C : Type u} [is_cat.{v} C]
+  (H : J₁ ≅ J₂) {F : J₂.obj ⥤ C} {cF : cone F} (is_lim : is_limit cF) : 
+  is_limit (cone_to_diag_iso_cone H cF) :=
+begin
+  revert J₁ J₂ H F cF, 
+  apply @iso_ind _ (λ {J₁ J₂ : Strict_Categories} H, Π {F : J₂.obj ⥤ C} {cF : cone F},
+                      is_limit cF → is_limit (cone_to_diag_iso_cone H cF)),
+  intros J₁ F cF lcF, sorry
+end
+
 @[hott]
 def diag_eq_on_cone {J₁ J₂ : Strict_Categories} {C : Type u} [is_cat.{v} C]
   (pJ : J₁ = J₂) (F : J₂.obj ⥤ C) : 
@@ -213,6 +267,25 @@ def diag_iso_on_cone {J₁ J₂ : Strict_Categories} {C : Type u} [is_cat.{v} C]
   (H : J₁ ≅ J₂) (F : J₂.obj ⥤ C) : 
   ((category.isotoid H)⁻¹ ▸[λ J : Strict_Categories, J.obj ⥤ C] F) = (H.hom ⋙ F) :=
 begin rwr diag_eq_on_cone (category.isotoid H) F, rwr category.idtoiso_rinv' end
+
+@[hott]
+def diag_iso_cone_eqv {J₁ J₂ : strict_Category} {C : Type u} [is_cat.{v} C]
+  (H : J₁ ≅ J₂) (F : J₂.obj ⥤ C) : cone F ≃ cone (H.hom ⋙ F) :=
+begin
+  fapply equiv.mk,
+  { intro cF, fapply cone.mk cF.X, fapply nat_trans.mk,
+    { intro j₁, exact cF.π.app (H.hom.obj j₁) },
+    { intros j₁ j₁' f, rwr cF.π.naturality }  },
+  { fapply adjointify,
+    { intro cHF, fapply cone.mk cHF.X, fapply nat_trans.mk, 
+      { intro j₂, 
+        have p : j₂ = H.hom.obj (H.ih.inv.obj j₂), from 
+          (ap (λ H : J₂ ⥤ J₂, H.obj j₂) H.ih.r_inv)⁻¹, 
+        rwr p, exact cHF.π.app (H.ih.inv.obj j₂) },
+      { intros j₂ j₂' f, rwr is_precat.id_comp, sorry } },
+    { sorry },
+    { sorry } }
+end
 
 @[hott, instance, reducible]
 def diag_iso_has_lim_to_has_lim {J₁ J₂ : Strict_Categories} {C : Type u} [is_cat.{v} C]
@@ -233,7 +306,7 @@ begin rwr <- diag_iso_on_cone H F, exact @diag_iso_has_lim_to_has_lim _ _ _ _ H 
 
 @[hott]
 def diag_iso_lim_eq_lim {J₁ J₂ : strict_Category} {C : Type u} [is_cat.{v} C]
-  (H : J₁ ≅ J₂) {F : J₂.obj ⥤ C} [hlF : has_limit F] : 
+  (H : J₁ ≅ J₂) (F : J₂.obj ⥤ C) [hlF : has_limit F] : 
   limit F = @limit _ _ _ _ (H.hom ⋙ F) (diag_iso_has_lim_to_has_lim' H) :=
 begin
   change (λ (J : Strict_Categories) (F : J.obj ⥤ C) (hlF : has_limit F), 
@@ -242,6 +315,22 @@ begin
                           (F : J.obj ⥤ C) (hlF : has_limit F), @limit _ _ _ _ F hlF),
   exact diag_eq_lim_eq_lim (diag_iso_on_cone H F)⁻¹⁻¹
 end
+
+@[hott]
+def diag_iso_lim_eq_lim' {J₁ J₂ : strict_Category} {C : Type u} [cat_C : is_cat.{v} C]
+  (H : J₁ ≅ J₂) (F : J₂.obj ⥤ C) [hlF : has_limit F] : 
+  limit F = @limit _ _ _ _ (H.hom ⋙ F) (diag_iso_has_lim_to_has_lim' H) :=
+begin
+  apply @category.isotoid (Category.mk C cat_C),
+  sorry
+end
+
+@[hott]
+def diag_iso_lim_legs_eq {J₁ J₂ : strict_Category} {C : Type u} [is_cat.{v} C]
+  (H : J₁ ≅ J₂) (F : J₂.obj ⥤ C) [hlF : has_limit F] :
+  Π (j₁ : J₁), (idtoiso (diag_iso_lim_eq_lim H F)).hom ≫ limit_leg (H.hom ⋙ F) j₁ =
+               limit_leg F (H.hom.obj j₁) :=
+sorry
 
 
 /- More general classes of existence of limits -/
@@ -318,7 +407,7 @@ cone.mk P (discrete.nat_trans p)
 @[hott, hsimp] 
 def pi.lift {J : Set.{u'}} {C : Type u} [is_cat.{v} C] {f : J → C} [has_product f]
   {P : C} (p : Π j, P ⟶ f j) : P ⟶ ∏ f :=
-(get_limit_cone (discrete.functor f)).is_limit.lift (fan.mk _ p)  
+((get_limit_cone (discrete.functor f)).is_limit.lift (fan.mk _ p)).v_lift  
 
 @[hott, hsimp] 
 def pi.π {J : Set.{u'}} {C : Type u} [is_cat.{v} C] (f : J → C) [has_product f] 
@@ -333,27 +422,26 @@ let p := λ j : J, h ≫ (pi.π f j),
     c := fan.mk _ p,
     lc := get_limit_cone (discrete.functor f) in     
 begin 
-  change h = lc.is_limit.lift c, 
-  apply is_limit.uniq lc.is_limit c h, 
-  intro j, exact rfl, 
+  change h = (lc.is_limit.lift c).v_lift, 
+  apply is_limit.uniq lc.is_limit c (cone_map.mk h (λ j, rfl))
 end  
 
 @[hott]
 def pi.lift_π_eq {J : Set.{u'}} (C : Type u) [is_cat.{v} C] {f : J → C} 
   [has_product f] {P : C} (p : Π j : J, P ⟶ f j) : 
   ∀ j : J, pi.lift p ≫ pi.π _ j = p j :=
-assume j, by apply is_limit.fac  
+((get_limit_cone (discrete.functor f)).is_limit.lift (fan.mk _ p)).fac  
 
 @[hott]
 def pi.lift_fac {J : Set.{u'}} {C : Type u} [is_cat.{v} C] {f : J → C} 
   [has_product f] {P Q : C} (g : Q ⟶ P) (h : Π j : J, P ⟶ f j) :
   pi.lift (λ j, g ≫ h j) = g ≫ pi.lift h :=
-let p := λ j : J, g ≫ h j, c := fan.mk _ p, 
+let ch := fan.mk _ h, p := λ j : J, g ≫ h j, cp := fan.mk _ p, 
     lc := get_limit_cone (discrete.functor f) in  
-begin 
-  apply eq.inverse, apply is_limit.uniq lc.is_limit c, intro j, 
-  rwr is_precat.assoc, change g ≫ pi.lift h ≫ pi.π _ j = c.π.app j, 
-  rwr pi.lift_π_eq 
+begin
+  have p_fac : Π j : J, (g ≫ pi.lift h) ≫ pi.π _ j = g ≫ h j, from 
+    begin intro j, rwr is_precat.assoc, rwr pi.lift_π_eq end,  
+  exact (is_limit.uniq lc.is_limit cp (cone_map.mk (g ≫ pi.lift h) p_fac))⁻¹
 end  
 
 @[hott]
@@ -500,7 +588,7 @@ has_equalizer.has_limit f g
 def equalizer {C : Type u} [is_cat.{v} C] {a b : C} (f g : a ⟶ b) [has_equalizer f g] :=
   limit (parallel_pair f g) 
 
-@[hott] 
+@[hott, reducible] 
 def equalizer_map {C : Type u} [is_cat.{v} C] {a b : C} (f g : a ⟶ b) [has_equalizer f g] :
   equalizer f g ⟶ a := fork_map (limit.cone (parallel_pair f g))    
 
@@ -511,20 +599,25 @@ def equalizer_eq {C : Type u} [is_cat.{v} C] {a b : C} (f g : a ⟶ b) [has_equa
 @[hott]
 def fork_lift {C : Type u} [is_cat.{v} C] {a b : C} {f g : a ⟶ b} [has_equalizer f g] 
   (fk : fork f g) : fk.X ⟶ equalizer f g := 
-(get_limit_cone (parallel_pair f g)).is_limit.lift fk  
+((get_limit_cone (parallel_pair f g)).is_limit.lift fk).v_lift  
 
 @[hott]
 def fork_lift_uniq {C : Type u} [is_cat.{v} C] {a b : C} {f g : a ⟶ b} [has_equalizer f g] 
   (fk : fork f g) (m : fk.X ⟶ equalizer f g) : 
   m ≫ (equalizer_map f g) = fk.π.app wp_up -> m = fork_lift fk :=
 begin 
-  intro H, apply (get_limit_cone (parallel_pair f g)).is_limit.uniq fk,
-  intro j, hinduction j, 
-  { exact H }, 
-  { change m ≫ (limit.cone (parallel_pair f g)).π.app wp_down = fk.π.app wp_down,
-    rwr <- cone.fac (limit.cone (parallel_pair f g)) wp_left, 
-    rwr <- cone.fac fk wp_left, rwr <- is_precat.assoc m _ _, 
-    change (m ≫ equalizer_map f g) ≫ _ = _, rwr H }
+  let equ := limit.cone (parallel_pair f g), 
+  intro H,
+  have m_fac : Π j : walking_parallel_pair, m ≫ equ.π.app j = fk.π.app j, from 
+  begin
+    intro j, hinduction j, 
+    { exact H }, 
+    { change m ≫ (limit.cone (parallel_pair f g)).π.app wp_down = fk.π.app wp_down,
+      rwr <- cone.fac (limit.cone (parallel_pair f g)) wp_left, 
+      rwr <- cone.fac fk wp_left, rwr <- is_precat.assoc m _ _, 
+      change (m ≫ equalizer_map f g) ≫ _ = _, rwr H }
+  end,
+  exact (get_limit_cone (parallel_pair f g)).is_limit.uniq fk (cone_map.mk m m_fac),
 end  
     
 @[hott]
@@ -583,7 +676,7 @@ end
    Note that the limit cone vertex may be the empty set - then all cones over the functor `F`
    are empty because otherwise they cannot factorize through the empty set. 
    
-   Also not that the cone must live in a universe both containing the diagram set 
+   Also note that the cone must live in a universe both containing the diagram set 
    and the sets ordered according to the diagram. -/
 @[hott]
 def set_limit_pred {J : Type _} [H : is_strict_cat J] (F : J ⥤ Set) : 
@@ -610,18 +703,19 @@ def set_cone_is_limit {J : Type _} [H : is_strict_cat J] (F : J ⥤ Set) :
   is_limit (set_cone F) :=
 begin 
   fapply is_limit.mk,
-  /- the lift from the limit cone to another cone-/ 
-  { intro s, intro x, fapply sigma.mk, 
-    { intro j, exact s.π.app j x },
-    { hsimp, apply prop_to_prop_resize, intros j k f, 
-      exact (homotopy_of_eq (s.π.naturality f) x)⁻¹ } },
-  /- factorising the lift with limit cone legs -/    
-  { intros s j, hsimp, apply eq_of_homotopy, 
-    intro x, refl },
+  { intro s, fapply cone_map.mk, 
+    /- the lift from the limit cone to another cone-/ 
+    { intro x, fapply sigma.mk, 
+      { intro j, exact s.π.app j x },
+      { hsimp, apply prop_to_prop_resize, intros j k f, 
+        exact (homotopy_of_eq (s.π.naturality f) x)⁻¹ } },
+    /- factorising the lift with limit cone legs -/    
+    { intro j, hsimp, apply eq_of_homotopy, 
+      intro x, refl } },
   /- uniqueness of lift -/  
-  { intros s m lift_m, hsimp, apply eq_of_homotopy,
+  { intros s m, hsimp, apply eq_of_homotopy,
     intro x, hsimp, fapply sigma.sigma_eq, 
-    { exact eq_of_homotopy (λ j, @homotopy_of_eq s.X _ _ _ (lift_m j) x) },
+    { exact eq_of_homotopy (λ j, @homotopy_of_eq s.X _ _ _ (m.fac j) x) },
     { hsimp, apply pathover_of_tr_eq, apply is_prop.elim } }  
 end
 
@@ -694,9 +788,11 @@ begin
       { intro j, exact lc.cone.π.app j },
       { intros j k f, exact lc.cone.π.naturality f } } },
   { fapply is_limit.mk,
-    { intro s, exact lc.is_limit.lift (emb_cone s) },
-    { intros s j, exact lc.is_limit.fac (emb_cone s) j },
-    { intros s m j, exact lc.is_limit.uniq (emb_cone s) m j } }
+    { intro s, fapply cone_map.mk,
+      { exact (lc.is_limit.lift (emb_cone s)).v_lift },
+      { intro j, exact (lc.is_limit.lift (emb_cone s)).fac j } },
+    { intros s m, 
+      exact lc.is_limit.uniq (emb_cone s) (cone_map.mk m.v_lift (λ j, m.fac j)) } }
 end  
 
 @[hott, instance]
