@@ -138,7 +138,7 @@ def idtoiso {C : Type u} [is_precat.{v} C] {a b : C} : (a = b) -> (a ≅ b) :=
 /- `idtoiso` is natural. -/
 @[hott, hsimp]
 def idtoiso_refl_eq {C : Type u} [is_precat.{v} C] (a : C) : idtoiso (refl a) = id_iso a :=
-  by hsimp
+  by refl
 
 @[hott]
 def id_inv_iso_inv {C : Type u} [is_precat.{v} C] {c₁ c₂ : C} (p : c₁ = c₂) :
@@ -231,7 +231,7 @@ is_equiv.left_inv (@idtoiso _ _ a b)
 @[hott]
 def isotoid_id_refl {C : Category} :
   Π (a : C), category.isotoid (id_iso a) = refl a :=
-begin intro a, rwr <- idtoiso_refl_eq a, exact category.idtoiso_linv (refl a) end 
+begin intro a, exact category.idtoiso_linv (refl a) end 
 
 @[hott]
 def iso_hom_tr_comp {C : Category} {c₁ c₂ d : C} (i : c₁ ≅ c₂)
@@ -275,6 +275,37 @@ def functor_eq_obj' {A : Type _} [is_precat A] {B : Type _} [is_precat B]
        (idtoiso (p y)).hom = G.map f) : 
   ap functor.obj (functor_eq' p @q) = eq_of_homotopy p :=
 begin change ap _ (functor_eq _ _) = _, rwr functor_eq_obj end
+
+
+/- Induction on isomorphisms via equalities, with elimination rule -/
+@[hott]
+def iso_ind_of_eq {A : Category} {D : Π {a b : A} (i : a ≅ b), Type _} :
+  (Π {a b : A} (p : a = b), D (idtoiso p)) -> Π {a b : A} (i : a ≅ b), D i :=
+assume Hp a b i, category.idtoiso_rinv i ▸ Hp (idtoiso⁻¹ᶠ i)
+
+@[hott]
+def iso_ind {A : Category} {D : Π {a b : A} (i : a ≅ b), Type _} :
+  (Π (a : A), D (id_iso a)) -> Π {a b : A} (i : a ≅ b), D i :=
+begin intros Hid, apply iso_ind_of_eq, intros a b p, hinduction p, exact Hid a end
+
+@[hott]
+def iso_ind_id {A : Category} {D : Π {a b : A} (i : a ≅ b), Type _} 
+  (Hid : Π (a : A), D (id_iso a)) : Π (a : A), iso_ind Hid (id_iso a) = Hid a :=
+begin
+  intro a, 
+  change category.idtoiso_rinv (idtoiso (refl a)) ▸[λ i : a ≅ a, D i] 
+           @eq.rec _ _ (λ (b : A) (p : a = b), D (idtoiso p)) 
+                       (Hid a) a (category.isotoid (id_iso a)) = 
+           @eq.rec _ _ (λ (b : A) (p : a = b), D (idtoiso p)) 
+                       (Hid a) a (refl a), 
+  let p := @pathover_ap _ _ _ _ D idtoiso (isotoid_id_refl a) _ _ 
+              (apd (@eq.rec _ _ (λ (b : A) (p : a = b), D (idtoiso p)) 
+                                             (Hid a) a) (isotoid_id_refl a)),
+  rwr <- tr_eq_of_pathover p, 
+  change @is_equiv.right_inv _ _ idtoiso 
+                            (@is_cat.ideqviso _ (Category.struct A) _ _) _ ▸ _ = _,
+  rwr (@is_cat.ideqviso _ (Category.struct A) _ _).adj
+end 
 
 end categories
 
