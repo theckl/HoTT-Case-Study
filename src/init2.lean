@@ -441,9 +441,21 @@ def fn_tr_tr_ev {A : Type _} {B C : A -> Type _} (f : Π {a : A}, B a -> C a) {a
 begin hinduction p, refl end  
 
 @[hott]
+def fn_tr_ev {A C : Type _} {B : A -> Type _} (f : Π {a : A}, B a -> C) {a₁ a₂ : A}
+  (p : a₁ = a₂) (b₁ : B a₁) : f (p ▸ b₁) = f b₁ :=
+begin hinduction p, refl end 
+
+@[hott]
 def fn2_tr_tr_ev {A B : Type _} {C D : A -> B -> Type _} 
   (f : Π (a : A) (b : B), C a b -> D a b) {b₁ b₂ : B} (p : b₁ = b₂) (a : A) (c : C a b₁) :
   f a b₂ (p ▸ c) = p ▸ (f a b₁ c) :=
+begin hinduction p, refl end
+
+@[hott]
+def tr_fn3_ev_fn3_tr_tr_ev {A : Type _} {B D : A -> Type _} {C : Π (a : A), B a -> Type _} 
+  (f : Π (a : A) (b : B a), C a b -> D a) {a₁ a₂ : A} {b₁ : B a₁} (p : a₁ = a₂) 
+  (c₁ : C a₁ b₁) : p ▸ f a₁ b₁ c₁ = 
+                              f a₂ (p ▸ b₁) (apd011 C p (pathover_tr p b₁) ▸[id] c₁) :=
 begin hinduction p, refl end
 
 @[hott]
