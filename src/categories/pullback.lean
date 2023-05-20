@@ -197,19 +197,19 @@ square_eq (limit.cone (orthogonal_pair f g))
 @[hott]
 def pullback_lift {C : Type _} [is_cat C] {a b c : C} {f : a ⟶ c} {g : b ⟶ c}
   (S : square f g) [has_pullback f g] : S.X ⟶ pullback f g :=
-(get_limit_cone (orthogonal_pair f g)).is_limit.lift S 
+((get_limit_cone (orthogonal_pair f g)).is_limit.lift S).v_lift 
 
 @[hott]
 def pb_lift_eq_l {C : Type _} [is_cat C] {a b c : C} {f : a ⟶ c} {g : b ⟶ c}
   (S : square f g) [has_pullback f g] : 
   pullback_lift S ≫ pullback_homo_l f g = square_left S :=
-(get_limit_cone (orthogonal_pair f g)).is_limit.fac S ow_left  
+((get_limit_cone (orthogonal_pair f g)).is_limit.lift S).fac ow_left  
 
 @[hott]
 def pb_lift_eq_t {C : Type _} [is_cat C] {a b c : C} {f : a ⟶ c} {g : b ⟶ c}
   (S : square f g) [has_pullback f g] : 
   pullback_lift S ≫ pullback_homo_t f g = square_top S :=
-(get_limit_cone (orthogonal_pair f g)).is_limit.fac S ow_upper  
+((get_limit_cone (orthogonal_pair f g)).is_limit.lift S).fac ow_upper  
 
 @[hott]
 def pullback_uniq {C : Type _} [is_cat C] {a b c : C} {f : a ⟶ c} {g : b ⟶ c}
@@ -228,7 +228,7 @@ have w : Π (ow : orthogonal_wedge), h ≫ (limit.cone (orthogonal_pair f g)).π
       rwr <- is_precat.assoc, change (h ≫ pullback_homo_l f g) ≫ _ = _, rwr pl, 
       change _ = S.π.app inf_w_base, rwr <- cone.fac S (inf_w_leg ow_node.left) }, 
   end,
-(get_limit_cone (orthogonal_pair f g)).is_limit.uniq S h w 
+(get_limit_cone (orthogonal_pair f g)).is_limit.uniq S (cone_map.mk h w) 
 
 /- Pullbacks are symmetric in the two legs.
    
@@ -242,25 +242,27 @@ def has_sym_pullback {C : Type u} [is_cat.{v} C] {a b c : C} (f : a ⟶ c) (g : 
   [pull_fg : has_pullback f g] : has_pullback g f :=
 begin
   apply has_pullback.mk, rwr sym_orthogonal_pair f g, 
-  exact @diag_iso_has_lim_to_has_lim'.{v u 0 0 0 0} _ _ _ _ orthogonal_wedge_iso _
+  exact @diag_iso_has_lim_to_has_lim.{v u 0 0 0 0} _ _ _ _ orthogonal_wedge_iso _
         pull_fg.has_limit        
 end
 
 @[hott]
 def sym_pullback_eq {C : Type u} [is_cat.{v} C] {a b c : C} {f : a ⟶ c} {g : b ⟶ c}
   [has_pullback.{u v} f g] [has_pullback.{u v} g f] : pullback f g = pullback g f :=
-(diag_iso_lim_eq_lim.{v u 0 0 0 0} orthogonal_wedge_iso _) ⬝ 
-(@diag_eq_lim_eq_lim Orthogonal_Wedge _ _ _ (orthogonal_pair g f) 
-  (sym_orthogonal_pair f g)⁻¹ 
-  (diag_iso_has_lim_to_has_lim'.{v u 0 0 0 0} orthogonal_wedge_iso) _)
+begin
+  change limit _ = limit _,
+  exact (diag_iso_lim_eq_lim.{v u 0 0 0 0} orthogonal_wedge_iso (orthogonal_pair f g))⁻¹ ⬝ 
+        (@diag_eq_lim_eq_lim Orthogonal_Wedge C _ _ (orthogonal_pair g f) (eq.inverse (sym_orthogonal_pair f g)) 
+         (diag_iso_has_lim_to_has_lim.{v u 0 0 0 0} orthogonal_wedge_iso) _)
+end
 
 @[hott]
 def sym_pullback_legs_eq {C : Type u} [is_cat.{v} C] {a b c : C} (f : a ⟶ c) 
   (g : b ⟶ c) [has_pullback.{u v} f g] [has_pullback.{u v} g f] : 
   (idtoiso sym_pullback_eq).hom ≫ pullback_homo_l g f = pullback_homo_t f g :=
 begin
-  change (idtoiso (diag_iso_lim_eq_lim _ _ ⬝ _)).hom ≫ _ = _, rwr <- idtoiso_comp_eq, 
-  rwr is_precat.assoc,
+  change (idtoiso (_ ⬝ _)).hom ≫ _ = _, rwr <- idtoiso_comp_eq, rwr is_precat.assoc, 
+  --rwr diag_iso_lim_legs_eq,
   sorry
 end
 
