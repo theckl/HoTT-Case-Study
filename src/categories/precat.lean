@@ -514,10 +514,8 @@ def funct_id_comp {C : Type u} [is_precat C] {D : Type u'}
   [is_precat D] (F : C ⥤ D) : (id_functor C ⋙ F) = F :=
 begin 
   fapply functor_eq, 
-  { apply eq_of_homotopy, intro c, hsimp },
-  { hsimp, change F.map =[eq_of_homotopy (λ c : C, idp); 
-                    λ f : C -> D, Π (x y : C), (x ⟶ y) → (f x ⟶ f y)] F.map, 
-    rwr eq_of_homotopy_idp } 
+  { exact idp },
+  { hsimp } 
 end  
 
 @[hott]
