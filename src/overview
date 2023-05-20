@@ -1,6 +1,6 @@
 Compiling files, in order of dependencies:
 ------------------------------------------
-init2       :   867
+init2       :   879
 types2      :   502 
 prop_axioms :   614
 prop_logic  :   208
@@ -13,7 +13,7 @@ sets
   quotients :   205
   theories  :   715
 categories
-  precat    :   740  
+  precat    :   738  
   basic     :   281 
   subobj    :   429
   subcat    :   124
@@ -21,7 +21,7 @@ categories
   adjoints  :   410 
   strict_cat:   390 
   diagrams  :   617 
-  * limits    :   734 (as below)
+  limits    :   827
   colimits  :   514 
   pullbacks :   403 (contains 2 sorries, for symmetry of intersection
                      of subobjects & for construction of implications
@@ -38,5 +38,4 @@ categories.pullbacks : complements, instance
 categories.pullbacks : Heyting property
 categories.pullbacks : implication of subobjects
 categories.pullbacks : symmetry of intersection of subobjects
-categories.colimits : redefinition of colimits
-categories.limits : redefinition of limits                
+                
