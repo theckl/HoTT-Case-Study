@@ -136,6 +136,19 @@ def has_limit.mk {J : Type _} [is_strict_cat J] {C : Type u}
   [is_precat.{v} C] {F : J ⥤ C} (d : limit_cone F) :=
 has_limit.mk' (tr d)  
 
+@[hott]
+def has_limit_eq {J : Type _} [is_strict_cat J] {C : Type u} 
+  [is_precat.{v} C] {F : J ⥤ C} (hlF₁ hlF₂ : has_limit F) : hlF₁ = hlF₂ :=
+begin
+  hinduction hlF₁ with el₁, hinduction hlF₂ with el₂,
+  apply ap has_limit.mk', exact is_prop.elim _ _
+end
+
+@[hott, instance]
+def has_limit_is_prop {J : Type _} [is_strict_cat J] {C : Type u} 
+  [is_precat.{v} C] {F : J ⥤ C} : is_prop (has_limit F) :=
+is_prop.mk has_limit_eq
+
 /- If `C` is a category, the limit cone vertices of two instances of 
   `limit_cone F` are equal since they are determined up to isomorphism. Then 
    the "legs" of the cones and the lifts of the universal property are 
@@ -183,31 +196,37 @@ def limitcone_is_limit  {J : Type _} [is_strict_cat J] {C : Type u}
 
 @[hott]
 def limit {J : Type _} [is_strict_cat J] {C : Type u} [is_cat.{v} C]
-  (F : J ⥤ C) [has_limit F] := (limit.cone F).X
+  (F : J ⥤ C) [has_limit F] : C := (limit.cone F).X
 
 @[hott]
 def limit_leg {J : Type _} [is_strict_cat J] {C : Type u} 
-  [is_cat.{v} C] (F : J ⥤ C) (j : J) [has_limit F] : 
+  [is_cat.{v} C] (F : J ⥤ C) [has_limit F] (j : J) : 
   limit F ⟶ F.obj j := (limit.cone F).π.app j 
-
-@[hott]
-def diag_eq_lim_eq_lim' {J : strict_Category} {C : Type _} [is_cat C]
-  {F F' : J.obj ⥤ C} (p : F = F') [hlF : has_limit F] : 
-  limit F = @limit _ _ _ _ F' (p ▸ hlF) :=
-fn2_ev_fn2_tr' p hlF (λ (F : J.obj ⥤ C) (hlF : has_limit F), @limit _ _ _ _ F hlF)
-
-@[hott]
-def diag_eq_lim_eq_lim'' {J : strict_Category} {C : Type _} [is_cat C]
-  (F : J.obj ⥤ C) (hlF : has_limit F) (hlF' : has_limit F) : 
-  @limit _ _ _ _ F hlF = @limit _ _ _ _ F hlF' :=
-ap cone.X (ap limit_cone.cone (limit_cone_is_unique F 
-                 (@get_limit_cone _ _ _ _ F hlF) (@get_limit_cone _ _ _ _ F hlF')))
 
 @[hott]
 def diag_eq_lim_eq_lim {J : strict_Category} {C : Type _} [is_cat C]
   {F F' : J.obj ⥤ C} (p : F = F') [hlF : has_limit F] [hlF' : has_limit F'] : 
-  limit F = limit F' :=
-(diag_eq_lim_eq_lim' p) ⬝ (diag_eq_lim_eq_lim'' F' (p ▸ hlF) (hlF'))
+  @limit _ _ _ _ F hlF = @limit _ _ _ _ F' hlF' :=
+apd011 (@limit _ _ _ _) p (pathover_of_tr_eq (has_limit_eq _ _))  
+
+@[hott]
+def diag_inv_eq_lim_eq {J : strict_Category} {C : Type _} [is_cat C]
+  {F F' : J.obj ⥤ C} (p : F = F') [hlF : has_limit F] [hlF' : has_limit F'] :
+  (diag_eq_lim_eq_lim p⁻¹) = (diag_eq_lim_eq_lim p)⁻¹ :=
+begin
+  change apd011 _ _ _ = eq.inverse (apd011 _ _ _), 
+  rwr apd011_inv, apply ap (apd011 limit p⁻¹), rwr pathover_of_tr_eq_inv, 
+  apply ap pathover_of_tr_eq, exact is_prop.elim _ _ 
+end
+
+@[hott]
+def diag_eq_leg_eq {J : strict_Category} {C : Type _} [is_cat C]
+  {F F' : J.obj ⥤ C} (p : F = F') (j : J) [hlF : has_limit F] [hlF' : has_limit F'] :
+  limit_leg F' j = ((ap (λ F : J.obj ⥤ C, F.obj j) p) ▸[λ d : C, limit F' ⟶ d] 
+                   ((diag_eq_lim_eq_lim p) ▸[λ c : C, c ⟶ F.obj j] limit_leg F j)) :=
+@tr_tr_fn2_fn2_fn _ C C _ _ p _ _ _ (pathover_of_tr_eq (has_limit_eq (p ▸ hlF) hlF'))
+                 (λ d e : C, d ⟶ e) _ _ (λ (F : J.obj ⥤ C) (hlF : has_limit F), 
+                                                          @limit_leg _ _ _ _ F hlF j)
 
 
 /- Limits of diagrams of shapes with a functor between them are not necessarily naturally
