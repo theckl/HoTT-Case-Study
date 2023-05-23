@@ -252,8 +252,9 @@ def sym_pullback_eq {C : Type u} [is_cat.{v} C] {a b c : C} {f : a ⟶ c} {g : b
 begin
   change limit _ = limit _,
   exact (diag_iso_lim_eq_lim.{v u 0 0 0 0} orthogonal_wedge_iso (orthogonal_pair f g))⁻¹ ⬝ 
-        (@diag_eq_lim_eq_lim Orthogonal_Wedge C _ _ (orthogonal_pair g f) (eq.inverse (sym_orthogonal_pair f g)) 
-         (diag_iso_has_lim_to_has_lim.{v u 0 0 0 0} orthogonal_wedge_iso) _)
+        (@diag_eq_lim_eq_lim Orthogonal_Wedge C _ _ (orthogonal_pair g f) 
+          (eq.inverse (sym_orthogonal_pair f g)) 
+          (diag_iso_has_lim_to_has_lim.{v u 0 0 0 0} orthogonal_wedge_iso) _)
 end
 
 @[hott]
@@ -262,13 +263,25 @@ def sym_pullback_legs_eq {C : Type u} [is_cat.{v} C] {a b c : C} (f : a ⟶ c)
   (idtoiso sym_pullback_eq).hom ≫ pullback_homo_l g f = pullback_homo_t f g :=
 begin
   change (idtoiso (_ ⬝ _)).hom ≫ _ = _, rwr <- idtoiso_comp_eq, rwr is_precat.assoc, 
-  --rwr diag_iso_lim_legs_eq,
-  sorry
+  rwr id_inv_iso_inv, apply eq.inverse, apply iso_move_lr, 
+  change _ ≫ limit_leg _ (orthogonal_wedge_iso.hom.obj (inf_w_node.tip ow_node.left)) = _,
+  rwr diag_iso_lim_legs_eq, rwr diag_inv_eq_lim_eq, rwr id_inv_iso_inv,
+  rwr <- id_hom_tr_comp, 
+  rwr @diag_eq_leg_eq Orthogonal_Wedge C _ (orthogonal_pair g f) _ (sym_orthogonal_pair f g),
+  have r : ap (λ (F : Orthogonal_Wedge.obj ⥤ C), F.obj (inf_w_node.tip ow_node.left)) 
+           (sym_orthogonal_pair f g) = idp, from 
+  begin 
+    rwr ap_compose (λ (h : Orthogonal_Wedge.obj -> C), h (inf_w_node.tip ow_node.left)) 
+        functor.obj, 
+    change ap _ (ap _ (functor_eq _ _)) = _, rwr functor_eq_obj, change ap10 _ _ = _,
+    rwr ap10_eq_of_homotopy 
+  end,
+  rwr r
 end
 
 
 /- The stability of monomorphisms under pullbacks can be used to construct pullbacks 
-   of subobjects. -/
+   of subobjects and hence their intersection. -/
 @[hott]
 def mono_is_stable {C : Category} {a b c : C} (f : a ⟶ c) (g : b ⟶ c) 
   (H : is_mono g) [has_pullback f g] : is_mono (pullback_homo_l f g) :=
@@ -319,6 +332,14 @@ begin
 end   
 
 @[hott]
+def pb_subobj_functor {C : Category} {a c : C} (f : a ⟶ c) 
+  [has_pullbacks C] : subobject c ⥤ subobject a :=
+precategories.functor.mk (λ b : subobject c, pullback_subobject f b)
+                      (λ b₁ b₂ i, pullback_subobject_hom f i)
+                      (λ b, is_prop.elim _ _)
+                      (λ b₁ b₂ b₃ i₁ i₂, is_prop.elim _ _) 
+
+@[hott]
 def subobj_intersect {C : Category} {c : C} (a b : subobject c) 
   [has_pullback a.hom b.hom] : subobject c :=
 subobj_trans a (pullback_subobject a.hom b)  
@@ -341,12 +362,9 @@ begin
 end  
 
 @[hott]
-def pb_subobj_functor {C : Category} {a c : C} (f : a ⟶ c) 
-  [has_pullbacks C] : subobject c ⥤ subobject a :=
-precategories.functor.mk (λ b : subobject c, pullback_subobject f b)
-                      (λ b₁ b₂ i, pullback_subobject_hom f i)
-                      (λ b, is_prop.elim _ _)
-                      (λ b₁ b₂ b₃ i₁ i₂, is_prop.elim _ _) 
+def subobj_inter_linc {C : Category} {c : C} [has_pullbacks C]
+  (a b : subobject c) : a ∩ b ⟶ a :=
+sorry
 
 
 /- The pullback functor of subobjects has adjoints if the category has images stable
@@ -485,11 +503,10 @@ has_all_of_fibers.has_all_fib f
 
 /- The fiberwise forall quantifier allows to define implications of subobjects. -/
 @[hott]
-structure implication {C : Category} {c : C} [has_pullbacks C] 
-  (a b : subobject c) :=
+structure implication {C : Category} {c : C} [has_pullbacks C] (a b : subobject c) :=
   (impl : subobject c)
-  (cond : impl ∩ a ⟶ b)
-  (max : ∀ d : subobject c, (d ∩ a ⟶ b) -> (d ⟶ impl))
+  (cond : a ∩ impl ⟶ b)
+  (max : ∀ d : subobject c, (a ∩ d ⟶ b) -> (d ⟶ impl))
 
 @[hott]
 class has_implication {C : Category} {c : C} (a b : subobject c) := 
