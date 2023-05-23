@@ -56,6 +56,12 @@ begin
     exact p, hsimp, apply pathover_of_tr_eq, hsimp }
 end
 
+@[hott]
+def pathover_of_tr_eq_inv {A : Type _} {B : A -> Type _} {a₁ a₂ : A} (p : a₁ = a₂)
+  {b₁ : B a₁} {b₂: B a₂} (q : p ▸ b₁ = b₂) : 
+  (pathover_of_tr_eq q)⁻¹ᵒ = pathover_of_tr_eq (inv_tr_eq_of_eq_tr q⁻¹) :=
+begin hinduction p, hinduction q, refl end
+
 
 @[hott]
 def ap10_eq_of_homotopy {A B : Type _} {f g : A -> B} (Hp : f ~ g) :
@@ -875,5 +881,13 @@ def fn_eq_tr_fn2 {A B : Type _} {a₁ a₂ : A} {f₁ f₂ : A -> B} (p : f₁ =
   p ▸ c₁ = ((ap10 p a₂) ▸[λ b : B, C (f₂ a₁) b] 
                            ((ap10 p a₁) ▸[λ b : B, C b (f₁ a₂)] c₁)) :=
 begin hinduction p, refl end
+
+@[hott]
+def tr_tr_fn2_fn2_fn {A D E : Type _} {a₁ a₂ : A} (p : a₁ = a₂) {B : A -> Type _}
+  {b₁ : B a₁} {b₂ : B a₂} (q : b₁ =[p] b₂) {C : D -> E -> Type _} 
+  {g : Π (a : A), B a -> D} {h : A -> E} (f : Π (a : A) (b : B a), C (g a b) (h a)) :
+  f a₂ b₂ = ((ap h p) ▸[λ e : E, C (g a₂ b₂) e] ((apd011 g p q) ▸[λ d : D, C d (h a₁)] 
+            f a₁ b₁)) :=
+begin hinduction p, hinduction q, refl end
 
 end hott
