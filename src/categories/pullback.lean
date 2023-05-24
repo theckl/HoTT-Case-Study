@@ -364,7 +364,52 @@ end
 @[hott]
 def subobj_inter_linc {C : Category} {c : C} [has_pullbacks C]
   (a b : subobject c) : a ∩ b ⟶ a :=
-sorry
+begin
+  fapply hom_of_monos.mk, 
+  { exact (pullback_subobject a.hom b).hom },
+  { refl }
+end
+
+@[hott]
+def subobj_inter_rinc {C : Category} {c : C} [has_pullbacks C]
+  (a b : subobject c) : a ∩ b ⟶ b :=
+begin
+  fapply hom_of_monos.mk, 
+  { exact pullback_homo_t a.hom b.hom },
+  { exact (pullback_eq a.hom b.hom)⁻¹ }
+end
+
+@[hott]
+def subobj_inter_lift {C : Category} {d : C} [has_pullbacks C]
+  {a b c : subobject d} : (c ⟶ a) -> (c ⟶ b) -> (c ⟶ a ∩ b) :=
+begin
+  intros ca cb, fapply hom_of_monos.mk,
+  { let S : square a.hom b.hom := square.of_i_j (ca.fac ⬝ cb.fac⁻¹), 
+    exact pullback_lift S },
+  { change _ ≫ pullback_homo_l _ _ ≫ a.hom = _, rwr <- is_precat.assoc,
+    rwr pb_lift_eq_l, change ca.hom_obj ≫ _ = _, rwr ca.fac } 
+end
+
+@[hott]
+def subobj_inter_hom_of_pb_hom {C : Category} {d : C} [has_pullbacks C]
+  (a b c : subobject d) : 
+  (pullback_subobject a.hom b ⟶ pullback_subobject a.hom c) -> (a ∩ b ⟶ a ∩ c) :=
+begin
+  intro pb_hom, fapply hom_of_monos.mk,
+  { exact pb_hom.hom_obj },
+  { change _ ≫ _ ≫ a.hom = _ ≫ a.hom, rwr <- is_precat.assoc, rwr pb_hom.fac }
+end
+
+@[hott]
+def pb_hom_of_subobj_inter_hom {C : Category} {d : C} [has_pullbacks C]
+  {a b c : subobject d} : 
+  (a ∩ b ⟶ a ∩ c) -> (pullback_subobject a.hom b ⟶ pullback_subobject a.hom c) :=
+begin
+  intro soi_hom, fapply hom_of_monos.mk,
+  { exact soi_hom.hom_obj },
+  { apply a.is_mono, rwr is_precat.assoc, change _ ≫ (a ∩ c).hom = (a ∩ b).hom, 
+    rwr soi_hom.fac }
+end
 
 
 /- The pullback functor of subobjects has adjoints if the category has images stable
@@ -531,8 +576,18 @@ def implications_of_all_fibs {C : Category} {c : C}
 begin
   fapply implication.mk,
   { exact (fib_all a.hom).obj (pullback_subobject a.hom b) },
-  { sorry },
-  { sorry }
+  { apply λ h : a ∩ (fib_all a.hom).obj (pullback_subobject a.hom b) ⟶ a ∩ b, 
+            h ≫ subobj_inter_rinc a b,  
+    apply subobj_inter_hom_of_pb_hom a _ b, 
+    exact (inv_bijection_of ((adjoint_to_adjoint_hom (adjoint_right_adjoint_of 
+                                                     (pb_subobj_functor a.hom))).hom_bij 
+                             ((fib_all a.hom).obj (pullback_subobject a.hom b)) 
+                             (pullback_subobject a.hom b))).map 
+            (id_iso ((fib_all a.hom).obj (pullback_subobject a.hom b))).hom },
+  { intros d adb, 
+    apply ((adjoint_to_adjoint_hom (adjoint_right_adjoint_of 
+                (pb_subobj_functor a.hom))).hom_bij d (pullback_subobject a.hom b)).map, 
+    exact pb_hom_of_subobj_inter_hom (subobj_inter_lift (subobj_inter_linc a d) adb) }
 end    
 
 @[hott, instance]
