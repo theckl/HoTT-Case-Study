@@ -249,6 +249,12 @@ def right_adjoint_of {C : Type u} {D : Type u'} [is_precat C]
 H.l_adj.R  
 
 @[hott]
+def adjoint_right_adjoint_of {C : Type u} {D : Type u'} [is_precat C] 
+  [is_precat D] (L : C ⥤ D) [H : has_right_adjoint L] : 
+  adjoint_functors L (right_adjoint_of L) :=
+H.l_adj.adj
+
+@[hott]
 class has_left_adjoint {C : Type u} {D : Type u'} [is_precat C] 
   [is_precat D] (R : D ⥤ C) :=
 (r_adj : is_right_adjoint R)
@@ -257,6 +263,12 @@ class has_left_adjoint {C : Type u} {D : Type u'} [is_precat C]
 def left_adjoint_of {C : Type u} {D : Type u'} [is_precat C] 
   [is_precat D] (R : D ⥤ C) [H : has_left_adjoint R] : C ⥤ D :=
 H.r_adj.L 
+
+@[hott]
+def adjoint_left_adjoint_of {C : Type u} {D : Type u'} [is_precat C] 
+  [is_precat D] (R : D ⥤ C) [H : has_left_adjoint R] : 
+  adjoint_functors (left_adjoint_of R) R :=
+H.r_adj.adj
 
 @[hott]
 class has_right_adjoints (C : Type u) (D : Type u') [is_precat C] 
