@@ -18,14 +18,13 @@ categories
   subobj    :   429
   subcat    :   124
   examples  :   656 
-  adjoints  :   410 
+  adjoints  :   422 
   strict_cat:   390 
   diagrams  :   617 
   limits    :   846
   colimits  :   514 
   * pullbacks :   541 (contains sorry for construction of implications
                      as subobjects)
-  structures:   613
               -----
                
 
@@ -35,5 +34,4 @@ Planned changes in Files, from bottom to top:
 categories.models : is_interpretable_in-class
 categories.pullbacks : complements, instance
 categories.pullbacks : Heyting property
-categories.pullbacks : implication of subobjects
                 
