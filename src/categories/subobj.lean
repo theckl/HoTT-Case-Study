@@ -42,6 +42,15 @@ structure hom_of_monos {C : Category} {c d₁ d₂: C} {f : d₁ ⟶ c}
 (hom_obj : d₁ ⟶ d₂)
 (fac : hom_obj ≫ g = f)
 
+@[hott]
+def hom_of_monos_is_mono {C : Category} {c d₁ d₂: C} {f : d₁ ⟶ c} 
+  {Hf : is_mono f} {g : d₂ ⟶ c} {Hg : is_mono g} (hm : hom_of_monos Hf Hg) :
+  is_mono hm.hom_obj :=
+begin 
+  intros d h₁ h₂ p, apply Hf, rwr <- hm.fac, 
+  rwr <- is_precat.assoc, rwr <- is_precat.assoc, rwr p 
+end
+
 @[hott, instance]
 def is_prop_hom_of_monos {C : Category} {c d₁ d₂: C} {f : d₁ ⟶ c} (Hf : is_mono f)
   {g : d₂ ⟶ c} (Hg : is_mono g) : is_prop (hom_of_monos Hf Hg) :=
@@ -322,6 +331,47 @@ def subobj_trans {C : Category} {c : C} (a : subobject c)
   (b : subobject a.obj) : subobject c :=
 subobject.mk b.obj (b.hom ≫ a.hom) (is_mono_is_trans b.is_mono a.is_mono) 
 
+@[hott]
+def subobj_trans_hom {C : Category} {c : C} (a : subobject c) 
+  (b : subobject a.obj) : subobj_trans a b ⟶ a :=
+begin fapply hom_of_monos.mk, exact b.hom, refl end
+
+@[hott]
+def subobj_rest {C : Category} {c : C} {a b : subobject c} (f : b ⟶ a) :
+  subobject a.obj := 
+subobject.mk b.obj f.hom_obj (hom_of_monos_is_mono f)
+
+@[hott]
+def subobj_hom_rest {C : Category} {c : C} {a b b': subobject c} (f : b ⟶ a) 
+  (f' : b' ⟶ a) (g : b ⟶ b') : (subobj_rest f) ⟶ (subobj_rest f') :=
+begin 
+  fapply hom_of_monos.mk, exact g.hom_obj, change (g ≫ f').hom_obj = f.hom_obj,
+  apply ap hom_of_monos.hom_obj, exact is_prop.elim _ _
+end
+
+@[hott]
+def subobj_hom_rest_hom {C : Category} {c : C} {a b b': subobject c} (f : b ⟶ a) 
+  (f' : b' ⟶ a) (g : subobj_rest f ⟶ subobj_rest f') : b ⟶ b' :=
+begin 
+  fapply hom_of_monos.mk, exact g.hom_obj, 
+  rwr <- f'.fac, rwr <- f.fac, rwr <- is_precat.assoc,
+  apply ap (λ h : b.obj ⟶ a.obj, h ≫ a.hom), 
+  change _ ≫ (subobj_rest f').hom = _, rwr g.fac
+end  
+
+@[hott]
+def subobj_rest_trans {C : Category} {c : C} (a : subobject c) (b : subobject a.obj) :
+  subobj_rest (subobj_trans_hom a b) = b :=
+begin 
+  fapply subobj_antisymm,
+  { fapply hom_of_monos.mk, 
+    { exact 𝟙 b.obj },
+    { rwr is_precat.id_comp b.hom } },
+  { fapply hom_of_monos.mk,
+    { exact 𝟙 b.obj },
+    { rwr is_precat.id_comp } } 
+end
+
 /- The category of subobjects always has a top element. -/
 @[hott]
 def top_subobject {C : Category} (c : C) : subobject c := 
@@ -333,7 +383,7 @@ def top_subobj_prop {C : Category} {c : C} :
 begin intro a, fapply hom_of_monos.mk, exact a.hom, hsimp end   
 
 /- We can define images of homomorphisms as subobjects of their codomain satisfying a 
-   minimal property. Note that the factoring homomorphism is unique as the inclusion 
+   minimality property. Note that the factoring homomorphism is unique as the inclusion 
    homomorphism is a monomorphism. -/
 @[hott]
 structure cat_image {C : Category} {c d : C} (f : c ⟶ d) :=
@@ -416,6 +466,38 @@ begin
   { exact f ≫ hom_to_image g }, 
   { rwr is_precat.assoc, rwr hom_to_image_eq g }
 end  
+
+@[hott]
+def im_incl_eq {C : Category} 
+  {c d : C} (a : subobject c) (f : d ⟶ a.obj) [has_image f] [has_image (f ≫ a.hom)] : 
+  (hom.image (f ≫ a.hom)) = (subobj_trans a (hom.image f)) :=
+begin 
+  have p : hom_to_image f ≫ (subobj_trans a (hom.image f)).hom = f ≫ a.hom, from
+    begin change _ ≫ _ ≫ _ = _, rwr <- is_precat.assoc, rwr hom_to_image_eq end,
+  let g := hom_image_univ (f ≫ a.hom) (subobj_trans a (hom.image f)) (hom_to_image f) p,
+  fapply subobj_antisymm, 
+  { exact g }, 
+  { fapply @subobj_hom_rest_hom _ _ a, 
+    { exact subobj_trans_hom _ _ },
+    { exact g ≫ subobj_trans_hom _ _ },
+    { rwr subobj_rest_trans, fapply hom_image_univ, 
+      { exact hom_to_image (f ≫ a.hom) },
+      { sorry } } }
+end
+
+@[hott]
+def im_iso_comp {C : Category} {a b c : C} (i : a ≅ b) (g : b ⟶ c) 
+  [has_image (i.hom ≫ g)] [has_image g] : hom.image (i.hom ≫ g) = hom.image g :=
+begin
+  apply subobj_antisymm,
+  { fapply hom_image_univ,
+    { exact i.hom ≫ hom_to_image g },
+    { rwr is_precat.assoc, rwr hom_to_image_eq } },
+  { fapply hom_image_univ, 
+    { exact i.ih.inv ≫ hom_to_image (i.hom ≫ g) },
+    { rwr is_precat.assoc, rwr hom_to_image_eq, rwr <- is_precat.assoc, 
+      rwr i.ih.r_inv, rwr is_precat.id_comp } }
+end
 
 @[hott]
 class has_images (C : Category) :=
