@@ -230,6 +230,82 @@ have w : Π (ow : orthogonal_wedge), h ≫ (limit.cone (orthogonal_pair f g)).π
   end,
 (get_limit_cone (orthogonal_pair f g)).is_limit.uniq S (cone_map.mk h w) 
 
+@[hott]
+def pullback_lift_eq {C : Type _} [is_cat C] {a b c d : C} {f : a ⟶ c} {g : b ⟶ c}
+  [has_pullback f g] : Π (h h' : d ⟶ pullback f g),
+  h ≫ pullback_homo_l f g = h' ≫ pullback_homo_l f g ->
+  h ≫ pullback_homo_t f g = h' ≫ pullback_homo_t f g -> h = h' :=
+begin
+  intros h h' pl pt, 
+  have q : (h ≫ pullback_homo_l f g) ≫ f = (h ≫ pullback_homo_t f g) ≫ g, from 
+    begin rwr is_precat.assoc, rwr pullback_eq, rwr is_precat.assoc end,
+  have r : h = pullback_lift (square.of_i_j q), from 
+    begin fapply pullback_uniq (square.of_i_j q), refl, refl end,
+  rwr r, apply eq.inverse, fapply pullback_uniq (square.of_i_j q), rwr <- pl, rwr <- pt
+end
+
+@[hott]
+def pullback_uniq_id {C : Type _} [is_cat C] {a b c : C} {f : a ⟶ c} {g : b ⟶ c}
+  [has_pullback f g] : Π (h : pullback f g ⟶ pullback f g),
+  h ≫ pullback_homo_l f g = pullback_homo_l f g -> 
+  h ≫ pullback_homo_t f g = pullback_homo_t f g -> h = 𝟙 (pullback f g) :=
+begin 
+  intros h pl pt, fapply pullback_lift_eq h (𝟙 (pullback f g)), 
+  { rwr pl, rwr is_precat.id_comp }, 
+  { rwr pt, rwr is_precat.id_comp } 
+end
+
+@[hott]
+def pullback_trans {C : Category} {a b c d : C} (f : a ⟶ b) (g : b ⟶ c)
+  (h : d ⟶ c) [has_pullback g h] [has_pullback (f ≫ g) h] 
+  [has_pullback f (pullback_homo_l g h)] :
+  pullback f (pullback_homo_l g h) = pullback (f ≫ g) h :=
+begin
+  have p : pullback_homo_l f (pullback_homo_l g h) ≫ f ≫ g =
+             (pullback_homo_t f (pullback_homo_l g h) ≫ (pullback_homo_t g h)) ≫ h, from
+    begin 
+      rwr <- is_precat.assoc, rwr pullback_eq, rwr is_precat.assoc, rwr pullback_eq, 
+      rwr is_precat.assoc 
+    end,
+  have q : (pullback_homo_l (f ≫ g) h ≫ f) ≫ g = pullback_homo_t (f ≫ g) h ≫ h, from
+    begin rwr is_precat.assoc, rwr pullback_eq end,
+  have r : pullback_homo_l (f ≫ g) h ≫ f = (@pullback_lift _ _ _ _ _ g h 
+             (square.of_i_j q) _) ≫ pullback_homo_l g h, by rwr pb_lift_eq_l,
+  apply @category.isotoid, fapply iso.mk,
+  { exact pullback_lift (square.of_i_j p) },
+  { fapply is_iso.mk, 
+    { exact pullback_lift (square.of_i_j r) },
+    { apply pullback_uniq_id, 
+      { rwr is_precat.assoc, rwr pb_lift_eq_l, 
+        change pullback_lift _ ≫ pullback_homo_l _ _ = _, rwr pb_lift_eq_l },
+      { rwr is_precat.assoc, rwr pb_lift_eq_t, 
+        change pullback_lift _ ≫ pullback_homo_t _ _ ≫ pullback_homo_t _ _ = _, 
+        rwr <- is_precat.assoc, rwr pb_lift_eq_t, 
+        change pullback_lift _ ≫ _ = _, rwr pb_lift_eq_t } },
+    { apply pullback_uniq_id,
+      { rwr is_precat.assoc, rwr pb_lift_eq_l, 
+        change pullback_lift _ ≫ pullback_homo_l _ _ = _, rwr pb_lift_eq_l },
+      { rwr is_precat.assoc, rwr pb_lift_eq_t, 
+        change pullback_lift _ ≫ (@pullback_lift _ _ _ _ _ g h (square.of_i_j q) _) = _, 
+        apply pullback_lift_eq, 
+        { rwr is_precat.assoc, rwr pb_lift_eq_l, change _ ≫ _ ≫ _ = _, 
+          rwr <- is_precat.assoc, rwr pb_lift_eq_l, change pullback_homo_l _ _ ≫ _ = _,
+          rwr pullback_eq },
+        { rwr is_precat.assoc, rwr pb_lift_eq_t, change _ ≫ pullback_homo_t _ _ = _, 
+          rwr pb_lift_eq_t } } } }
+end
+
+@[hott]
+def pullback_trans_left_legs {C : Category} {a b c d : C} (f : a ⟶ b) (g : b ⟶ c)
+  (h : d ⟶ c) [has_pullback g h] [has_pullback (f ≫ g) h] 
+  [has_pullback f (pullback_homo_l g h)] :
+  pullback_homo_l f (pullback_homo_l g h) = 
+                (idtoiso (pullback_trans f g h)).hom ≫ (pullback_homo_l (f ≫ g) h) :=
+begin
+  change _ = (idtoiso (idtoiso⁻¹ᶠ _)).hom ≫ _, rwr category.idtoiso_rinv, 
+  rwr pb_lift_eq_l
+end
+
 /- Pullbacks are symmetric in the two legs.
    
    The existence of the symmetric pullback derived from an instance of the pullback
@@ -340,6 +416,18 @@ precategories.functor.mk (λ b : subobject c, pullback_subobject f b)
                       (λ b₁ b₂ b₃ i₁ i₂, is_prop.elim _ _) 
 
 @[hott]
+def pb_subobj_lift {C : Category} {c c' : C} (f : c' ⟶ c) (a : subobject c)  
+  (b : subobject c') [has_pullbacks C] : Π (h : b.obj ⟶ a.obj), 
+  (b.hom ≫ f = h ≫ a.hom) -> (b ⟶ pullback_subobject f a) :=
+begin
+  intros h ph,
+  let S : square f a.hom := square.of_i_j ph, 
+  fapply hom_of_monos.mk,
+  { exact (pullback_lift S) },
+  { change _ ≫ pullback_homo_l f a.hom = _, rwr pb_lift_eq_l }
+end  
+
+@[hott]
 def subobj_intersect {C : Category} {c : C} (a b : subobject c) 
   [has_pullback a.hom b.hom] : subobject c :=
 subobj_trans a (pullback_subobject a.hom b)  
@@ -411,28 +499,42 @@ begin
     rwr soi_hom.fac }
 end
 
+@[hott]
+def pullback_inter_eq {C : Category} {c c' : C} (f : c' ⟶ c) [has_pullbacks C]
+  (a b : subobject c) : 
+  (pullback_subobject f (a ∩ b)) = ((pullback_subobject f a) ∩ (pullback_subobject f b)) :=
+begin
+  have p : ((subobj_inter_linc (pullback_subobject f a) (pullback_subobject f b)).hom_obj ≫
+            pullback_homo_t f a.hom) ≫ a.hom = 
+           ((subobj_inter_rinc (pullback_subobject f a) (pullback_subobject f b)).hom_obj ≫
+            pullback_homo_t f b.hom) ≫ b.hom, from 
+  begin 
+    rwr is_precat.assoc, rwr is_precat.assoc, 
+    rwr <- pullback_eq, rwr <- pullback_eq,
+    rwr <- is_precat.assoc, rwr <- is_precat.assoc, 
+    change (pullback_homo_l (pullback_homo_l f a.hom) (pullback_homo_l f b.hom) ≫ _) ≫ _ = _,
+    rwr pullback_eq 
+  end,
+  let S := square.of_i_j p, 
+  apply subobj_antisymm,
+  { apply subobj_inter_lift _ _, 
+    { exact pullback_subobject_hom f (subobj_inter_linc a b) },
+    { exact pullback_subobject_hom f (subobj_inter_rinc a b) } },
+  { fapply pb_subobj_lift f _ _,
+    { exact pullback_lift S },
+    { change _ = _ ≫ (pullback_homo_l a.hom b.hom) ≫ a.hom, 
+      rwr <- is_precat.assoc, rwr pb_lift_eq_l, 
+      change _ = (_ ≫ _) ≫ _, rwr is_precat.assoc, rwr <- pullback_eq, 
+      rwr <- is_precat.assoc } }
+end
+
 
 /- The pullback functor of subobjects has adjoints if the category has images stable
    under pullbacks. -/
 @[hott]
-def image_is_stable {C : Category} {a b c : C} (f : a ⟶ c) (g : b ⟶ c)
-  [has_images C] [has_pullbacks C] := 
-  hom.image (pullback_homo_l f g) = pullback_subobject f (hom.image g) 
-
-@[hott]
-class has_stable_images (C : Category) :=
-  (has_im : has_images C)
-  (has_pb : has_pullbacks C)
-  (stable_im : Π (a b c : C) (f : a ⟶ c) (g : b ⟶ c), image_is_stable f g)
-
-@[hott, instance]
-def has_images_of_has_stable_images (C : Category)
-  [H : has_stable_images C] : has_images C := H.has_im
-
-@[hott, instance]
-def has_pullbacks_of_has_stable_images (C : Category) 
-  [H : has_stable_images C] : has_pullbacks C := H.has_pb
-
+class has_stable_images (C : Category) [has_images C] [has_pullbacks C] :=
+  (stable_im : Π {a b c : C} (f : a ⟶ c) (g : b ⟶ c), 
+                  hom.image (pullback_homo_l f g) = pullback_subobject f (hom.image g))
 
 /- The existence of a left adjoint to the pullback functor for subobjects can be deduced
    from the existence of pullbacks and the stability of images under puillbacks -/
@@ -453,22 +555,17 @@ def ex_fib {C : Category} [has_pullbacks C] {a b : C}
 left_adjoint_of (pb_subobj_functor f) 
 
 @[hott]
-class has_ex_in_fibers (C : Category) :=
-  (has_pb : has_pullbacks C)
+class has_ex_in_fibers (C : Category) [has_pullbacks C] :=
   (has_ex_fib : Π {a b : C} (f : a ⟶ b), has_ex_in_fiber f)
 
 @[hott, instance]
-def has_pullbacks_of_has_ex_fibs {C : Category} [has_ex_in_fibers C] :
-  has_pullbacks C := has_ex_in_fibers.has_pb C
-
-@[hott, instance]
-def has_ex_fib_of_has_ex_fibs {C : Category} [has_ex_in_fibers C]
+def has_ex_fib_of_has_ex_fibs {C : Category} [has_pullbacks C] [has_ex_in_fibers C]
   {a b : C} (f : a ⟶ b) : has_ex_in_fiber f := 
 has_ex_in_fibers.has_ex_fib f
 
 @[hott]
-def ex_fib_of_stable_im {C : Category} [has_stable_images C] {a b : C} 
-  (f : a ⟶ b) : subobject a ⥤ subobject b :=
+def ex_fib_of_stable_im {C : Category} [has_images C] [has_pullbacks C] 
+  [has_stable_images C] {a b : C} (f : a ⟶ b) : subobject a ⥤ subobject b :=
 begin 
   fapply precategories.functor.mk, 
   { exact λ c : subobject a, @hom.image C c.obj b (c.hom ≫ f) _ },
@@ -483,8 +580,8 @@ begin
 end  
 
 @[hott]
-def fib_ex_left_adj_pb_subobj {C : Category} [has_stable_images C] 
-  {a b : C} (f : a ⟶ b) : 
+def fib_ex_left_adj_pb_subobj {C : Category} [has_images C] [has_pullbacks C] 
+  [has_stable_images C] {a b : C} (f : a ⟶ b) : 
   adjoint_functors (ex_fib_of_stable_im f) (pb_subobj_functor f) :=
 begin
   apply adjoint_hom_to_adjoint, fapply adjoint_functors_on_hom.mk, 
@@ -507,12 +604,32 @@ begin
 end  
 
 @[hott, instance]
-def has_ex_fibs_of_has_stable_ims {C : Category} [has_stable_images C] :
-  has_ex_in_fibers C :=
-has_ex_in_fibers.mk (has_pullbacks_of_has_stable_images C) 
-  (λ a b f, has_ex_in_fiber.mk (has_left_adjoint.mk 
+def has_ex_fibs_of_has_stable_ims {C : Category} [has_images C] [Hp : has_pullbacks C] 
+  [has_stable_images C] : has_ex_in_fibers C :=
+has_ex_in_fibers.mk (λ a b f, has_ex_in_fiber.mk (has_left_adjoint.mk 
         (is_right_adjoint.mk (ex_fib_of_stable_im f) (fib_ex_left_adj_pb_subobj f))))
-                                                
+
+@[hott]
+def ex_fib_inter {C : Category} [has_images C] [has_pullbacks C] 
+  [Hsi : has_stable_images C] {c c' : C} (f : c' ⟶ c) (a : subobject c) 
+  (b : subobject c') : a ∩ (ex_fib_of_stable_im f).obj b = 
+                      (ex_fib_of_stable_im f).obj ((pb_subobj_functor f).obj a ∩ b) :=
+begin
+  change _ = hom.image (((pullback_homo_l (pullback_homo_l f a.hom) b.hom) ≫ 
+                                                   (pullback_homo_l f a.hom)) ≫ f),
+  rwr pullback_eq, rwr is_precat.assoc,  
+  rwr <- sym_pullback_legs_eq (pullback_homo_l f a.hom) b.hom, rwr is_precat.assoc,
+  rwr im_iso_comp (idtoiso sym_pullback_eq) 
+                    (pullback_homo_l b.hom (pullback_homo_l f a.hom) ≫ b.hom ≫ f), 
+  rwr pullback_trans_left_legs b.hom f a.hom, rwr is_precat.assoc,
+  rwr im_iso_comp (idtoiso (pullback_trans b.hom f a.hom)) 
+                  (pullback_homo_l (b.hom ≫ f) a.hom ≫ b.hom ≫ f),
+  rwr pullback_eq, rwr im_incl_eq, 
+  let p := @sym_pullback_legs_eq _ _ _ _ _ (b.hom ≫ f) a.hom _ _, rwr <- p,
+  rwr im_iso_comp (idtoiso sym_pullback_eq) (pullback_homo_l a.hom (b.hom ≫ f)),
+  rwr @has_stable_images.stable_im _ _ _ Hsi _ _ _ _ _
+end
+
 
 /- The existence of a right adjoint to the pullback functor for subobjects must be 
    assumed independently of other categorical properties. -/
@@ -533,16 +650,11 @@ def fib_all {C : Category} [has_pullbacks C] {a b : C}
 right_adjoint_of (pb_subobj_functor f) 
 
 @[hott]
-class has_all_of_fibers (C : Category) :=
-  (has_pb : has_pullbacks C)
+class has_all_of_fibers (C : Category) [has_pullbacks C] :=
   (has_all_fib : Π {a b : C} (f : a ⟶ b), has_all_of_fiber f)
 
 @[hott, instance]
-def has_pullbacks_of_has_all_fibs {C : Category} [has_all_of_fibers C] :
-  has_pullbacks C := has_all_of_fibers.has_pb C
-
-@[hott, instance]
-def has_all_fib_of_has_all_fibs {C : Category} [has_all_of_fibers C]
+def has_all_fib_of_has_all_fibs {C : Category} [has_pullbacks C] [has_all_of_fibers C]
   {a b : C} (f : a ⟶ b) : has_all_of_fiber f := 
 has_all_of_fibers.has_all_fib f     
 
@@ -554,24 +666,27 @@ structure implication {C : Category} {c : C} [has_pullbacks C] (a b : subobject 
   (max : ∀ d : subobject c, (a ∩ d ⟶ b) -> (d ⟶ impl))
 
 @[hott]
-class has_implication {C : Category} {c : C} (a b : subobject c) := 
-  (has_pb : has_pullbacks C)
+def implication_is_unique {C : Category} {c : C} [has_pullbacks C] {a b : subobject c}
+  (imp₁ imp₂ : implication a b) : imp₁.impl = imp₂.impl :=
+begin
+  apply subobj_antisymm imp₁.impl imp₂.impl, 
+  { exact imp₂.max imp₁.impl imp₁.cond },
+  { exact imp₁.max imp₂.impl imp₂.cond }
+end
+
+@[hott]
+class has_implication {C : Category} [has_pullbacks C] {c : C} (a b : subobject c) := 
   (has_impl : implication a b)
 
-@[hott, instance]
-def has_pb_of_has_impl {C : Category} {c : C} (a b : subobject c) 
-  [H : has_implication a b] : has_pullbacks C :=
-H.has_pb  
-
 @[hott] 
-def impl_subobj {C : Category} {c : C} (a b : subobject c) 
+def impl_subobj {C : Category} [has_pullbacks C] {c : C} (a b : subobject c) 
   [H : has_implication a b] : subobject c :=
 H.has_impl.impl     
 
 infixl ` ⇒ `:10 := impl_subobj 
 
 @[hott]
-def implications_of_all_fibs {C : Category} {c : C} 
+def implications_of_all_fibs {C : Category} {c : C} [has_pullbacks C]
   [has_all_of_fibers C] (a b : subobject c) : implication a b :=
 begin
   fapply implication.mk,
@@ -591,9 +706,54 @@ begin
 end    
 
 @[hott, instance]
-def has_impl_of_all_fibs {C : Category} {c : C} 
+def has_impl_of_all_fibs {C : Category} {c : C} [has_pullbacks C]
   [has_all_of_fibers C] (a b : subobject c) : has_implication a b :=
-has_implication.mk _ (implications_of_all_fibs a b)  
+has_implication.mk (implications_of_all_fibs a b)  
+
+/- Implications are stable under pullbacks if images are stable. -/
+@[hott]
+def implication_is_stable {C : Category} {c c' : C} (f : c' ⟶ c) (a b : subobject c) 
+  [has_pullbacks C] [has_all_of_fibers C] :=
+  pullback_subobject f (a ⇒ b) = ((pullback_subobject f a) ⇒ (pullback_subobject f b))
+
+@[hott]
+class has_stable_implications (C : Category) [has_pullbacks C] [has_all_of_fibers C] :=
+  (has_stab_impl : Π {c c' : C} (f : c' ⟶ c) (a b : subobject c), 
+                     implication_is_stable f a b)
+
+@[hott, instance]
+def stable_implications_of_stable_images (C : Category) [has_images C] [has_pullbacks C] 
+  [Hsi : has_stable_images C] [Hf : has_all_of_fibers C] : has_stable_implications C :=
+begin
+  fapply has_stable_implications.mk,
+  { intros c c' f a b, 
+    apply subobj_antisymm _ _, 
+    { apply implication.max, rwr <- pullback_inter_eq, 
+      apply pullback_subobject_hom, apply implication.cond },
+    { apply ((adjoint_to_adjoint_hom (adjoint_left_adjoint_of 
+              (pb_subobj_functor f))).hom_bij _ (a ⇒ b)).map,
+      apply implication.max, change ↥(a ∩ (ex_fib_of_stable_im f).obj _ ⟶ b),
+      rwr ex_fib_inter f a _,
+      apply (inv_bijection_of (((adjoint_to_adjoint_hom (adjoint_left_adjoint_of 
+                                        (pb_subobj_functor f))).hom_bij _ _))).map,   
+      apply implication.cond } }
+end
+
+/- The Heyting property of a category -/
+@[hott]
+class has_Heyting (C : Category) [has_pullbacks C] :=
+  (has_ex_fib : Π {a b : C} (f : a ⟶ b), has_ex_in_fiber f)
+  (has_all_fib : Π {a b : C} (f : a ⟶ b), has_all_of_fiber f)
+
+@[hott, instance]
+def has_ex_fibs_of_Heyting (C : Category) [has_pullbacks C] [hH : has_Heyting C] : 
+  has_ex_in_fibers C :=
+has_ex_in_fibers.mk hH.has_ex_fib
+
+@[hott, instance]
+def has_all_fibs_of_Heyting (C : Category) [has_pullbacks C] [hH : has_Heyting C] : 
+  has_all_of_fibers C :=
+has_all_of_fibers.mk hH.has_all_fib
 
 end categories.pullbacks
 
