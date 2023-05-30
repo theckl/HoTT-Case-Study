@@ -624,7 +624,9 @@ begin
   rwr pullback_trans_left_legs b.hom f a.hom, rwr is_precat.assoc,
   rwr im_iso_comp (idtoiso (pullback_trans b.hom f a.hom)) 
                   (pullback_homo_l (b.hom ≫ f) a.hom ≫ b.hom ≫ f),
-  rwr pullback_eq, rwr im_incl_eq, 
+  rwr pullback_eq, change subobj_trans a _ = _, 
+  apply λ p, p ⬝ (im_incl_eq a (pullback_homo_t (b.hom ≫ f) a.hom))⁻¹,
+  apply ap (subobj_trans a), 
   let p := @sym_pullback_legs_eq _ _ _ _ _ (b.hom ≫ f) a.hom _ _, rwr <- p,
   rwr im_iso_comp (idtoiso sym_pullback_eq) (pullback_homo_l a.hom (b.hom ≫ f)),
   rwr @has_stable_images.stable_im _ _ _ Hsi _ _ _ _ _
