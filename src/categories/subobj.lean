@@ -482,7 +482,10 @@ begin
     { exact g ≫ subobj_trans_hom _ _ },
     { rwr subobj_rest_trans, fapply hom_image_univ, 
       { exact hom_to_image (f ≫ a.hom) },
-      { sorry } } }
+      { fapply a.is_mono, apply λ p, p ⬝ hom_to_image_eq (f ≫ a.hom), 
+        rwr is_precat.assoc, 
+        change _ ≫ (g ≫ subobj_trans_hom a (hom.image f)).hom_obj ≫ _ = _,
+        rwr (g ≫ subobj_trans_hom a (hom.image f)).fac } } }
 end
 
 @[hott]
