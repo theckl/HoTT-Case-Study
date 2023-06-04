@@ -394,7 +394,7 @@ subobject.mk (pullback f b.hom) (pullback_homo_l f b.hom)
 
 def pullback_subobject_hom  {C : Category} {a c : C} (f : a ⟶ c) 
   {b₁ b₂ : subobject c} [has_pullback f b₁.hom] [has_pullback f b₂.hom] 
-  (i : b₁ ⟶ b₂) : pullback_subobject f b₁ ⟶ pullback_subobject f b₂ :=
+  (i : b₁ ≼ b₂) : pullback_subobject f b₁ ≼ pullback_subobject f b₂ :=
 begin
   have w : (pullback_subobject f b₁).hom ≫ f = 
                               (pullback_homo_t f b₁.hom ≫ i.hom_obj) ≫ b₂.hom, from 
@@ -418,7 +418,7 @@ precategories.functor.mk (λ b : subobject c, pullback_subobject f b)
 @[hott]
 def pb_subobj_lift {C : Category} {c c' : C} (f : c' ⟶ c) (a : subobject c)  
   (b : subobject c') [has_pullbacks C] : Π (h : b.obj ⟶ a.obj), 
-  (b.hom ≫ f = h ≫ a.hom) -> (b ⟶ pullback_subobject f a) :=
+  (b.hom ≫ f = h ≫ a.hom) -> (b ≼ pullback_subobject f a) :=
 begin
   intros h ph,
   let S : square f a.hom := square.of_i_j ph, 
@@ -428,9 +428,23 @@ begin
 end  
 
 @[hott]
+def subobj_pullback_trans {C : Category} {c : C} (a : subobject c)  
+  (b : subobject a.obj) [has_pullbacks C] :
+  pullback_subobject a.hom (subobj_subobj_trans a b) = b :=
+begin
+  fapply subobj_antisymm,
+  { fapply hom_of_monos.mk,
+    { exact pullback_homo_t a.hom _ },
+    { apply a.is_mono, change _ = pullback_homo_l _ _ ≫ _,
+      rwr pullback_eq, rwr is_precat.assoc } },
+  { apply pb_subobj_lift a.hom (subobj_subobj_trans a b) b (𝟙 b.obj),
+    rwr is_precat.id_comp }
+end
+
+@[hott]
 def subobj_intersect {C : Category} {c : C} (a b : subobject c) 
   [has_pullback a.hom b.hom] : subobject c :=
-subobj_trans a (pullback_subobject a.hom b)  
+subobj_subobj_trans a (pullback_subobject a.hom b)  
 
 @[hott, instance]
 def subobj_has_inter {C : Category} {c : C} [has_pullbacks C] :
@@ -451,7 +465,7 @@ end
 
 @[hott]
 def subobj_inter_linc {C : Category} {c : C} [has_pullbacks C]
-  (a b : subobject c) : a ∩ b ⟶ a :=
+  (a b : subobject c) : a ∩ b ≼ a :=
 begin
   fapply hom_of_monos.mk, 
   { exact (pullback_subobject a.hom b).hom },
@@ -460,7 +474,7 @@ end
 
 @[hott]
 def subobj_inter_rinc {C : Category} {c : C} [has_pullbacks C]
-  (a b : subobject c) : a ∩ b ⟶ b :=
+  (a b : subobject c) : a ∩ b ≼ b :=
 begin
   fapply hom_of_monos.mk, 
   { exact pullback_homo_t a.hom b.hom },
@@ -469,7 +483,7 @@ end
 
 @[hott]
 def subobj_inter_lift {C : Category} {d : C} [has_pullbacks C]
-  {a b c : subobject d} : (c ⟶ a) -> (c ⟶ b) -> (c ⟶ a ∩ b) :=
+  {a b c : subobject d} : (c ≼ a) -> (c ≼ b) -> (c ≼ a ∩ b) :=
 begin
   intros ca cb, fapply hom_of_monos.mk,
   { let S : square a.hom b.hom := square.of_i_j (ca.fac ⬝ cb.fac⁻¹), 
@@ -479,9 +493,40 @@ begin
 end
 
 @[hott]
+def subobj_hom_inter_absorb {C : Category} {c : C} [has_pullbacks C] {a b : subobject c} : 
+  a ≼ b -> a ∩ b = a :=
+begin
+  intro ineq, fapply subobj_antisymm,
+  { exact subobj_inter_linc _ _ },
+  { fapply subobj_inter_lift, exact 𝟙 a, exact ineq }
+end 
+
+@[hott]
+def top_inter_absorb {C : Category} {c : C} [has_pullbacks C] (a : subobject c) : 
+  a ∩ (top_subobject c) = a :=
+subobj_hom_inter_absorb (top_subobj_prop a)
+
+@[hott]
+def subobj_inter_assoc {C : Category} {d : C} [has_pullbacks C] : Π {a b c : subobject d},
+  (a ∩ b) ∩ c = a ∩ (b ∩ c) :=
+begin 
+  intros a b c, fapply subobj_antisymm,
+  { fapply subobj_inter_lift,
+    { exact subobj_trans (subobj_inter_linc (a ∩ b) c) (subobj_inter_linc a b) },
+    { fapply subobj_inter_lift,
+      { exact subobj_trans (subobj_inter_linc (a ∩ b) c) (subobj_inter_rinc a b) },
+      { exact subobj_inter_rinc _ _ } } },
+  { fapply subobj_inter_lift,
+    { fapply subobj_inter_lift,
+      { exact subobj_inter_linc _ _ },
+      { exact subobj_trans (subobj_inter_rinc a (b ∩ c)) (subobj_inter_linc b c) } },
+    { exact subobj_trans (subobj_inter_rinc a (b ∩ c)) (subobj_inter_rinc b c) } }
+end 
+
+@[hott]
 def subobj_inter_hom_of_pb_hom {C : Category} {d : C} [has_pullbacks C]
   (a b c : subobject d) : 
-  (pullback_subobject a.hom b ⟶ pullback_subobject a.hom c) -> (a ∩ b ⟶ a ∩ c) :=
+  (pullback_subobject a.hom b ≼ pullback_subobject a.hom c) -> (a ∩ b ≼ a ∩ c) :=
 begin
   intro pb_hom, fapply hom_of_monos.mk,
   { exact pb_hom.hom_obj },
@@ -491,7 +536,7 @@ end
 @[hott]
 def pb_hom_of_subobj_inter_hom {C : Category} {d : C} [has_pullbacks C]
   {a b c : subobject d} : 
-  (a ∩ b ⟶ a ∩ c) -> (pullback_subobject a.hom b ⟶ pullback_subobject a.hom c) :=
+  (a ∩ b ≼ a ∩ c) -> (pullback_subobject a.hom b ≼ pullback_subobject a.hom c) :=
 begin
   intro soi_hom, fapply hom_of_monos.mk,
   { exact soi_hom.hom_obj },
@@ -624,9 +669,9 @@ begin
   rwr pullback_trans_left_legs b.hom f a.hom, rwr is_precat.assoc,
   rwr im_iso_comp (idtoiso (pullback_trans b.hom f a.hom)) 
                   (pullback_homo_l (b.hom ≫ f) a.hom ≫ b.hom ≫ f),
-  rwr pullback_eq, change subobj_trans a _ = _, 
+  rwr pullback_eq, change subobj_subobj_trans a _ = _, 
   apply λ p, p ⬝ (im_incl_eq a (pullback_homo_t (b.hom ≫ f) a.hom))⁻¹,
-  apply ap (subobj_trans a), 
+  apply ap (subobj_subobj_trans a), 
   let p := @sym_pullback_legs_eq _ _ _ _ _ (b.hom ≫ f) a.hom _ _, rwr <- p,
   rwr im_iso_comp (idtoiso sym_pullback_eq) (pullback_homo_l a.hom (b.hom ≫ f)),
   rwr @has_stable_images.stable_im _ _ _ Hsi _ _ _ _ _
@@ -664,8 +709,8 @@ has_all_of_fibers.has_all_fib f
 @[hott]
 structure implication {C : Category} {c : C} [has_pullbacks C] (a b : subobject c) :=
   (impl : subobject c)
-  (cond : a ∩ impl ⟶ b)
-  (max : ∀ d : subobject c, (a ∩ d ⟶ b) -> (d ⟶ impl))
+  (cond : a ∩ impl ≼ b)
+  (max : ∀ d : subobject c, (a ∩ d ≼ b) -> (d ≼ impl))
 
 @[hott]
 def implication_is_unique {C : Category} {c : C} [has_pullbacks C] {a b : subobject c}
