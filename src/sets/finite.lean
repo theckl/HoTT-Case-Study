@@ -9,7 +9,7 @@ open hott.nat is_trunc trunc subset hott.sigma
 namespace set
 
 /- We construct finite sets of size `n` as the set of natural numbers `m` with `m < n`.
-   With this definition we can easily define maps from finite sets to any carrier. -/
+   With this definition we can easily define maps from finite sets to any carrier type. -/
 @[hott]
 def fin_Set (n : ℕ) : Set.{0} := to_Set (Σ m : ℕ, m < n)
 
@@ -17,7 +17,7 @@ def fin_Set (n : ℕ) : Set.{0} := to_Set (Σ m : ℕ, m < n)
 def fin_Set_lift {n m : ℕ} (H : n ≤ m) : fin_Set n -> fin_Set m :=
   assume a, ⟨a.1, nat.lt_of_lt_of_le a.2 H⟩
 
-@[hott]
+@[hott, hsimp]
 def fin_Set_desc {n m : ℕ} (b : fin_Set m) (H : b.1 < n) : fin_Set n :=
   ⟨b.1, H⟩  
 
@@ -57,6 +57,15 @@ end
 @[hott]
 def empty_fin_Set_map (C : Type _) : fin_Set 0 -> C :=
 begin intro f, hinduction (not_lt_zero f.1 f.2) end
+
+@[hott, hsimp]
+def fin_map_ind {C : Type _} {n : ℕ} : Π (f : fin_Set n -> C) (c : C), 
+  (fin_Set (n+1) -> C) :=
+begin
+  intros f c m, fapply dite (m.1 = n), 
+  { intro p, exact c },
+  { intro np, exact f (fin_Set_desc m (nat.lt_of_le_prod_ne (nat.le_of_lt_succ m.2) np)) }
+end 
 
 @[hott]
 def fin_card_of (S : Set) [fin : is_finite S] : ℕ := fin.fin_bij.1
@@ -200,6 +209,15 @@ begin
 end  
 
 notation x `^[` k `]` := fin_Set_kth x k 
+
+/- We can use lists of objects of `C` to construct maps from finite sets into `C`. -/
+@[hott, hsimp] 
+def fin_map_of_list {C : Type _} (l : list C) : fin_Set (list.length l) -> C :=
+begin 
+  hinduction l,
+  { exact empty_fin_Set_map C },
+  { exact fin_map_ind ih hd } 
+end
 
 end set
 
