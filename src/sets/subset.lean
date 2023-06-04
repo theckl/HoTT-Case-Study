@@ -1,10 +1,40 @@
-import sets.basic 
+import prop_logic sets.basic 
 
 universes u v w
 hott_theory
 
 namespace hott
 open hott.set hott.is_trunc hott.is_equiv hott.eq hott.trunc hott.sigma 
+
+/- We define classes and notations that can be used to introduce `∈`, `⊆`, arbitrary 
+   intersections `⋂ᵢ` and unions `⋃ᵢ` indexed by sets and complements `𝒞` for 
+   (sub)sets, but also for other types. -/
+@[hott]
+class has_mem {A B : Type _} := (is_mem : A -> B -> trunctype -1)
+
+hott_theory_cmd "local infix `∈`:70 := hott.has_mem.is_mem"
+hott_theory_cmd "local infix  `∉`:70 := λ a b, hott.Not (hott.has_mem.is_mem a b)"  
+
+@[hott]
+class has_subset {A : Type _} := (is_subset : A -> A -> trunctype -1)
+
+hott_theory_cmd "local infix `⊆`:70 := hott.has_subset.is_subset"
+
+@[hott]
+class has_ind_inter {A : Type _} {I : Set} := (ind_inter : (I -> A) -> A) 
+
+hott_theory_cmd "local prefix `⋂ᵢ`:110 := hott.has_ind_inter.ind_inter"
+
+@[hott]
+class has_ind_union {A : Type _} {I : Set} := (ind_union : (I -> A) -> A) 
+
+hott_theory_cmd "local prefix `⋃ᵢ`:110 := hott.has_ind_union.ind_union"
+
+@[hott]
+class has_complement {A : Type _} := (compl : A -> A)
+
+hott_theory_cmd "local prefix `𝒞`:110 := hott.has_complement.compl"
+
 
 namespace subset
 
@@ -149,12 +179,9 @@ def pred_eqv_inj_sset {A : Set} : (Subset A) ≃ (inj_Subset A) :=
 protected def elem {A : Set} (a : A) (S : Subset A) :=
   S a
 
-@[hott]
-protected def not_elem {A : Set} (a : A) (S : Subset A) :=
-  Not (S a)
-
-hott_theory_cmd "local infix  `∈`:70 := hott.subset.elem"
-hott_theory_cmd "local infix  `∉`:70 := hott.subset.not_elem" 
+@[hott, instance]
+def set_mem {A : Set} : @has_mem A (Subset A) :=
+  has_mem.mk (λ (a : A) (S : Subset A), subset.elem a S)
 
 notation `{ ` binder ` ∈ ` B ` | ` P:scoped  ` }` := (P : Subset B)
 notation `{ ` binder ` ∈ ` B ` | ` P:scoped  ` }` := (P : Subset (to_Set B)) 
@@ -213,11 +240,9 @@ def is_prop_subset {A : Set} (B C : Subset A) : is_prop (is_subset_of B C) :=
     assume a, is_prop_map ((a ∈ C).struct),
   is_prop_dprod Pss
 
-@[hott]
-def is_Subset_of {A : Set} (B C : Subset A) : trunctype -1 :=
-  Prop.mk (is_subset_of B C) (is_prop_subset B C)
-
-hott_theory_cmd "local infix `⊆`:50 := hott.subset.is_Subset_of"
+@[hott, instance]
+def set_has_Subsets {A : Set} : @has_subset (Subset A) :=
+  has_subset.mk (λ B C : Subset A, Prop.mk (is_subset_of B C) (is_prop_subset B C))
 
 /- We show some basic facts on subsets. 
 
