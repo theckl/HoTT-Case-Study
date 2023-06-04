@@ -446,46 +446,47 @@ has_colimits_of_shape.mk (λ F, set_has_colimit F)
    category but the image of the natural homomorphism to the containing object. Therefore,
    having colimits in the surrounding category is not enough for the existence of unions. 
    
-   We also separately exhibit finite unions, for use in categorical models. -/
+   We also separately exhibit finite unions, for use in categorical models, and we 
+   introduce the union of two subobjects, to make use of the notation `∪`. -/
 @[hott]
-class has_union {C : Category} {c : C} {J : Set} (f : J -> subobject c) :=
+class has_subobj_union {C : Category} {c : C} {J : Set} (f : J -> subobject c) :=
   (exists_union : @has_coproduct _ subobject_is_cat _ f) 
 
 @[hott, instance]
 def has_union_to_has_coproduct {C : Category} {c : C} {J : Set} 
-  (f : J -> subobject c) [H : has_union f] : has_coproduct f := H.exists_union
+  (f : J -> subobject c) [H : has_subobj_union f] : has_coproduct f := H.exists_union
 
 @[hott]
 def subobject.union {C : Category} {c : C} {J : Set} (f : J -> subobject c)
-  [has_union f] := ⨿ f
+  [has_subobj_union f] := ⨿ f
 
 @[hott]
-class has_unions {C : Category} (c : C) :=
-  (has_union : Π {J : Set} (f : J -> subobject c), has_union f)
+class has_unions (C : Category) :=
+  (has_union : Π {c : C} {J : Set} (f : J -> subobject c), has_subobj_union f)
 
 @[hott, instance]
-def has_union_of_has_unions {C : Category} {c : C} [has_unions c] 
-  {J : Set} (f : J -> subobject c) : has_union f :=
+def has_union_of_has_unions {C : Category} {c : C} [has_unions C] 
+  {J : Set} (f : J -> subobject c) : has_subobj_union f :=
 has_unions.has_union f 
 
 @[hott]
 def union_inc {C : Category} {c : C} {J : Set} (f : J -> subobject c)
-  [has_union f] : Π j : J, f j ⟶ subobject.union f :=
+  [has_subobj_union f] : Π j : J, f j ≼ subobject.union f :=
 assume j, copi.π f j
 
 @[hott]
 def union_fac {C : Category} {c : C} {J : Set} (f : J -> subobject c)
-  [has_union f] {u : subobject c} (h : Π j, f j ⟶ u) : subobject.union f ⟶ u :=
+  [has_subobj_union f] {u : subobject c} (h : Π j, f j ≼ u) : subobject.union f ≼ u :=
 copi.desc h    
 
 @[hott]
 class has_fin_union {C : Category} {c : C} {n : ℕ} 
   (f : fin_Set n -> subobject c) :=
-(exists_union : has_union f)
+(exists_union : has_subobj_union f)
 
 @[hott, instance]
 def has_union_of_has_fin_union {C : Category} {c : C} {n : ℕ} 
-  (f : fin_Set n -> subobject c) [H : has_fin_union f] : has_union f :=
+  (f : fin_Set n -> subobject c) [H : has_fin_union f] : has_subobj_union f :=
 H.exists_union
 
 @[hott]
@@ -497,17 +498,122 @@ def has_fin_union_of_has_fin_unions {C : Category} [has_fin_unions C] {c : C}
   {n : ℕ} (f : fin_Set n -> subobject c) : has_fin_union f :=
 has_fin_unions.has_fin_union c f   
 
+@[hott, instance]
+def has_fin_unions_of_has_unions (C : Category) [H : has_unions C] : has_fin_unions C :=
+  has_fin_unions.mk (λ c n f, (has_fin_union.mk (@has_unions.has_union C H _ _ f)))
+
+@[hott, instance]
+def subobj_has_union {C : Category} {c : C} [has_fin_unions C] :
+  has_union (subobject c) :=
+has_union.mk (λ a b, subobject.union (fin_map_of_list [a, b]))
+
 /- If finite unions exist every category of subobjects also has a bottom element, produced 
    as the empty union. -/
 @[hott]
-def bottom_subobject {C : Category} {c : C} [has_fin_unions C] : 
+def bottom_subobject {C : Category} (c : C) [has_fin_unions C] : 
   subobject c :=
 subobject.union (empty_fin_Set_map (subobject c))
 
 @[hott] 
 def bottom_subobj_prop {C : Category} {c : C} [has_fin_unions C] : 
-  Π (a : subobject c), bottom_subobject ⟶ a :=
+  Π (a : subobject c), bottom_subobject c ≼ a :=
 begin intro a, fapply union_fac, intro j, hinduction hott.nat.not_lt_zero j.1 j.2 end   
+
+/- Universal property of unions of subobjects -/
+@[hott]
+def lift_to_union {C : Category} {d : C} [has_fin_unions C] : Π {a b c : subobject d},
+  a ≼ c -> b ≼ c -> a ∪ b ≼ c :=
+begin 
+  intros a b c i₁ i₂, fapply union_fac (fin_map_of_list [a, b]), 
+  intro j, hinduction j with n ineq, hinduction n, 
+  { have p : fin_map_of_list [a, b] ⟨0, ineq⟩ = b, from 
+      begin hsimp, rwr dite_false ((nat.succ_ne_zero 0) ∘ eq.inverse) end,
+    rwr p, exact i₂ }, 
+  { hinduction n, 
+    {  have q : fin_map_of_list [a, b] ⟨1, ineq⟩ = a, from 
+         begin hsimp, apply dite_true (idpath 1), apply_instance end,
+       rwr q, exact i₁ },
+    { change _ < nat.succ 1 at ineq, 
+      hinduction nat.not_lt_zero n (nat.le_of_succ_le_succ (nat.le_of_succ_le_succ ineq)) } }
+end 
+
+/- The natural inclusions into the union -/
+@[hott]
+def subobj_union_linc {C : Category} {c : C} [has_fin_unions C]
+  (a b : subobject c) : a ≼ a ∪ b :=
+begin
+  have ineq1 : 1 < 2, from nat.lt.base 1,
+  have q : fin_map_of_list [a, b] ⟨1, ineq1⟩ = a, from 
+         begin hsimp, apply dite_true (idpath 1), apply_instance end,
+  rwr <- q, fapply union_inc (fin_map_of_list [a, b]) ⟨1, ineq1⟩
+end
+
+@[hott]
+def subobj_union_rinc {C : Category} {c : C} [has_fin_unions C]
+  (a b : subobject c) : b ≼ a ∪ b :=
+begin
+  have ineq0 : 0 < 2, from nat.lt_trans (nat.lt.base 0) (nat.lt.base 1),
+  have p : fin_map_of_list [a, b] ⟨0, ineq0⟩ = b, from 
+    begin hsimp, rwr dite_false ((nat.succ_ne_zero 0) ∘ eq.inverse) end,
+  rwr <- p, fapply union_inc (fin_map_of_list [a, b]) ⟨0, ineq0⟩
+end
+
+@[hott]
+def univ_char_of_union {C : Category} {d : C} [has_fin_unions C] : 
+  Π {a b c : subobject d}, (a ≼ c) -> (b ≼ c) -> 
+       (Π c' : subobject d, (a ≼ c') -> (b ≼ c') -> c ≼ c') -> (c = a ∪ b) :=
+begin
+  intros a b c ac bc minc, 
+  fapply subobj_antisymm,
+  { exact minc (a ∪ b) (subobj_union_linc _ _) (subobj_union_rinc _ _) },
+  { exact lift_to_union ac bc }
+end
+
+@[hott]
+def subobj_hom_union_absorb {C : Category} {c : C} [has_fin_unions C] {a b : subobject c} : 
+  a ≼ b -> a ∪ b = b :=
+begin
+  intro ineq, fapply subobj_antisymm,
+  { fapply lift_to_union, exact ineq, exact 𝟙 b },
+  { exact subobj_union_rinc _ _ }
+end 
+
+@[hott]
+def bottom_union_absorb {C : Category} {c : C} [has_fin_unions C] (a : subobject c) : 
+  (bottom_subobject c) ∪ a = a :=
+subobj_hom_union_absorb (bottom_subobj_prop a)
+
+/- Associativity of unions of subobjects -/
+@[hott]
+def union_assoc {C : Category} {d : C} [has_fin_unions C] : Π {a b c : subobject d},
+  (a ∪ b) ∪ c = a ∪ (b ∪ c) :=
+begin
+  intros a b c, fapply subobj_antisymm, 
+  { fapply lift_to_union, 
+    { fapply lift_to_union, 
+      { exact subobj_union_linc _ _ },
+      { exact subobj_trans (subobj_union_linc b c) (subobj_union_rinc a (b ∪ c)) } },
+    { exact subobj_trans (subobj_union_rinc b c) (subobj_union_rinc a (b ∪ c)) } },
+  { fapply lift_to_union, 
+    { exact subobj_trans (subobj_union_linc a b) (subobj_union_linc (a ∪ b) c) },
+    { fapply lift_to_union, 
+      { exact subobj_trans (subobj_union_rinc a b) (subobj_union_linc (a ∪ b) c) },
+      { exact subobj_union_rinc _ _ } } }
+end 
+
+/- Commutativity of unions of subobjects -/
+@[hott]
+def union_comm {C : Category} {c : C} [has_fin_unions C] : Π {a b : subobject c},
+  a ∪ b = b ∪ a :=
+begin
+  intros a b, fapply subobj_antisymm,
+  { fapply lift_to_union,
+    { exact subobj_union_rinc _ _ },
+    { exact subobj_union_linc _ _ } },
+  { fapply lift_to_union,
+    { exact subobj_union_rinc _ _ },
+    { exact subobj_union_linc _ _ } }
+end
 
 end categories.colimits
 
