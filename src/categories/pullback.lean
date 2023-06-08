@@ -146,7 +146,7 @@ def has_pullback_of_has_limits_of_shape {C : Type _} [is_cat C]
 ⟨@has_limits_of_shape.has_limit _ _ _ _ H (orthogonal_pair f g)⟩ 
 
 @[hott, instance]
-def has_pullbacks_of_has_limits (C : Type _) [is_cat C] [H : has_limits C] : 
+def has_pullbacks_of_has_limits (C : Category) [H : has_limits C] : 
   has_pullbacks C :=
 has_pullbacks.mk (@has_limits.has_limit_of_shape C _ H orthogonal_wedge _)
 
@@ -355,7 +355,6 @@ begin
   rwr r
 end
 
-
 /- The stability of monomorphisms under pullbacks can be used to construct pullbacks 
    of subobjects and hence their intersection. -/
 @[hott]
@@ -440,6 +439,39 @@ begin
   { apply pb_subobj_lift a.hom (subobj_subobj_trans a b) b (𝟙 b.obj),
     rwr is_precat.id_comp }
 end
+
+/- We introduce the structure of a subobject classifier and the class of categories with
+   such a structure. -/
+@[hott]
+structure subobject_classifier (C : Category) [has_pullbacks C] [has_terminal C] :=
+  (truth_val : C)
+  (true : terminal_obj C ⟶ truth_val)
+  (class_map : Π {c : C} (b : subobject c), c ⟶ truth_val)
+  (cart : Π {c : C} (b : subobject c), b = pullback_subobject (class_map b) 
+                                                              (term_subobj true))
+  (uniq : Π {c : C} (b : subobject c) (cl : c ⟶ truth_val),  
+            b = pullback_subobject cl (term_subobj true) -> cl = class_map b)
+
+@[hott]
+class has_so_classifier (C : Category) [has_pullbacks C] [has_terminal C] :=
+  (so_class : subobject_classifier C)
+
+/- Using propositional resizing we can construct the subobject classifier for the 
+   category of sets with `Prop` as the set of truth values. Since this set must be 
+   in the category of sets, the propositions in `Prop` must be in a lower universe.
+   Therefore, we only consider sets of `Type u+1` and must resize propositions. -/
+@[hott, instance]
+def sets_have_so_classifier : has_so_classifier Set_Category.{u+1} :=
+begin 
+  apply has_so_classifier.mk, fapply subobject_classifier.mk,
+  { exact Prop_Set.{u} }, 
+  { intro t, exact True },
+  { intros A B a, 
+    exact prop_resize.{u u+1} ((bijection.map (bij_subobj_to_subset.{u+1 u+1} A) B) a) },
+  { sorry },
+  { sorry }
+end
+
 
 @[hott]
 def subobj_intersect {C : Category} {c : C} (a b : subobject c) 
