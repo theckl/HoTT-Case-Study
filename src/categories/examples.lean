@@ -651,6 +651,21 @@ def Set_is_cat : is_cat Set.{u} :=
 @[hott]
 def Set_Category : Category := Category.mk Set.{u} Set_is_cat
 
+/- Homomorphisms from and to `One_Set`: `One_Set` is terminal inr the category of sets. -/
+@[hott]
+def hom_to_One (A : Set) : A ⟶ One_Set := λ a : A, One.star
+
+@[hott]
+def hom_to_One_is_unique {A : Set} : is_prop (A ⟶ One_Set) :=
+begin
+  apply is_prop.mk, intros f g, apply eq_of_homotopy, intro a, 
+  exact @is_prop.elim _ One_is_prop _ _
+end 
+
+@[hott]
+def hom_from_One {A : Set} (a : A) : One_Set ⟶ A := λ s : One_Set, a 
+
+
 end categories
 
 end hott
