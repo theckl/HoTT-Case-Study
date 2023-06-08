@@ -11,16 +11,16 @@ set_option pp.universes true
 /- `⊆` induces a weak or partial order on the subsets of a set `A`:
    It is a reflexive, transitive and anti-symmetric relation. -/
 @[hott, hsimp]
-def subset_refl {A : Set} (B : Subset A) : B ⊆ B :=
+def subset_refl {A : Set.{u}} (B : Subset A) : B ⊆ B :=
   assume a a_in_B, a_in_B
 
 @[hott, hsimp]
-def subset_trans {A : Set} (B C D : Subset A) : 
+def subset_trans {A : Set.{u}} (B C D : Subset A) : 
   B ⊆ C -> C ⊆ D -> B ⊆ D :=
 assume BC CD a a_in_B, CD a (BC a a_in_B)
 
 @[hott, hsimp]
-def subset_asymm {A : Set} (B C : Subset A) : 
+def subset_asymm {A : Set.{u}} (B C : Subset A) : 
   B ⊆ C -> C ⊆ B -> B = C :=
 assume BC CB, (sset_eq_iff_inclusion B C).2 ⟨BC, CB⟩  
 
@@ -75,7 +75,7 @@ def inter_sset_r (U V : Subset A) : (U ∩ V) ⊆ V :=
 
 @[hott, reducible]
 def sInter (S : Subset (𝒫 A)) : Subset A := 
-  λ t : A, prop_resize (to_Prop (∀ B : 𝒫 A, B ∈ S -> t ∈ B))
+  λ t : A,  prop_resize.{u u+1} (to_Prop.{u+1} (∀ B : 𝒫 A, B ∈ S -> t ∈ B))
 
 hott_theory_cmd "local prefix `⋂₀`:110 := hott.subset.sInter"
 
@@ -95,7 +95,7 @@ end
 @[hott, reducible]
 def iInter {A : Set.{u}} {I : Set.{v}} (f : I -> Powerset A) : 
   Subset A :=
-λ t : A, prop_resize (to_Prop (∀ i : I, t ∈ f i))
+λ t : A, prop_resize.{u (max v u)} (to_Prop.{max v u} (∀ i : I, t ∈ f i))
 
 @[hott, instance]
 def sets_have_ind_inter (A : Set.{u}) (I : Set.{v}) : @has_ind_inter (Subset A) I :=
@@ -138,16 +138,16 @@ def union_sset_r (U V : Subset A) : V ⊆ (U ∪ V) :=
 
 @[hott, reducible]
 def sUnion (S : Subset (𝒫 A)) : Subset A := 
-  λ t : A, prop_resize (@exists_elem (𝒫 A) (λ B : Subset A, S B and t ∈ B))
+  λ t : A, prop_resize.{u u+1} (@exists_elem (𝒫 A) (λ B : Subset A, S B and t ∈ B))
 
 hott_theory_cmd "local prefix `⋃₀`:110 := hott.subset.sUnion"
 
 @[hott, reducible]
-def iUnion {A : Set} {I : Set} (f : I -> Powerset A) : Subset A :=
-  λ t : A, prop_resize (∥ Σ i : I, t ∈ f i ∥)
+def iUnion {I : Set.{v}} (f : I -> Powerset A) : Subset A :=
+  λ t : A, prop_resize.{u (max v u)} (∥ Σ i : I, t ∈ f i ∥)
 
 @[hott, instance]
-def sets_have_ind_union (A : Set.{u}) (I : Set.{v}) : @has_ind_union (Subset A) I :=
+def sets_have_ind_union (I : Set.{v}) : @has_ind_union (Subset A) I :=
   has_ind_union.mk (λ f, iUnion f)
 
 @[hott]
