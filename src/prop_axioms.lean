@@ -32,7 +32,7 @@ def is_prop_true : is_prop true :=
   is_prop.mk eq_true 
 
 @[hott]
-def True : Prop :=
+def True : trunctype.{u} -1 :=
   Prop.mk true is_prop_true  
 
 @[hott]
@@ -50,7 +50,7 @@ def is_prop_false : is_prop false :=
   is_prop.mk eq_false
 
 @[hott]
-def False : Prop :=
+def False : trunctype.{u} -1 :=
   Prop.mk false is_prop_false
 
 @[hott]
@@ -215,6 +215,47 @@ def to_Prop_eq (P : Prop) : to_Prop ↥P = P :=
 @[hott, instance]
 def eq_prop_is_prop (P Q : Type _) [is_prop P] [is_prop Q] : is_prop (P = Q) :=
   is_trunc_is_equiv_closed -1 (@prop_iff_eqv_eq P Q _ _) (@iff_is_prop P Q _ _) 
+
+/- Equalities of `Prop`s are equivalent to equalities of the underlying types. -/
+@[hott]
+def Prop_eq {P Q : Prop} (p : P.carrier = Q.carrier) (q : P.struct =[p] Q.struct) :
+  P = Q :=
+begin hinduction P, hinduction Q, exact apd011 trunctype.mk p q end
+
+@[hott]
+def Prop_is_prop_eq {P Q : Prop} (p : P = Q) : 
+  P.struct =[ap trunctype.carrier p] Q.struct :=
+begin hinduction p, exact idpo end
+
+@[hott]
+def Prop_eq_eta {P Q : Prop} (p : P = Q) : 
+  Prop_eq (ap trunctype.carrier p) (Prop_is_prop_eq p) = p :=
+begin hinduction p, hinduction P with P Pp, refl end
+
+@[hott]
+def Prop_eq_eqv_prop_eq (P Q : Prop) : (P = Q) ≃ (↥P = ↥Q) :=
+begin
+  hinduction P with P Pp, hinduction Q with Q Qp, hsimp,
+  fapply equiv.mk,  
+  { intro p, exact ap trunctype.carrier p },
+  { fapply adjointify,
+    { intro p, fapply apd011 trunctype.mk p, 
+      apply pathover_of_tr_eq, exact is_prop.elim _ _ },
+    { intro p, hinduction p, 
+      have q : Qp = Pp, from is_prop.elim _ _,
+      let tr_eq : idp ▸ Pp = Pp, from idp,
+      have r : pathover_of_tr_eq tr_eq = idpo, from rfl,
+      rwr q, hsimp, rwr r },
+    { intro p, apply (λ r, eq.concat r (Prop_eq_eta p)), 
+      change _ = apd011 trunctype.mk _ _,
+      apply ap (apd011 trunctype.mk (ap trunctype.carrier p)), 
+      exact is_prop.elim _ _ } } 
+end
+
+@[hott, instance]
+def Prop_eq_is_prop (P Q : Prop) : is_prop (P = Q) :=
+  is_trunc_is_equiv_closed_rev -1 (Prop_eq_eqv_prop_eq P Q) (eq_prop_is_prop ↥P ↥Q)
+  
 
 /- Inhabited and unhabited mere propositions are equal. -/
 @[hott]
