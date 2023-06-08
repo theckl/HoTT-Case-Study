@@ -15,6 +15,8 @@ open hott.eq hott.is_trunc hott.trunc hott.is_equiv hott.set hott.subset
 
 namespace categories.limits
 
+set_option pp.universes true
+
 @[hott]
 structure cone {J : Type _} [is_strict_cat J] {C : Type _} 
   [is_precat C] (F : J ⥤ C) :=
@@ -204,13 +206,13 @@ def limit_leg {J : Type _} [is_strict_cat J] {C : Type u}
   limit F ⟶ F.obj j := (limit.cone F).π.app j 
 
 @[hott]
-def diag_eq_lim_eq_lim {J : strict_Category} {C : Type _} [is_cat C]
+def diag_eq_lim_eq_lim {J : strict_Category} {C : Type u} [is_cat.{v} C]
   {F F' : J.obj ⥤ C} (p : F = F') [hlF : has_limit F] [hlF' : has_limit F'] : 
   @limit _ _ _ _ F hlF = @limit _ _ _ _ F' hlF' :=
 apd011 (@limit _ _ _ _) p (pathover_of_tr_eq (has_limit_eq _ _))  
 
 @[hott]
-def diag_inv_eq_lim_eq {J : strict_Category} {C : Type _} [is_cat C]
+def diag_inv_eq_lim_eq {J : strict_Category} {C : Type u} [is_cat.{v} C]
   {F F' : J.obj ⥤ C} (p : F = F') [hlF : has_limit F] [hlF' : has_limit F'] :
   (diag_eq_lim_eq_lim p⁻¹) = (diag_eq_lim_eq_lim p)⁻¹ :=
 begin
@@ -453,6 +455,11 @@ def pi.lift_π_eq {J : Set.{u'}} (C : Type u) [is_cat.{v} C] {f : J → C}
   [has_product f] {P : C} (p : Π j : J, P ⟶ f j) : 
   ∀ j : J, pi.lift p ≫ pi.π _ j = p j :=
 ((get_limit_cone (discrete.functor f)).is_limit.lift (fan.mk _ p)).fac  
+
+@[hott]
+def pi.lift_uniq {J : Set.{u'}} (C : Type u) [is_cat.{v} C] {f : J → C} 
+  [has_product f] {P : C} {p : Π j : J, P ⟶ f j} :=
+((get_limit_cone (discrete.functor f)).is_limit.lift (fan.mk _ p)).fac   
 
 @[hott]
 def pi.lift_fac {J : Set.{u'}} {C : Type u} [is_cat.{v} C] {f : J → C} 
@@ -698,15 +705,18 @@ end
    Note that the limit cone vertex may be the empty set - then all cones over the functor `F`
    are empty because otherwise they cannot factorize through the empty set. 
    
-   Also note that the cone must live in a universe both containing the diagram set 
-   and the sets ordered according to the diagram. -/
+   Also note that the limit set must live in a universe both containing the diagram set 
+   and the sets ordered according to the diagram, hence we must make sure that the 
+   universes in which the diagram lives is not larger than the universe of sets, to 
+   obtain a set in the correct universe. Most diagrams live in `Type 0`, so we do not 
+   need to change the universe of sets for them. -/
 @[hott]
-def set_limit_pred {J : Type _} [H : is_strict_cat J] (F : J ⥤ Set) : 
+def set_limit_pred {J : Type u'} [H : is_strict_cat.{u' u'} J] (F : J ⥤ Set.{max u' u}) : 
   Subset (@Sections (Set.mk J H.set) F.obj) :=
-λ s, prop_resize (to_Prop (∀ (j k : J) (f : j ⟶ k), F.map f (s j) = s k)) 
+λ s, to_Prop (∀ (j k : J) (f : j ⟶ k), F.map f (s j) = s k) 
 
 @[hott, reducible]
-def set_cone {J : Type _} [H : is_strict_cat J] (F : J ⥤ Set) : cone F :=
+def set_cone {J : Type u'} [H : is_strict_cat.{u' u'} J] (F : J ⥤ Set.{max u' u}) : cone F :=
 begin
   fapply cone.mk, 
   /- The limit cone vertex set -/
@@ -717,11 +727,11 @@ begin
     /- compatibility of the leg maps -/
     { intros j k f, hsimp, 
       fapply eq_of_homotopy, intro u, hsimp, change u.1 k = F.map f (u.1 j), 
-      rwr (prop_resize_to_prop u.2 j k f) } }
+      rwr u.2 j k f } }
 end  
 
 @[hott, reducible]
-def set_cone_is_limit {J : Type _} [H : is_strict_cat J] (F : J ⥤ Set) :
+def set_cone_is_limit {J : Type u'} [H : is_strict_cat.{u' u'} J] (F : J ⥤ Set.{max u' u}) :
   is_limit (set_cone F) :=
 begin 
   fapply is_limit.mk,
@@ -729,7 +739,7 @@ begin
     /- the lift from the limit cone to another cone-/ 
     { intro x, fapply sigma.mk, 
       { intro j, exact s.π.app j x },
-      { hsimp, apply prop_to_prop_resize, intros j k f, 
+      { hsimp, intros j k f, 
         exact (homotopy_of_eq (s.π.naturality f) x)⁻¹ } },
     /- factorising the lift with limit cone legs -/    
     { intro j, hsimp, apply eq_of_homotopy, 
@@ -742,39 +752,43 @@ begin
 end
 
 @[hott, reducible]
-def set_limit_cone {J : Type _} [H : is_strict_cat J] (F : J ⥤ Set) : limit_cone F :=
-  limit_cone.mk (set_cone F) (set_cone_is_limit F)
+def set_limit_cone {J : Type u'} [H : is_strict_cat.{u' u'} J] (F : J ⥤ Set.{max u' u}) : 
+  limit_cone F := limit_cone.mk (set_cone F) (set_cone_is_limit F)
 
 @[hott, instance]
-def set_has_limit {J : Type _} [H : is_strict_cat J] (F : J ⥤ Set) : has_limit F :=
-  has_limit.mk (set_limit_cone F)
+def set_has_limit {J : Type u'} [H : is_strict_cat.{u' u'} J] (F : J ⥤ Set.{max u' u}) : 
+  has_limit F := has_limit.mk (set_limit_cone F)
 
 @[hott, instance]
-def set_has_limits_of_shape {J : Type _} [H : is_strict_cat J] : has_limits_of_shape J Set :=
-  has_limits_of_shape.mk (λ F, set_has_limit F)     
+def set_has_limits_of_shape {J : Type u'} [H : is_strict_cat.{u' u'} J] : 
+  has_limits_of_shape J Set.{max u' u} := has_limits_of_shape.mk (λ F, set_has_limit F)     
 
 @[hott, instance]
-def set_has_products : has_products Set :=
-  ⟨λ J : Set, @set_has_limits_of_shape (discrete J) _⟩
+def set_has_limits : has_limits Set_Category.{max u' u} :=
+  has_limits.mk (λ {J : Type u'} [H : is_strict_cat.{u' u'} J], @set_has_limits_of_shape J H)
 
 @[hott, instance]
-def set_has_product {J : Set} (f : J -> Set) : has_product f :=
+def set_has_products : has_products Set.{max u' u} :=
+  ⟨λ J : Set.{u'}, @set_has_limits_of_shape (discrete.{u'} J) _⟩
+
+@[hott, instance]
+def set_has_product {J : Set.{u'}} (f : J -> Set.{max u' u}) : has_product f :=
   ⟨set_has_limit (discrete.functor f)⟩
 
 @[hott]
-def Set_prod_sections {I : Set} {U : I -> Set} : (∏ U) = Sections U :=
+def Set_prod_sections {I : Set.{u'}} {U : I -> Set.{max u' u}} : (∏ U) = Sections U :=
 begin
   change pred_Set (λ s : Sections U, set_limit_pred (discrete.functor U) s) = Sections U, 
   have pred_eq : (λ s : Sections U, set_limit_pred (discrete.functor U) s) = (λ s, True), from
     begin 
       apply eq_of_homotopy, intro s, hsimp, apply prop_iff_eq, 
       { intro p, exact true.intro },
-      { intro t, apply prop_to_prop_resize, intros j k f, 
+      { intro t, intros j k f, 
         change (f ▸[λ k : discrete I, U j ⟶ U k] 𝟙 (U j)) (s j) = s k, 
         hinduction f, rwr idp_tr } 
     end,
   rwr pred_eq, apply car_eq_to_set_eq, 
-  apply ap trunctype.carrier (total_pred_Set_eq_Set (Sections U))
+  apply ap trunctype.carrier (total_pred_Set_eq_Set.{u' (max u' u)} (Sections U))
 end 
 
 
@@ -840,6 +854,64 @@ def subcat_has_products {C : Type u} [is_cat.{v} C] {P : C -> trunctype.{0} -1}
   has_products (sigma.subtype (λ c : C, ↥(P c))) :=
 ⟨λ J : Set, @subcat_has_limits_of_shape (discrete J) _ _ _ _ 
              (has_limits_of_shape_of_has_products J C) (lim_clos J)⟩
+
+/- We introduce the terminal object in a category together with some of its properties; 
+  it exists if the category has limits. -/
+@[hott]
+structure terminal (C : Type u) [is_cat.{v} C] := 
+  (star : C)
+  (map : Π (c : C), c ⟶ star)
+  (uniq : Π {c : C} (f g : c ⟶ star), f = g)
+
+@[hott]
+class has_terminal (C : Type u) [is_cat.{v} C] := 
+  (str : terminal C) 
+
+@[hott] 
+def terminal_obj (C : Type u) [is_cat.{v} C] [H : has_terminal C] : C :=
+  H.str.star
+
+@[hott]
+def terminal_map {C : Type u} [is_cat.{v} C] [H : has_terminal C] (c : C) :=
+  H.str.map c
+
+@[hott, instance]
+def has_terminal_of_has_product (C : Type u) [is_cat.{v} C] 
+  [H : has_product (empty_map.{u u} C)] : has_terminal C :=
+begin
+  apply has_terminal.mk, fapply terminal.mk,
+  { exact @pi_obj _ _ _ (empty_map C) H },
+  { intro c, apply pi.lift, intro j, hinduction j },
+  { intros c f g, 
+    let cc := @fan.mk _ C _ (empty_map.{u u} C) c (λ j : false, false.rec _ j),
+    let mcf : cone_map cc (get_limit_cone (discrete.functor (empty_map C))).cone := 
+      begin fapply cone_map.mk, exact f, exact (λ j : false, false.rec _ j) end,
+    let mcg : cone_map cc (get_limit_cone (discrete.functor (empty_map C))).cone := 
+      begin fapply cone_map.mk, exact g, exact (λ j : false, false.rec _ j) end,
+    change mcf.v_lift = mcg.v_lift, 
+    let p := (get_limit_cone (discrete.functor (empty_map.{u u} C))).is_limit.uniq, 
+    rwr p cc mcf, rwr p cc mcg }
+end
+
+@[hott]
+def terminal_map_is_mono {C : Category} [H : has_terminal C] {c : C} :
+  Π (f : terminal_obj C ⟶ c), is_mono f :=
+begin intros f d g₁ g₂ p, exact H.str.uniq g₁ g₂ end
+
+@[hott]
+def term_subobj {C : Category} [H : has_terminal C] {c : C} (f : terminal_obj C ⟶ c) :
+  subobject c := (subobject.mk (terminal_obj C) f (terminal_map_is_mono f))
+
+/- The category of sets has `One_Set` as terminal object. -/
+@[hott, instance]
+def One_Set_is_terminal : has_terminal Set_Category.{u} :=
+begin
+  apply has_terminal.mk, fapply terminal.mk, 
+  { exact One_Set.{u} },
+  { intro A, exact λ a : A.carrier, One.star  },
+  { intros A f g, apply eq_of_homotopy, intro a, 
+    exact @is_prop.elim _ (One_is_prop) _ _ }
+end 
 
 end categories.limits
 
