@@ -670,6 +670,17 @@ end
 def sum_Set (A B : Set) : Set :=
   Set.mk (A ⊎ B) (sum_of_Sets_is_set A B)    
 
+/- Propositions of a fixed universe level are a set (of the next universe level). -/
+@[hott, instance]
+def Prop_is_set : is_set (trunctype.{u} -1) :=
+begin 
+  apply is_set.mk, intros P Q,
+  rwr <- to_Prop_eq P, rwr <- to_Prop_eq Q, intros p q, exact is_prop.elim _ _ 
+end 
+
+@[hott]
+def Prop_Set : Set := Set.mk (trunctype.{u} -1) Prop_is_set
+
 end set
 
 end hott
