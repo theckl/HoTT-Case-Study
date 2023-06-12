@@ -5,7 +5,7 @@ hott_theory
 
 namespace hott
 open hott.precategories hott.categories hott.categories.limits hott.is_trunc 
-     categories.adjoints hott.set hott.trunc 
+     categories.adjoints hott.set hott.subset hott.trunc 
 
 namespace categories.pullbacks
 
@@ -306,6 +306,7 @@ begin
   rwr pb_lift_eq_l
 end
 
+
 /- Pullbacks are symmetric in the two legs.
    
    The existence of the symmetric pullback derived from an instance of the pullback
@@ -456,21 +457,6 @@ structure subobject_classifier (C : Category) [has_pullbacks C] [has_terminal C]
 class has_so_classifier (C : Category) [has_pullbacks C] [has_terminal C] :=
   (so_class : subobject_classifier C)
 
-/- Using propositional resizing we can construct the subobject classifier for the 
-   category of sets with `Prop` as the set of truth values. Since this set must be 
-   in the category of sets, the propositions in `Prop` must be in a lower universe.
-   Therefore, we only consider sets of `Type u+1` and must resize propositions. -/
-@[hott, instance]
-def sets_have_so_classifier : has_so_classifier Set_Category.{u+1} :=
-begin 
-  apply has_so_classifier.mk, fapply subobject_classifier.mk,
-  { exact Prop_Set.{u} }, 
-  { intro t, exact True },
-  { intros A B a, 
-    exact prop_resize.{u u+1} ((bijection.map (bij_subobj_to_subset.{u+1 u+1} A) B) a) },
-  { sorry },
-  { sorry }
-end
 
 
 @[hott]
