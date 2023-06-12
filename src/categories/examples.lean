@@ -478,7 +478,7 @@ def assoc_funct {C D E : Type _} [is_precat C] [is_precat D]
   (assoc_funct_iso G H I)
 
 
-/- The power set `𝒫 A` of a set `A` is a is_precat, with inclusions of 
+/- The power set `𝒫 A` of a set `A` is a precategory, with inclusions of 
    subsets as morphisms. -/
 @[hott, instance]   
 def power_set_has_hom {A : Set} : has_hom (𝒫 A) :=
@@ -509,7 +509,7 @@ def power_set_precat {A : Set} : is_precat (𝒫 A) :=
     assume B C D E f g h, power_set_unique_hom _ _,                   
   is_precat.mk id_comp comp_id assoc
 
-/- Every subset of a set that is a (small?) is_precat is a 
+/- Every subset of a set that is a (small?) precategory is a 
    (full sub-)is_precat. -/
 @[hott, instance]
 def subset_precat_has_hom {A : Set.{u}} [hA : has_hom.{v} A] (B : Subset A) :
@@ -557,113 +557,6 @@ begin
   { intro b, refl },
   { intros b₁ b₂ b₃ f g, refl }
 end                     
-
-
-/- `Set.{u}` is a category - the category of `Type u`-small sets. -/
-@[hott, instance]
-def set_has_hom : has_hom Set.{u} :=
-  has_hom.mk (λ A B : Set.{u}, Set.mk (A -> B) (@is_set_map A B))
-
-@[hott, instance]
-def set_cat_struct : category_struct Set.{u} :=
-  category_struct.mk (λ A : Set.{u}, id_map A)
-                     (λ (A B C: Set.{u}) (f : A ⟶ B) (g : B ⟶ C), g ∘ f)  
-
-@[hott, instance]
-def Set_is_precat : is_precat Set.{u} :=
-  have ic : Π (A B : Set.{u}) (f : A ⟶ B), 𝟙 A ≫ f = f, from 
-    assume A B f, by refl,
-  have ci : Π (A B : Set.{u}) (f : A ⟶ B), f ≫ 𝟙 B = f, from 
-    assume A B f, by refl,
-  have as : Π (A B C D : Set.{u}) (f : A ⟶ B) (g : B ⟶ C) (h : C ⟶ D),
-             (f ≫ g) ≫ h = f ≫ (g ≫ h), from 
-    assume A B C D f g h, by refl,
-  is_precat.mk ic ci as
-
-@[hott, hsimp]
-def Set_isotocareqv {A B : Set.{u}} : (A ≅ B) -> (A ≃ B) :=
-    assume i,
-  have eqv_iso : is_equiv i.hom, from 
-    have r_inv : ∀ b : B, i.hom (i.ih.inv b) = b, from 
-      assume b, homotopy_of_eq i.ih.r_inv b,
-    have l_inv : ∀ a : A, i.ih.inv (i.hom a) = a, from 
-      assume a, homotopy_of_eq i.ih.l_inv a,
-    adjointify i.hom i.ih.inv r_inv l_inv,
-  equiv.mk i.hom eqv_iso 
-
-@[hott, hsimp, reducible]
-def Set_isotoid {A B : Set.{u}} : (A ≅ B) -> (A = B) :=
-  assume i,
-  car_eq_to_set_eq (ua (Set_isotocareqv i))
-
-@[hott, hsimp]
-def Set_idtoiso_hom_eq {A B : Set.{u}} (p : A = B) : 
-  ∀ a : A, ((idtoiso p).hom : A -> B) a = p ▸ a :=
-begin
-  hinduction p, rwr idtoiso_refl_eq, hsimp, 
-  intro a, refl  
-end 
-
-@[hott, hsimp]
-def Set_isotoid_eq_hom {A B : Set.{u}} (i : A ≅ B) : 
-  ∀ a : A, (Set_isotoid i) ▸[λ A : Set.{u}, A.carrier] a = i.hom a :=
-assume a,
-have p : ((set_eq_to_car_eq (car_eq_to_set_eq (ua (Set_isotocareqv i))))) = 
-         (ua (Set_isotocareqv i)), by 
-    exact @is_equiv.right_inv _ _ _ 
-           set_eq_equiv_car_eq.to_is_equiv (ua (Set_isotocareqv i)),
-calc (Set_isotoid i) ▸ a = ((ap (trunctype.carrier) (Set_isotoid i)) ▸[λ A : Type u, A] a) : 
-           (tr_ap (λ A : Type u, A) (trunctype.carrier) _ a)⁻¹
-     ... = ((set_eq_to_car_eq (car_eq_to_set_eq (ua (Set_isotocareqv i)))) 
-                                      ▸[λ A : Type u, A] a) : rfl      
-     ... = ((ua (Set_isotocareqv i)) ▸[λ A : Type u, A] a) : 
-           by rwr p
-     ... = (equiv_of_eq (ua (Set_isotocareqv i))).to_fun a : cast_def _ _
-     ... = i.hom a : cast_ua (Set_isotocareqv i) a
-
-@[hott, hsimp]
-def Set_isotoid_eq_refl {A : Set.{u}} : 
-  Set_isotoid (id_iso A) = refl A :=
-  calc Set_isotoid (id_iso A) = car_eq_to_set_eq (ua (equiv.refl ↥A)) : rfl
-       ... = car_eq_to_set_eq (idpath ↥A) : by rwr ua_refl
-       ... = refl A : car_idp_to_set_idp 
-
-@[hott]
-def Set_id_iso_rinv {A B : Set.{u}} : ∀ i : A ≅ B, idtoiso (Set_isotoid i) = i :=
-  assume i,
-  have hom_eq : ∀ a : A, ((idtoiso (Set_isotoid i)).hom : A -> B) a = i.hom a, from 
-    assume a, (Set_idtoiso_hom_eq (Set_isotoid i) a) ⬝ Set_isotoid_eq_hom i a,
-  hom_eq_to_iso_eq (eq_of_homotopy hom_eq)
-
-@[hott]
-def Set_id_iso_linv {A B : Set.{u}} : ∀ p : A = B, Set_isotoid (idtoiso p) = p :=
-begin
-  intro p, hinduction p, 
-  rwr idtoiso_refl_eq, exact Set_isotoid_eq_refl
-end  
-
-@[hott, instance]
-def Set_is_cat : is_cat Set.{u} :=
-  have ideqviso : ∀ A B : Set.{u}, is_equiv (@idtoiso _ _ A B), from assume A B,
-    adjointify idtoiso Set_isotoid Set_id_iso_rinv Set_id_iso_linv,
-  is_cat.mk ideqviso  
-
-@[hott]
-def Set_Category : Category := Category.mk Set.{u} Set_is_cat
-
-/- Homomorphisms from and to `One_Set`: `One_Set` is terminal inr the category of sets. -/
-@[hott]
-def hom_to_One (A : Set) : A ⟶ One_Set := λ a : A, One.star
-
-@[hott]
-def hom_to_One_is_unique {A : Set} : is_prop (A ⟶ One_Set) :=
-begin
-  apply is_prop.mk, intros f g, apply eq_of_homotopy, intro a, 
-  exact @is_prop.elim _ One_is_prop _ _
-end 
-
-@[hott]
-def hom_from_One {A : Set} (a : A) : One_Set ⟶ A := λ s : One_Set, a 
 
 
 end categories
