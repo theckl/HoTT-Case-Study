@@ -2,7 +2,7 @@ Compiling files, in order of dependencies:
 ------------------------------------------
 init2       :   893
 types2      :   519 
-prop_axioms :   655
+prop_axioms :   679
 prop_logic  :   208
 sets
   basic     :   686
@@ -14,17 +14,18 @@ sets
   theories  :   715
 categories
   precat    :   738  
-  basic     :   281 
-  subobj    :   613
+  basic     :   312 
+  examples  :   564 
+  subobj    :   549
   subcat    :   124
-  examples  :   671 
   adjoints  :   422 
   strict_cat:   390 
   diagrams  :   617 
-  limits    :   914
-  colimits  :   620 
-  * pullbacks :   807 
+  limits    :   812
+  colimits  :   518 
+  pullbacks :   825 
   boolean   :   184 
+  sets      :   545 
               -----
                
 
@@ -33,7 +34,5 @@ Planned changes in Files, from bottom to top:
 ---------------------------------------------
 categories.models : is_interpretable_in-class
 categories.boolean : Cartesian, regular, coherent, geometric, Heyting, boolean categories
-categories.boolean : subsets have complements if element-predicate is decidable;
-                     subobject complement = subset complement
-categories.pullback : subobject classifier of sets
-categories.pullback : subobject classifier 
+categories.sets : subsets have complements if element-predicate is decidable;
+                     subobject complement = subset complement 
