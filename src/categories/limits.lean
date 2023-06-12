@@ -696,102 +696,6 @@ begin
 end  
 
 
-/- The category of sets has all limits. 
-
-   The limit cone is constructed as the sections of the functor map satisfying the 
-   compatibility conditions of the indexing category. We define this predicate separately, 
-   for use later on.
-   
-   Note that the limit cone vertex may be the empty set - then all cones over the functor `F`
-   are empty because otherwise they cannot factorize through the empty set. 
-   
-   Also note that the limit set must live in a universe both containing the diagram set 
-   and the sets ordered according to the diagram, hence we must make sure that the 
-   universes in which the diagram lives is not larger than the universe of sets, to 
-   obtain a set in the correct universe. Most diagrams live in `Type 0`, so we do not 
-   need to change the universe of sets for them. -/
-@[hott]
-def set_limit_pred {J : Type u'} [H : is_strict_cat.{u' u'} J] (F : J ⥤ Set.{max u' u}) : 
-  Subset (@Sections (Set.mk J H.set) F.obj) :=
-λ s, to_Prop (∀ (j k : J) (f : j ⟶ k), F.map f (s j) = s k) 
-
-@[hott, reducible]
-def set_cone {J : Type u'} [H : is_strict_cat.{u' u'} J] (F : J ⥤ Set.{max u' u}) : cone F :=
-begin
-  fapply cone.mk, 
-  /- The limit cone vertex set -/
-  { exact pred_Set (set_limit_pred F) }, 
-  { fapply nat_trans.mk, 
-    /- the leg maps of the limit cone -/
-    { intro j, exact λ u, u.1 j },
-    /- compatibility of the leg maps -/
-    { intros j k f, hsimp, 
-      fapply eq_of_homotopy, intro u, hsimp, change u.1 k = F.map f (u.1 j), 
-      rwr u.2 j k f } }
-end  
-
-@[hott, reducible]
-def set_cone_is_limit {J : Type u'} [H : is_strict_cat.{u' u'} J] (F : J ⥤ Set.{max u' u}) :
-  is_limit (set_cone F) :=
-begin 
-  fapply is_limit.mk,
-  { intro s, fapply cone_map.mk, 
-    /- the lift from the limit cone to another cone-/ 
-    { intro x, fapply sigma.mk, 
-      { intro j, exact s.π.app j x },
-      { hsimp, intros j k f, 
-        exact (homotopy_of_eq (s.π.naturality f) x)⁻¹ } },
-    /- factorising the lift with limit cone legs -/    
-    { intro j, hsimp, apply eq_of_homotopy, 
-      intro x, refl } },
-  /- uniqueness of lift -/  
-  { intros s m, hsimp, apply eq_of_homotopy,
-    intro x, hsimp, fapply sigma.sigma_eq, 
-    { exact eq_of_homotopy (λ j, @homotopy_of_eq s.X _ _ _ (m.fac j) x) },
-    { hsimp, apply pathover_of_tr_eq, apply is_prop.elim } }  
-end
-
-@[hott, reducible]
-def set_limit_cone {J : Type u'} [H : is_strict_cat.{u' u'} J] (F : J ⥤ Set.{max u' u}) : 
-  limit_cone F := limit_cone.mk (set_cone F) (set_cone_is_limit F)
-
-@[hott, instance]
-def set_has_limit {J : Type u'} [H : is_strict_cat.{u' u'} J] (F : J ⥤ Set.{max u' u}) : 
-  has_limit F := has_limit.mk (set_limit_cone F)
-
-@[hott, instance]
-def set_has_limits_of_shape {J : Type u'} [H : is_strict_cat.{u' u'} J] : 
-  has_limits_of_shape J Set.{max u' u} := has_limits_of_shape.mk (λ F, set_has_limit F)     
-
-@[hott, instance]
-def set_has_limits : has_limits Set_Category.{max u' u} :=
-  has_limits.mk (λ {J : Type u'} [H : is_strict_cat.{u' u'} J], @set_has_limits_of_shape J H)
-
-@[hott, instance]
-def set_has_products : has_products Set.{max u' u} :=
-  ⟨λ J : Set.{u'}, @set_has_limits_of_shape (discrete.{u'} J) _⟩
-
-@[hott, instance]
-def set_has_product {J : Set.{u'}} (f : J -> Set.{max u' u}) : has_product f :=
-  ⟨set_has_limit (discrete.functor f)⟩
-
-@[hott]
-def Set_prod_sections {I : Set.{u'}} {U : I -> Set.{max u' u}} : (∏ U) = Sections U :=
-begin
-  change pred_Set (λ s : Sections U, set_limit_pred (discrete.functor U) s) = Sections U, 
-  have pred_eq : (λ s : Sections U, set_limit_pred (discrete.functor U) s) = (λ s, True), from
-    begin 
-      apply eq_of_homotopy, intro s, hsimp, apply prop_iff_eq, 
-      { intro p, exact true.intro },
-      { intro t, intros j k f, 
-        change (f ▸[λ k : discrete I, U j ⟶ U k] 𝟙 (U j)) (s j) = s k, 
-        hinduction f, rwr idp_tr } 
-    end,
-  rwr pred_eq, apply car_eq_to_set_eq, 
-  apply ap trunctype.carrier (total_pred_Set_eq_Set.{u' (max u' u)} (Sections U))
-end 
-
-
 /- The full subcategory on a subtype of a category with limits has limits if the limit
    of a diagram of objects of the subtype is also in the subtype. -/
 @[hott]
@@ -902,16 +806,6 @@ begin intros f d g₁ g₂ p, exact H.str.uniq g₁ g₂ end
 def term_subobj {C : Category} [H : has_terminal C] {c : C} (f : terminal_obj C ⟶ c) :
   subobject c := (subobject.mk (terminal_obj C) f (terminal_map_is_mono f))
 
-/- The category of sets has `One_Set` as terminal object. -/
-@[hott, instance]
-def One_Set_is_terminal : has_terminal Set_Category.{u} :=
-begin
-  apply has_terminal.mk, fapply terminal.mk, 
-  { exact One_Set.{u} },
-  { intro A, exact λ a : A.carrier, One.star  },
-  { intros A f g, apply eq_of_homotopy, intro a, 
-    exact @is_prop.elim _ (One_is_prop) _ _ }
-end 
 
 end categories.limits
 
