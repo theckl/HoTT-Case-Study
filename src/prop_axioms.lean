@@ -346,11 +346,11 @@ def is_prop_LEM {A : Type _} [is_prop A] : is_prop (A ⊎ ¬ A) :=
 @[hott]
 axiom LEM : ExcludedMiddle
 
-@[hott]  
-def PropResize := trunctype.{max u v} -1 -> trunctype.{u} -1 
+@[hott, reducible]  
+def PropResize := is_equiv prop_ulift.{u v} 
 
 @[hott]
-axiom PRES : PropResize  
+axiom PRES : PropResize.{u v}  
 
 /- The next lemma is needed for deducing propositional resizing from LEM. -/
 @[hott]
@@ -569,56 +569,54 @@ def LEM_Prop_equiv_Two : ExcludedMiddle.{u} -> (trunctype.{u} -1 ≃ Two.{u}) :=
    We compose the equivalences of [Prop] with [Two] in two successive universes and the 
    equivalence of [Two] with its lift to the next universe. -/
 @[hott, reducible, hsimp]
-def LEM_Prop_Resize : ExcludedMiddle.{max u v} -> (trunctype.{u} -1 ≃ trunctype.{max u v} -1) :=
+def LEM_Prop_univ_eqv : 
+  ExcludedMiddle.{max u v} -> (trunctype.{u} -1 ≃ trunctype.{max u v} -1) :=
   assume lem_u1,
   have lem_u : ExcludedMiddle.{u}, from LEM_resize lem_u1,
   equiv.trans (LEM_Prop_equiv_Two lem_u) 
               (equiv.trans (Two_equiv_lift.{u}) (equiv.symm (LEM_Prop_equiv_Two lem_u1)))
 
-@[hott, reducible, hsimp]  
-def prop_resize : trunctype.{max u v} -1 -> trunctype.{u} -1 := (LEM_Prop_Resize LEM)⁻¹ᶠ  
-
 @[hott]
-def prop_resize_trivial : ∀ (P : trunctype.{u} -1), prop_resize.{u u} P = P :=
+def LEM_inh_to_inh_Prop (lem : ExcludedMiddle.{max u v}) :
+  Π (P : trunctype.{u} -1), P -> LEM_Prop_univ_eqv.{u v} lem P :=
+let lem_u := LEM_resize.{u v} lem in
 begin 
-  intro P, hsimp, hinduction LEM P with lem q nq, 
-  { have eq : (LEM_Prop_equiv_Two LEM).to_fun P = Two.one, from
-      begin change LEM_Prop_Two LEM P = Two.one, hsimp, rwr lem end,
-    rwr eq, hsimp, change True = P, apply inhabited_Prop_eq, exact true.intro, exact q },
-  { have eq : (LEM_Prop_equiv_Two LEM).to_fun P = Two.zero, from
-      begin change LEM_Prop_Two LEM P = Two.zero, hsimp, rwr lem end,
-    rwr eq, hsimp, change False = P, apply uninhabited_Prop_eq, 
-    { intro F, hinduction F }, 
-    { exact nq } } 
-end 
-
-@[hott, reducible, hsimp]
-def prop_to_prop_resize {P : Prop} : P -> prop_resize P :=
-begin 
-  intro p, hsimp, 
-  have eq : (LEM_Prop_equiv_Two LEM).to_fun P = Two.one, from 
-    begin 
-      change LEM_Prop_Two LEM P = Two.one, hsimp, hinduction LEM P with lem q nq, 
-      { hsimp }, 
-      { hinduction nq p }
-    end,
-  rwr eq, hsimp, exact true.intro 
+  intro P, hinduction (lem_u P) with T p np, intro p', 
+  { hsimp, change ↥(Two_Prop (Two.rec Two.zero Two.one (LEM_Prop_Two lem_u P))), 
+    hsimp, rwr T, exact true.intro },
+  { intro p, hinduction np p } 
 end
 
-@[hott, reducible, hsimp]
-def prop_resize_to_prop {P : Prop} : prop_resize P -> P :=
-begin
-  hsimp, intro p, hinduction LEM P with lem q nq,
-  { exact q },
-  { have neq : (LEM_Prop_equiv_Two LEM).to_fun P = Two.zero, by   
-      change LEM_Prop_Two LEM P = Two.zero; hsimp; rwr lem,
-    rwr neq at p, have p' : false, from p, hinduction p' }
-end  
+@[hott]
+def LEM_uninh_to_uninh_Prop (lem : ExcludedMiddle.{max u v}) :
+  Π (P : trunctype.{u} -1), ¬P -> ¬(LEM_Prop_univ_eqv.{u v} lem P) :=
+let lem_u := LEM_resize.{u v} lem in
+begin 
+  intro P, hinduction (lem_u P) with T p np, intro np', 
+  { intro p', hinduction np' p },
+  { intro np', hsimp, change ¬(Two_Prop (Two.rec Two.zero Two.one (LEM_Prop_Two lem_u P))).carrier, 
+    hsimp, rwr T, change ¬False, intro f, hinduction f }, 
+end
 
-@[hott, reducible]
-def prp_rinv {P : Prop} : ∀ p : P, prop_resize_to_prop (prop_to_prop_resize p) = p :=
-  assume p, is_prop.elim _ p
- 
+@[hott]
+def LEM_PropResize : ExcludedMiddle.{max u v} -> PropResize.{u v} :=
+begin
+  assume lem_uv, let lem_u := LEM_resize lem_uv,
+  have H : (LEM_Prop_univ_eqv lem_uv).to_fun = prop_ulift.{u v}, from 
+  begin 
+    apply eq_of_homotopy, intro P, hinduction (lem_u P) with T p np, 
+    { fapply inhabited_Prop_eq, exact LEM_inh_to_inh_Prop lem_uv P p, 
+      exact ulift.up p }, 
+    { fapply uninhabited_Prop_eq, exact LEM_uninh_to_uninh_Prop lem_uv P np, 
+      intro p', hinduction p', exact np down } 
+  end,
+  exact H ▸ (LEM_Prop_univ_eqv lem_uv).to_is_equiv 
+end
+
+@[hott, reducible, hsimp]  
+def prop_resize : trunctype.{max u v} -1 -> trunctype.{u} -1 := 
+  @is_equiv.inv _ _ prop_ulift.{u v} PRES   
+
 @[hott]
 def prop_to_prop_ulift {P : Prop} : P -> prop_ulift P :=
 begin
@@ -631,17 +629,46 @@ begin
   intro p, exact ulift.down p
 end    
 
+@[hott, reducible, hsimp]
+def prop_to_prop_resize {P : Prop} : P -> prop_resize.{u v} P :=
+begin 
+  apply (λ (f : P -> prop_ulift (prop_resize P)) 
+           (g : prop_ulift (prop_resize P) -> (prop_resize P)), g ∘ f),
+  have H : P = prop_ulift.{u v} (prop_resize P), from 
+    begin hsimp, exact eq.inverse (@is_equiv.right_inv _ _ prop_ulift.{u v} PRES P) end,                  
+  exact (equiv_of_eq (ap trunctype.carrier H)).to_fun, 
+  exact prop_ulift_to_prop 
+end
+
+@[hott, reducible, hsimp]
+def prop_resize_to_prop {P : Prop} : prop_resize.{u v} P -> P :=
+begin
+  apply (λ (f : prop_resize P -> prop_ulift (prop_resize P)) 
+           (g : prop_ulift (prop_resize P) -> P), g ∘ f),
+  intro p, exact ulift.up p,
+  have H : prop_ulift.{u v} (prop_resize P) = P, from 
+    begin hsimp, exact @is_equiv.right_inv _ _ prop_ulift.{u v} PRES P end,                  
+  exact (equiv_of_eq (ap trunctype.carrier H)).to_fun,
+end  
+
+set_option pp.universes true
+#print prop_to_prop_resize
+
+@[hott]
+def prop_resize_trivial : ∀ (P : trunctype.{u} -1), prop_resize.{u u} P = P :=
+begin 
+  intro P, apply prop_iff_eq, exact prop_resize_to_prop.{u u}, 
+                              exact prop_to_prop_resize.{u u}
+end
+
+@[hott, reducible]
+def prp_rinv {P : Prop} : ∀ p : P, prop_resize_to_prop (prop_to_prop_resize p) = p :=
+  assume p, is_prop.elim _ p
+ 
 @[hott]
 def pr_rinv : ∀ (P : trunctype.{u} -1), prop_resize.{u v} (prop_ulift.{u v} P) = P :=
 begin
-  intro P, hinduction LEM P with lem p np,
-  { apply inhabited_Prop_eq, 
-    { exact prop_to_prop_resize (prop_to_prop_ulift p) },
-    { exact p } },
-  { apply uninhabited_Prop_eq, 
-    { intro p, apply np, apply prop_ulift_to_prop.{u v}, apply prop_resize_to_prop.{u v}, 
-      exact p },
-    { exact np } }
+  intro P, exact @is_equiv.left_inv _ _ prop_ulift PRES P
 end 
 
 @[hott]
