@@ -175,9 +175,19 @@ begin
         { hsimp, apply eq_of_homotopy, intro b, refl } } } } 
 end
 
-@[hott]
+@[hott, reducible]
 def subset_to_subobj {A : Set_Category} : Subset A -> subobject A :=
   λ B, (inv_bijection_of (bij_subobj_to_subset A)) B
+
+
+@[hott]
+def subset_to_subobj_eq {A : Set_Category} (B : Subset A) : 
+  subset_to_subobj B = subobject.mk (pred_Set B) (pred_Set_map B)
+                         (set_inj_is_mono (pred_Set_map B) (pred_Set_map_is_inj B)) :=
+begin
+  let p : bij_subobj_to_subset A = has_inverse_to_bijection _ _ _ := rfl, 
+  change (inv_bijection_of (bij_subobj_to_subset A)).map B = _, rwr p
+end 
 
 @[hott]
 def subset_is_subobj (A : Set_Category) : (Subobject.{u+1 u u} A) = (Powerset.{u} A) :=
@@ -186,6 +196,56 @@ begin
   exact bij_subobj_to_subset A
 end
 
+/- The bijection between subsets and subobjects respects inclusions. -/
+@[hott]
+def inc_so_inc {A : Set_Category} : Π (B C : Subset A), B ⊆ C -> 
+  subset_to_subobj B ≼ subset_to_subobj C :=
+begin
+  intros B C ss_inc, fapply hom_of_monos.mk,
+  { rwr subset_to_subobj_eq, rwr subset_to_subobj_eq, hsimp,
+    intro b, exact ⟨b.1, ss_inc b.1 b.2⟩ },
+  { apply eq_of_homotopy, intro b, refl }
+end
+
+@[hott]
+def so_inc_inc {A : Set_Category} : Π (B C : Subset A), 
+  subset_to_subobj B ≼ subset_to_subobj C -> B ⊆ C :=
+begin
+  intros B C so_inc a B_inc, 
+  have p : a = (so_inc.hom_obj ⟨a, B_inc⟩).1, from 
+  begin change a = (so_inc.hom_obj ≫ (subset_to_subobj C).hom) ⟨a, B_inc⟩, rwr so_inc.fac end,
+  rwr p, exact (so_inc.hom_obj ⟨a, B_inc⟩).2
+end
+
+/- The category of sets has all images. -/
+@[hott]
+def set_cat_image {A B : Set_Category} (f : A ⟶ B) : cat_image f :=
+begin
+  fapply cat_image.mk, 
+  { exact subset_to_subobj (λ b : B.carrier, image f b) },
+  { fapply sigma.mk, 
+      intro a, exact ⟨f a, tr (fiber.mk a idp)⟩, 
+      apply eq_of_homotopy, refl },
+  { intros C C_im, 
+    let im_imp : Π b : B.carrier, image f b -> image C.hom b := 
+      begin 
+        intro b, intro im_f, hinduction im_f, apply tr, fapply fiber.mk, exact C_im.1 a.point,
+        change (C_im.fst ≫ C.hom) a.point = _, rwr (ap10 C_im.2 a.point), rwr a.point_eq 
+      end,
+    fapply hom_of_monos.mk,
+    { intro b_im_f, 
+      exact (@untrunc_of_is_trunc _ _ (set_inj_implies_unique_fib C.hom 
+            (mono_is_set_inj C.hom C.is_mono) b_im_f.1) (im_imp b_im_f.1 b_im_f.2)).point },
+    { apply eq_of_homotopy, intro b_im_f, 
+      
+      let q := (@untrunc_of_is_trunc _ _ (set_inj_implies_unique_fib C.hom 
+          (mono_is_set_inj C.hom C.is_mono) b_im_f.1) (im_imp b_im_f.1 b_im_f.2)).point_eq,
+      change C.hom _ = _, rwr q } }
+end
+
+@[hott, instance]
+def set_has_image {A B : Set_Category} (f : A ⟶ B) : has_image f :=
+  has_image.mk (tr (set_cat_image f)) 
 
 /- The category of sets has all limits. 
 
@@ -560,8 +620,15 @@ def ss_so_inter {A : Set_Category} {B C : Subset A} :
   subset_to_subobj (B ∩ C) = (subset_to_subobj B) ∩ (subset_to_subobj C) :=
 begin             
   fapply subobj_antisymm,
-  { sorry },
-  { sorry }
+  { apply subobj_inter_lift, exact inc_so_inc _ _ (inter_sset_l B C), 
+                             exact inc_so_inc _ _ (inter_sset_r B C) },
+  { let D := (subset_to_subobj B) ∩ (subset_to_subobj C), change D ≼ _,
+    rwr <- inv_bij_l_inv (bij_subobj_to_subset A) D, apply inc_so_inc,
+    have p : subset_to_subobj ((bij_subobj_to_subset A) D) =
+          inv_bijection_of (bij_subobj_to_subset A) ((bij_subobj_to_subset A) D), from rfl,
+    fapply inc_inc_inter_inc, 
+    all_goals { apply so_inc_inc, rwr p, rwr inv_bij_l_inv (bij_subobj_to_subset A) D }, 
+    exact subobj_inter_linc _ _ , exact subobj_inter_rinc _ _ }
 end
 
 @[hott]
