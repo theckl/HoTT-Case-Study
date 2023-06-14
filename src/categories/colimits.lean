@@ -245,7 +245,7 @@ instance has_coproduct_of_has_coproducts {C : Type _} [is_cat C]
        (has_coproducts.has_colimit_of_shape C J) (discrete.functor f)⟩
 
 @[hott, instance]
-def has_coproduct_of_has_climits_of_shape {C : Type _} [is_cat C] 
+def has_coproduct_of_has_colimits_of_shape {C : Type _} [is_cat C] 
   {J : Set} [has_colimits_of_shape (discrete J) C] (f : J -> C) : 
   has_coproduct f :=
 ⟨has_colimits_of_shape.has_colimit (discrete.functor f)⟩ 
@@ -342,13 +342,30 @@ calc (⨿h i₁) ≫ (⨿h i₂) =
 /- Unions of subobjects of a given object in a category can be defined as colimits in the 
    category of such subobjects. Note that this is not the colimit in the surrounding 
    category but the image of the natural homomorphism to the containing object. Therefore,
-   having colimits in the surrounding category is not enough for the existence of unions. 
+   having colimits in the surrounding category is not enough for the existence of unions; we 
+   also need the existence of images. 
    
    We also separately exhibit finite unions, for use in categorical models, and we 
    introduce the union of two subobjects, to make use of the notation `∪`. -/
 @[hott]
 class has_subobj_union {C : Category} {c : C} {J : Set} (f : J -> subobject c) :=
   (exists_union : @has_coproduct _ subobject_is_cat _ f) 
+
+set_option trace.class_instances true
+set_option pp.universes true
+#print has_coproducts
+
+@[hott, instance]
+def has_subobj_union_of_has_coproducts_has_images {C : Category.{u v}} [has_coproducts C]
+  [has_images C] {c : C} {J : Set.{w}} (f : J -> subobject c) : has_subobj_union f :=
+begin 
+  apply has_subobj_union.mk, apply has_coproduct.mk, apply has_colimit.mk,
+  fapply colimit_cocone.mk, 
+  { fapply cofan.mk, 
+    { exact hom.image (@copi.desc J C.obj C.struct _ _ c (λ j : J, (f j).hom)) }, 
+    { sorry } },
+  { sorry }
+end
 
 @[hott, instance]
 def has_union_to_has_coproduct {C : Category} {c : C} {J : Set} 
