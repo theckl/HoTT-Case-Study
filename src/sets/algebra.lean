@@ -45,6 +45,13 @@ begin
 end  
 
 @[hott]
+def inc_inc_inter_inc {S₁ S₂ T : Subset A} : T ⊆ S₁ -> T ⊆ S₂ -> T ⊆ (S₁ ∩ S₂) := 
+begin 
+  intros inc₁ inc₂ a inc_T, 
+  exact (elem_inter_iff S₁ S₂ a).2 (inc₁ a inc_T, inc₂ a inc_T) 
+end
+
+@[hott]
 def elem_inter_eq (U V : Subset A) : 
   Π (a : A), a ∈ (U ∩ V) = (a ∈ U and a ∈ V) :=
 λ a, prop_iff_eq (elem_inter_iff U V a).1 (elem_inter_iff U V a).2  
