@@ -600,7 +600,7 @@ class has_stable_images (C : Category) [has_images C] [has_pullbacks C] :=
                   hom.image (pullback_homo_l f g) = pullback_subobject f (hom.image g))
 
 /- The existence of a left adjoint to the pullback functor for subobjects can be deduced
-   from the existence of pullbacks and the stability of images under puillbacks -/
+   from the existence of pullbacks and the stability of images under pullbacks -/
 @[hott]
 class has_ex_in_fiber {C : Category} [has_pullbacks C] 
   {a b : C} (f : a ⟶ b) := 
