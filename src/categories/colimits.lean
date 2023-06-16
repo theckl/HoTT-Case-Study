@@ -63,12 +63,12 @@ structure colimit_cocone {J : Type _} [is_strict_cat J] {C : Type _}
 /- `has_colimit F` represents the mere existence of a colimit for `F`. This allows
    to define it as a class with instances. -/ 
 @[hott]   
-class has_colimit {J : Type _} [is_strict_cat J] {C : Type _} [is_precat C] 
+class has_colimit {J : Type _} [is_strict_cat J] {C : Type u} [is_precat.{v} C] 
   (F : J ⥤ C) :=
 mk' :: (exists_colimit : ∥colimit_cocone F∥)
 
 @[hott]
-def has_colimit.mk {J : Type _} [is_strict_cat J] {C : Type _} [is_precat C] 
+def has_colimit.mk {J : Type _} [is_strict_cat J] {C : Type u} [is_precat.{v} C] 
   {F : J ⥤ C} (d : colimit_cocone F) :=
 has_colimit.mk' (tr d) 
 
@@ -80,8 +80,8 @@ has_colimit.mk' (tr d)
    
    Thus, we can produce a `colimit_cocone F` from `has_colimit F`. -/
 @[hott]
-def colimit_cocone_is_unique {J : Type _} [is_strict_cat J] {C : Type _} 
-  [is_cat C] (F : J ⥤ C) : ∀ lc₁ lc₂ : colimit_cocone F, lc₁ = lc₂ :=
+def colimit_cocone_is_unique {J : Type _} [is_strict_cat J] {C : Type u} 
+  [is_cat.{v} C] (F : J ⥤ C) : ∀ lc₁ lc₂ : colimit_cocone F, lc₁ = lc₂ :=
 begin
   intros lc₁ lc₂, 
   hinduction lc₁ with cocone₁ is_colimit₁, hinduction lc₂ with cocone₂ is_colimit₂,
@@ -122,21 +122,21 @@ begin
 end  
 
 @[hott, instance]
-def colimit_cocone_is_prop {J : Type _} [is_strict_cat J] {C : Type _} [is_cat C] 
+def colimit_cocone_is_prop {J : Type _} [is_strict_cat J] {C : Type u} [is_cat.{v} C] 
   (F : J ⥤ C) : is_trunc -1 (colimit_cocone F) :=
 is_prop.mk (colimit_cocone_is_unique F)
 
 @[hott]
-def get_colimit_cocone {J : Type _} [is_strict_cat J] {C : Type _} [is_cat C] 
+def get_colimit_cocone {J : Type _} [is_strict_cat J] {C : Type u} [is_cat.{v} C] 
   (F : J ⥤ C) [has_colimit F] : colimit_cocone F :=
 untrunc_of_is_trunc (has_colimit.exists_colimit F)  
 
 @[hott]
-def colimit.cocone {J : Type _} [is_strict_cat J] {C : Type _} [is_cat C]
+def colimit.cocone {J : Type _} [is_strict_cat J] {C : Type u} [is_cat.{v} C]
   (F : J ⥤ C) [has_colimit F] : cocone F := (get_colimit_cocone F).cocone
 
 @[hott]
-def colimit {J : Type _} [is_strict_cat J] {C : Type _} [is_cat C]
+def colimit {J : Type _} [is_strict_cat J] {C : Type u} [is_cat.{v} C]
   (F : J ⥤ C) [has_colimit F] := (colimit.cocone F).X
 
 @[hott]
@@ -181,7 +181,7 @@ def diag_iso_has_colim_to_has_colim' {J₁ J₂ : Strict_Categories} {C : Type u
 begin rwr <- diag_iso_on_cocone H F, exact @diag_iso_has_colim_to_has_colim _ _ _ _ H F hlF end
 
 @[hott]
-def diag_iso_colim_eq_colim {J₁ J₂ : Strict_Categories} {C : Type _} [is_cat C]
+def diag_iso_colim_eq_colim {J₁ J₂ : Strict_Categories} {C : Type u} [is_cat.{v} C]
   (H : J₁ ≅ J₂) {F : J₂.obj ⥤ C} [hlF : has_colimit F] : colimit F = colimit (H.hom ⋙ F) :=
 begin
   change (λ (J : Strict_Categories) (F : J.obj ⥤ C) (hlF : has_colimit F), 
@@ -194,36 +194,36 @@ end
 
 /- More general classes of existence of colimits -/
 @[hott]
-class has_colimits_of_shape (J : Type _) [is_strict_cat J] (C : Type _) 
-  [is_cat C] :=
+class has_colimits_of_shape (J : Type _) [is_strict_cat J] (C : Type u) 
+  [is_cat.{v} C] :=
 (has_colimit : Π F : J ⥤ C, has_colimit F)
 
 @[hott, priority 100, instance]
 def has_colimit_of_has_colimits_of_shape {J : Type _} [is_strict_cat J]
-  (C : Type _) [is_cat C] [H : has_colimits_of_shape J C] (F : J ⥤ C) : has_colimit F :=
+  (C : Type u) [is_cat.{v} C] [H : has_colimits_of_shape J C] (F : J ⥤ C) : has_colimit F :=
 has_colimits_of_shape.has_colimit F
 
 @[hott]
-class has_colimits (C : Type _) [is_cat C] :=
+class has_colimits (C : Type u) [is_cat.{v} C] :=
   (has_colimit_of_shape : Π (J : Type _) [is_strict_cat J], has_colimits_of_shape J C )
 
 @[hott, instance]
-def has_colimit_of_has_colimits (C : Type _) [is_cat C] [H : has_colimits C] 
+def has_colimit_of_has_colimits (C : Type u) [is_cat.{v} C] [H : has_colimits C] 
   {J : Type _} [is_strict_cat J] (F : J ⥤ C) : has_colimit F :=
 have H' : has_colimits_of_shape J C, from has_colimits.has_colimit_of_shape C J,  
 @has_colimit_of_has_colimits_of_shape _ _ C _ H' F
 
 @[hott]
-class has_coproduct {C : Type _} [is_cat C] {J : Set} (f : J -> C) := 
+class has_coproduct {C : Type u} [is_cat.{v} C] {J : Set.{u'}} (f : J -> C) := 
   (has_colimit : has_colimit (discrete.functor f)) 
 
 @[hott, priority 100]
-instance has_colimit_of_has_coproduct {C : Type _} [is_cat C] {J : Set} 
+instance has_colimit_of_has_coproduct {C : Type u} [is_cat.{v} C] {J : Set.{u'}} 
   (f : J -> C) [has_coproduct f] : has_colimit (discrete.functor f) := 
 has_coproduct.has_colimit f  
 
 @[hott]
-abbreviation copi_obj {C : Type _} [is_cat C] {J : Set} (f : J → C) 
+abbreviation copi_obj {C : Type u} [is_cat.{v} C] {J : Set.{u'}} (f : J → C) 
   [has_coproduct f] := 
 colimit (discrete.functor f)
 
@@ -231,53 +231,53 @@ notation `⨿ ` f:20 := copi_obj f
 
 @[hott]
 class has_coproducts (C : Type u) [is_cat.{v} C] := 
-  (has_colimit_of_shape : Π J : Set, has_colimits_of_shape (discrete J) C)
+  (has_colimit_of_shape : Π J : Set.{u'}, has_colimits_of_shape (discrete J) C)
 
 @[hott, instance, priority 100]
-def has_colimits_of_shape_of_has_coproducts (J : Set) (C : Type _) [is_cat C] 
-  [has_coproducts C] : has_colimits_of_shape (discrete J) C :=
+def has_colimits_of_shape_of_has_coproducts (J : Set.{u'}) (C : Type u) [is_cat.{v} C] 
+  [has_coproducts.{v u u'} C] : has_colimits_of_shape (discrete J) C :=
 has_coproducts.has_colimit_of_shape C J
 
 @[hott]
-instance has_coproduct_of_has_coproducts {C : Type _} [is_cat C] 
-  [has_coproducts C] {J : Set} (f : J -> C) : has_coproduct f :=
+instance has_coproduct_of_has_coproducts {C : Type u} [is_cat.{v} C] 
+  [has_coproducts C] {J : Set.{u'}} (f : J -> C) : has_coproduct f :=
 ⟨@has_colimits_of_shape.has_colimit _ _ _ _ 
        (has_coproducts.has_colimit_of_shape C J) (discrete.functor f)⟩
 
 @[hott, instance]
-def has_coproduct_of_has_colimits_of_shape {C : Type _} [is_cat C] 
-  {J : Set} [has_colimits_of_shape (discrete J) C] (f : J -> C) : 
+def has_coproduct_of_has_colimits_of_shape {C : Type u} [is_cat.{v} C] 
+  {J : Set.{u'}} [has_colimits_of_shape (discrete J) C] (f : J -> C) : 
   has_coproduct f :=
 ⟨has_colimits_of_shape.has_colimit (discrete.functor f)⟩ 
 
 @[hott, instance]
-def has_coproducts_of_has_colimits (C : Type _) [is_cat C] [c : has_colimits C] : 
+def has_coproducts_of_has_colimits (C : Type u) [is_cat.{v} C] [c : has_colimits C] : 
   has_coproducts C :=
 has_coproducts.mk (λ J, @has_colimits.has_colimit_of_shape C _ c (discrete J) _)
 
 /-- A cofan over `f : J → C` consists of a collection of maps from every `f j` to an object
     `CP`. This is enough to determine a cocone which factorizes through the coproduct. -/
 @[hott]    
-abbreviation cofan {J : Set} {C : Type _} [is_cat C] (f : J → C) := 
+abbreviation cofan {J : Set.{u'}} {C : Type u} [is_cat.{v} C] (f : J → C) := 
   cocone (discrete.functor f)
 
 @[hott, hsimp]
-def cofan.mk {J : Set} (C : Type _) [is_cat C] {f : J → C} {CP : C} 
+def cofan.mk {J : Set.{u'}} (C : Type u) [is_cat.{v} C] {f : J → C} {CP : C} 
   (p : Π j, f j ⟶ CP) : cofan f :=
 cocone.mk CP (discrete.nat_trans p)
 
 @[hott, hsimp] 
-def copi.desc {J : Set} {C : Type _} [is_cat C] {f : J → C} [has_coproduct f]
+def copi.desc {J : Set.{u'}} {C : Type u} [is_cat.{v} C] {f : J → C} [has_coproduct f]
   {CP : C} (p : Π j, f j ⟶ CP) : ⨿ f ⟶ CP :=
 (get_colimit_cocone (discrete.functor f)).is_colimit.desc (cofan.mk _ p)  
 
 @[hott, hsimp] 
-def copi.π {J : Set} {C : Type u} [is_cat C] (f : J → C) [has_coproduct f] 
+def copi.π {J : Set.{u'}} {C : Type u} [is_cat.{v} C] (f : J → C) [has_coproduct f] 
   (j : J) : f j ⟶ ⨿ f :=
 (colimit.cocone (discrete.functor f)).π.app j 
 
 @[hott]
-def copi.hom_is_desc {J : Set} {C : Type _} [is_cat C] {f : J → C} 
+def copi.hom_is_desc {J : Set.{u'}} {C : Type u} [is_cat.{v} C] {f : J → C} 
   [has_coproduct f] {CP : C} (h : ⨿ f ⟶ CP) : h = copi.desc (λ j : J, (copi.π _ j) ≫ h) :=
 let p := λ j : J, (copi.π f j) ≫ h, c := cofan.mk _ p,
     clc := get_colimit_cocone (discrete.functor f) in     
@@ -288,13 +288,13 @@ begin
 end  
 
 @[hott]
-def copi.desc_π_eq {J : Set} (C : Type _) [is_cat C] {f : J → C} 
+def copi.desc_π_eq {J : Set.{u'}} (C : Type u) [is_cat.{v} C] {f : J → C} 
   [has_coproduct f] {CP : C} (p : Π j : J, f j ⟶ CP) : 
   ∀ j : J, (copi.π _ j) ≫ (copi.desc p) = p j :=
 assume j, by apply is_colimit.fac  
 
 @[hott]
-def copi.desc_fac {J : Set} {C : Type _} [is_cat C] {f : J → C} 
+def copi.desc_fac {J : Set.{u'}} {C : Type u} [is_cat.{v} C] {f : J → C} 
   [has_coproduct f] {CP CQ : C} (g : CP ⟶ CQ) (h : Π j : J, f j ⟶ CP) :
   copi.desc (λ j, h j ≫ g) = copi.desc h ≫ g :=
 let p := λ j : J, h j ≫ g, c := cofan.mk _ p, 
@@ -304,6 +304,17 @@ begin
   change copi.π _ j ≫ copi.desc h ≫ g = c.π.app j, rwr <- is_precat.assoc, 
   rwr copi.desc_π_eq _ h
 end  
+
+@[hott]
+def copi.uniq {J : Set.{u'}} {C : Type u} [is_cat.{v} C] {f : J → C} 
+  [has_coproduct f] {c : C} (h : Π j : J, f j ⟶ c) (g : ⨿ f ⟶ c) : 
+  (Π j : J, copi.π f j ≫ copi.desc h = copi.π f j ≫ g) -> g = copi.desc h :=
+let p := λ j : J, h j, c := cofan.mk _ p, 
+    clc := get_colimit_cocone (discrete.functor f) in   
+begin
+  intro desc_eq, apply is_colimit.uniq clc.is_colimit c, intro j,
+  change copi.π f j ≫ g = h j, rwr <- desc_eq j, exact copi.desc_π_eq _ h j
+end
 
 @[hott]
 def copi_hom {J : Set.{u'}} {C : Type u} [is_cat.{v} C] [has_coproducts.{v u u'} C] 
@@ -348,23 +359,31 @@ calc (⨿h i₁) ≫ (⨿h i₂) =
    We also separately exhibit finite unions, for use in categorical models, and we 
    introduce the union of two subobjects, to make use of the notation `∪`. -/
 @[hott]
-class has_subobj_union {C : Category} {c : C} {J : Set} (f : J -> subobject c) :=
+class has_subobj_union {C : Category.{u v}} {c : C} {J : Set.{u'}} (f : J -> subobject c) :=
   (exists_union : @has_coproduct _ subobject_is_cat _ f) 
 
-set_option trace.class_instances true
-set_option pp.universes true
-#print has_coproducts
-
 @[hott, instance]
-def has_subobj_union_of_has_coproducts_has_images {C : Category.{u v}} [has_coproducts C]
-  [has_images C] {c : C} {J : Set.{w}} (f : J -> subobject c) : has_subobj_union f :=
+def has_subobj_union_of_has_coproducts_and_images {C : Category.{u v}} 
+  [has_coproducts.{v u u'} C] [has_images C] {c : C} {J : Set.{u'}} 
+  (f : J -> subobject.{u v} c) : has_subobj_union f :=
 begin 
   apply has_subobj_union.mk, apply has_coproduct.mk, apply has_colimit.mk,
   fapply colimit_cocone.mk, 
   { fapply cofan.mk, 
-    { exact hom.image (@copi.desc J C.obj C.struct _ _ c (λ j : J, (f j).hom)) }, 
-    { sorry } },
-  { sorry }
+    { exact hom.image (copi.desc (λ j : J, (f j).hom)) }, 
+    { intro j, fapply hom_of_monos.mk,
+      { exact copi.π _ j ≫ hom_to_image _ },
+      { rwr is_precat.assoc, rwr hom_to_image_eq, rwr copi.desc_π_eq } } },
+  { fapply is_colimit.mk, 
+    { intro cocone_f, change ↥(hom.image (copi.desc (λ j : J, (f j).hom)) ⟶ _),
+      let cf : Π j : J, (f j).obj ⟶ cocone_f.X.obj := 
+                                             λ j : J, (cocone_f.π.app j).hom_obj,
+      fapply hom_image_univ, 
+      { exact copi.desc cf },
+      { apply copi.uniq, intro j, rwr <- is_precat.assoc, rwr copi.desc_π_eq, 
+        rwr copi.desc_π_eq, rwr (cocone_f.π.app j).fac } }, 
+    { intros cf j, exact is_prop.elim _ _ }, 
+    { intros cf m w, exact is_prop.elim _ _ } }
 end
 
 @[hott, instance]
