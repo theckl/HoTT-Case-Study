@@ -78,7 +78,7 @@ begin
 end 
 
 @[hott]
-def homs_eqv_iso_of_monos {C : Category} {c d₁ d₂: C} {f : d₁ ⟶ c} (Hf : is_mono f)
+def homs_eqv_iso_of_monos {C : Category.{u v}} {c d₁ d₂: C} {f : d₁ ⟶ c} (Hf : is_mono f)
   {g : d₂ ⟶ c} (Hg : is_mono g) : 
   (hom_of_monos Hf Hg) × (hom_of_monos Hg Hf) ≃ iso_of_monos Hf Hg :=
 begin 
@@ -356,6 +356,10 @@ def subobj_subobj_trans {C : Category} {c : C} (a : subobject c)
 subobject.mk b.obj (b.hom ≫ a.hom) (is_mono_is_trans b.is_mono a.is_mono) 
 
 @[hott]
+def subobj_trans_hom_hom {C : Category} {c : C} (a : subobject c) 
+  (b : subobject a.obj) : (subobj_subobj_trans a b).hom = b.hom ≫ a.hom := rfl
+
+@[hott]
 def subobj_subobj_trans_hom {C : Category} {c : C} (a : subobject c) 
   (b : subobject a.obj) : subobj_subobj_trans a b ≼ a :=
 begin fapply hom_of_monos.mk, exact b.hom, refl end
@@ -425,7 +429,7 @@ structure cat_image {C : Category} {c d : C} (f : c ⟶ d) :=
   (univ : Π (a : subobject d), (Σ f' : c ⟶ a.obj, f' ≫ a.hom = f) -> (subobj ≼ a))
 
 @[hott] 
-def subobject_fac_is_unique {C : Category} {c d : C} (f : c ⟶ d) 
+def subobject_fac_is_unique {C : Category.{u v}} {c d : C} (f : c ⟶ d) 
   (a : subobject d) : Π fac₁ fac₂ : (Σ (f' : c ⟶ a.obj), f' ≫ a.hom = f), fac₁ = fac₂ :=
 begin 
   intros fac₁ fac₂, fapply sigma.sigma_eq, 
@@ -434,7 +438,7 @@ begin
 end
 
 @[hott, instance] 
-def subobject_fac_is_prop {C : Category} {c d : C} (f : c ⟶ d) 
+def subobject_fac_is_prop {C : Category.{u v}} {c d : C} (f : c ⟶ d) 
   (a : subobject d) : is_prop (Σ f' : c ⟶ a.obj, f' ≫ a.hom = f) :=
 is_prop.mk (subobject_fac_is_unique f a)  
 
@@ -443,7 +447,7 @@ class has_image {C : Category} {c d : C} (f : c ⟶ d) :=
   (exists_im : ∥cat_image f∥)
 
 @[hott]
-def cat_image_is_unique {C : Category} {c d : C} (f : c ⟶ d) :
+def cat_image_is_unique {C : Category.{u v}} {c d : C} (f : c ⟶ d) :
   Π im₁ im₂ : cat_image f, im₁ = im₂ :=
 begin
   intros im₁ im₂, 
