@@ -143,6 +143,23 @@ begin intros a el, apply (pred_elem a).2, exact or_inl (a ∈ U) (a ∈ V) el en
 def union_sset_r (U V : Subset A) : V ⊆ (U ∪ V) :=
   by rwr union.symm U V; exact union_sset_l V U 
 
+@[hott]
+def elem_union_iff (U V : Subset A) : 
+  Π (a : A), a ∈ (U ∪ V) <-> (a ∈ U or a ∈ V) :=
+begin
+  intro a, apply pair,
+  { intro el, exact (pred_elem a).1 el },
+  { intro or_el, exact (pred_elem a).2 or_el }
+end 
+
+@[hott]
+def inc_inc_union_inc {S₁ S₂ T : Subset A} : S₁ ⊆ T -> S₂ ⊆ T -> (S₁ ∪ S₂) ⊆ T := 
+begin 
+  intros inc₁ inc₂ a inc_S, hinduction inc_S with sum_S, 
+  hinduction sum_S with inc_S₁ inc_S₂, 
+  exact inc₁ a inc_S₁, exact inc₂ a inc_S₂, 
+end
+
 @[hott, reducible]
 def sUnion (S : Subset (𝒫 A)) : Subset A := 
   λ t : A, prop_resize.{u u+1} (@exists_elem (𝒫 A) (λ B : Subset A, S B and t ∈ B))
@@ -220,6 +237,9 @@ begin
     rwr elem_comp_eq at not_el_or, rwr elem_comp_eq at not_el_or, 
     exact (not_and (x∈U) (x∈V)).2 not_el_or ((pred_elem x).1 el') }
 end 
+
+/- Complements of subsets only satisfy "boolean" properties if LEM holds (at least for
+   the element relation). -/
 
 @[hott]
 def compl_iUnion {I : Set} (f : I -> Powerset A) : 𝒞(⋃ᵢ f) = ⋂ᵢ (λ i, 𝒞(f i)) :=
