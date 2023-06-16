@@ -128,10 +128,16 @@ def hom_from_One {A : Set} (a : A) : One_Set ⟶ A := λ s : One_Set, a
    The definition of a subset in [sets.subset] actually uses the classifying map to a
    subobject classifier. These notions require the existence of pullbacks, so the proof 
    of this fact comes after the construction of pullbacks of sets. 
+
+   We could use the subobject classifier to define intersections and unions for subsets
+   given by classifying maps categorically, but since this makes dealing with subset
+   algebra more difficult (and we do not yet see another use of the necessary 
+   categorical developments), we keep the definitions in [sets.algebra] and show that 
+   they are compatible with the bijection between subobjects of sets and subsets.
    
    We first show that monomorphisms of sets are injective maps, and vice versa. -/
 @[hott]
-def mono_is_set_inj {A B : Set_Category} (f : A ⟶ B) : is_mono f -> is_set_injective f :=
+def mono_is_set_inj {A B : Set_Category.{u}} (f : A ⟶ B) : is_mono f -> is_set_injective f :=
 begin  
   intro mon, intros a₁ a₂ feq,  
   let h₁ := hom_from_One a₁, let h₂ := hom_from_One a₂,
@@ -141,14 +147,15 @@ begin
 end
 
 @[hott]
-def set_inj_is_mono {A B : Set_Category} (f : A ⟶ B) : is_set_injective f -> is_mono f :=
+def set_inj_is_mono {A B : Set_Category.{u}} (f : A ⟶ B) : 
+  is_set_injective f -> is_mono f :=
 begin
   intro inj, intros C h₁ h₂ feq, apply eq_of_homotopy, intro c,  
   exact inj (h₁ c) (h₂ c) (ap10 feq c)
 end
 
 @[hott]
-def bij_subobj_to_subset (A : Set_Category) : 
+def bij_subobj_to_subset (A : Set_Category.{u}) : 
   bijection (Subobject A) (Powerset A) :=
 begin 
   fapply has_inverse_to_bijection,
@@ -176,12 +183,12 @@ begin
 end
 
 @[hott, reducible]
-def subset_to_subobj {A : Set_Category} : Subset A -> subobject A :=
+def subset_to_subobj {A : Set_Category.{u}} : Subset A -> subobject A :=
   λ B, (inv_bijection_of (bij_subobj_to_subset A)) B
 
 
 @[hott]
-def subset_to_subobj_eq {A : Set_Category} (B : Subset A) : 
+def subset_to_subobj_eq {A : Set_Category.{u}} (B : Subset A) : 
   subset_to_subobj B = subobject.mk (pred_Set B) (pred_Set_map B)
                          (set_inj_is_mono (pred_Set_map B) (pred_Set_map_is_inj B)) :=
 begin
@@ -190,15 +197,15 @@ begin
 end 
 
 @[hott]
-def subset_is_subobj (A : Set_Category) : (Subobject.{u+1 u u} A) = (Powerset.{u} A) :=
+def subset_is_subobj (A : Set_Category.{u}) : (Subobject A) = (Powerset.{u} A) :=
 begin 
-  apply @bij_to_set_eq.{u+1 u} (@Subobject.{u+1 u u} Set_Category.{u} A) (Powerset A), 
+  apply @bij_to_set_eq.{u+1 u} (@Subobject Set_Category.{u} A) (Powerset A), 
   exact bij_subobj_to_subset A
 end
 
 /- The bijection between subsets and subobjects respects inclusions. -/
 @[hott]
-def inc_so_inc {A : Set_Category} : Π (B C : Subset A), B ⊆ C -> 
+def inc_so_inc {A : Set_Category.{u}} : Π (B C : Subset A), B ⊆ C -> 
   subset_to_subobj B ≼ subset_to_subobj C :=
 begin
   intros B C ss_inc, fapply hom_of_monos.mk,
@@ -208,7 +215,7 @@ begin
 end
 
 @[hott]
-def so_inc_inc {A : Set_Category} : Π (B C : Subset A), 
+def so_inc_inc {A : Set_Category.{u}} : Π (B C : Subset A), 
   subset_to_subobj B ≼ subset_to_subobj C -> B ⊆ C :=
 begin
   intros B C so_inc a B_inc, 
@@ -246,6 +253,10 @@ end
 @[hott, instance]
 def set_has_image {A B : Set_Category} (f : A ⟶ B) : has_image f :=
   has_image.mk (tr (set_cat_image f)) 
+
+@[hott, instance]
+def set_has_images : has_images Set_Category :=
+  has_images.mk (λ (A B : Set_Category) (f : A ⟶ B), set_has_image f)  
 
 /- The category of sets has all limits. 
 
@@ -400,7 +411,7 @@ def set_colim_mere_rel.trans {J : Type _} [scJ : is_strict_cat J] (F : J ⥤ Set
 begin intros x y z, apply trunc_functor2, exact set_colim_rel.trans _ _ _ end         
 
 @[hott, reducible]
-def set_cocone {J : Type _} [scJ : is_strict_cat J] (F : J ⥤ Set) : 
+def set_cocone {J : Type u'} [scJ : is_strict_cat.{u' u'} J] (F : J ⥤ Set.{max u' u}) : 
   cocone F :=
 begin
   fapply cocone.mk,
@@ -418,7 +429,7 @@ begin
   end 
 
 @[hott, reducible]
-def set_cocone_is_colimit {J : Type _} [is_strict_cat J] (F : J ⥤ Set) :
+def set_cocone_is_colimit {J : Type u'} [is_strict_cat.{u' u'} J] (F : J ⥤ Set.{max u' u}) :
   is_colimit (set_cocone F) :=
 begin 
   fapply is_colimit.mk,
@@ -444,18 +455,32 @@ begin
 end 
 
 @[hott, reducible]
-def set_colimit_cocone {J : Type _} [is_strict_cat J] (F : J ⥤ Set) : 
+def set_colimit_cocone {J : Type u'} [is_strict_cat.{u' u'} J] (F : J ⥤ Set.{max u' u}) : 
   colimit_cocone F :=
 colimit_cocone.mk (set_cocone F) (set_cocone_is_colimit F)
 
 @[hott, instance]
-def set_has_colimit {J : Type _} [is_strict_cat J] (F : J ⥤ Set) : has_colimit F :=
-  has_colimit.mk (set_colimit_cocone F)
+def set_has_colimit {J : Type u'} [is_strict_cat.{u' u'} J] (F : J ⥤ Set.{max u' u}) : 
+  has_colimit F := has_colimit.mk (set_colimit_cocone F)
 
 @[hott, instance]
-def set_has_colimits_of_shape {J : Type _} [is_strict_cat J] : 
-  has_colimits_of_shape J Set :=
+def set_has_colimits_of_shape {J : Type u'} [is_strict_cat.{u' u'} J] : 
+  has_colimits_of_shape J Set.{max u' u} :=
 has_colimits_of_shape.mk (λ F, set_has_colimit F) 
+
+@[hott, instance]
+def set_has_colimits : has_colimits Set_Category.{max u' u} :=
+begin 
+  apply has_colimits.mk, intros J strict, exact @set_has_colimits_of_shape J strict 
+end
+
+/- From the existence of colimits and images follows the existence of unions. -/
+@[hott, instance]
+def set_has_unions : has_unions.{(max u' u)+1 (max u' u) u'} Set_Category.{max u' u} :=
+begin 
+  apply has_unions.mk, intros A J f, 
+  exact has_subobj_union_of_has_coproducts_and_images f 
+end 
 
 
 /-For constructions with sets, it is more efficient to use a simplified description of the 
@@ -532,15 +557,15 @@ def set_true : terminal_obj ↥Set_Category.{u+1} ⟶ Prop_Set.{u} :=
   assume t, True
 
 @[hott]
-def subset_class_map {A : Set_Category.{u+1}} (B : subobject.{u+2 u+1} A) :
+def subset_class_map {A : Set_Category.{u+1}} (B : subobject A) :
   A ⟶ Prop_Set.{u} :=
-λ a, prop_resize.{u u+1} (a ∈ (bij_subobj_to_subset.{u+1 u+1} A) B) 
+λ a, prop_resize.{u u+1} (a ∈ (bij_subobj_to_subset A) B) 
 
 @[hott]
-def subset_of_subset_class_map {A : Set_Category.{u+1}} (B : subobject.{u+2 u+1} A) :
+def subset_of_subset_class_map {A : Set_Category.{u+1}} (B : subobject A) :
   B = pullback_subobject (subset_class_map B) (term_subobj set_true) :=
 begin
-  fapply @subobj_antisymm.{u+2 u+1 u} Set_Category.{u+1} A B _, 
+  fapply @subobj_antisymm Set_Category.{u+1} A B _, 
     { fapply pb_subobj_lift, 
       { exact terminal_map B.obj },
       { apply eq_of_homotopy, intro b, change subset_class_map B (B.hom b) = True,
@@ -550,18 +575,18 @@ begin
     { let f := subset_class_map B, let g := set_true, fapply hom_of_monos.mk,
       { intro pb,
         have p : subset_class_map B (pb.1 (inf_w_node.tip ow_node.left)) = True.{u}, from
-          begin exact ap10.{u+1 u+1} (pullback_eq.{u+2 u+1} f g) pb end, 
+          begin exact ap10 (pullback_eq f g) pb end, 
         have im : ↥(image B.hom (pb.1 (inf_w_node.tip ow_node.left))), from 
         begin 
           apply prop_resize_to_prop.{u u+1}, 
           exact cast (ap trunctype.carrier p)⁻¹ true.intro.{u} 
         end,
         exact (@untrunc_of_is_trunc _ _ (set_inj_implies_unique_fib B.hom 
-                (mono_is_set_inj.{u+1 u} B.hom B.is_mono) 
+                (mono_is_set_inj B.hom B.is_mono) 
                 (pb.1 (inf_w_node.tip ow_node.left))) im).point },
       { apply eq_of_homotopy, intro pb, 
         let p : subset_class_map B (pb.1 (inf_w_node.tip ow_node.left)) = True.{u} :=
-          begin exact ap10.{u+1 u+1} (pullback_eq.{u+2 u+1} f g) pb end, 
+          begin exact ap10 (pullback_eq f g) pb end, 
         let im : ↥(image B.hom (pb.1 (inf_w_node.tip ow_node.left))) := 
         begin 
           apply prop_resize_to_prop.{u u+1}, 
@@ -569,7 +594,7 @@ begin
         end,
         change _ = pb.1 (inf_w_node.tip ow_node.left),
         let q := (@untrunc_of_is_trunc _ _ (set_inj_implies_unique_fib B.hom 
-                (mono_is_set_inj.{u+1 u} B.hom B.is_mono) 
+                (mono_is_set_inj B.hom B.is_mono) 
                 (pb.1 (inf_w_node.tip ow_node.left))) im).point_eq,
         rwr <- q } }
 end
@@ -597,7 +622,7 @@ begin
     { rwr cart_cl, intro p, let im := prop_resize_to_prop p,      
       let B' := pullback_subobject cl (term_subobj g),
       let fib_b' := (@untrunc_of_is_trunc _ _ (set_inj_implies_unique_fib B'.hom 
-                (mono_is_set_inj.{u+1 u} B'.hom B'.is_mono) a) im),
+                (mono_is_set_inj B'.hom B'.is_mono) a) im),
       rwr <- fib_b'.point_eq, 
       change (((pullback_homo_l _ _) ≫ cl) fib_b'.point).carrier,
       rwr pullback_eq, exact true.intro } }
@@ -605,14 +630,14 @@ end
 
 @[hott]
 def subset_to_class_map {A : Set_Category.{u+1}} (B : Subset A) :
-  subset_class_map (subset_to_subobj.{u+1 u+1} B) = 
+  subset_class_map (subset_to_subobj B) = 
                                      λ a : A.carrier, prop_resize.{u u+1} (B a) :=
 begin
   apply eq_of_homotopy, intro a,  
   apply ap prop_resize, 
-  change (bij_subobj_to_subset.{u+1 u+1} A) 
-                      ((inv_bijection_of (bij_subobj_to_subset.{u+1 u+1} A)) B) a = _,
-  rwr inv_bij_r_inv (bij_subobj_to_subset.{u+1 u+1} A)
+  change (bij_subobj_to_subset A) 
+                      ((inv_bijection_of (bij_subobj_to_subset A)) B) a = _,
+  rwr inv_bij_r_inv (bij_subobj_to_subset A)
 end
 
 @[hott]
@@ -632,12 +657,19 @@ begin
 end
 
 @[hott]
-def ss_so_union {A : Set_Category} {B C : Subset A} :
+def ss_so_union {A : Set_Category.{u}} {B C : Subset A} :
   subset_to_subobj (B ∪ C) = (subset_to_subobj B) ∪ (subset_to_subobj C) :=
 begin             
   fapply subobj_antisymm,
-  { sorry },
-  { sorry }
+  { let D := (subset_to_subobj B) ∪ (subset_to_subobj C), change _ ≼ D, 
+    rwr <- inv_bij_l_inv (bij_subobj_to_subset A) D, apply inc_so_inc,
+    have p : subset_to_subobj ((bij_subobj_to_subset A) D) =
+          inv_bijection_of (bij_subobj_to_subset A) ((bij_subobj_to_subset A) D), from rfl,
+    fapply inc_inc_union_inc, 
+    all_goals { apply so_inc_inc, rwr p, rwr inv_bij_l_inv (bij_subobj_to_subset A) D }, 
+    exact subobj_union_linc _ _ , exact subobj_union_rinc _ _ },
+  { apply lift_to_union, exact inc_so_inc _ _ (union_sset_l B C), 
+                             exact inc_so_inc _ _ (union_sset_r B C) }
 end
 
 
