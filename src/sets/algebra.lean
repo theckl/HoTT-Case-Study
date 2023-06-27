@@ -175,10 +175,10 @@ def sets_have_ind_union (I : Set.{v}) : @has_ind_union (Subset A) I :=
   has_ind_union.mk (λ f, iUnion f)
 
 @[hott]
-def sset_iUnion {A : Set} {I : Set} (f : I -> Powerset A) (i : I) : 
+def sset_iUnion {I : Set.{v}} (f : I -> Powerset A) (i : I) : 
   (f i) ⊆ (⋃ᵢ f) :=
 begin 
-  intros a el, change ↥(prop_resize (∥ Σ i : I, a ∈ f i ∥)), 
+  intros a el, change ↥(prop_resize.{u (max v u)} (∥ Σ i : I, a ∈ f i ∥)), 
   apply (pred_elem a).2, 
   exact prop_to_prop_resize (@trunc.tr -1 (Σ i : I, a ∈ f i) ⟨i, el⟩) 
 end
@@ -240,6 +240,22 @@ end
 
 /- Complements of subsets only satisfy "boolean" properties if LEM holds (at least for
    the element relation). -/
+@[hott]
+def compl_union_top (U : Subset A) [H : has_dec_elem] : U ∪ 𝒞(U) = total_Subset A :=
+begin
+  apply (sset_eq_iff_inclusion _ _).2, apply pair,
+  { intros a inc, exact true.intro },
+  { intros a inc, let a_na := @has_dec_elem.dec_el H _ a U, hinduction a_na with ae nae, 
+    exact or_inl _ _ ae, exact or_inr _ _ nae }
+end
+
+@[hott]
+def compl_inter_bottom (U : Subset A) : U ∩ 𝒞(U) = empty_Subset A :=
+begin
+  apply (sset_eq_iff_inclusion _ _).2, apply pair,
+  { intros a inc, hinduction inc.2 inc.1 },
+  { intros a inc, hinduction inc }
+end     
 
 @[hott]
 def compl_iUnion {I : Set} (f : I -> Powerset A) : 𝒞(⋃ᵢ f) = ⋂ᵢ (λ i, 𝒞(f i)) :=
