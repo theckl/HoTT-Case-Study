@@ -1,4 +1,5 @@
 import sets.subset categories.colimits categories.pullback categories.strict_cat
+       categories.boolean
 
 universes v v' u u' w
 hott_theory
@@ -7,6 +8,7 @@ namespace hott
 open hott.is_equiv hott.equiv hott.is_trunc hott.subset hott.precategories hott.categories 
      hott.categories.limits categories.adjoints hott.set hott.trunc 
      hott.categories.pullbacks hott.categories.colimits hott.categories.strict
+     hott.categories.boolean
 
 namespace categories.sets
 
@@ -226,7 +228,7 @@ end
 
 /- The category of sets has all images. -/
 @[hott]
-def set_cat_image {A B : Set_Category} (f : A ⟶ B) : cat_image f :=
+def set_cat_image {A B : Set_Category.{u}} (f : A ⟶ B) : cat_image f :=
 begin
   fapply cat_image.mk, 
   { exact subset_to_subobj (λ b : B.carrier, image f b) },
@@ -251,11 +253,11 @@ begin
 end
 
 @[hott, instance]
-def set_has_image {A B : Set_Category} (f : A ⟶ B) : has_image f :=
+def set_has_image {A B : Set_Category.{u}} (f : A ⟶ B) : has_image f :=
   has_image.mk (tr (set_cat_image f)) 
 
 @[hott, instance]
-def set_has_images : has_images Set_Category :=
+def set_has_images : has_images Set_Category.{u} :=
   has_images.mk (λ (A B : Set_Category) (f : A ⟶ B), set_has_image f)  
 
 /- The category of sets has all limits. 
@@ -484,7 +486,8 @@ end
 
 
 /-For constructions with sets, it is more efficient to use a simplified description of the 
-   pullback than the one coming from the general limit construction of sets. -/
+   pullback than the one coming from the general limit construction of sets. The same 
+   applies to pullacks of subsets. -/
 @[hott]
 def pullback_set {A B C : Set} (f : A ⟶ C) (g : B ⟶ C) := 
   to_Set (Σ (ab : ↥A × ↥B), f ab.1 = g ab.2)
@@ -507,7 +510,7 @@ def pb_set_square {A B C : Set} (f : A ⟶ C) (g : B ⟶ C) : square f g :=
   square.of_i_j (pb_set_eq f g)
 
 @[hott]
-def pullback_to_set {A B C : Set} (f : A ⟶ C) (g : B ⟶ C) : 
+def pullback_to_set {A B C : Set.{u}} (f : A ⟶ C) (g : B ⟶ C) : 
   pullback f g -> pullback_set f g :=
 begin 
   intro pb, fapply sigma.mk,
@@ -516,9 +519,9 @@ begin
 end 
 
 @[hott]
-def set_to_pullback {A B C : Set} (f : A ⟶ C) (g : B ⟶ C) : 
+def set_to_pullback {A B C : Set.{u}} (f : A ⟶ C) (g : B ⟶ C) : 
   to_Set (Σ (ab : ↥A × ↥B), f ab.1 = g ab.2) -> pullback f g :=
-pullback_lift (pb_set_square f g)
+pullback_lift (pb_set_square.{u u} f g)
  
 
 @[hott]
@@ -546,6 +549,54 @@ end
 def set_pullback_homo_l_eq {A B C : Set} (f : A ⟶ C) (g : B ⟶ C) : 
   pullback_homo_l f g = λ pb : pullback f g, (pullback_to_set f g pb).1.1 :=
 rfl
+
+@[hott]
+def pb_subobj_set {A B : Set_Category.{u}} (f : A ⟶ B) (D : Subobject B) : Subobject A :=
+  subset_to_subobj (λ a, f a ∈ (bij_subobj_to_subset B) D)
+
+@[hott]
+def pb_subobj_set_eq {A B : Set_Category.{u}} (D : Subobject B) (f : A ⟶ B) :
+  pb_subobj_set f D = pullback_subobject f D :=
+begin
+  rwr <- inv_bij_l_inv (bij_subobj_to_subset A) (pullback_subobject f D),
+  apply ap subset_to_subobj, apply (sset_eq_iff_inclusion _ _).2, apply pair,
+  { intros a inc₁, 
+    let d := (@untrunc_of_is_trunc _ _ (set_inj_implies_unique_fib D.hom 
+            (mono_is_set_inj D.hom D.is_mono) (f a)) inc₁).point,
+    let p := (@untrunc_of_is_trunc _ _ (set_inj_implies_unique_fib D.hom 
+            (mono_is_set_inj D.hom D.is_mono) (f a)) inc₁).point_eq,
+    change ↥(image (pullback_homo_l f D.hom) a), rwr set_pullback_homo_l_eq, 
+    apply tr, fapply fiber.mk, 
+    { apply set_to_pullback.{u} f D.hom, exact ⟨(a,d), p⁻¹⟩ },
+    { rwr pullback_to_set_rinv.{u u} } },
+  { intros a inc₂, 
+    let fd := (@untrunc_of_is_trunc _ _ (set_inj_implies_unique_fib _ 
+            (mono_is_set_inj _ (mono_is_stable f D.hom D.is_mono)) a) inc₂).point,
+    let p := (@untrunc_of_is_trunc _ _ (set_inj_implies_unique_fib _ 
+            (mono_is_set_inj _ (mono_is_stable f D.hom D.is_mono)) a) inc₂).point_eq,
+    apply tr, fapply fiber.mk, 
+    { exact (pullback_to_set _ _ fd).1.2 },
+    { rwr <- p, exact eq.inverse (pullback_to_set _ _ fd).2 } }
+end 
+
+/- Images are stable under pullbacks in the category of sets. -/
+@[hott, instance]
+def set_has_stable_images : has_stable_images Set_Category.{u} :=
+begin
+  apply has_stable_images.mk,
+  intros A B C f g, fapply subobj_antisymm,
+  { rwr <- pb_subobj_set_eq, apply inc_so_inc, 
+    intros a inc₁, change ↥((bij_subobj_to_subset C) (subset_to_subobj _) (f a)), 
+    rwr inv_bij_r_inv, hinduction inc₁ with fa, apply tr, fapply fiber.mk,
+    exact pullback_homo_t f g fa.point, 
+    change (pullback_homo_t f g ≫ g) fa.point = _, rwr <- pullback_eq, 
+    change f _ = _, rwr fa.point_eq },
+  { rwr <- pb_subobj_set_eq, apply inc_so_inc, 
+    intros a inc₂, change ↥((bij_subobj_to_subset C) (subset_to_subobj _) (f a)) at inc₂, 
+    rwr inv_bij_r_inv at inc₂, hinduction inc₂ with gfa, apply tr, fapply fiber.mk,
+    exact set_to_pullback _ _ ⟨(a,gfa.point), gfa.point_eq⁻¹⟩, 
+    rwr set_pullback_homo_l_eq }
+end
 
 
 /- Using propositional resizing we can construct the subobject classifier for the 
@@ -617,7 +668,7 @@ begin
                           One.star, from inhabited_Prop_eq _ _ p true.intro,
       change ↥(image.{u+1 u+1} (pullback_homo_l.{u+2 u+1} cl g) a), 
       rwr set_pullback_homo_l_eq.{u+1} cl g, apply tr, fapply fiber.mk, 
-      exact set_to_pullback.{u+1 u+1} cl g ⟨⟨a, One.star.{u+1}⟩, H⟩, 
+      exact set_to_pullback.{u+1} cl g ⟨⟨a, One.star.{u+1}⟩, H⟩, 
       rwr pullback_to_set_rinv.{u+1 u+1} },
     { rwr cart_cl, intro p, let im := prop_resize_to_prop p,      
       let B' := pullback_subobject cl (term_subobj g),
@@ -670,6 +721,117 @@ begin
     exact subobj_union_linc _ _ , exact subobj_union_rinc _ _ },
   { apply lift_to_union, exact inc_so_inc _ _ (union_sset_l B C), 
                              exact inc_so_inc _ _ (union_sset_r B C) }
+end
+
+@[hott]
+def ss_so_iunion {A : Set_Category.{max u' u}} {J : Set.{u'}} (f : J -> Subset A) : 
+  subset_to_subobj (iUnion f) = subobject.union (λ j : J, subset_to_subobj (f j)) :=
+begin
+  fapply subobj_antisymm,
+  { rwr <- inv_bij_l_inv (bij_subobj_to_subset A) 
+                         (subobject.union (λ j : J, subset_to_subobj (f j))),
+    apply inc_so_inc, apply iUnion_sset, intros j a inc₁, 
+    change ↥(image (subobject.union (λ j : J, subset_to_subobj (f j))).hom a),
+    apply tr, fapply fiber.mk, 
+    { exact (union_inc (λ j : J, subset_to_subobj (f j)) j).hom_obj ⟨a, inc₁⟩ }, 
+    { refl } },
+  { apply union_fac (λ j : J, subset_to_subobj (f j)), intro j,
+    apply inc_so_inc, exact sset_iUnion f j }
+end
+
+@[hott]
+def so_union_ss {A : Set_Category.{max u' u}} {J : Set.{u'}} (f : J -> Subobject A) :
+  Subset A := (bij_subobj_to_subset A) (subobject.union f)
+
+@[hott]
+def so_iunion_ss {A : Set_Category.{max u' u}} {J : Set.{u'}} (f : J -> Subobject A) :
+  Subset A := iUnion (λ j : J, (bij_subobj_to_subset A) (f j))  
+
+@[hott]
+def so_ss_iunion {A : Set_Category.{max u' u}} {J : Set.{u'}} (f : J -> Subobject A) :
+  so_union_ss f = so_iunion_ss f :=
+begin
+  fapply subset_asymm,
+  --let f' := λ j : J, (bij_subobj_to_subset A) (f j),
+  { intros a inc₁, apply prop_to_prop_resize, 
+    hinduction inc₁ with fa, apply tr, 
+    hinduction fa with fa.point fa.eq,
+    sorry },
+  { sorry }
+end
+
+@[hott]
+def so_iunion_of_comp {A : Set_Category.{max u' u}} {J : Set.{u'}} (f : J -> Subobject A) : 
+  Π a : A.carrier, image (subobject.union f).hom a -> ∥Σ j : J, image (f j).hom a∥ :=
+begin
+  let f' := λ j : J, (bij_subobj_to_subset A) (f j),
+  intros a sou_im, change ↥∥Σ (j : ↥J), a ∈ (f' j)∥, 
+  change ↥(a ∈ (bij_subobj_to_subset A) (subobject.union f)) at sou_im, 
+  sorry
+end
+
+@[hott]
+def ss_so_top {A : Set_Category.{u}} : 
+  subset_to_subobj (total_Subset A) = top_subobject A :=
+begin             
+  fapply subobj_antisymm,
+  { exact top_subobj_prop _ },
+  { fapply hom_of_monos.mk, 
+    { intro a, exact ⟨a, true.intro⟩ }, 
+    { exact idp } }
+end
+
+@[hott]
+def ss_so_bottom {A : Set_Category.{u}} : 
+  subset_to_subobj (empty_Subset A) = bottom_subobject A :=
+begin             
+  fapply subobj_antisymm,
+  { fapply hom_of_monos.mk,
+    { intro a, hinduction a.2 },
+    { apply eq_of_homotopy, intro a, hinduction a.2 } },
+  { exact bottom_subobj_prop _ }
+end
+
+@[hott]
+def set_compl_of [H : has_dec_elem] {A : Set_Category.{u}} (B : subobject A) : 
+  complement B :=
+begin
+  fapply complement.mk,
+  { exact subset_to_subobj 𝒞(bij_subobj_to_subset A B) }, 
+  { rwr <- inv_bij_l_inv (bij_subobj_to_subset A) B,
+    change subset_to_subobj _ ∪ _ = _, rwr <- ss_so_union, 
+    rwr compl_union_top ((bij_subobj_to_subset A) B), rwr ss_so_top }, 
+  { rwr <- inv_bij_l_inv (bij_subobj_to_subset A) B,
+    change subset_to_subobj _ ∩ _ = _, rwr <- ss_so_inter, 
+    rwr compl_inter_bottom, rwr ss_so_bottom }
+end
+
+@[hott, instance]
+def set_has_complements [H : has_dec_elem] {A : Set_Category.{u}} : 
+  @has_complement (subobject A) :=
+has_complement.mk (λ B, (set_compl_of B).na)
+
+@[hott, instance]
+def set_has_stable_unions : has_stable_unions Set_Category.{max u' u} :=
+begin
+  apply has_stable_unions.mk, intros A B f J i,
+  change _ = subobject.union (λ j : J, pullback_subobject f (i j)),
+  rwr <- pb_subobj_set_eq, 
+  have p : (λ j : J, pullback_subobject f (i j)) = 
+           (λ j : J, pb_subobj_set f (i j)), from 
+    begin apply eq_of_homotopy, intro j, hsimp, rwr pb_subobj_set_eq end,
+  rwr p, change subset_to_subobj _ = subobject.union (λ j : J, subset_to_subobj _), 
+  rwr <- ss_so_iunion, apply ap subset_to_subobj, fapply subset_asymm, 
+  { intros a' inc, hinduction inc with fa, 
+    change fiber (subobject.union i).hom (f a') at fa, hinduction fa with fa fa_eq, 
+    apply prop_to_prop_resize, sorry },
+  { apply iUnion_sset, intros j a',
+    change ((bij_subobj_to_subset B) (i j) (f a')) -> 
+                       ((bij_subobj_to_subset B) (subobject.union i) (f a')), 
+    intro inc, hinduction inc with fa, apply tr, fapply fiber.mk, 
+    exact (union_inc i j).hom_obj fa.point,
+    change ((union_inc i j).hom_obj ≫ (subobject.union i).hom) fa.point = _, 
+    rwr (union_inc i j).fac, exact fa.point_eq }
 end
 
 
