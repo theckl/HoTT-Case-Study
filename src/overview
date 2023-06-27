@@ -7,9 +7,9 @@ prop_logic  :   208
 sets
   basic     :   686
   finite    :   224
-  subset    :   442
-  axioms    :   340
-  algebra   :   254
+  subset    :   449
+  axioms    :   347
+  algebra   :   290
   quotients :   205
   theories  :   715
 categories
