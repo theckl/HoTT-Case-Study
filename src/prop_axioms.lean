@@ -651,9 +651,6 @@ begin
   exact (equiv_of_eq (ap trunctype.carrier H)).to_fun,
 end  
 
-set_option pp.universes true
-#print prop_to_prop_resize
-
 @[hott]
 def prop_resize_trivial : ∀ (P : trunctype.{u} -1), prop_resize.{u u} P = P :=
 begin 
