@@ -215,6 +215,13 @@ protected def elem {A : Set} (a : A) (S : Subset A) :=
 def set_mem {A : Set} : @has_mem A (Subset A) :=
   has_mem.mk (λ (a : A) (S : Subset A), subset.elem a S)
 
+/- For sets the form of LEM needed is decidability for the element relation. 
+   We put the construction of an instance from general LEM into [sets.axioms], to have a 
+   better control when it is available. -/
+@[hott]
+class has_dec_elem := 
+  (dec_el : Π {A : Set} (a : A) (S : Subset A), (a ∈ S) ⊎ ¬(a ∈ S))
+
 notation `{ ` binder ` ∈ ` B ` | ` P:scoped  ` }` := (P : Subset B)
 notation `{ ` binder ` ∈ ` B ` | ` P:scoped  ` }` := (P : Subset (to_Set B)) 
 
