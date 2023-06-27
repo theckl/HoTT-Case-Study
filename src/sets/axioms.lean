@@ -1,10 +1,12 @@
 import hott.prop_trunc hott.init hott.types.trunc hott.homotopy.susp prop_logic 
+       sets.subset
 
 universes u v w
 hott_theory
 
 namespace hott
 open hott.is_trunc hott.trunc hott.equiv hott.is_equiv hott.sigma hott.susp hott.sum ulift
+     hott.subset
 
 set_option pp.universes true
 
@@ -336,5 +338,10 @@ def AC_implies_LEM : Choice_nonempty.{u} -> ExcludedMiddle.{u} :=
     iff_LEM_LEM NS_eq_iff_A NS_eq_dec,                                                                                
   have trunc_LEM : ∥ A ⊎ ¬ A ∥, from trunc_functor -1 A_dec mere_g,
   @untrunc_of_is_trunc _ _ is_prop_LEM trunc_LEM
+
+/- We deduce LEM (decidability) for the element relation form general LEM. -/
+@[hott, instance]
+def is_dec_elem : has_dec_elem := 
+  begin apply has_dec_elem.mk, intros A a S, exact LEM (a ∈ S) end
 
 end hott
