@@ -476,7 +476,8 @@ begin
   apply has_colimits.mk, intros J strict, exact @set_has_colimits_of_shape J strict 
 end
 
-/- From the existence of colimits and images follows the existence of unions. -/
+/- From the existence of colimits and hence coproducts and images follows the existence 
+   of unions. -/
 @[hott, instance]
 def set_has_unions : has_unions.{(max u' u)+1 (max u' u) u'} Set_Category.{max u' u} :=
 begin 
@@ -484,10 +485,34 @@ begin
   exact has_subobj_union_of_has_coproducts_and_images f 
 end 
 
+/- For constructions with sets, it is more efficient to use a simplified description of 
+   coproducts than the one coming from the general colimit construction of sets. -/
+@[hott]
+def coproduct_set {J : Set.{u'}} (f : J -> Set.{max u' u}) :=
+  to_Set (Σ (j : J), f j)
 
-/-For constructions with sets, it is more efficient to use a simplified description of the 
+@[hott]
+def copr_set_pi {J : Set.{u'}} (f : J -> Set.{max u' u}) :  
+  Π j : J, f j ⟶ coproduct_set f :=
+assume j fj, ⟨j, fj⟩ 
+
+@[hott]
+def copi_to_set {J : Set.{u'}} (f : J -> Set.{max u' u}) :
+  (⨿ f) -> coproduct_set f :=
+copi.desc (copr_set_pi f) 
+
+@[hott]
+def set_to_copi {J : Set.{u'}} (f : J -> Set.{max u' u}) :
+  coproduct_set f -> ⨿ f :=
+begin 
+  intro cpf, 
+  let copi_pi : f cpf.1 -> ⨿ f := copi.π f cpf.1,
+  exact copi_pi cpf.2 
+end
+
+/- For constructions with sets, it is more efficient to use a simplified description of the 
    pullback than the one coming from the general limit construction of sets. The same 
-   applies to pullacks of subsets. -/
+   applies to pullbacks of subsets. -/
 @[hott]
 def pullback_set {A B C : Set} (f : A ⟶ C) (g : B ⟶ C) := 
   to_Set (Σ (ab : ↥A × ↥B), f ab.1 = g ab.2)
@@ -751,23 +776,31 @@ def so_iunion_ss {A : Set_Category.{max u' u}} {J : Set.{u'}} (f : J -> Subobjec
 def so_ss_iunion {A : Set_Category.{max u' u}} {J : Set.{u'}} (f : J -> Subobject A) :
   so_union_ss f = so_iunion_ss f :=
 begin
-  fapply subset_asymm,
-  --let f' := λ j : J, (bij_subobj_to_subset A) (f j),
-  { intros a inc₁, apply prop_to_prop_resize, 
-    hinduction inc₁ with fa, apply tr, 
-    hinduction fa with fa.point fa.eq,
-    sorry },
-  { sorry }
+  rwr <- inv_bij_r_inv (bij_subobj_to_subset A) (so_iunion_ss f),
+  apply ap (bij_subobj_to_subset A), change _ = subset_to_subobj (so_iunion_ss f),
+  let f' := λ j : J, (bij_subobj_to_subset A) (f j),
+  have p : f = λ j : J, subset_to_subobj (f' j), from 
+    begin 
+      apply eq_of_homotopy, intro j, hsimp, 
+      change _ = (inv_bijection_of (bij_subobj_to_subset A)) 
+                                                    ((bij_subobj_to_subset A) (f j)),
+      rwr inv_bij_l_inv (bij_subobj_to_subset A) (f j) 
+    end,
+  rwr p, rwr <- ss_so_iunion f', apply ap subset_to_subobj, apply ap iUnion,
+  hsimp, apply eq_of_homotopy, intro j, hsimp,
+ 
+  rwr inv_bij_r_inv (bij_subobj_to_subset A) (f' j)
 end
 
 @[hott]
 def so_iunion_of_comp {A : Set_Category.{max u' u}} {J : Set.{u'}} (f : J -> Subobject A) : 
   Π a : A.carrier, image (subobject.union f).hom a -> ∥Σ j : J, image (f j).hom a∥ :=
 begin
-  let f' := λ j : J, (bij_subobj_to_subset A) (f j),
-  intros a sou_im, change ↥∥Σ (j : ↥J), a ∈ (f' j)∥, 
-  change ↥(a ∈ (bij_subobj_to_subset A) (subobject.union f)) at sou_im, 
-  sorry
+  intros a sou_im, 
+  change ↥(a ∈ so_union_ss f) at sou_im, rwr so_ss_iunion at sou_im, 
+  hinduction prop_resize_to_prop sou_im with eq comp, hinduction comp with i fi,
+  hinduction fi with fib,
+  apply tr, fapply sigma.mk, exact i, apply tr, fapply fib
 end
 
 @[hott]
@@ -822,9 +855,8 @@ begin
     begin apply eq_of_homotopy, intro j, hsimp, rwr pb_subobj_set_eq end,
   rwr p, change subset_to_subobj _ = subobject.union (λ j : J, subset_to_subobj _), 
   rwr <- ss_so_iunion, apply ap subset_to_subobj, fapply subset_asymm, 
-  { intros a' inc, hinduction inc with fa, 
-    change fiber (subobject.union i).hom (f a') at fa, hinduction fa with fa fa_eq, 
-    apply prop_to_prop_resize, sorry },
+  { intros a' inc, hinduction so_iunion_of_comp i (f a') inc with eq comp,
+    fapply sset_iUnion, exact comp.1, exact comp.2 },
   { apply iUnion_sset, intros j a',
     change ((bij_subobj_to_subset B) (i j) (f a')) -> 
                        ((bij_subobj_to_subset B) (subobject.union i) (f a')), 
@@ -834,6 +866,46 @@ begin
     rwr (union_inc i j).fac, exact fa.point_eq }
 end
 
+
+/- The category of sets has an all-of-fiber functor. -/
+@[hott]
+def set_all_fib {A B : Set_Category} (f : A ⟶ B) : subobject A ⥤ subobject B :=
+begin
+  fapply precategories.functor.mk, 
+    { intro D, 
+      exact subset_to_subobj (λ b : B.carrier, 
+                   to_Prop (∀ a : A.carrier, f a = b -> image D.hom a)) },
+    { intros C D h, fapply hom_of_monos.mk, 
+      { intro elC, fapply sigma.mk, exact elC.1, intros a eq,  
+        hinduction elC.2 a eq with eq' fib_C, apply tr, fapply fiber.mk,
+        exact h.hom_obj fib_C.point, change (h.hom_obj ≫ D.hom) _ = _, rwr h.fac, 
+        exact fib_C.point_eq },
+      { apply eq_of_homotopy, intro elC, refl } },
+    { intro C, exact is_prop.elim _ _ },
+    { intros C D E g h, exact is_prop.elim _ _ }
+end
+
+@[hott, instance]
+def set_has_all_of_fibers : has_all_of_fibers Set_Category :=
+begin  
+  apply has_all_of_fibers.mk, intros A B f, apply has_all_of_fiber.mk, 
+  apply has_right_adjoint.mk, fapply is_left_adjoint.mk, 
+  { exact set_all_fib f },
+  { apply adjoint_hom_to_adjoint, fapply adjoint_functors_on_hom.mk,
+    { intros C D, fapply bijection_of_props, 
+      { change (pullback_subobject f C ≼ D) -> (C ≼ _), rwr <- pb_subobj_set_eq,
+        intro g, rwr <- inv_bij_l_inv (bij_subobj_to_subset A) D at g,
+        let g' := so_inc_inc _ _ g,
+        rwr <- inv_bij_l_inv (bij_subobj_to_subset B) C, apply inc_so_inc, 
+        intros b inc₁ a eq, rwr <- eq at inc₁, exact g' a inc₁ },
+      { change (C ≼ _) -> (pullback_subobject f C ≼ D), rwr <- pb_subobj_set_eq,
+        intro h, rwr <- inv_bij_l_inv (bij_subobj_to_subset B) C at h,
+        let h' := so_inc_inc _ _ h,
+        rwr <- inv_bij_l_inv (bij_subobj_to_subset A) D, apply inc_so_inc,
+        intros a inc₂, exact h' (f a) inc₂ a rfl } },
+    { intros C D C' h g, exact is_prop.elim _ _ },
+    { intros C D D' g h, exact is_prop.elim _ _ } }
+end
 
 end categories.sets
 
