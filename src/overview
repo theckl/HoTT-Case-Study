@@ -3,15 +3,15 @@ Compiling files, in order of dependencies:
 init2       :   893
 types2      :   519 
 prop_axioms :   679
-prop_logic  :   208
+prop_logic  :   208  2299
 sets
-  basic     :   686
+  basic     :   698
   finite    :   224
   subset    :   449
   axioms    :   347
   algebra   :   290
   quotients :   205
-  theories  :   715
+  theories  :   715  2928
 categories
   precat    :   738  
   basic     :   312 
@@ -24,15 +24,14 @@ categories
   limits    :   812
   colimits  :   518 
   pullbacks :   825 
-  boolean   :   184 
-  sets      :   545 
-              -----
-               
+  boolean   :   244 
+  sets      :   912  7031 
+                    -----
+                    12258               
 
 
 Planned changes in Files, from bottom to top: 
 ---------------------------------------------
 categories.models : is_interpretable_in-class
 categories.boolean : Cartesian, regular, coherent, geometric, Heyting, boolean categories
-categories.sets : subsets have complements if element-predicate is decidable;
-                     subobject complement = subset complement 
+ 
