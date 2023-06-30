@@ -299,6 +299,18 @@ def has_inverse_to_bijection {A : Set} {B : Set} (f : A -> B) (g : B -> A) :
 assume inv_f_g, 
 bijection.mk f (has_inverse_to_is_bijective f g inv_f_g) 
 
+/- If two sets are Props they already are in bijection if there just exist maps from 
+   one set into the other. -/
+@[hott]
+def bijection_of_props {A : Set} {B : Set} [is_prop A] [is_prop B] :
+  (A -> B) -> (B -> A) -> bijection A B :=
+begin
+  intros f g, apply has_inverse_to_bijection f g, 
+  fapply is_set_inverse_of.mk, 
+  { intro b, exact is_prop.elim _ _ },
+  { intro a, exact is_prop.elim _ _ }
+end
+
 /- The inverse of a bijection is a bijection, and the inverse of the inverse is 
    the bijection itself. -/
 @[hott]
