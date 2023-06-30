@@ -167,17 +167,93 @@ def obj_has_compl_of_has_complements {C : Category} [has_pullbacks C] [has_fin_u
   object_has_complements c :=
 object_has_complements.mk (@has_complements.compl _ _ _ _ H c).compl  
 
-/- Subsets of a set (in the category of sets) have complements if the `∈`-relation is 
-   decidable. -/
-@[hott]
-class has_decidable_elem (A : Set) :=
-  (lem_elem : Π (S : Subset A) (a : A), decidable (a ∈ S))
 
-/-
+/- We introduce now the hierarchy of categories that can hold models of first-order 
+   theories over first-order signatures. -/
+@[hott]
+class is_Cartesian (C : Category) :=
+  (has_limits : has_limits C)
+
 @[hott, instance]
-def subsets_have_complements (A : Set) [has_decidable_elem A] : 
-  has_complements (@subobject Set_Category A) :=
--/
+def has_limits_of_is_Cartesian (C : Category) [H : is_Cartesian C] : has_limits C :=
+  H.has_limits
+
+@[hott]
+class is_regular (C : Category) extends is_Cartesian C :=
+  (has_images : has_images C)
+  (has_stable_images : @has_stable_images C has_images 
+                        (@has_pullbacks_of_has_limits C to_is_Cartesian.has_limits))
+    
+@[hott, instance]
+def has_images_of_is_regular (C : Category) [H : is_regular C] : has_images C :=
+  H.has_images
+
+@[hott, instance]
+def has_stable_images_of_is_regular (C : Category) [H : is_regular C] : 
+  has_stable_images C := H.has_stable_images
+
+@[hott]
+class is_coherent (C : Category) extends is_regular C :=
+  (has_fin_unions : has_fin_unions C)
+  (has_stable_fin_unions : @has_stable_fin_unions C  
+                        (@has_pullbacks_of_has_limits C to_is_Cartesian.has_limits)
+                        has_fin_unions)
+    
+@[hott, instance]
+def has_fin_unions_of_is_regular (C : Category) [H : is_coherent C] : has_fin_unions C :=
+  H.has_fin_unions
+
+@[hott, instance]
+def has_stable_fin_unions_of_is_regular (C : Category) [H : is_coherent C] : 
+  has_stable_fin_unions C := H.has_stable_fin_unions
+
+@[hott]
+class is_geometric (C : Category) extends is_regular C :=
+  (has_unions : has_unions C)
+  (has_stable_unions : @has_stable_unions C  
+                        (@has_pullbacks_of_has_limits C to_is_Cartesian.has_limits)
+                        has_unions)
+    
+@[hott, instance]
+def has_unions_of_is_geometric (C : Category) [H : is_geometric C] : has_unions C :=
+  H.has_unions
+
+@[hott, instance]
+def has_stable_unions_of_is_geometric (C : Category) [H : is_geometric C] : 
+  has_stable_unions C := H.has_stable_unions
+
+@[hott]
+class is_Heyting (C : Category) extends is_coherent C :=
+  (has_all_of_fibers : has_all_of_fibers C)
+    
+@[hott, instance]
+def has_all_of_fibers_of_is_Heyting (C : Category) [H : is_Heyting C] : 
+  has_all_of_fibers C := H.has_all_of_fibers 
+
+@[hott]
+class is_Boolean (C : Category) extends is_coherent C :=
+  (has_complements : has_complements C)
+    
+@[hott, instance]
+def has_complements_of_is_Boolean (C : Category) [H : is_Boolean C] : 
+  has_complements C := H.has_complements
+
+/- Boolean categories are Heyting. -/  
+@[hott, instance]
+def all_of_fibs_of_Boolean (C : Category) [H : is_Boolean C] : 
+  has_all_of_fibers C :=
+sorry
+
+@[hott, instance]
+def stable_impl_of_is_Boolean (C : Category) [H : is_Boolean C] :
+  has_stable_implications C :=
+sorry
+
+@[hott, instance]
+def is_Heyting_of_is_Boolean (C : Category) [H : is_Boolean C] :
+  is_Heyting C :=
+begin fapply is_Heyting.mk, apply_instance end
+
 
 end categories.boolean
 
