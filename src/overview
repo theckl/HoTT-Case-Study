@@ -6,28 +6,28 @@ prop_axioms :   679
 prop_logic  :   208  2299
 sets
   basic     :   698
-  finite    :   224
+  finite    :   229
   subset    :   449
   axioms    :   347
   algebra   :   290
   quotients :   205
-  theories  :   715  2928
+  theories  :   715  2933
 categories
   precat    :   738  
   basic     :   312 
   examples  :   564 
-  subobj    :   553
+  subobj    :   559
   subcat    :   124
   adjoints  :   422 
   strict_cat:   390 
   diagrams  :   617 
   limits    :   812
-  colimits  :   518 
-  pullbacks :   825 
-  boolean   :   244 
-  sets      :   912  7031 
+  colimits  :   554 
+  pullbacks :   845 
+  boolean   :   365 
+  sets      :   912  7214 
                     -----
-                    12258               
+                    12446               
 
 
 Planned changes in Files, from bottom to top: 
