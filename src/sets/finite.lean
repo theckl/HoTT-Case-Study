@@ -58,6 +58,11 @@ end
 def empty_fin_Set_map (C : Type _) : fin_Set 0 -> C :=
 begin intro f, hinduction (not_lt_zero f.1 f.2) end
 
+@[hott]
+def empty_fin_Set_map_comp {C D : Type _} : Π (f : C -> D), 
+  f ∘ (empty_fin_Set_map C) = empty_fin_Set_map D :=
+begin intro f, apply eq_of_homotopy, intro a, hinduction (not_lt_zero a.1 a.2) end
+
 @[hott, hsimp]
 def fin_map_ind {C : Type _} {n : ℕ} : Π (f : fin_Set n -> C) (c : C), 
   (fin_Set (n+1) -> C) :=
