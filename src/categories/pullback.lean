@@ -618,6 +618,26 @@ def ex_fib {C : Category} [has_pullbacks C] {a b : C}
 left_adjoint_of (pb_subobj_functor f) 
 
 @[hott]
+def ex_fib_left_adj {C : Category} [has_pullbacks C] {a b : C} 
+  (f : a ⟶ b) [has_ex_in_fiber f] (c : subobject a) (d : subobject b) : 
+  (c ≼ pullback_subobject f d) -> ((ex_fib f).obj c ⟶ d) :=
+begin 
+  let H' : has_left_adjoint (pb_subobj_functor f) := by apply_instance,
+  have p : ex_fib f = H'.r_adj.L, from rfl, rwr p, 
+  apply @right_adj_hom _ _ _ _ _ _ (@is_adj_of_has_left_adj _ _ _ _ _ H')
+end 
+
+@[hott]
+def ex_fib_right_adj {C : Category} [has_pullbacks C] {a b : C} 
+  (f : a ⟶ b) [has_ex_in_fiber f] (c : subobject a) (d : subobject b) : 
+  ((ex_fib f).obj c ⟶ d) -> (c ≼ pullback_subobject f d) :=
+begin 
+  let H' : has_left_adjoint (pb_subobj_functor f) := by apply_instance,
+  have p : ex_fib f = H'.r_adj.L, from rfl, rwr p, 
+  apply @left_adj_hom _ _ _ _ _ _ (@is_adj_of_has_left_adj _ _ _ _ _ H')
+end 
+
+@[hott]
 class has_ex_in_fibers (C : Category) [has_pullbacks C] :=
   (has_ex_fib : Π {a b : C} (f : a ⟶ b), has_ex_in_fiber f)
 
@@ -694,6 +714,11 @@ begin
   rwr im_iso_comp (idtoiso sym_pullback_eq) (pullback_homo_l a.hom (b.hom ≫ f)),
   rwr @has_stable_images.stable_im _ _ _ Hsi _ _ _ _ _
 end
+
+@[hott]
+def stable_top {C : Category} [has_pullbacks C] [has_ex_in_fibers C] {a b : C} 
+  (f : a ⟶ b) : pullback_subobject f (top_subobject b) = top_subobject a :=
+begin apply top_subobj_unique, intro c, sorry end 
 
 
 /- The existence of a right adjoint to the pullback functor for subobjects must be 
