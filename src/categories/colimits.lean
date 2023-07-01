@@ -537,7 +537,7 @@ end
 
 /- Commutativity of unions of subobjects -/
 @[hott]
-def union_comm {C : Category} {c : C} [has_fin_unions C] : Π {a b : subobject c},
+def union_comm {C : Category} {c : C} [has_fin_unions C] : Π (a b : subobject c),
   a ∪ b = b ∪ a :=
 begin
   intros a b, fapply subobj_antisymm,
