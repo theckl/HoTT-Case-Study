@@ -417,7 +417,13 @@ def top_subobject {C : Category} (c : C) : subobject c :=
 @[hott]
 def top_subobj_prop {C : Category} {c : C} : 
   Π (a : subobject c), a ≼ top_subobject c := 
-begin intro a, fapply hom_of_monos.mk, exact a.hom, hsimp end  
+begin intro a, fapply hom_of_monos.mk, exact a.hom, hsimp end 
+
+@[hott]
+def top_subobj_unique {C : Category} {c : C} (d : subobject c) :
+  (Π (a : subobject c), a ≼ d) -> d = top_subobject c :=
+begin intro max, fapply subobj_antisymm, exact top_subobj_prop d, exact max _ end
+ 
 
 /- We can define images of homomorphisms as subobjects of their codomain satisfying a 
    minimality property. Note that the factoring homomorphism is unique as the inclusion 
