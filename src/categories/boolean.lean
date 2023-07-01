@@ -20,34 +20,54 @@ class has_stable_unions (C : Category) [has_pullbacks C] [has_unions C] :=
 
 @[hott]
 class has_stable_fin_unions (C : Category) [has_pullbacks C] [has_fin_unions C] :=
-  (has_stab_fin_unions : Π {c d : C} (f : c ⟶ d) (a b : subobject d), 
-     pullback_subobject f (a ∪ b) = (pullback_subobject f a) ∪ (pullback_subobject f b))
-
+  (has_stab_fin_unions :  Π {a b : C} (f : a ⟶ b) {n : ℕ} (i : fin_Set n -> subobject b), 
+     pullback_subobject f (subobject.union i) = 
+                       subobject.union ((λ d : subobject b, pullback_subobject f d) ∘ i)) 
+ 
 @[hott, instance]
 def has_stable_fin_unions_of_stable_unions {C : Category} [has_pullbacks C] 
   [H : has_unions C] [Hs : has_stable_unions C] : 
   @has_stable_fin_unions C _ (@has_fin_unions_of_has_unions C H) :=
-begin
-  fapply has_stable_fin_unions.mk, intros c d f a b, 
-  change pullback_subobject f (subobject.union (fin_map_of_list [a, b])) = _,
-  rwr @has_stable_unions.has_stab_unions C _ _ Hs _ _ f _ (fin_map_of_list [a, b]),
-  have p : (λ (b : subobject d), pullback_subobject f b) ∘ fin_map_of_list [a, b] =
-              fin_map_of_list [pullback_subobject f a, pullback_subobject f b], from 
+has_stable_fin_unions.mk (λ a b f n i, has_stable_unions.has_stab_unions f i)
+
+@[hott]
+def pullback_union_eq {C : Category} [has_pullbacks C] [H : has_fin_unions C] 
+  [Hs : has_stable_fin_unions C] : Π {a b : C} (f : a ⟶ b) (d d' : subobject b),
+  pullback_subobject f (d ∪ d') = pullback_subobject f d ∪ pullback_subobject f d' :=
+begin 
+  intros a b f d d',
+  change pullback_subobject f (subobject.union (fin_map_of_list [d, d'])) = _,
+  rwr @has_stable_fin_unions.has_stab_fin_unions C _ _ Hs _ _ f _ 
+                                                             (fin_map_of_list [d, d']),
+  have p : (λ (d : subobject b), pullback_subobject f d) ∘ fin_map_of_list [d, d'] =
+              fin_map_of_list [pullback_subobject f d, pullback_subobject f d'], from 
   begin 
     apply eq_of_homotopy, intro n, hinduction n with n ineq, hinduction n,
-    { have q : fin_map_of_list [a, b] ⟨0, ineq⟩ = b, from 
+    { have q : fin_map_of_list [d, d'] ⟨0, ineq⟩ = d', from 
         begin hsimp, rwr dite_false ((nat.succ_ne_zero 0) ∘ eq.inverse) end,
-      change pullback_subobject f (fin_map_of_list [a, b] ⟨0, ineq⟩) = _,
+      change pullback_subobject f (fin_map_of_list [d, d'] ⟨0, ineq⟩) = _,
       rwr q },
     { hinduction n, 
-    {  have r : fin_map_of_list [a, b] ⟨1, ineq⟩ = a, from 
+    {  have r : fin_map_of_list [d, d'] ⟨1, ineq⟩ = d, from 
          begin hsimp, apply dite_true (idpath 1), apply_instance end,
-       change pullback_subobject f (fin_map_of_list [a, b] ⟨1, ineq⟩) = _,
+       change pullback_subobject f (fin_map_of_list [d, d'] ⟨1, ineq⟩) = _,
        rwr r },
     { change _ < nat.succ 1 at ineq, 
       hinduction nat.not_lt_zero n (nat.le_of_succ_le_succ (nat.le_of_succ_le_succ ineq)) } }
   end, 
   rwr p
+end
+
+@[hott]
+def stable_bottom {C : Category} [has_pullbacks C] [H : has_fin_unions C] 
+  [Hs : has_stable_fin_unions C] : Π {a b : C} (f : a ⟶ b), 
+  pullback_subobject f (bottom_subobject b) = bottom_subobject a :=
+begin 
+  intros a b f,
+  change pullback_subobject f (subobject.union (empty_fin_Set_map (subobject b))) = _,
+  rwr @has_stable_fin_unions.has_stab_fin_unions _ _ _ Hs _ _ f _ 
+                                     (empty_fin_Set_map (subobject b)),
+  rwr empty_fin_Set_map_comp 
 end
 
 
@@ -100,7 +120,7 @@ end
 def inter_distrib {C : Category} {d : C} [has_pullbacks C] [has_fin_unions C] 
   [H : has_stable_fin_unions C] (a b c : subobject d) : a ∩ (b ∪ c) = (a ∩ b) ∪ (a ∩ c) :=
 begin
-  change subobj_subobj_trans _ _ = _, rwr H.has_stab_fin_unions, 
+  change subobj_subobj_trans _ _ = _, rwr pullback_union_eq a.hom b c, 
   rwr subobj_trans_union a (pullback_subobject a.hom b) (pullback_subobject a.hom c)
 end 
 
@@ -166,6 +186,61 @@ def obj_has_compl_of_has_complements {C : Category} [has_pullbacks C] [has_fin_u
   [has_stable_fin_unions C] [H : has_complements C] (c : C) :
   object_has_complements c :=
 object_has_complements.mk (@has_complements.compl _ _ _ _ H c).compl  
+
+/- We need some calculation rules for complements. -/
+@[hott]
+def top_compl {C : Category} [has_pullbacks C] [has_fin_unions C] 
+  [has_stable_fin_unions C] [H : has_complements C] {a : C} (c : subobject a) :
+  c ∪ 𝒞(c) = top_subobject a :=
+(object_has_complements.compl c).union
+
+@[hott]
+def bottom_compl {C : Category} [has_pullbacks C] [has_fin_unions C] 
+  [has_stable_fin_unions C] [H : has_complements C] {a : C} (c : subobject a) :
+  c ∩ 𝒞(c) = bottom_subobject a :=
+(object_has_complements.compl c).inter
+
+@[hott]
+def compl_compl {C : Category} [has_pullbacks C] [has_fin_unions C] 
+  [has_stable_fin_unions C] [H : has_complements C] {a : C} (c : subobject a) :
+  𝒞(𝒞(c)) = c :=
+begin
+  have t : 𝒞(c) ∪ c = top_subobject a, by rwr union_comm; exact top_compl _,
+  have b : 𝒞(c) ∩ c = bottom_subobject a, by rwr subobj_inter_symm; exact bottom_compl _,
+  let CCc : complement 𝒞(c) := complement.mk c t b,
+  exact complement_is_unique _ _ CCc
+end
+
+@[hott]
+def compl_inter_bot {C : Category} [has_pullbacks C] [has_fin_unions C] 
+  [has_stable_fin_unions C] [H : has_complements C] {a : C} {c c' : subobject a} :
+  c ≼ c' -> c ∩ 𝒞(c') = bottom_subobject a :=
+begin
+  intro i, fapply subobj_antisymm, 
+  { rwr <- bottom_compl c', apply subobj_inter_lift, 
+    { apply @subobj_trans _ _ _ c _, exact subobj_inter_linc _ _, exact i },
+    { exact subobj_inter_rinc _ _ } },
+  { exact bottom_subobj_prop _ }
+end
+
+@[hott]
+def contra_pos_compl {C : Category} [has_pullbacks C] [has_fin_unions C] 
+  [H : has_stable_fin_unions C] [has_complements C] {a : C} {c c' : subobject a} :
+  (c ≼ c') -> (𝒞(c') ≼ 𝒞(c)) :=
+begin
+  intro i, rwr <- top_inter_absorb 𝒞(c'), rwr <- top_compl c, 
+  rwr @inter_distrib _ _ _ _ H, rwr <- subobj_inter_symm c 𝒞(c'), rwr compl_inter_bot i,
+  rwr bottom_union_absorb, exact subobj_inter_rinc _ _
+end
+
+@[hott]
+def contra_pos_compl_inv {C : Category} [has_pullbacks C] [has_fin_unions C] 
+  [H : has_stable_fin_unions C] [has_complements C] {a : C} {c c' : subobject a} :
+  (𝒞(c') ≼ 𝒞(c)) -> (c ≼ c') :=
+begin
+  intro Ci, rwr <- compl_compl c, rwr <- compl_compl c',
+  exact contra_pos_compl Ci
+end
 
 
 /- We introduce now the hierarchy of categories that can hold models of first-order 
@@ -238,16 +313,46 @@ class is_Boolean (C : Category) extends is_coherent C :=
 def has_complements_of_is_Boolean (C : Category) [H : is_Boolean C] : 
   has_complements C := H.has_complements
 
+/- Complements are stable under pullbacks. -/
+@[hott]
+def stable_complements (C : Category) [H : is_Boolean C] :
+  Π {a b : C} (f : a ⟶ b) (d : subobject b), pullback_subobject f 𝒞(d) =
+                                              𝒞(pullback_subobject f d) :=
+begin
+  intros a b f d,
+  have t : (pullback_subobject f d) ∪ (pullback_subobject f 𝒞(d)) = 
+                                                             top_subobject a, from
+    begin rwr <- pullback_union_eq f, rwr top_compl, exact stable_top f end,
+  have b : (pullback_subobject f d) ∩ pullback_subobject f 𝒞(d) = 
+                                                            bottom_subobject a, from
+    begin rwr <- pullback_inter_eq f, rwr bottom_compl, exact stable_bottom f end,
+  let Cfd : complement (pullback_subobject f d) := 
+                                   complement.mk (pullback_subobject f 𝒞(d)) t b,
+  exact complement_is_unique _ Cfd _
+end
+
 /- Boolean categories are Heyting. -/  
 @[hott, instance]
 def all_of_fibs_of_Boolean (C : Category) [H : is_Boolean C] : 
   has_all_of_fibers C :=
-sorry
-
-@[hott, instance]
-def stable_impl_of_is_Boolean (C : Category) [H : is_Boolean C] :
-  has_stable_implications C :=
-sorry
+begin
+  apply has_all_of_fibers.mk, intros a b f,
+  apply has_all_of_fiber.mk, apply has_right_adjoint.mk, fapply is_left_adjoint.mk,
+  { fapply precategories.functor.mk, 
+    { intro c, exact 𝒞((ex_fib f).obj 𝒞(c)) },
+    { intros c c' i, apply contra_pos_compl, exact (ex_fib f).map (contra_pos_compl i) },
+    { intro c, exact is_prop.elim _ _ },
+    { intros c d e f g, exact is_prop.elim _ _ } },
+  { apply adjoint_hom_to_adjoint, fapply adjoint_functors_on_hom.mk,
+    { intros c d, fapply bijection_of_props,
+      { intro i₁, apply contra_pos_compl_inv, rwr compl_compl, 
+        apply ex_fib_left_adj, rwr stable_complements, exact contra_pos_compl i₁ },
+      { intro i₂, apply contra_pos_compl_inv, change _ ≼ 𝒞(pullback_subobject f c), 
+        rwr <- stable_complements, apply ex_fib_right_adj, apply contra_pos_compl_inv,
+        rwr compl_compl, exact i₂ } },
+    { intros c d c' h g, exact is_prop.elim _ _ },
+    { intros c d d' g h, exact is_prop.elim _ _ } }
+end
 
 @[hott, instance]
 def is_Heyting_of_is_Boolean (C : Category) [H : is_Boolean C] :
