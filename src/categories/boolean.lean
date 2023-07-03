@@ -359,7 +359,6 @@ def is_Heyting_of_is_Boolean (C : Category) [H : is_Boolean C] :
   is_Heyting C :=
 begin fapply is_Heyting.mk, apply_instance end
 
-
 end categories.boolean
 
 end hott 
