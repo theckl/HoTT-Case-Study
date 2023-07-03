@@ -840,7 +840,7 @@ begin
 end
 
 @[hott, instance]
-def set_has_complements [H : has_dec_elem] {A : Set_Category.{u}} : 
+def subobj_has_complements [H : has_dec_elem] {A : Set_Category.{u}} : 
   @has_complement (subobject A) :=
 has_complement.mk (λ B, (set_compl_of B).na)
 
@@ -866,6 +866,12 @@ begin
     rwr (union_inc i j).fac, exact fa.point_eq }
 end
 
+@[hott, instance]
+def set_has_complements [H : has_dec_elem] : has_complements Set_Category :=
+begin 
+  apply has_complements.mk, intro A, apply object_has_complements.mk, 
+  intro C, exact set_compl_of C 
+end
 
 /- The category of sets has an all-of-fiber functor. -/
 @[hott]
@@ -906,6 +912,26 @@ begin
     { intros C D C' h g, exact is_prop.elim _ _ },
     { intros C D D' g h, exact is_prop.elim _ _ } }
 end
+
+@[hott, instance] 
+def set_cat_is_Cartesian : is_Cartesian Set_Category.{max u' u} :=
+begin fapply is_Cartesian.mk, apply_instance end
+
+@[hott, instance] 
+def set_cat_is_regular : is_regular Set_Category.{max u' u} :=
+begin fapply is_regular.mk, apply_instance, apply_instance end
+
+@[hott, instance] 
+def set_cat_is_coherent : is_coherent Set_Category.{max u' u} :=
+begin fapply is_coherent.mk, apply_instance, apply_instance end
+
+@[hott, instance]
+def set_cat_is_Heyting : is_Heyting Set_Category.{max u' u} :=
+begin fapply @is_Heyting.mk Set_Category, apply_instance end
+
+@[hott]
+def set_cat_is_Boolean [H : has_dec_elem] : is_Boolean Set_Category.{max u' u} :=
+begin fapply is_Boolean.mk, exact set_has_complements end
 
 end categories.sets
 
