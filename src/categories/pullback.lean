@@ -718,7 +718,7 @@ end
 @[hott]
 def stable_top {C : Category} [has_pullbacks C] [has_ex_in_fibers C] {a b : C} 
   (f : a ⟶ b) : pullback_subobject f (top_subobject b) = top_subobject a :=
-begin apply top_subobj_unique, intro c, sorry end 
+begin apply top_subobj_unique, intro c, apply ex_fib_right_adj, apply top_subobj_prop end 
 
 
 /- The existence of a right adjoint to the pullback functor for subobjects must be 
