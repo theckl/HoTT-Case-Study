@@ -11,12 +11,12 @@ namespace categories
 
 /- Interpreting terms and formulas requires the construction of products in the model
    categories. Sometimes, these categories do not have arbitrary products, so it is 
-   necessary to specify the kind of products which a model category of a theory must have, in
-   more details. Since all the index sets of such products are already determined by the 
+   necessary to specify the kind of products which a model category of a theory must have, 
+   in more details. Since all the index sets of such products are already determined by the 
    signature, namely the arity of operations and relations and the admissible contexts,
    we can define a class listing the existence of products over all such sets. -/
 @[hott]
-class has_sign_products (sign : fo_signature) (C : Type u) [category.{v} C] :=
+class has_sign_products (sign : fo_signature) (C : Category) :=
   (has_arg_products : Π (o : sign.ops), has_limits_of_shape (discrete (sign.ops_arity o)) C)   
   (has_comp_products : Π (r : sign.rels), 
                                        has_limits_of_shape (discrete (sign.rels_arity r)) C)
