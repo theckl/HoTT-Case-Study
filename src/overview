@@ -24,14 +24,15 @@ categories
   limits    :   812
   colimits  :   554 
   pullbacks :   845 
-  boolean   :   365 
-  sets      :   912  7214 
+  boolean   :   364 
+  sets      :   938  
+  structures:   640 7879 
                     -----
-                    12446               
+                    13111               
 
 
 Planned changes in Files, from bottom to top: 
 ---------------------------------------------
 categories.models : is_interpretable_in-class
-categories.boolean : Cartesian, regular, coherent, geometric, Heyting, boolean categories
- 
+categories.structures : standard structures on categories, their Structure Identity 
+                        Principle and Sigma-structures 
