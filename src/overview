@@ -23,16 +23,14 @@ categories
   diagrams  :   617 
   limits    :   812
   colimits  :   554 
-  pullbacks :   845 
-  boolean   :   364 
+  pullbacks :   867 
+  boolean   :   354 
   sets      :   938  
-  structures:   640 7879 
+  structures:   645  7896 
                     -----
-                    13111               
+                    13128               
 
 
 Planned changes in Files, from bottom to top: 
 ---------------------------------------------
 categories.models : is_interpretable_in-class
-categories.structures : standard structures on categories, their Structure Identity 
-                        Principle and Sigma-structures 
