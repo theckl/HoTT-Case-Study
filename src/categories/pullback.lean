@@ -133,8 +133,8 @@ limit_leg (orthogonal_pair f g) (inf_w_node.tip ow_node.upper)
 class has_pullbacks (C : Type _) [is_cat C] := 
   (has_limit_of_shape : has_limits_of_shape orthogonal_wedge C)
 
-@[hott]
-instance has_pullback_of_has_pullbacks {C : Type _} [is_cat C] 
+@[hott, instance]
+def has_pullback_of_has_pullbacks {C : Type _} [is_cat C] 
   [has_pullbacks C] {a b c : C} (f : a ⟶ c) (g : b ⟶ c) : has_pullback f g :=
 ⟨@has_limits_of_shape.has_limit _ _ _ _ 
        (has_pullbacks.has_limit_of_shape C) (orthogonal_pair f g)⟩
@@ -149,6 +149,10 @@ def has_pullback_of_has_limits_of_shape {C : Type _} [is_cat C]
 def has_pullbacks_of_has_limits (C : Category) [H : has_limits C] : 
   has_pullbacks C :=
 has_pullbacks.mk (@has_limits.has_limit_of_shape C _ H orthogonal_wedge _)
+
+@[hott]
+class has_inf_pullbacks (C : Type _) [is_cat C] := 
+  (has_limit_of_shape : Π (A : Set), has_limits_of_shape (inf_wedge A) C)
 
 
 /- A cone over an orthogonal pair is called a `square`. -/
@@ -593,11 +597,20 @@ end
 
 
 /- The pullback functor of subobjects has adjoints if the category has images stable
-   under pullbacks. -/
+   under pullbacks. 
+   
+   We avoid different routes to instances of pullbacks by not extending from 
+   `has_pullbacks` and introducing a class combining pullbacks and stable images,
+   so that we can use `has_stable_image` without providing `has_pullbacks` in models. -/
 @[hott]
-class has_stable_images (C : Category) [has_images C] [has_pullbacks C] :=
+class has_stable_images (C : Category) [has_pullbacks C] extends has_images C  :=
   (stable_im : Π {a b c : C} (f : a ⟶ c) (g : b ⟶ c), 
                   hom.image (pullback_homo_l f g) = pullback_subobject f (hom.image g))
+
+@[hott]
+class has_pb_and_stab_im (C : Category) :=
+  (pb_stab_im : Σ (H : has_pullbacks C), has_stable_images C)
+
 
 /- The existence of a left adjoint to the pullback functor for subobjects can be deduced
    from the existence of pullbacks and the stability of images under pullbacks -/
@@ -647,7 +660,7 @@ def has_ex_fib_of_has_ex_fibs {C : Category} [has_pullbacks C] [has_ex_in_fibers
 has_ex_in_fibers.has_ex_fib f
 
 @[hott]
-def ex_fib_of_stable_im {C : Category} [has_images C] [has_pullbacks C] 
+def ex_fib_of_stable_im {C : Category} [has_pullbacks C] 
   [has_stable_images C] {a b : C} (f : a ⟶ b) : subobject a ⥤ subobject b :=
 begin 
   fapply precategories.functor.mk, 
@@ -663,8 +676,8 @@ begin
 end  
 
 @[hott]
-def fib_ex_left_adj_pb_subobj {C : Category} [has_images C] [has_pullbacks C] 
-  [has_stable_images C] {a b : C} (f : a ⟶ b) : 
+def fib_ex_left_adj_pb_subobj {C : Category} [has_pullbacks C] [has_stable_images C] 
+  {a b : C} (f : a ⟶ b) : 
   adjoint_functors (ex_fib_of_stable_im f) (pb_subobj_functor f) :=
 begin
   apply adjoint_hom_to_adjoint, fapply adjoint_functors_on_hom.mk, 
@@ -687,15 +700,15 @@ begin
 end  
 
 @[hott, instance]
-def has_ex_fibs_of_has_stable_ims {C : Category} [has_images C] [Hp : has_pullbacks C] 
+def has_ex_fibs_of_has_stable_ims {C : Category} [has_pullbacks C]
   [has_stable_images C] : has_ex_in_fibers C :=
 has_ex_in_fibers.mk (λ a b f, has_ex_in_fiber.mk (has_left_adjoint.mk 
         (is_right_adjoint.mk (ex_fib_of_stable_im f) (fib_ex_left_adj_pb_subobj f))))
 
 @[hott]
-def ex_fib_inter {C : Category} [has_images C] [has_pullbacks C] 
-  [Hsi : has_stable_images C] {c c' : C} (f : c' ⟶ c) (a : subobject c) 
-  (b : subobject c') : a ∩ (ex_fib_of_stable_im f).obj b = 
+def ex_fib_inter {C : Category} [has_pullbacks C] [Hsi : has_stable_images C] {c c' : C}
+  (f : c' ⟶ c) (a : subobject c) (b : subobject c') : 
+  a ∩ (ex_fib_of_stable_im f).obj b = 
                       (ex_fib_of_stable_im f).obj ((pb_subobj_functor f).obj a ∩ b) :=
 begin
   change _ = hom.image (((pullback_homo_l (pullback_homo_l f a.hom) b.hom) ≫ 
@@ -712,7 +725,7 @@ begin
   apply ap (subobj_subobj_trans a), 
   let p := @sym_pullback_legs_eq _ _ _ _ _ (b.hom ≫ f) a.hom _ _, rwr <- p,
   rwr im_iso_comp (idtoiso sym_pullback_eq) (pullback_homo_l a.hom (b.hom ≫ f)),
-  rwr @has_stable_images.stable_im _ _ _ Hsi _ _ _ _ _
+  rwr @has_stable_images.stable_im _ _ Hsi _ _ _ _ _
 end
 
 @[hott]
@@ -746,7 +759,11 @@ class has_all_of_fibers (C : Category) [has_pullbacks C] :=
 @[hott, instance]
 def has_all_fib_of_has_all_fibs {C : Category} [has_pullbacks C] [has_all_of_fibers C]
   {a b : C} (f : a ⟶ b) : has_all_of_fiber f := 
-has_all_of_fibers.has_all_fib f     
+has_all_of_fibers.has_all_fib f  
+
+@[hott]
+class has_pb_and_all_fib (C : Category) :=
+  (pb_all_fib : Σ (H : has_pullbacks C), has_all_of_fibers C) 
 
 /- The fiberwise forall quantifier allows to define implications of subobjects. -/
 @[hott]
@@ -812,7 +829,7 @@ class has_stable_implications (C : Category) [has_pullbacks C] [has_all_of_fiber
                      implication_is_stable f a b)
 
 @[hott, instance]
-def stable_implications_of_stable_images (C : Category) [has_images C] [has_pullbacks C] 
+def stable_implications_of_stable_images (C : Category) [has_pullbacks C]
   [Hsi : has_stable_images C] [Hf : has_all_of_fibers C] : has_stable_implications C :=
 begin
   fapply has_stable_implications.mk,
