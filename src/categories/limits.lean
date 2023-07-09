@@ -653,8 +653,8 @@ end
 class has_equalizers (C : Type u) [is_cat.{v} C] := 
   (has_limit_of_shape : has_limits_of_shape walking_parallel_pair C)
 
-@[hott]
-instance has_equalizer_of_has_equalizers {C : Type u} [is_cat.{v} C] 
+@[hott, instance]
+def has_equalizer_of_has_equalizers {C : Type u} [is_cat.{v} C] 
   [has_equalizers C] {a b : C} (f g : a ⟶ b) : has_equalizer f g :=
 ⟨@has_limits_of_shape.has_limit _ _ _ _ 
        (has_equalizers.has_limit_of_shape C) (parallel_pair f g)⟩
@@ -672,8 +672,8 @@ has_equalizers.mk (@has_limits.has_limit_of_shape C _ H walking_parallel_pair _)
 
 /- An equalizer is a subobject of the domain of the parallel pair. -/
 @[hott]
-def equalizer_as_subobject {C : Type u} [Hc : is_cat.{v} C] {a b : C} (f g : a ⟶ b) 
-  [H : has_equalizer f g] : @subobject (Category.mk C Hc) a :=
+def equalizer_as_subobject {C : Category.{u v}} {a b : C} (f g : a ⟶ b) 
+  [H : has_equalizer f g] : @subobject C a :=
 begin
   let e := equalizer_map f g, let He : e ≫ f = e ≫ g := equalizer_eq f g,
   fapply subobject.mk,
