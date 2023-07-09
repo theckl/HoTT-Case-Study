@@ -509,8 +509,13 @@ open signature
 structure Sig_structure_on {sign : fo_signature} {C : Category.{u v}} 
   [has_products.{v u 0} C] (car : sign.sorts -> C) :=  
 ( ops : ∀ o : sign.ops, ∏ (λ a : sign.ops_arity o, car (sign.ops_source o a)) ⟶ 
-                                                                        car (sign.ops_target o) )
+                                                              car (sign.ops_target o) )
 ( rels : ∀ r : sign.rels, subobject (∏ (λ a : sign.rels_arity r, car (sign.rels_comp a))) )
+
+@[hott]
+def Sig_str_prod {sign : fo_signature} {C : Category.{u v}} 
+  [has_products.{v u 0} C] {car : sign.sorts -> C} (S : Sig_structure_on car) 
+  {I : Set.{0}} (j : I -> sign.sorts) : C := ∏ (λ i : I, car (j i))
 
 @[hott]
 def Sig_str_eq {sign : fo_signature} {C : Category.{u v}} 
@@ -541,7 +546,7 @@ structure is_Sig_structure_hom {sign : fo_signature} {C : Category.{u v}}
   [has_products.{v u 0} C] {car₁ car₂ : sign.sorts -> C} (S₁ : Sig_structure_on car₁)
   (S₂ : Sig_structure_on car₂) (f : Π x : sign.sorts, car₁ x ⟶ car₂ x) := 
 ( ops_pres : Π o : sign.ops, S₁.ops o ≫ f (sign.ops_target o) = 
-                                               (∏h (λ a, f (sign.ops_source o a))) ≫ S₂.ops o )
+                                      (∏h (λ a, f (sign.ops_source o a))) ≫ S₂.ops o )
 ( rels_pres : Π r : sign.rels, Σ h : (S₁.rels r).obj ⟶ (S₂.rels r).obj, 
     (S₁.rels r).hom ≫ (∏h (λ a, f (sign.rels_comp a))) = h ≫ (S₂.rels r).hom )
 
