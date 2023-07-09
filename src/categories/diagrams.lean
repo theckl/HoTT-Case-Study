@@ -229,7 +229,7 @@ def Inf_Wedge (A : Set) : Precategory :=
   Precategory.mk (inf_wedge A) inf_wedge_precat 
 
 @[hott, instance]
-def Inf_Wedge_is_strict_cat {A : Set} : is_strict_cat (Inf_Wedge A) :=
+def Inf_Wedge_is_strict_cat {A : Set} : is_strict_cat (inf_wedge A) :=
   is_strict_cat.mk (inf_wedge A).struct                 
 
 /- [orthogonal_wedge] is the indexing category for pullbacks. 
