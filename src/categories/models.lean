@@ -4,44 +4,12 @@ universes v v' u u' w
 hott_theory
 
 namespace hott
-open signature signature.term signature.formula precategories categories.limits subset 
-     categories.colimits categories.pullbacks categories.boolean
+open signature signature.term signature.formula precategories categories.limits set 
+     subset categories.colimits categories.pullbacks categories.boolean trunc
 
 namespace categories
 
-/- Interpreting terms and formulas requires the construction of products in the model
-   categories. Sometimes, these categories do not have arbitrary products, so it is 
-   necessary to specify the kind of products which a model category of a theory must have, 
-   in more details. Since all the index sets of such products are already determined by 
-   the signature, namely the arity of operations and relations and the admissible 
-   contexts, we can define a class listing the existence of products over all such sets. -/
-@[hott]
-class has_sign_products (sign : fo_signature) (C : Category) :=
-  (has_arg_products : Π (o : sign.ops), has_limits_of_shape (discrete (sign.ops_arity o)) C)   
-  (has_comp_products : Π (r : sign.rels), 
-                                       has_limits_of_shape (discrete (sign.rels_arity r)) C)
-  (has_cont_products : Π (cont : context sign), 
-                                    has_limits_of_shape (discrete (pred_Set (cont.vars))) C)                                     
-
-/- We need instances of `has_product` to construct the interpreting objects in the model 
-   category deduced from `has_sign_products`. -/
-@[hott, instance]
-def has_term_product {sign : fo_signature} {C : Category} {o : sign.ops} 
-  [H : has_sign_products sign C] (f : sign.ops_arity o -> C) : has_product f :=
-@has_product_of_has_limits_of_shape _ _ _ (has_sign_products.has_arg_products C o) f
-
-@[hott, instance]
-def has_rels_product {sign : fo_signature} {C : Category} {r : sign.rels} 
-  [H : has_sign_products sign C] (f : sign.rels_arity r -> C) : has_product f :=
-@has_product_of_has_limits_of_shape _ _ _ (has_sign_products.has_comp_products C r) f
-
-@[hott, instance]
-def has_cont_product {sign : fo_signature} {C : Category} 
-  {cont : context sign} [H : has_sign_products sign C] (f : pred_Set (cont.vars) -> C) : 
-  has_product f :=
-@has_product_of_has_limits_of_shape _ _ _ (has_sign_products.has_cont_products C cont) f
-
-/- Next we list the properties needed to interpret particularly constructed formulas in a 
+/- We list the properties needed to interpret particularly constructed formulas in a 
    model category, then attach these properties to the different inductive construction
    steps of formulas and finally define a class mapping each construction step to the 
    class of these properties. -/
@@ -65,7 +33,7 @@ begin
     exact ih_a or ih_a_1, exact ih_a or ih_a_1, exact ih_a or ih_a_1, exact ih,
     exact ih, exact ih, exact inf_disj ih, exact inf_disj ih }, --equalizer
   { hinduction φ, exact False, exact True, exact False, exact False, exact True, 
-    exact ih_a or ih_a_1, exact ih_a or ih_a_1, exact ih, exact True, exact ih, 
+    exact ih_a or ih_a_1, exact ih_a or ih_a_1, exact ih, exact ih, exact ih, 
     exact inf_disj ih, exact inf_disj ih },                          --pullbacks
   { hinduction φ, exact False, exact False, exact False, exact True, --finite unions
     exact ih_a or ih_a_1, exact True, exact ih_a or ih_a_1, exact True, exact ih, 
@@ -77,36 +45,34 @@ begin
     exact ih_a or ih_a_1, exact ih_a or ih_a_1, exact True, exact True, exact ih, 
     exact True, exact inf_disj ih, exact inf_disj ih },
   { hinduction φ, exact False, exact False, exact False, exact False,  --complement
-    exact ih_a or ih_a_1, exact ih_a or ih_a_1, exact ih_a or ih_a_1, exact True, 
+    exact ih_a or ih_a_1, exact ih_a or ih_a_1, exact ih_a or ih_a_1, exact ih, 
     exact ih, exact ih, exact inf_disj ih, exact inf_disj ih},  
   { hinduction φ, exact False, exact False, exact False, exact False,  --arbitrary unions
     exact ih_a or ih_a_1, exact ih_a or ih_a_1, exact ih_a or ih_a_1, exact ih, exact ih, 
-    exact ih, exact True, exact inf_disj ih },
+    exact ih, exact inf_disj ih, exact True },
   { hinduction φ, exact False, exact False, exact False, exact False,  --arbitrary pullbacks
     exact ih_a or ih_a_1, exact ih_a or ih_a_1, exact ih_a or ih_a_1, exact ih, exact ih, 
-    exact ih, exact inf_disj ih, exact True }
+    exact ih, exact True, exact inf_disj ih }
 end     
 
 /- An instance of this class allows to construct instances of the categorical properties
    needed to interpret formulas of a certain type. Later on, we will construct instances
    of this class from given fragments of the language. -/
 @[hott]
-class is_interpretable_in {sign : fo_signature} (φ : formula sign) (C : Category.{u v}) 
-  [has_products.{v u 0} C] :=
+class is_interpretable_in {sign : fo_signature} (φ : formula sign) (C : Category.{u v}) :=
 (equal : needs_properties φ model_properties.equalizer -> has_equalizers C)
 (pullback : needs_properties φ model_properties.pullback -> has_pullbacks C)
 (fin_union : needs_properties φ model_properties.fin_union -> has_fin_unions C) 
 (stable_im : needs_properties φ model_properties.stable_image -> has_pb_and_stab_im C) 
 (all_fib : needs_properties φ model_properties.all_of_fiber -> has_pb_and_all_fib C)
 (compl : needs_properties φ model_properties.complement -> has_pb_and_compl C)
-(inf_union : needs_properties φ model_properties.inf_union -> has_union C)
+(inf_union : needs_properties φ model_properties.inf_union -> has_unions C)
 (inf_pb : needs_properties φ model_properties.inf_pullback -> has_inf_pullbacks C)
 
 /- We need to construct instances of `is_interpretable_in` of the components of a 
    composite formula from an instance of `is_interpretable_in` of the composite formula. -/
 @[hott, instance]
-def interpret_conj_comp_l {sign : fo_signature} (C : Category.{u v}) 
-  [has_products.{v u 0} C] (φ₁ φ₂ : formula sign) 
+def interpret_conj_comp_l {sign : fo_signature} (C : Category.{u v}) (φ₁ φ₂ : formula sign) 
   [H : is_interpretable_in (formula.conj φ₁ φ₂) C] : is_interpretable_in φ₁ C :=
 begin
   hinduction H,
@@ -123,8 +89,8 @@ end
 
 @[hott, instance]
 def interpret_conj_comp_r {sign : fo_signature} (C : Category.{u v}) 
-  [has_products.{v u 0} C] (φ₁ φ₂ : formula sign) 
-  [H : is_interpretable_in (formula.conj φ₁ φ₂) C] : is_interpretable_in φ₂ C :=
+  (φ₁ φ₂ : formula sign) [H : is_interpretable_in (formula.conj φ₁ φ₂) C] : 
+  is_interpretable_in φ₂ C :=
 begin
   hinduction H,
   fapply is_interpretable_in.mk, all_goals { intro np }, 
@@ -139,8 +105,7 @@ begin
 end
 
 @[hott, instance]
-def interpret_disj_comp_l {sign : fo_signature} (C : Category.{u v}) 
-  [has_products.{v u 0} C] (φ₁ φ₂ : formula sign) 
+def interpret_disj_comp_l {sign : fo_signature} (C : Category.{u v}) (φ₁ φ₂ : formula sign) 
   [H : is_interpretable_in (formula.disj φ₁ φ₂) C] : is_interpretable_in φ₁ C :=
 begin
   hinduction H,
@@ -157,8 +122,8 @@ end
 
 @[hott, instance]
 def interpret_disj_comp_r {sign : fo_signature} (C : Category.{u v}) 
-  [has_products.{v u 0} C] (φ₁ φ₂ : formula sign) 
-  [H : is_interpretable_in (formula.disj φ₁ φ₂) C] : is_interpretable_in φ₂ C :=
+  (φ₁ φ₂ : formula sign) [H : is_interpretable_in (formula.disj φ₁ φ₂) C] : 
+  is_interpretable_in φ₂ C :=
 begin
   hinduction H,
   fapply is_interpretable_in.mk, all_goals { intro np }, 
@@ -172,26 +137,164 @@ begin
   { apply inf_pb, apply or_inr, exact np },
 end
 
+@[hott, instance]
+def interpret_impl_comp_l {sign : fo_signature} (C : Category.{u v}) 
+  (φ₁ φ₂ : formula sign) [H : is_interpretable_in (formula.impl φ₁ φ₂) C] : 
+  is_interpretable_in φ₁ C :=
+begin
+  hinduction H,
+  fapply is_interpretable_in.mk, all_goals { intro np }, 
+  { apply equal, apply or_inl, exact np },
+  { apply pullback, apply or_inl, exact np },
+  { apply fin_union, apply or_inl, exact np },
+  { apply stable_im, apply or_inl, exact np },
+  { apply all_fib true.intro },
+  { apply compl, apply or_inl, exact np },
+  { apply inf_union, apply or_inl, exact np },
+  { apply inf_pb, apply or_inl, exact np },
+end   
+
+@[hott, instance]
+def interpret_impl_comp_r {sign : fo_signature} (C : Category.{u v}) 
+  (φ₁ φ₂ : formula sign) [H : is_interpretable_in (formula.impl φ₁ φ₂) C] : 
+  is_interpretable_in φ₂ C :=
+begin
+  hinduction H,
+  fapply is_interpretable_in.mk, all_goals { intro np }, 
+  { apply equal, apply or_inr, exact np },
+  { apply pullback, apply or_inr, exact np },
+  { apply fin_union, apply or_inr, exact np },
+  { apply stable_im, apply or_inr, exact np },
+  { apply all_fib true.intro },
+  { apply compl, apply or_inr, exact np },
+  { apply inf_union, apply or_inr, exact np },
+  { apply inf_pb, apply or_inr, exact np },
+end
+
+@[hott, instance]
+def interpret_neg_comp {sign : fo_signature} (C : Category.{u v}) (φ : formula sign) 
+  [H : is_interpretable_in (formula.neg φ) C] : is_interpretable_in φ C :=
+begin
+  hinduction H,
+  fapply is_interpretable_in.mk, all_goals { intro np }, 
+  { apply equal, exact np },
+  { apply pullback, exact np },
+  { apply fin_union true.intro },
+  { apply stable_im, exact np },
+  { apply all_fib true.intro },
+  { apply compl, exact np },
+  { apply inf_union, exact np },
+  { apply inf_pb, exact np },
+end
+
+@[hott, instance]
+def interpret_ex_comp {sign : fo_signature} (C : Category.{u v}) 
+  (v : var sign.labels sign.sorts) (φ : formula sign) 
+  [H : is_interpretable_in (formula.ex v φ) C] : is_interpretable_in φ C :=
+begin
+  hinduction H,
+  fapply is_interpretable_in.mk, all_goals { intro np }, 
+  { apply equal, exact np },
+  { apply pullback, exact np },
+  { apply fin_union, exact np },
+  { apply stable_im true.intro },
+  { apply all_fib, exact np },
+  { apply compl, exact np },
+  { apply inf_union, exact np },
+  { apply inf_pb, exact np },
+end
+
+@[hott, instance]
+def interpret_univ_comp {sign : fo_signature} (C : Category.{u v}) 
+  (v : var sign.labels sign.sorts) (φ : formula sign) 
+  [H : is_interpretable_in (formula.univ v φ) C] : is_interpretable_in φ C :=
+begin
+  hinduction H,
+  fapply is_interpretable_in.mk, all_goals { intro np }, 
+  { apply equal, exact np },
+  { apply pullback, exact np },
+  { apply fin_union, exact np },
+  { apply stable_im, exact np },
+  { apply all_fib true.intro },
+  { apply compl, exact np },
+  { apply inf_union, exact np },
+  { apply inf_pb, exact np },
+end
+
+@[hott, instance]
+def interpret_inf_conj_comp {sign : fo_signature} (C : Category.{u v}) 
+  (i : sign.ind_Set) (φi : (sign.I i) -> formula sign) 
+  [H : is_interpretable_in (formula.inf_conj φi) C] : 
+  Π (j : sign.I i), is_interpretable_in (φi j) C :=
+begin
+  intro j, hinduction H,
+  fapply is_interpretable_in.mk, all_goals { intro np }, 
+  { apply equal, exact tr ⟨j, np⟩ },
+  { apply pullback, exact tr ⟨j, np⟩ },
+  { apply fin_union, exact tr ⟨j, np⟩ },
+  { apply stable_im, exact tr ⟨j, np⟩ },
+  { apply all_fib, exact tr ⟨j, np⟩ },
+  { apply compl, exact tr ⟨j, np⟩ },
+  { apply inf_union, exact tr ⟨j, np⟩ },
+  { apply inf_pb true.intro},
+end
+
+@[hott, instance]
+def interpret_inf_disj_comp {sign : fo_signature} (C : Category.{u v}) 
+  (i : sign.ind_Set) (φi : (sign.I i) -> formula sign) 
+  [H : is_interpretable_in (formula.inf_disj φi) C] : 
+  Π (j : sign.I i), is_interpretable_in (φi j) C :=
+begin
+  intro j, hinduction H,
+  fapply is_interpretable_in.mk, all_goals { intro np }, 
+  { apply equal, exact tr ⟨j, np⟩ },
+  { apply pullback, exact tr ⟨j, np⟩ },
+  { apply fin_union, exact tr ⟨j, np⟩ },
+  { apply stable_im, exact tr ⟨j, np⟩ },
+  { apply all_fib, exact tr ⟨j, np⟩ },
+  { apply compl, exact tr ⟨j, np⟩ },
+  { apply inf_union true.intro},
+  { apply inf_pb, exact tr ⟨j, np⟩ },
+end
+
 @[hott]
 def context_in_Sig_str {sign : fo_signature} (cont : context sign) 
-  {C : Category.{u v}} [has_products.{v u 0} C] (Sig_str : Sig_structure sign C) : C :=
-Sig_str_prod Sig_str.str (λ x : pred_Set cont.vars, (pred_Set_map cont.vars x).sort)   
+  {C : Category.{u v}} [has_sign_products sign C] (Sig_str : Sig_structure sign C) : C :=
+∏ (λ x : pred_Set cont.vars, Sig_str.carrier (pred_Set_map cont.vars x).sort) 
+
+@[hott]
+def cont_var_proj_in_Sig_str_hom {sign : fo_signature} (cont : context sign) 
+  {J : Subset (set.to_Set (var sign.labels sign.sorts))} (inc : J ⊆ cont.vars) 
+  {C : Category.{u v}} [has_sign_products sign C] (Sig_str : Sig_structure sign C) := 
+  ↥((context_in_Sig_str cont Sig_str) ⟶ 
+              ∏ (λ x : pred_Set J, Sig_str.carrier (pred_Set_map J x).sort))
+
+@[hott]
+def cont_var_proj_in_Sig_str {sign : fo_signature} (cont : context sign) 
+  {J : Subset (set.to_Set (var sign.labels sign.sorts))} (inc : J ⊆ cont.vars) 
+  {C : Category.{u v}} [has_sign_products sign C] (Sig_str : Sig_structure sign C) : 
+  cont_var_proj_in_Sig_str_hom cont inc Sig_str :=
+begin 
+  apply pi.lift, intro j,
+  change ↥(_ ⟶ Sig_str.carrier (pred_Set_map cont.vars ⟨j.1, (inc j.1 j.2)⟩).sort), 
+  exact pi.π _ ⟨j.fst, inc j.fst j.snd⟩  
+end
 
 @[hott]
 def interpret_of_term_hom {sign : fo_signature} {cont : context sign} 
-  (tc : term_in_context cont) {C : Category.{u v}} [has_products.{v u 0} C] 
+  (tc : term_in_context cont) {C : Category.{u v}} [has_sign_products sign C] 
   (Sig_str : Sig_structure sign C) := 
   ↥((context_in_Sig_str cont Sig_str) ⟶ (Sig_str.carrier (tc.t.sort)))
 
 @[hott]
 def interpret_of_term {sign : fo_signature} {cont : context sign} 
-  {C : Category.{u v}} [has_products.{v u 0} C] (Sig_str : Sig_structure sign C) 
+  {C : Category.{u v}} [has_sign_products sign C] (Sig_str : Sig_structure sign C) 
   (tc : term_in_context cont) : interpret_of_term_hom tc Sig_str := 
 begin 
   hinduction tc, hinduction t, hinduction expr, 
-  { have g : ↥(context_in_Sig_str cont Sig_str ⟶ Sig_str.carrier v.sort), from 
+  { have g : ↥(context_in_Sig_str cont Sig_str ⟶ Sig_str.carrier x.sort), from 
       pi.π (λ x : pred_Set cont.vars, Sig_str.carrier (pred_Set_map cont.vars x).sort) 
-                                                              ⟨v, in_cont v (idpath v)⟩,
+                                                              ⟨x, in_cont x (idpath x)⟩,
     exact pv ▸[λ s', ↥(context_in_Sig_str cont Sig_str ⟶ Sig_str.carrier s')] g },
   { let tc_args : Π (k : sign.ops_arity o), term_in_context cont := 
     begin 
@@ -205,139 +308,282 @@ begin
 end 
 
 @[hott]
-def interpret_of_rel {sign : fo_signature} {cont : context sign} 
-  {C : Category.{u v}} [has_products.{v u 0} C] (Sig_str : Sig_structure sign C) 
-  (r : sign.rels) : 
-  subobject (Sig_str_prod Sig_str.str (@fo_signature.rels_comp sign r)) :=
+def interpret_of_rel {sign : fo_signature} {cont : context sign} {C : Category.{u v}} 
+  [has_sign_products sign C] (Sig_str : Sig_structure sign C) (r : sign.rels) : 
+  subobject (∏ (λ a, Sig_str.carrier (@fo_signature.rels_comp sign r a))) :=
 Sig_str.str.rels r
 
 @[hott] 
-def formula_subobject {sign : fo_signature} {cont : context sign}  
-  (fc : formula_in_context cont) {C : Category.{u v}} [has_products.{v u 0} C]
-  (Sig_str : Sig_structure sign C) := subobject (context_in_Sig_str cont Sig_str)
+def formula_subobject {sign : fo_signature} 
+  (fc : formula_in_context sign) {C : Category.{u v}} [has_sign_products sign C]
+  (Sig_str : Sig_structure sign C) := 
+subobject (context_in_Sig_str fc.cont_of_φ.cont Sig_str)
 
 @[hott] 
-def interpret_of_equal_form {sign : fo_signature} {cont : context sign}  
-  {C : Category.{u v}} [has_products.{v u 0} C] (Sig_str : Sig_structure sign C) 
+def interpret_of_equal_form {sign : fo_signature}  
+  {C : Category.{u v}} [has_sign_products sign C] (Sig_str : Sig_structure sign C) 
   (t₁ t₂ : term sign) (fun_eq : t₁.sort = t₂.sort)
-  (in_cont : formula.free_vars (formula.eq_terms t₁ t₂ fun_eq)⊆cont.vars) 
+  (φ_cont : context_of (formula.eq_terms t₁ t₂ fun_eq)) 
   [H : is_interpretable_in (formula.eq_terms t₁ t₂ fun_eq) C] :
-  formula_subobject (formula_in_context.mk (formula.eq_terms t₁ t₂ fun_eq) in_cont) 
+  formula_subobject (formula_in_context.mk (formula.eq_terms t₁ t₂ fun_eq) φ_cont) 
                     Sig_str :=
 begin
-  let tc₁ := term_in_context.mk t₁ (subset_trans _ _ _ (union_sset_l _ _) in_cont), 
-  let tc₂ := term_in_context.mk t₂ (subset_trans _ _ _ (union_sset_r _ _) in_cont), 
-  change subobject (context_in_Sig_str cont Sig_str),
+  let tc₁ := term_in_context.mk t₁ (subset_trans _ _ _ (union_sset_l _ _) φ_cont.in_cont), 
+  let tc₂ := term_in_context.mk t₂ (subset_trans _ _ _ (union_sset_r _ _) φ_cont.in_cont), 
+  change subobject (context_in_Sig_str φ_cont.cont Sig_str),
   have p : ↥(needs_properties (formula.eq_terms t₁ t₂ fun_eq) 
                                       model_properties.equalizer), from true.intro, 
-  have h : ↥((context_in_Sig_str cont Sig_str) ⟶ (Sig_str.carrier t₂.sort)), from 
+  have h : ↥((context_in_Sig_str φ_cont.cont Sig_str) ⟶ (Sig_str.carrier t₂.sort)), from 
     interpret_of_term Sig_str tc₂,
   exact @equalizer_as_subobject _ _ _ (interpret_of_term Sig_str tc₁) 
-      (fun_eq⁻¹ ▸[λ s, (context_in_Sig_str cont Sig_str) ⟶ (Sig_str.carrier s)] h) 
-      (@has_equalizer_of_has_equalizers _ _ (@is_interpretable_in.equal _ _ _ _ H p) 
+      (fun_eq⁻¹ ▸[λ s, (context_in_Sig_str φ_cont.cont Sig_str) ⟶ (Sig_str.carrier s)] h) 
+      (@has_equalizer_of_has_equalizers _ _ (@is_interpretable_in.equal _ _ _ H p) 
                                         _ _ _ _)
 end
 
 @[hott]
-def interpret_of_rel_form {sign : fo_signature} {cont : context sign} {C : Category.{u v}} 
-  [has_products.{v u 0} C] (Sig_str : Sig_structure sign C) (rel : sign.rels) 
+def interpret_of_rel_form {sign : fo_signature} {C : Category.{u v}} 
+  [has_sign_products sign C] (Sig_str : Sig_structure sign C) (rel : sign.rels) 
   (comp : Π (k : sign.rels_arity rel), term_of_sort (sign.rels_comp k))
-  (in_cont : formula.free_vars (formula.rel_terms rel comp)⊆cont.vars)
+  (φ_cont : context_of (formula.rel_terms rel comp))
   [H : is_interpretable_in (formula.rel_terms rel comp) C] :
-  formula_subobject (formula_in_context.mk (formula.rel_terms rel comp) in_cont) Sig_str :=
-have f : ↥(context_in_Sig_str cont Sig_str ⟶ 
-              (Sig_str_prod Sig_str.str (@fo_signature.rels_comp sign rel))), from
+  formula_subobject (formula_in_context.mk (formula.rel_terms rel comp) φ_cont) Sig_str :=
+have f : ↥(context_in_Sig_str φ_cont.cont Sig_str ⟶ 
+              ∏ (λ a, Sig_str.carrier (@fo_signature.rels_comp sign rel a))), from
 begin 
   apply pi.lift, intro k, 
   let tc := term_in_context.mk (term.mk (sign.rels_comp k) (comp k)) 
-                               (subset_trans _ _ _ (sset_iUnion _ k) in_cont),
+                               (subset_trans _ _ _ (sset_iUnion _ k) φ_cont.in_cont),
   exact interpret_of_term Sig_str tc 
 end,
 have p : ↥(needs_properties (formula.rel_terms rel comp) 
                                       model_properties.pullback), from true.intro,
 @pullback_subobject _ _ _ f (Sig_str.str.rels rel) 
-          (@has_pullback_of_has_pullbacks _ _ (@is_interpretable_in.pullback _ _ _ _ H p)
+          (@has_pullback_of_has_pullbacks _ _ (@is_interpretable_in.pullback _ _ _ H p)
                                           _ _ _ _ _)
 
 @[hott]
-def interpret_of_T_form {sign : fo_signature} {cont : context sign} {C : Category.{u v}} 
-  [has_products.{v u 0} C] (Sig_str : Sig_structure sign C)  
-  (in_cont : formula.free_vars (formula.T sign)⊆cont.vars)
-  [H : is_interpretable_in (formula.T sign) C] :
-  formula_subobject (formula_in_context.mk (formula.T sign) in_cont) Sig_str :=
+def interpret_of_T_form {sign : fo_signature} {C : Category.{u v}} 
+  [has_sign_products sign C] (Sig_str : Sig_structure sign C)  
+  (φ_cont : context_of (formula.T sign)) [H : is_interpretable_in (formula.T sign) C] :
+  formula_subobject (formula_in_context.mk (formula.T sign) φ_cont) Sig_str :=
 top_subobject _
 
 @[hott]
-def interpret_of_F_form {sign : fo_signature} {cont : context sign} {C : Category.{u v}} 
-  [has_products.{v u 0} C] (Sig_str : Sig_structure sign C)  
-  (in_cont : formula.free_vars (formula.F sign)⊆cont.vars)
-  [H : is_interpretable_in (formula.F sign) C] :
-  formula_subobject (formula_in_context.mk (formula.F sign) in_cont) Sig_str :=
+def interpret_of_F_form {sign : fo_signature} {C : Category.{u v}} 
+  [has_sign_products sign C] (Sig_str : Sig_structure sign C)  
+  (φ_cont : context_of (formula.F sign)) [H : is_interpretable_in (formula.F sign) C] :
+  formula_subobject (formula_in_context.mk (formula.F sign) φ_cont) Sig_str :=
 have p : ↥(needs_properties (formula.F sign)
                                       model_properties.fin_union), from true.intro,  
-@bottom_subobject _ _ (@is_interpretable_in.fin_union _ _ _ _ H p)
+@bottom_subobject _ _ (@is_interpretable_in.fin_union _ _ _ H p)
 
 @[hott]
-def interpret_of_conj_form {sign : fo_signature} {cont : context sign} {C : Category.{u v}} 
-  [has_products.{v u 0} C] (Sig_str : Sig_structure sign C) (φ₁ φ₂ : formula sign)
-  (ih₁ : Π (in_cont₁ : formula.free_vars φ₁⊆cont.vars) [H₁ : is_interpretable_in φ₁ C],
-           formula_subobject (formula_in_context.mk φ₁ in_cont₁) Sig_str)
-  (ih₂ : Π (in_cont₂ : formula.free_vars φ₂⊆cont.vars) [H₂ : is_interpretable_in φ₂ C],
-           formula_subobject (formula_in_context.mk φ₂ in_cont₂) Sig_str)
-  (in_cont : formula.free_vars (formula.conj φ₁ φ₂)⊆cont.vars)
+def interpret_of_conj_form {sign : fo_signature} {C : Category.{u v}} 
+  [has_sign_products sign C] (Sig_str : Sig_structure sign C) (φ₁ φ₂ : formula sign)
+  (ih₁ : Π (φ_cont₁ : context_of φ₁) [H₁ : is_interpretable_in φ₁ C],
+           formula_subobject (formula_in_context.mk φ₁ φ_cont₁) Sig_str)
+  (ih₂ : Π (φ_cont₂ : context_of φ₂) [H₂ : is_interpretable_in φ₂ C],
+           formula_subobject (formula_in_context.mk φ₂ φ_cont₂) Sig_str)
+  (conj_cont : context_of (formula.conj φ₁ φ₂))
   [H : is_interpretable_in (formula.conj φ₁ φ₂) C] :
-  formula_subobject (formula_in_context.mk (formula.conj φ₁ φ₂) in_cont) Sig_str :=
+  formula_subobject (formula_in_context.mk (formula.conj φ₁ φ₂) conj_cont) Sig_str :=
 have p : ↥(needs_properties (formula.conj φ₁ φ₂)
                                       model_properties.pullback), from true.intro,  
 have Hint : has_inter (formula_subobject (formula_in_context.mk (formula.conj φ₁ φ₂) 
-                                            in_cont) Sig_str), from 
-  @subobj_has_inter _ _ ((@is_interpretable_in.pullback _ _ _ _ H p)),  
-@has_inter.inter _ Hint (@ih₁ (subset_trans _ _ _ (union_sset_l _ _) in_cont) 
-                              (@interpret_conj_comp_l _ C _ φ₁ φ₂ H)) 
-                        (@ih₂ (subset_trans _ _ _ (union_sset_r _ _) in_cont) 
-                              (@interpret_conj_comp_r _ C _ φ₁ φ₂ H))
+                                          conj_cont) Sig_str), from 
+  @subobj_has_inter _ _ ((@is_interpretable_in.pullback _ _ _ H p)),  
+@has_inter.inter _ Hint (@ih₁ (context_of.mk conj_cont.cont 
+                               (subset_trans _ _ _ (union_sset_l _ _) conj_cont.in_cont)) 
+                              (@interpret_conj_comp_l _ C φ₁ φ₂ H)) 
+                        (@ih₂ (context_of.mk conj_cont.cont
+                               (subset_trans _ _ _ (union_sset_r _ _) conj_cont.in_cont)) 
+                              (@interpret_conj_comp_r _ C φ₁ φ₂ H))
 
 @[hott]
-def interpret_of_disj_form {sign : fo_signature} {cont : context sign} {C : Category.{u v}} 
-  [has_products.{v u 0} C] (Sig_str : Sig_structure sign C) (φ₁ φ₂ : formula sign)
-  (ih₁ : Π (in_cont₁ : formula.free_vars φ₁⊆cont.vars) [H₁ : is_interpretable_in φ₁ C],
-           formula_subobject (formula_in_context.mk φ₁ in_cont₁) Sig_str)
-  (ih₂ : Π (in_cont₂ : formula.free_vars φ₂⊆cont.vars) [H₂ : is_interpretable_in φ₂ C],
-           formula_subobject (formula_in_context.mk φ₂ in_cont₂) Sig_str)
-  (in_cont : formula.free_vars (formula.disj φ₁ φ₂)⊆cont.vars)
+def interpret_of_disj_form {sign : fo_signature} {C : Category.{u v}} 
+  [has_sign_products sign C] (Sig_str : Sig_structure sign C) (φ₁ φ₂ : formula sign)
+  (ih₁ : Π (φ_cont₁ : context_of φ₁) [H₁ : is_interpretable_in φ₁ C],
+           formula_subobject (formula_in_context.mk φ₁ φ_cont₁) Sig_str)
+  (ih₂ : Π (φ_cont₂ : context_of φ₂) [H₂ : is_interpretable_in φ₂ C],
+           formula_subobject (formula_in_context.mk φ₂ φ_cont₂) Sig_str)
+  (disj_cont : context_of (formula.disj φ₁ φ₂))
   [H : is_interpretable_in (formula.disj φ₁ φ₂) C] :
-  formula_subobject (formula_in_context.mk (formula.disj φ₁ φ₂) in_cont) Sig_str :=
+  formula_subobject (formula_in_context.mk (formula.disj φ₁ φ₂) disj_cont) Sig_str :=
 have p : ↥(needs_properties (formula.disj φ₁ φ₂)
                                       model_properties.fin_union), from true.intro,  
 have Hun : has_union (formula_subobject (formula_in_context.mk (formula.disj φ₁ φ₂) 
-                                            in_cont) Sig_str), from 
-  @subobj_has_union _ _ ((@is_interpretable_in.fin_union _ _ _ _ H p)),    
-@has_union.union _ Hun (@ih₁ (subset_trans _ _ _ (union_sset_l _ _) in_cont) 
-                              (@interpret_disj_comp_l _ C _ φ₁ φ₂ H)) 
-                        (@ih₂ (subset_trans _ _ _ (union_sset_r _ _) in_cont) 
-                              (@interpret_disj_comp_r _ C _ φ₁ φ₂ H))
+                                                           disj_cont) Sig_str), from 
+  @subobj_has_union _ _ ((@is_interpretable_in.fin_union _ _ _ H p)),    
+@has_union.union _ Hun (@ih₁ (context_of.mk disj_cont.cont
+                              (subset_trans _ _ _ (union_sset_l _ _) disj_cont.in_cont)) 
+                             (@interpret_disj_comp_l _ C φ₁ φ₂ H)) 
+                        (@ih₂ (context_of.mk disj_cont.cont
+                               (subset_trans _ _ _ (union_sset_r _ _) disj_cont.in_cont)) 
+                              (@interpret_disj_comp_r _ C φ₁ φ₂ H))
 
 @[hott]
-def interpret_of_form {sign : fo_signature} {cont : context sign}  
-  (fc : formula_in_context cont) {C : Category.{u v}} [has_products.{v u 0} C]
+def interpret_of_impl_form {sign : fo_signature} {C : Category.{u v}} 
+  [has_sign_products sign C] (Sig_str : Sig_structure sign C) (φ₁ φ₂ : formula sign)
+  (ih₁ : Π (φ_cont₁ : context_of φ₁) [H₁ : is_interpretable_in φ₁ C],
+           formula_subobject (formula_in_context.mk φ₁ φ_cont₁) Sig_str)
+  (ih₂ : Π (φ_cont₂ : context_of φ₂) [H₂ : is_interpretable_in φ₂ C],
+           formula_subobject (formula_in_context.mk φ₂ φ_cont₂) Sig_str)
+  (impl_cont : context_of (formula.impl φ₁ φ₂))
+  [H : is_interpretable_in (formula.impl φ₁ φ₂) C] :
+  formula_subobject (formula_in_context.mk (formula.impl φ₁ φ₂) impl_cont) Sig_str :=
+have p : ↥(needs_properties (formula.impl φ₁ φ₂)
+                                      model_properties.all_of_fiber), from true.intro,
+have Hpbaf : has_pb_and_all_fib C, from @is_interpretable_in.all_fib _ _ _ H p, 
+have Himpl : @has_implication _ Hpbaf.1.1 _ 
+                      (@ih₁ (context_of.mk impl_cont.cont
+                             (subset_trans _ _ _ (union_sset_l _ _) impl_cont.in_cont)) 
+                            (@interpret_impl_comp_l _ C φ₁ φ₂ H))
+                      (@ih₂ (context_of.mk impl_cont.cont
+                             (subset_trans _ _ _ (union_sset_r _ _) impl_cont.in_cont)) 
+                            (@interpret_impl_comp_r _ C φ₁ φ₂ H)), from
+  @has_implication.mk _ Hpbaf.1.1 _ _ _ 
+                      (@implications_of_all_fibs _ _ Hpbaf.1.1 Hpbaf.1.2 _ _),                                                                       
+@impl_subobj _ Hpbaf.pb_all_fib.1 _ _ _ Himpl
+
+@[hott]
+def interpret_of_neg_form {sign : fo_signature} {C : Category.{u v}} 
+  [has_sign_products sign C] (Sig_str : Sig_structure sign C) (φ : formula sign)
+  (ih : Π (φ_cont : context_of φ) [H : is_interpretable_in φ C],
+          formula_subobject (formula_in_context.mk φ φ_cont) Sig_str)
+  (neg_cont : context_of (formula.neg φ)) [H : is_interpretable_in (formula.neg φ) C] :
+  formula_subobject (formula_in_context.mk (formula.neg φ) 
+                      (context_of.mk neg_cont.cont neg_cont.in_cont)) Sig_str :=
+have p : ↥(needs_properties (formula.neg φ)
+                                      model_properties.all_of_fiber), from true.intro,
+have Hpbaf : has_pb_and_all_fib C, from @is_interpretable_in.all_fib _ _ _ H p,
+have q : ↥(needs_properties (formula.neg φ)
+                                      model_properties.fin_union), from true.intro,
+have Hfu : has_fin_unions C, from @is_interpretable_in.fin_union _ _ _ H q, 
+have Himpl : @has_implication _ Hpbaf.1.1 _ 
+                (@ih (context_of.mk neg_cont.cont neg_cont.in_cont) 
+                     (@interpret_neg_comp _ C φ H))
+                    (@bottom_subobject _ (context_in_Sig_str neg_cont.cont Sig_str) Hfu), from
+  @has_implication.mk _ Hpbaf.1.1 _ _ _ 
+                      (@implications_of_all_fibs _ _ Hpbaf.1.1 Hpbaf.1.2 _ _),                                                                       
+@impl_subobj _ Hpbaf.pb_all_fib.1 _ _ _ Himpl
+
+@[hott]
+def interpret_of_ex_form {sign : fo_signature} {C : Category.{u v}} 
+  [has_sign_products sign C] (Sig_str : Sig_structure sign C) 
+  (v : var sign.labels sign.sorts) (φ : formula sign) 
+  (ih : Π (φ_cont : context_of φ) [H : is_interpretable_in φ C],
+          formula_subobject (formula_in_context.mk φ φ_cont) Sig_str)
+  (ex_cont : context_of (formula.ex v φ)) [H : is_interpretable_in (formula.ex v φ) C] :
+  formula_subobject  (formula_in_context.mk (formula.ex v φ) ex_cont) Sig_str :=
+begin
+  have p : ↥(needs_properties (formula.ex v φ)
+                                      model_properties.stable_image), from true.intro,
+  let Hpb : has_pullbacks C := (@is_interpretable_in.stable_im _ _ _ H p).1.1,
+  have Hsi : @has_stable_images C Hpb, from 
+                                   (@is_interpretable_in.stable_im _ _ _ H p).1.2,
+  have inc : ↥(formula.free_vars φ ⊆ (ex_cont.cont.vars ∪ singleton_sset v)), from 
+    begin fapply set_minus_inc_impl, exact ex_cont.in_cont end,
+  let cont_v : context_of φ := context_of.mk 
+                                (context.mk (ex_cont.cont.vars ∪ singleton_sset v)) inc,
+  let inc' := union_sset_l (ex_cont.cont.vars) (singleton_sset v),
+  have Hex : @has_ex_in_fiber _ Hpb _ _ (cont_var_proj_in_Sig_str cont_v.cont inc' Sig_str), from 
+    @has_ex_fib_of_has_ex_fibs _ Hpb (@has_ex_fibs_of_has_stable_ims _ Hpb Hsi) _ _ _,                                   
+  change subobject _,
+  exact (@ex_fib _ Hpb _ _ _ Hex).obj (@ih cont_v (@interpret_ex_comp _ C v φ H))
+end
+
+@[hott]
+def interpret_of_univ_form {sign : fo_signature} {C : Category.{u v}} 
+  [has_sign_products sign C] (Sig_str : Sig_structure sign C) 
+  (v : var sign.labels sign.sorts) (φ : formula sign) 
+  (ih : Π (φ_cont : context_of φ) [H : is_interpretable_in φ C],
+          formula_subobject (formula_in_context.mk φ φ_cont) Sig_str)
+  (univ_cont : context_of (formula.univ v φ)) 
+  [H : is_interpretable_in (formula.univ v φ) C] :
+  formula_subobject  (formula_in_context.mk (formula.univ v φ) univ_cont) Sig_str :=
+begin
+  have p : ↥(needs_properties (formula.univ v φ)
+                                      model_properties.all_of_fiber), from true.intro,
+  let Hpb : has_pullbacks C := (@is_interpretable_in.all_fib _ _ _ H p).1.1,
+  have Haf : @has_all_of_fibers C Hpb, from 
+                                   (@is_interpretable_in.all_fib _ _ _ H p).1.2,
+  have inc : ↥(formula.free_vars φ ⊆ (univ_cont.cont.vars ∪ singleton_sset v)), from 
+    begin fapply set_minus_inc_impl, exact univ_cont.in_cont end,
+  let cont_v : context_of φ := context_of.mk 
+                            (context.mk (univ_cont.cont.vars ∪ singleton_sset v)) inc,
+  let inc' := union_sset_l (univ_cont.cont.vars) (singleton_sset v),
+  have Hex : @has_all_of_fiber _ Hpb _ _ 
+                             (cont_var_proj_in_Sig_str cont_v.cont inc' Sig_str), from 
+    @has_all_fib_of_has_all_fibs _ Hpb Haf _ _ _,                                   
+  exact (@fib_all _ Hpb _ _ _ Hex).obj (@ih cont_v (@interpret_univ_comp _ C v φ H))
+end
+
+@[hott]
+def interpret_of_inf_conj_form {sign : fo_signature} {C : Category.{u v}} 
+  [has_sign_products sign C] (Sig_str : Sig_structure sign C)
+  (i : sign.ind_Set) (ind : (sign.I i) → formula sign)
+  (ih : Π (j : sign.I i) (cont_of_φ : context_of (ind j)) 
+          [H : is_interpretable_in (ind j) C],
+          formula_subobject (formula_in_context.mk (ind j) cont_of_φ) Sig_str)
+  (inf_conj_cont : context_of (formula.inf_conj ind))
+  [H : is_interpretable_in (formula.inf_conj ind) C] :
+  formula_subobject (formula_in_context.mk (formula.inf_conj ind) inf_conj_cont) 
+                    Sig_str :=
+begin
+  have p : ↥(needs_properties (formula.inf_conj ind)
+                                      model_properties.inf_pullback), from true.intro,
+  have Hipb : has_inf_pullbacks C, from @is_interpretable_in.inf_pb _ _ _ H p,
+  exact @subobject.union _ (context_in_Sig_str inf_conj_cont.cont Sig_str) (sign.I i) 
+                 (λ j : sign.I i, @ih j (context_of.mk inf_conj_cont.cont
+                  (subset_trans _ _ _ (sset_iUnion (λ j, formula.free_vars (ind j)) _) 
+                 inf_conj_cont.in_cont)) (@interpret_inf_conj_comp _ _ i ind H j)) 
+                 (@has_union_of_has_unions _ _ Hipb _ _)
+end
+
+@[hott]
+def interpret_of_inf_disj_form {sign : fo_signature} {C : Category.{u v}} 
+  [has_sign_products sign C] (Sig_str : Sig_structure sign C)
+  (i : sign.ind_Set) (ind : (sign.I i) → formula sign)
+  (ih : Π (j : sign.I i) (cont_of_φ : context_of (ind j)) 
+          [H : is_interpretable_in (ind j) C],
+          formula_subobject (formula_in_context.mk (ind j) cont_of_φ) Sig_str)
+  (inf_disj_cont : context_of (formula.inf_disj ind))
+  [H : is_interpretable_in (formula.inf_disj ind) C] :
+  formula_subobject (formula_in_context.mk (formula.inf_disj ind) inf_disj_cont) 
+                    Sig_str :=
+begin
+  have p : ↥(needs_properties (formula.inf_disj ind)
+                                      model_properties.inf_union), from true.intro,
+  have Hu : has_unions C, from @is_interpretable_in.inf_union _ _ _ H p,
+  exact @subobject.union _ (context_in_Sig_str inf_disj_cont.cont Sig_str) (sign.I i) 
+                 (λ j : sign.I i, @ih j (context_of.mk inf_disj_cont.cont
+                  (subset_trans _ _ _ (sset_iUnion (λ j, formula.free_vars (ind j)) _) 
+                 inf_disj_cont.in_cont)) (@interpret_inf_disj_comp _ _ i ind H j)) 
+                 (@has_union_of_has_unions _ _ Hu _ _)
+end
+
+@[hott]
+def interpret_of_form {sign : fo_signature}   
+  (fc : formula_in_context sign) {C : Category.{u v}} [has_sign_products sign C]
   [H : is_interpretable_in fc.φ C] (Sig_str : Sig_structure sign C) :
   formula_subobject fc Sig_str :=
 begin
   tactic.unfreeze_local_instances, hinduction fc, 
   hinduction φ with t₁ t₂ fun_eq rel comp φ₁ φ₂ ih₁ ih₂ φ₁ φ₂ ih₁ ih₂ φ₁ φ₂ ih₁ ih₂
                     φ ih v φ ih v φ ih i ind ih i ind ih,
-  { exact interpret_of_equal_form Sig_str t₁ t₂ fun_eq in_cont },
-  { exact interpret_of_rel_form Sig_str rel comp in_cont },
-  { exact interpret_of_T_form Sig_str in_cont },
-  { exact interpret_of_F_form Sig_str in_cont },
-  { exact interpret_of_conj_form Sig_str φ₁ φ₂ ih₁ ih₂ in_cont },
-  { exact interpret_of_disj_form Sig_str φ₁ φ₂ ih₁ ih₂ in_cont },
-  { sorry },
-  { sorry },
-  { sorry },
-  { sorry },
-  { sorry },
-  { sorry }
+  { exact interpret_of_equal_form Sig_str t₁ t₂ fun_eq cont_of_φ },
+  { exact interpret_of_rel_form Sig_str rel comp cont_of_φ },
+  { exact interpret_of_T_form Sig_str cont_of_φ },
+  { exact interpret_of_F_form Sig_str cont_of_φ },
+  { exact interpret_of_conj_form Sig_str φ₁ φ₂ ih₁ ih₂ cont_of_φ },
+  { exact interpret_of_disj_form Sig_str φ₁ φ₂ ih₁ ih₂ cont_of_φ },
+  { exact interpret_of_impl_form Sig_str φ₁ φ₂ ih₁ ih₂ cont_of_φ },
+  { exact interpret_of_neg_form Sig_str φ ih cont_of_φ },
+  { exact interpret_of_ex_form Sig_str v φ ih cont_of_φ },
+  { exact interpret_of_univ_form Sig_str v φ ih cont_of_φ },
+  { exact interpret_of_inf_conj_form Sig_str i ind ih cont_of_φ },
+  { exact interpret_of_inf_disj_form Sig_str i ind ih cont_of_φ }
 end    
 
 
