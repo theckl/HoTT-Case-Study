@@ -658,6 +658,12 @@ def pathover_ap1000 {A B C : Type _} {h₁ h₂ : A -> B -> C -> Type _} {p : h�
 begin hinduction p, intros a b c q, exact pathover_idp_of_eq _ (eq_of_pathover_idp q) end 
 
 @[hott]
+def pathover_ap011 {A B C : Type _} {D : B -> C -> Type _} (f₁ : A -> B) (f₂ : A -> C)
+  (f₃ : Π (a : A), D (f₁ a) (f₂ a)) {a₁ a₂ : A} (p : a₁ = a₂) :
+  f₃ a₁ =[ap011 (λ (b : B) (c : C), D b c) (ap f₁ p) (ap f₂ p); id] f₃ a₂ :=
+begin hinduction p, hsimp, apply pathover_of_tr_eq, change idp ▸ _ = _, exact idp_tr _ end
+
+@[hott]
 def pathover_of_pathover_ap100 {A B C: Type _} {D : C -> Type _} {h₁ h₂ : A -> B -> C} 
   {p : h₁ = h₂} : Π {a : A} {b : B} {c₁ : D (h₁ a b)} {c₂ : D (h₂ a b)}, 
   c₁ =[ap100 p a b; D] c₂ -> c₁ =[p; λ h : A -> B -> C, D (h a b)] c₂ :=
