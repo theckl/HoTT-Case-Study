@@ -28,6 +28,7 @@ open hott.eq hott.set hott.subset hott.is_trunc hott.is_equiv hott.equiv
    allowed to be index sets of products in interpreting categories. -/
 namespace signature
 
+/- Labels allow to distinguish variables of the same sort. -/
 @[hott]
 structure var (labels : Set.{0}) (sorts : Set.{0}) :=
   (label : labels)
@@ -35,18 +36,18 @@ structure var (labels : Set.{0}) (sorts : Set.{0}) :=
 
 /- The following three lemmas should be produced automatically. -/
 @[hott]
-def var_eq {labels : Set.{0}} {sorts : Set.{0}} {v₁ v₂ : var labels sorts} : 
-  (v₁.label = v₂.label) -> (v₁.sort = v₂.sort) -> (v₁ = v₂) :=
+def var_eq {labels : Set.{0}} {sorts : Set.{0}} {x₁ x₂ : var labels sorts} : 
+  (x₁.label = x₂.label) -> (x₁.sort = x₂.sort) -> (x₁ = x₂) :=
 begin
   intros p_label p_sort, 
-  hinduction v₁ with l₁ s₁, hinduction v₂ with l₂ s₂,
-  exact ap011 var.mk p_label p_sort
+  hinduction x₁ with x₁ s₁, hinduction x₂ with x₂ s₂,
+  apply ap011 var.mk p_label p_sort
 end    
 
 @[hott]
-def var_eq_eta {labels : Set.{0}} {sorts : Set.{0}} {v₁ v₂ : var labels sorts} (p : v₁ = v₂) :
-  var_eq (ap var.label p) (ap var.sort p) = p := 
-begin hinduction p, hinduction v₁, reflexivity end    
+def var_eq_eta {labels : Set.{0}} {sorts : Set.{0}} {x₁ x₂ : var labels sorts} 
+  (p : x₁ = x₂) : var_eq (ap var.label p) (ap var.sort p) = p := 
+begin hinduction p, hinduction x₁, reflexivity end    
     
 @[hott, instance]
 def var_is_set {labels : Set.{0}} {sorts : Set.{0}}  : is_set (var labels sorts) :=
@@ -58,10 +59,8 @@ end
 
 @[hott]
 structure fo_signature :=
-  (sorts : Set.{0})
-  (var_labels : Set.{0})
-  (cont_pred : Subset (to_Set (var var_labels sorts)) -> trunctype.{0} -1)
-                       -- This prescribes which sets of variables are allowed as contexts
+  (labels : Set.{0}) 
+  (sorts : Set.{0}) (Hs : has_dec_elem sorts)
   (ops : Set.{0}) 
   (ops_arity : Π (o : ops), Set.{0})
   (ops_source : Π (o : ops), ops_arity o -> sorts)
@@ -69,16 +68,29 @@ structure fo_signature :=
   (rels : Set.{0})
   (rels_arity : Π (r : rels), Set.{0})
   (rels_comp : Π {r : rels}, rels_arity r -> sorts)
-  (I : Set.{0})
-  (V : I -> Set.{0}) --sets over which infinite dis/conjunction can be taken, indexed by `I`
+  (ind_Set : Set.{0})  --set indexing all index sets
+  (I : ind_Set -> Set.{0}) 
+/- If we don't restrict the possible index sets of infinte con- and disjunction to a set
+   the type of formulas is not a set. -/
 
+/- We only need to assume that one of the set of labels and sorts has a decidable 
+   element relation - sorts should usually have less elements than labels. -/
+@[hott, instance]
+def sign_var_has_dec_elem (sign : fo_signature) : 
+  has_dec_elem (to_Set (var sign.labels sign.sorts)) :=
+begin 
+  apply has_dec_elem.mk, intros x S, hinduction x with l s,
+  let S_l : Subset sign.sorts := λ s', S (var.mk l s'),
+  have S_l_dec : s ∈ S_l ⊎ s ∉ S_l, from @has_dec_elem.dec_el _ sign.Hs s S_l,
+  hinduction S_l_dec, exact sum.inl val, exact sum.inr val 
+end
 
 namespace term
 
 @[hott] 
 inductive term_of_sort {sign : fo_signature} : sign.sorts -> Type 
-| var (s : sign.sorts) (v : var sign.var_labels sign.sorts) 
-                            (pv : v.sort = s) : term_of_sort s      
+| var (s : sign.sorts) (x : var sign.labels sign.sorts) (pv : x.sort = s) : 
+                                                                       term_of_sort s      
 | op (s : sign.sorts) (o : sign.ops) (pot : sign.ops_target o = s)
      (args : Π (oa : sign.ops_arity o), term_of_sort (sign.ops_source o oa)) : 
      term_of_sort s
@@ -88,14 +100,10 @@ protected def code {sign : fo_signature} : Π {s₁ s₂ : sign.sorts},
   term_of_sort s₁ -> term_of_sort s₂ -> Type :=
 begin
   intros s₁ s₂ t₁, revert s₁ t₁ s₂, intros s₁ t₁,
-  hinduction t₁ with s₁ v₁ pv₁ s₁ o₁ pot₁ args₁ ih₁,
-  { intros s₂ t₂, hinduction t₂ with s₂ v₂ pv₂ s₂ o₂ pot₂ args₂ ih₂, 
-    { exact v₁ = v₂ },
-    { exact Zero } },
-  { intros s₂ t₂, hinduction t₂ with s₂ v₂ pv₂ s₂ o₂ pot₂ args₂ ih₂,
-    { exact Zero },
-    { exact Σ (q : o₁ = o₂), Π (oa₁ : sign.ops_arity o₁), 
-                           ih₁ oa₁ (args₂ (q ▸ oa₁)) } }
+  hinduction t₁ with s₁ x₁ px₁ s₁ o₁ pot₁ args₁ ih₁,
+  all_goals { intros s₂ t₂, hinduction t₂ with s₂ x₂ px₂ s₂ o₂ pot₂ args₂ ih₂ },
+  exact x₁ = x₂, exact Zero, exact Zero,
+  exact Σ (q : o₁ = o₂), Π (oa₁ : sign.ops_arity o₁), ih₁ oa₁ (args₂ (q ▸ oa₁))  
 end  
 /- The equation compiler produces a non-hott term when we use 
    pattern-matching to define `code`: 
@@ -112,19 +120,17 @@ protected def code_is_prop  {sign : fo_signature} {s₁ s₂ : sign.sorts} :
     is_prop (term.code t₁ t₂) :=
 begin
   intro t₁, revert s₁ t₁ s₂, intros s₁ t₁, 
-  hinduction t₁ with s₁ v₁ pv₁ s₁ o₁ pot₁ args₁ ih₁,  
-  { intros s₂ t₂, hinduction t₂ with s₂ v₂ pv₂ s₂ o₂ pot₂ args₂ ih₂, 
-    { change is_prop (v₁ = v₂), apply is_prop.mk, intros q q', 
-      exact is_set.elim _ _ },
-    { change is_prop Zero, apply_instance } },
-  { intros s₂ t₂, hinduction t₂ with s₂ v₂ pv₂ s₂ o₂ pot₂ args₂ ih₂,
-    { change is_prop Zero, apply_instance },
-    { change is_prop (Σ (q : o₁ = o₂), Π (oa₁ : sign.ops_arity o₁),
+  hinduction t₁ with s₁ x₁ px₁ s₁ o₁ pot₁ args₁ ih₁, 
+  all_goals { intros s₂ t₂, hinduction t₂ with s₂ x₂ px₂ s₂ o₂ pot₂ args₂ ih₂, }, 
+  { change is_prop (x₁ = x₂), apply is_prop.mk, intros q q', exact is_set.elim _ _ },
+  { change is_prop Zero, apply_instance },
+  { change is_prop Zero, apply_instance },
+  { change is_prop (Σ (q : o₁ = o₂), Π (oa₁ : sign.ops_arity o₁),
                         term.code (args₁ oa₁) (args₂ (q ▸ oa₁))),
-      apply is_prop.mk, intros t₁_code t₂_code, fapply sigma.sigma_eq, 
-      { exact is_set.elim _ _ },
-      { apply pathover_of_tr_eq, apply eq_of_homotopy, intro oa₁, 
-        exact @is_prop.elim _ (ih₁ oa₁ (args₂ (t₂_code.1 ▸ oa₁))) _ _ } } }
+    apply is_prop.mk, intros t₁_code t₂_code, fapply sigma.sigma_eq, 
+    { exact is_set.elim _ _ },
+    { apply pathover_of_tr_eq, apply eq_of_homotopy, intro oa₁, 
+      exact @is_prop.elim _ (ih₁ oa₁ (args₂ (t₂_code.1 ▸ oa₁))) _ _ } }
 end 
 
 @[hott]
@@ -158,30 +164,28 @@ protected def decode {sign : fo_signature} :
   Π {t₁ t₂ : term sign}, term.code t₁.expr t₂.expr -> t₁ = t₂ :=
 begin
   intro t₁, hinduction t₁ with s₁ t₁, 
-  hinduction t₁ with s₁ v₁ pv₁ s₁ o₁ pot₁ args₁ ih₁, 
-  { intro t₂, hinduction t₂ with s₂ t₂, 
-    hinduction t₂ with s₂ v₂ pv₂ s₂ o₂ pot₂ args₂ ih₂, 
-    { intro t_code, 
-      have q : v₁ = v₂, from t_code, hinduction q, 
-      have r : s₁ = s₂, from pv₁⁻¹ ⬝ pv₂, hinduction r,
+  hinduction t₁ with s₁ x₁ px₁ s₁ o₁ pot₁ args₁ ih₁,
+  all_goals { intro t₂, hinduction t₂ with s₂ t₂, 
+              hinduction t₂ with s₂ x₂ px₂ s₂ o₂ pot₂ args₂ ih₂ }, 
+  { intro t_code, 
+      have q : x₁ = x₂, from t_code, hinduction q, 
+      have r : s₁ = s₂, from px₁⁻¹ ⬝ px₂, hinduction r,
       fapply apd011 term.mk, exact rfl, apply pathover_idp_of_eq, 
-      exact ap (term_of_sort.var s₁ v₁) (is_set.elim _ _) },
-    { intro t_code, hinduction t_code } },
-  { intro t₂, hinduction t₂ with s₂ t₂, 
-    hinduction t₂ with s₂ v₂ pv₂ s₂ o₂ pot₂ args₂ ih₂,
-    { intro t_code, hinduction t_code },
-    { intro t_code,       
-      change Σ (q : o₁ = o₂), Π (oa₁ : sign.ops_arity o₁),
+      exact ap (term_of_sort.var s₁ x₁) (is_set.elim _ _) },
+  { intro t_code, hinduction t_code },
+  { intro t_code, hinduction t_code },
+  { intro t_code,       
+    change Σ (q : o₁ = o₂), Π (oa₁ : sign.ops_arity o₁),
                 term.code (args₁ oa₁) (args₂ (q ▸ oa₁)) at t_code,
-      hinduction t_code with q args_code, hinduction q,
-      have ps : s₁ = s₂, from pot₁⁻¹ ⬝ pot₂, hinduction ps,
-      have pot_eq : pot₁ = pot₂, from is_set.elim _ _, hinduction pot_eq,
-      fapply apd011 term.mk, exact rfl, apply pathover_idp_of_eq,                 
-      apply ap (term_of_sort.op s₁ o₁ pot₁), apply eq_of_homotopy, 
-      intro oa₁,  
-      have q : term.mk _ (args₁ oa₁) = term.mk _ (args₂ (idp ▸ oa₁)), from 
-        begin exact @ih₁ oa₁ (term.mk _ (args₂ (idp ▸ oa₁))) (args_code oa₁) end, 
-      rwr idp_tr oa₁ at q, exact term_eq_term _ _ _ q } }
+    hinduction t_code with q args_code, hinduction q,
+    have ps : s₁ = s₂, from pot₁⁻¹ ⬝ pot₂, hinduction ps,
+    have pot_eq : pot₁ = pot₂, from is_set.elim _ _, hinduction pot_eq,
+    fapply apd011 term.mk, exact rfl, apply pathover_idp_of_eq,                 
+    apply ap (term_of_sort.op s₁ o₁ pot₁), apply eq_of_homotopy, 
+    intro oa₁,  
+    have q : term.mk _ (args₁ oa₁) = term.mk _ (args₂ (idp ▸ oa₁)), from 
+      begin exact @ih₁ oa₁ (term.mk _ (args₂ (idp ▸ oa₁))) (args_code oa₁) end, 
+    rwr idp_tr oa₁ at q, exact term_eq_term _ _ _ q }
 end  
 
 @[hott]
@@ -243,10 +247,10 @@ begin apply is_trunc_equiv_closed_rev 0 (term_of_sort_of_term s), apply_instance
 /- To define formulas we need the free variables of a term. -/
 @[hott]
 def free_vars_of_term {sign : fo_signature} : term sign -> 
-  Subset (to_Set (var sign.var_labels sign.sorts)) :=
+  Subset (to_Set (var sign.labels sign.sorts)) :=
 begin 
   intro t, hinduction t, hinduction expr, 
-  { exact elem_to_Subset v }, 
+  { exact singleton_sset x }, 
   { exact iUnion ih }
 end
 
@@ -255,8 +259,7 @@ end
    `context`. -/
 @[hott]
 structure context (sign : fo_signature) := 
-  (vars : Subset (to_Set (var sign.var_labels sign.sorts)))
-  (pred : sign.cont_pred vars)
+  (vars : Subset (to_Set (var sign.labels sign.sorts)))
 
 @[hott]
 def context_eq {sign : fo_signature} {cont₁ cont₂ : context sign} : 
@@ -264,17 +267,14 @@ def context_eq {sign : fo_signature} {cont₁ cont₂ : context sign} :
 begin
   intro p_vars, 
   hinduction cont₁ with vars₁ pred₁, hinduction cont₂ with vars₂ pred₂,
-  apply apd011 context.mk p_vars, apply pathover_of_tr_eq, exact is_prop.elim _ _
+  apply ap context.mk p_vars
 end    
 
 @[hott]
 def context_eq_refl {sign : fo_signature} (cont : context sign) : 
   context_eq (@idp _ (cont.vars)) = (@idp _ cont) :=
 begin 
-  hinduction cont, hsimp, change apd011 context.mk (@idp _ vars) _ = _, 
-  have H' : is_prop.elim ((@idp _ vars) ▸[λ v, sign.cont_pred v] pred) pred = idp, from 
-    is_set.elim _ _,
-  rwr H' 
+  hinduction cont, hsimp, change ap context.mk (@idp _ vars) = _, refl
 end 
 
 @[hott]
@@ -311,77 +311,89 @@ inductive formula (sign : fo_signature)
 | disj : formula -> formula -> formula
 | impl : formula -> formula -> formula 
 | neg : formula -> formula
-| ex : var sign.var_labels sign.sorts -> formula -> formula 
-| univ : var sign.var_labels sign.sorts -> formula -> formula 
-| inf_conj : Π (i : sign.I), (sign.V i -> formula) -> formula 
-| inf_disj : Π (i : sign.I), (sign.V i -> formula) -> formula        
+| ex : var sign.labels sign.sorts -> formula -> formula 
+| univ : var sign.labels sign.sorts -> formula -> formula 
+| inf_conj : Π {i : sign.ind_Set}, ((sign.I i) -> formula) -> formula 
+| inf_disj : Π {i : sign.ind_Set}, ((sign.I i) -> formula) -> formula        
 
 @[hott]
 protected def code {sign : fo_signature} : formula sign -> formula sign -> Type :=
 /- A match-expression does not work because we need proper induction. -/  
 begin
-  intro form₁, hinduction form₁ with t₁ t₂ p r comp f₁ f₁',
-  { all_goals { intro form₂, hinduction form₂ with t₁' t₂' p' }, --equality of terms
-    all_goals { try { exact (t₁ = t₁') × (t₂ = t₂') } }, 
-    all_goals { exact Zero } },
-  { all_goals { intro form₂, hinduction form₂ with t₁' t₂' p' }, --relations
-    all_goals { try { exact Σ (q : r = r_1), 
-      comp =[q; λ s, Π (k : sign.rels_arity s), term_of_sort (sign.rels_comp k)] comp_1 } }, 
-    all_goals { exact Zero } },
-  { all_goals { intro form₂, hinduction form₂ with t₁' t₂' p' }, --T
-    exact Zero, exact Zero, exact One, all_goals { exact Zero } },
-  { all_goals { intro form₂, hinduction form₂ with t₁' t₂' p' }, --F
-    exact Zero, exact Zero, exact Zero, exact One, all_goals { exact Zero } }, 
-  { all_goals { intro form₂, hinduction form₂ with t₁' t₂' p' }, --conj
-    exact Zero, exact Zero, exact Zero, exact Zero, exact prod (ih_a a) (ih_a_1 a_1),
-    all_goals { exact Zero } },
-  { all_goals { intro form₂, hinduction form₂ with t₁' t₂' p' }, --disj
-    exact Zero, exact Zero, exact Zero, exact Zero, exact Zero, 
-    exact prod (ih_a a_2) (ih_a_1 a_3), all_goals { exact Zero } },
-  { all_goals { intro form₂, hinduction form₂ with t₁' t₂' p' }, --impl
-    exact Zero, exact Zero, exact Zero, exact Zero, exact Zero, exact Zero,
-    exact prod (ih_a a_2) (ih_a_1 a_3), all_goals { exact Zero } },  
-  { all_goals { intro form₂, hinduction form₂ with t₁' t₂' p' }, --neg
-    exact Zero, exact Zero, exact Zero, exact Zero, exact Zero, exact Zero, exact Zero,
-    exact ih a_1, all_goals { exact Zero } },
-  { all_goals { intro form₂, hinduction form₂ }, --ex
-    exact Zero, exact Zero, exact Zero, exact Zero, exact Zero, exact Zero, exact Zero,
-    exact Zero, exact prod (a = a_2) (ih a_3), exact Zero, exact Zero, exact Zero },
-  { all_goals { intro form₂, hinduction form₂ }, --univ
-    exact Zero, exact Zero, exact Zero, exact Zero, exact Zero, exact Zero, exact Zero,
-    exact Zero, exact Zero, exact prod (a = a_2) (ih a_3), exact Zero, exact Zero },  
-  { all_goals { intro form₂, hinduction form₂ }, --inf_conj
-    exact Zero, exact Zero, exact Zero, exact Zero, exact Zero, exact Zero, exact Zero,
-    exact Zero, exact Zero, exact Zero, 
-    exact Σ (q : i = i_1), Π v : sign.V i, ih v (a_1 (q ▸ v)), exact Zero },
-  { all_goals { intro form₂, hinduction form₂ }, --inf_disj
-    exact Zero, exact Zero, exact Zero, exact Zero, exact Zero, exact Zero, exact Zero,
-    exact Zero, exact Zero, exact Zero, exact Zero, 
-    exact Σ (q : i = i_1), Π v : sign.V i, ih v (a_1 (q ▸ v)) }   
+  intro form₁, hinduction form₁ with t₁ t₂ p r comp f₁ f₂ ih₁ ih₂ f₁ f₂ ih₁ ih₂
+                                     f₁ f₂ ih₁ ih₂ f ih x f ih x f ih i f ih i f ih,
+  all_goals { intro form₂, 
+              hinduction form₂ with t₁' t₂' p' r' comp' f₁' f₂' ih₁' ih₂' f₁' f₂' ih₁' ih₂'
+                f₁' f₂' ih₁' ih₂' f' ih' x' f' ih' x' f' ih' i' f' ih' i' f' ih' },              
+  exact (t₁ = t₁') × (t₂ = t₂'), --equality
+  exact Zero, exact Zero, exact Zero, exact Zero, exact Zero, exact Zero,
+  exact Zero, exact Zero, exact Zero, exact Zero, exact Zero, exact Zero,
+  exact Σ (q : r = r'), comp =[q; λ s, Π (k : sign.rels_arity s), --relations
+                                         term_of_sort (sign.rels_comp k)] comp', 
+  exact Zero, exact Zero, exact Zero, exact Zero, exact Zero, exact Zero,
+  exact Zero, exact Zero, exact Zero, exact Zero, exact Zero, exact Zero,                                       
+  exact One, --T
+  exact Zero, exact Zero, exact Zero, exact Zero, exact Zero, exact Zero,
+  exact Zero, exact Zero, exact Zero, exact Zero, exact Zero, exact Zero,                                       
+  exact One, --F
+  exact Zero, exact Zero, exact Zero, exact Zero, exact Zero, exact Zero,
+  exact Zero, exact Zero, exact Zero, exact Zero, exact Zero, exact Zero, 
+  exact prod (ih₁ f₁') (ih₂ f₂'), --conj
+  exact Zero, exact Zero, exact Zero, exact Zero, exact Zero, exact Zero,
+  exact Zero, exact Zero, exact Zero, exact Zero, exact Zero, exact Zero, 
+  exact prod (ih₁ f₁') (ih₂ f₂'), --disj
+  exact Zero, exact Zero, exact Zero, exact Zero, exact Zero, exact Zero,
+  exact Zero, exact Zero, exact Zero, exact Zero, exact Zero, exact Zero, 
+  exact prod (ih₁ f₁') (ih₂ f₂'), --impl
+  exact Zero, exact Zero, exact Zero, exact Zero, exact Zero, exact Zero,
+  exact Zero, exact Zero, exact Zero, exact Zero, exact Zero, exact Zero, 
+  exact ih f',  --neg
+  exact Zero, exact Zero, exact Zero, exact Zero, exact Zero, exact Zero,
+  exact Zero, exact Zero, exact Zero, exact Zero, exact Zero, exact Zero,
+  exact prod (x = x') (ih f'),  --ex
+  exact Zero, exact Zero, exact Zero, exact Zero, exact Zero, exact Zero,
+  exact Zero, exact Zero, exact Zero, exact Zero, exact Zero, exact Zero,
+  exact prod (x = x') (ih f'),  --univ
+  exact Zero, exact Zero, exact Zero, exact Zero, exact Zero, exact Zero,
+  exact Zero, exact Zero, exact Zero, exact Zero, exact Zero, exact Zero,  
+  exact Σ (p : i = i'), Π j : sign.I i, ih j (f' (p ▸ j)), --inf_conj
+  exact Zero, exact Zero, exact Zero, exact Zero, exact Zero, exact Zero,
+  exact Zero, exact Zero, exact Zero, exact Zero, exact Zero, exact Zero,  
+  exact Σ (p : i = i'), Π j : sign.I i, ih j (f' (p ▸ j)) --inf_disj 
 end  
+
+@[hott]
+def code_neg_form {sign : fo_signature} (f f' : formula sign) : 
+  formula.code (formula.neg f) (formula.neg f') -> formula.code f f' :=
+begin intro c, exact c end
 
 @[hott, instance]
 protected def code_is_prop  {sign : fo_signature} : 
   Π form₁ form₂ : formula sign, is_prop (formula.code form₁ form₂) :=
 begin
-  intro form₁, hinduction form₁ with term₁ term₂ p, 
-  all_goals { intro form₂, hinduction form₂ with term₁' term₂' p' },
+  intro form₁, hinduction form₁ with t₁ t₂ p r comp f₁ f₂ ih₁ ih₂ f₁ f₂ ih₁ ih₂
+                                     f₁ f₂ ih₁ ih₂ f ih x f ih x f ih i f ih i f ih,
+  all_goals { intro form₂, 
+              hinduction form₂ with t₁' t₂' p' r' comp' f₁' f₂' ih₁' ih₂' f₁' f₂' ih₁' ih₂'
+                f₁' f₂' ih₁' ih₂' f' ih' x' f' ih' x' f' ih' i' f' ih' i' f' ih' }, 
   all_goals { try { exact Zero_is_prop } },
   all_goals { try { exact One_is_prop } }, 
   { apply is_prop.mk, intros q q', apply pair_eq, 
       exact is_prop.elim _ _, exact is_prop.elim _ _ }, 
   { apply is_prop.mk, intros code₁ code₂, 
-    apply @sigma_Prop_eq (r = r_1) (λ q, to_Prop (comp =[q; λ s, Π (k : sign.rels_arity s), 
-                                                    term_of_sort (sign.rels_comp k)] comp_1)),
-    exact is_set.elim _ _ },
+    apply @sigma_Prop_eq (r = r') 
+             (λ q, to_Prop (comp =[q; λ s, Π (k : sign.rels_arity s), 
+                                              term_of_sort (sign.rels_comp k)] comp')),
+    exact is_set.elim _ _ },  
   all_goals { try { apply is_prop.mk, intros code₁ code₂, apply pair_eq, 
-            exact @is_prop.elim _ (ih_a a_2) _ _, exact @is_prop.elim _ (ih_a_1 a_3) _ _ } },
-  { apply is_prop.mk, intros code₁ code₂, exact @is_prop.elim _ (ih a_1) _ _ },
+    exact @is_prop.elim _ (ih₁ f₁') _ _, exact @is_prop.elim _ (ih₂ f₂') _ _ } },
+  { apply is_prop.mk, intros code₁ code₂, exact @is_prop.elim _ (ih f') _ _ },
   all_goals { try { apply is_prop.mk, intros code₁ code₂, apply pair_eq, 
-              exact is_prop.elim _ _, exact @is_prop.elim _ (ih a_3) _ _ } },
-  all_goals { try { apply is_prop.mk, intros code₁ code₂, fapply sigma.sigma_eq, 
-    exact is_prop.elim _ _ , apply pathover_of_tr_eq, apply eq_of_homotopy, intro v, 
-    exact @is_prop.elim _ (ih v (a_1 (code₂.fst ▸[λ i, sign.V i] v))) _ (code₂.2 v) } }
+              exact is_prop.elim _ _, exact @is_prop.elim _ (ih f') _ _ } },
+  
+  all_goals { apply is_prop.mk, intros code₁ code₂, fapply sigma.sigma_eq, 
+    exact is_prop.elim _ _ , apply pathover_of_tr_eq, apply eq_of_homotopy, intro x, 
+    exact @is_prop.elim _ (ih x (f' (code₂.fst ▸[λ i, sign.I i] x))) _ (code₂.2 x) }
 end  
 
 @[hott]
@@ -403,23 +415,27 @@ protected def ppred {sign : fo_signature} (form₀ : formula sign) :
 protected def decode {sign : fo_signature} : 
   Π {form₁ form₂ : formula sign}, formula.code form₁ form₂ -> form₁ = form₂ :=
 begin
-  intro form₁, hinduction form₁, 
-  all_goals { intro form₂, hinduction form₂, all_goals { intro code, try { hinduction code } } }, 
+  intro form₁, hinduction form₁ with t₁ t₂ p r comp f₁ f₂ ih₁ ih₂ f₁ f₂ ih₁ ih₂
+                                     f₁ f₂ ih₁ ih₂ f ih x f ih x f ih i f ih i f ih, 
+  all_goals { intro form₂, 
+              hinduction form₂ with t₁' t₂' p' r' comp' f₁' f₂' ih₁' ih₂' f₁' f₂' ih₁' ih₂'
+                f₁' f₂' ih₁' ih₂' f' ih' x' f' ih' x' f' ih' i' f' ih' i' f' ih' }, 
+  all_goals { intro code, try { hinduction code } }, 
   { fapply apd001, assumption, assumption, apply pathover_of_eq_tr, exact is_prop.elim _ _ },
   { exact apd011 formula.rel_terms fst snd },
   refl, refl,
-  { exact ap011 formula.conj (ih_a fst) (ih_a_1 snd) },
-  { exact ap011 formula.disj (ih_a fst) (ih_a_1 snd) },
-  { exact ap011 formula.impl (ih_a fst) (ih_a_1 snd) }, 
-  { exact ap formula.neg (ih code) }, 
+  { exact ap011 formula.conj (ih₁ fst) (ih₂ snd) },
+  { exact ap011 formula.disj (ih₁ fst) (ih₂ snd) },
+  { exact ap011 formula.impl (ih₁ fst) (ih₂ snd) }, 
+  { exact ap formula.neg (ih (code_neg_form f f' code)) }, 
   { exact ap011 formula.ex fst (ih snd) },
   { exact ap011 formula.univ fst (ih snd) }, 
-  { fapply apd011 formula.inf_conj, exact fst, apply pathover_of_tr_eq, 
-    apply eq_of_homotopy, intro v, exact (tr_dep_fn_eval_tr fst v) ⬝ (ih (fst⁻¹ ▸ v) 
-                   (snd (fst⁻¹ ▸ v))) ⬝ (ap a_1 (@tr_inv_tr _ (λ i, sign.V i) _ _ fst v)) },
-  { fapply apd011 formula.inf_disj, exact fst, apply pathover_of_tr_eq, 
-    apply eq_of_homotopy, intro v, exact (tr_dep_fn_eval_tr fst v) ⬝ (ih (fst⁻¹ ▸ v) 
-                   (snd (fst⁻¹ ▸ v))) ⬝ (ap a_1 (@tr_inv_tr _ (λ i, sign.V i) _ _ fst v)) }                          
+  { fapply apd011 (@formula.inf_conj sign), exact fst, apply pathover_of_tr_eq, 
+    apply eq_of_homotopy, intro j', exact (tr_dep_fn_eval_tr fst j') ⬝ (ih (fst⁻¹ ▸ j') 
+               (snd (fst⁻¹ ▸ j'))) ⬝ (ap f' (@tr_inv_tr _ (λ i, sign.I i) _ _ fst j')) },
+  { fapply apd011 (@formula.inf_disj sign), exact fst, apply pathover_of_tr_eq, 
+    apply eq_of_homotopy, intro j', exact (tr_dep_fn_eval_tr fst j') ⬝ (ih (fst⁻¹ ▸ j') 
+               (snd (fst⁻¹ ▸ j'))) ⬝ (ap f' (@tr_inv_tr _ (λ i, sign.I i) _ _ fst j')) }                          
 end
 
 @[hott]
@@ -580,45 +596,71 @@ begin apply is_geometric.mk, exact coherent_implies_geometric φ H.coh end
 
 @[hott]
 protected def free_vars {sign : fo_signature} : 
-  formula sign -> Subset (to_Set (var sign.var_labels sign.sorts)) :=
+  formula sign -> Subset (to_Set (var sign.labels sign.sorts)) :=
 begin 
   intro form, hinduction form, 
-  { exact (free_vars_of_term t₁) ∪ (free_vars_of_term t₂) }, 
-  { exact iUnion (λ (k : sign.rels_arity r), free_vars_of_term ⟨sign.rels_comp k, comp k⟩) },
+  exact (free_vars_of_term t₁) ∪ (free_vars_of_term t₂), 
+  exact iUnion (λ (k : sign.rels_arity r), free_vars_of_term ⟨sign.rels_comp k, comp k⟩),
   exact empty_Subset _, exact empty_Subset _, 
   exact subset.union ih_a ih_a_1, exact subset.union ih_a ih_a_1, 
-  exact subset.union ih_a ih_a_1, exact ih, exact setminus ih (elem_to_Subset a),
-  exact setminus ih (elem_to_Subset a), exact iUnion ih, exact iUnion ih
+  exact subset.union ih_a ih_a_1, exact ih, exact setminus ih (singleton_sset a),
+  exact setminus ih (singleton_sset a), exact iUnion ih, exact iUnion ih
 end
 
 @[hott]
-structure formula_in_context {sign : fo_signature} (cont : context sign) := 
-  (φ : formula sign) 
+structure context_of {sign : fo_signature} (φ : formula sign) :=
+  (cont : context sign)
   (in_cont : formula.free_vars φ ⊆ cont.vars)
 
 @[hott]
-def formula_in_context_eq {sign : fo_signature} {cont : context sign} 
-  {φ₁ φ₂ : formula_in_context cont} : 
-  Π (p : φ₁.φ = φ₂.φ), φ₁.in_cont =[p; λ φ, formula.free_vars φ ⊆ cont.vars] φ₂.in_cont -> 
-  φ₁ = φ₂ :=
-begin intros, hinduction φ₁, hinduction φ₂, apply apdd _ p a end   
+structure formula_in_context (sign : fo_signature) := 
+  (φ : formula sign) 
+  (cont_of_φ : context_of φ)
 
 @[hott]
-def formula_in_context_eq_eta {sign : fo_signature} {cont : context sign} 
-  {φ₁ φ₂ : formula_in_context cont} (p : φ₁ = φ₂) : 
-  formula_in_context_eq (ap formula_in_context.φ p) ((@apo01 _ _ 
-     (λ f, formula.free_vars f⊆cont.vars) formula_in_context.φ (λ f, f.in_cont) _ _ p).1 
-     (apd formula_in_context.in_cont p)) = p :=
-begin hinduction p, hinduction φ₁, exact idp end                 
+def form_ext_cont {sign : fo_signature} {cont cont': context sign} 
+  (inc_cont : cont.vars ⊆ cont'.vars) : 
+  Π (φc : formula_in_context sign), (φc.cont_of_φ.1 = cont) -> formula_in_context sign :=
+begin 
+  intros φc p_cont, hinduction φc with φ φ_cont, 
+  fapply formula_in_context.mk, exact φ, fapply context_of.mk, exact cont', 
+  apply subset_trans _ _ _ φ_cont.2, change φ_cont.1 = cont at p_cont, 
+  rwr p_cont, exact inc_cont 
+end
+
+@[hott]
+def formula_in_context_eq {sign : fo_signature} {φc₁ φc₂ : formula_in_context sign} : 
+  φc₁.φ = φc₂.φ -> φc₁.cont_of_φ.1 = φc₂.cont_of_φ.1 -> φc₁ = φc₂ :=
+begin 
+  intros pφ pc, hinduction φc₁ with φ φ_cont, hinduction φc₂ with φ' φ_cont',
+  change φ = φ' at pφ, hinduction pφ, 
+  fapply apd011 formula_in_context.mk idp,  
+  apply pathover_of_tr_eq, rwr idp_tr, 
+  hinduction φ_cont with cont in_cont, hinduction φ_cont' with cont' in_cont',
+  fapply apd011 context_of.mk pc, apply pathover_of_tr_eq, exact is_prop.elim _ _ 
+end   
+
+@[hott]
+def formula_in_context_eq_eta {sign : fo_signature}
+  {φ₁ φ₂ : formula_in_context sign} (p : φ₁ = φ₂) : 
+  formula_in_context_eq (ap formula_in_context.φ p) 
+                        (ap (λ φ : formula_in_context sign, φ.cont_of_φ.cont) p) = p :=
+begin 
+  hinduction p, rwr ap_idp, rwr ap_idp, hinduction φ₁ with φ φ_cont,
+  hinduction φ_cont with cont in_cont, 
+  change apd011 formula_in_context.mk idp _ = _,  
+  hsimp, exact idp 
+end                 
 
 @[hott, instance]
-def formula_in_context_is_set {sign : fo_signature} (cont : context sign) :
-  is_set (formula_in_context cont) :=
+def formula_in_context_is_set {sign : fo_signature} :
+  is_set (formula_in_context sign) :=
 begin 
   apply is_set.mk, intros φ₁ φ₂ p q, 
   rwr <- formula_in_context_eq_eta p, rwr <- formula_in_context_eq_eta q,
     fapply apd011 formula_in_context_eq, exact is_set.elim _ _, 
-  { apply pathover_of_tr_eq, exact dep_set_eq_eq _ _ _ } end
+  { apply pathover_of_tr_eq, exact is_set.elim _ _ } 
+end
 
 end formula
 
@@ -627,21 +669,26 @@ open formula
 
 @[hott]
 structure sequent (sign : fo_signature) :=
-  (cont : context sign)
-  (ass : formula_in_context cont)
-  (con : formula_in_context cont)
+  (ass : formula_in_context sign)
+  (con : formula_in_context sign)
+  (cont_eq : ∥ass.cont_of_φ.1 = con.cont_of_φ.1∥  )
 
 @[hott, hsimp]
 def sequent_eq {sign : fo_signature} {seq₁ seq₂ : sequent sign} :
-  Π (p : seq₁.cont = seq₂.cont), seq₁.ass =[p] seq₂.ass -> seq₁.con =[p] seq₂.con -> 
-                                                                         seq₁ = seq₂ :=
-begin intros, hinduction seq₁, hinduction seq₂, apply apdd2 sequent.mk p a a_1 end 
+  Π (pa : seq₁.ass = seq₂.ass) (pc : seq₁.con = seq₂.con), 
+    (seq₁.cont_eq =[ap011 (λ (a b : formula_in_context sign), 
+            ↥∥a.cont_of_φ.1 = b.cont_of_φ.1∥) pa pc; id] seq₂.cont_eq) -> seq₁ = seq₂ :=
+begin 
+  intros pa pc pc_eq, 
+  hinduction seq₁ with ass con cont_eq, hinduction seq₂ with ass' con' cont_eq', 
+  exact apd001 sequent.mk pa pc pc_eq
+end 
 
 @[hott]
 def sequent_eq_eta {sign : fo_signature} {seq₁ seq₂ : sequent sign} (p : seq₁ = seq₂) :
-  sequent_eq (ap sequent.cont p) 
-      ((apo01 sequent.cont (λ (a : sequent sign), a.ass) p).1 (apd sequent.ass p)) 
-      ((apo01 sequent.cont (λ (a : sequent sign), a.con) p).1 (apd sequent.con p))  = p := 
+  sequent_eq (ap sequent.ass p) (ap sequent.con p)
+    (@pathover_ap011 _ _ _ (λ φc₁ φc₂ : formula_in_context sign, 
+      ∥φc₁.cont_of_φ.1 = φc₂.cont_of_φ.1∥) sequent.ass sequent.con sequent.cont_eq _ _ p) = p := 
 begin hinduction p, hinduction seq₁, exact idp end 
 
 @[hott, instance]
@@ -650,7 +697,7 @@ begin
   fapply is_set.mk, intros seq₁ seq₂ p q, 
   rwr <- sequent_eq_eta p, rwr <- sequent_eq_eta q,
   fapply apd0111 sequent_eq, exact is_set.elim _ _, 
-  { apply pathover_of_tr_eq, exact dep_set_eq_eq _ _ _ }, 
+  { apply pathover_of_tr_eq, exact is_set.elim _ _ }, 
   { apply pathover_of_tr_eq, exact dep_set_eq_eq _ _ _ }
 end 
 
