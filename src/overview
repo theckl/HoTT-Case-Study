@@ -1,17 +1,17 @@
 Compiling files, in order of dependencies:
 ------------------------------------------
-init2       :   893
+init2       :   899
 types2      :   519 
 prop_axioms :   679
-prop_logic  :   208  2299
+prop_logic  :   208  2305
 sets
   basic     :   698
   finite    :   229
-  subset    :   449
+  subset    :   461
   axioms    :   347
-  algebra   :   290
+  algebra   :   299
   quotients :   205
-  theories  :   715  2933
+  theories  :   762  3001
 categories
   precat    :   738  
   basic     :   312 
@@ -26,11 +26,14 @@ categories
   pullbacks :   867 
   boolean   :   354 
   sets      :   938  
-  structures:   645  7896 
+  structures:   676  7927 
                     -----
-                    13128               
+                    13233               
 
 
 Planned changes in Files, from bottom to top: 
 ---------------------------------------------
-categories.models : is_interpretable_in-class
+categories.models : interpret all possible formulas
+categories.models : change is_interpretable_in-class so that only arbitrary unions and 
+                    pullbacks over index sets prescribed in the signature need to exist
+categories.pullback : introduce infinite pullbacks
