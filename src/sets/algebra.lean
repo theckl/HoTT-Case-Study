@@ -241,11 +241,11 @@ end
 /- Complements of subsets only satisfy "boolean" properties if LEM holds (at least for
    the element relation). -/
 @[hott]
-def compl_union_top (U : Subset A) [H : has_dec_elem] : U ∪ 𝒞(U) = total_Subset A :=
+def compl_union_top (U : Subset A) [H : has_dec_elem A] : U ∪ 𝒞(U) = total_Subset A :=
 begin
   apply (sset_eq_iff_inclusion _ _).2, apply pair,
   { intros a inc, exact true.intro },
-  { intros a inc, let a_na := @has_dec_elem.dec_el H _ a U, hinduction a_na with ae nae, 
+  { intros a inc, let a_na := @has_dec_elem.dec_el A H a U, hinduction a_na with ae nae, 
     exact or_inl _ _ ae, exact or_inr _ _ nae }
 end
 
@@ -276,14 +276,23 @@ end
 def setminus (U V : Subset A) : Subset A :=
   λ x : A, (x ∈ U) and (x ∉ V)
 
-/- Lists of elements of a set define subsets. -/
 @[hott]
-def elem_to_Subset {S : Set} (a : S) : Subset S :=
-  λ b, to_Prop (b = a)
+def set_minus_inc (U V : Subset A) : setminus U V ⊆ U :=
+begin intros x inc, exact inc.1 end
 
 @[hott]
+def set_minus_inc_impl (U V W : Subset A) [H : has_dec_elem A] : 
+  setminus U V ⊆ W -> U ⊆ (W ∪ V) :=
+begin 
+  intros sm_inc x inc, hinduction (has_dec_elem.dec_el x V), 
+  exact union_sset_r _ _ x val, exact union_sset_l _ _ x (sm_inc x (inc, val)) 
+end
+
+/- Lists of elements of a set define subsets. -/
+@[hott]
 def list_to_Subset {S : Set} (l : list S) : Subset S :=
-begin hinduction l with hd tl S', exact empty_Subset S, exact S' ∪ (elem_to_Subset hd) end
+begin hinduction l with hd tl S', exact empty_Subset S, exact S' ∪ (singleton_sset hd) end
+
 
 end subset
 
