@@ -219,8 +219,8 @@ def set_mem {A : Set} : @has_mem A (Subset A) :=
    We put the construction of an instance from general LEM into [sets.axioms], to have a 
    better control when it is available. -/
 @[hott]
-class has_dec_elem := 
-  (dec_el : Π {A : Set} (a : A) (S : Subset A), (a ∈ S) ⊎ ¬(a ∈ S))
+class has_dec_elem (A : Set) := 
+  (dec_el : Π (a : A) (S : Subset A), (a ∈ S) ⊎ ¬(a ∈ S))
 
 notation `{ ` binder ` ∈ ` B ` | ` P:scoped  ` }` := (P : Subset B)
 notation `{ ` binder ` ∈ ` B ` | ` P:scoped  ` }` := (P : Subset (to_Set B)) 
@@ -282,6 +282,12 @@ def is_prop_subset {A : Set.{u}} (B C : Subset A) : is_prop (is_subset_of B C) :
 @[hott, instance]
 def set_has_Subsets {A : Set.{u}} : @has_subset (Subset A) :=
   has_subset.mk (λ B C : Subset A, Prop.mk (is_subset_of B C) (is_prop_subset B C))
+
+@[hott]
+def pred_Set_inc {A : Set.{u}} {B C : Subset A} (inc : B ⊆ C) : 
+  pred_Set B -> pred_Set C :=
+begin intro b, exact ⟨b.1, inc b.1 b.2⟩ end
+
 
 /- We show some basic facts on subsets. 
 
@@ -351,6 +357,11 @@ def empty_Subset (A : Set.{u}) : Subset A :=
 @[hott]
 def empty_not_elem {A : Set} (a : A) : a ∉ empty_Subset A :=
 begin intro el_a, hinduction el_a end  
+
+/- Singleton subsets containing one element of a set -/
+@[hott]
+def singleton_sset {A : Set} (a : A) : Subset A :=
+  λ b : A, to_Prop (b = a) 
 
 /- The image subset (of a subset) under a map between sets. The sets lie in the 
    same universe. -/
