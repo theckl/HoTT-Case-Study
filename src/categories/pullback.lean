@@ -18,7 +18,6 @@ def orthogonal_pair_obj {C : Type _} [is_cat C] {a b c : C}
      | inf_w_node.tip ow_node.left := a
      | inf_w_node.tip ow_node.upper := b
      | inf_w_node.base ow_leg_node := c
-     
      end    
 
 @[hott, hsimp]
@@ -149,6 +148,33 @@ def has_pullback_of_has_limits_of_shape {C : Type _} [is_cat C]
 def has_pullbacks_of_has_limits (C : Category) [H : has_limits C] : 
   has_pullbacks C :=
 has_pullbacks.mk (@has_limits.has_limit_of_shape C _ H orthogonal_wedge _)
+
+
+/- We need similar constructions for diagrams in `C` consisting of the arbitrary many 
+   morphisms `f` and `g` with common codomain, that is, diagrams over `inf_wedge`. -/
+@[hott, hsimp]
+def orthogonal_tuple_obj {C : Type _} [is_cat C] {J : Set} 
+  {f : J -> C} {c : C} (leg : Π j : J, f j ⟶ c) : inf_wedge J -> C :=
+λ s, match s with
+     | inf_w_node.tip j := f j
+     | inf_w_node.base C := c
+     end    
+
+@[hott, hsimp]
+def orthogonal_tuple_map {C : Type _} [is_cat C] {J : Set} 
+  {f : J -> C} {c : C} (leg : Π j : J, f j ⟶ c) : Π {s t : inf_wedge J}, 
+  (s ⟶ t) -> (orthogonal_tuple_obj leg s ⟶ orthogonal_tuple_obj leg t) :=
+begin 
+  intros s t, hinduction s with j, all_goals { hinduction t with k }, 
+  sorry, sorry, sorry, sorry 
+end
+/-assume s t, 
+match s, t with
+  | inf_w_node.tip j, inf_w_node.tip k := assume h, 𝟙 (f j) --id
+  | inf_w_node.tip j, inf_w_node.base C := assume h, leg j --leg arrow
+  | inf_w_node.base C, inf_w_node.tip j := begin intro h, hinduction h end    
+  | inf_w_node.base C, inf_w_node.base C := assume h, 𝟙 c --id
+end -/
 
 @[hott]
 class has_inf_pullbacks (C : Type _) [is_cat C] := 
@@ -462,7 +488,7 @@ class has_so_classifier (C : Category) [has_pullbacks C] [has_terminal C] :=
   (so_class : subobject_classifier C)
 
 
-
+/- The intersection of two subobjects and some of its properties. -/
 @[hott]
 def subobj_intersect {C : Category} {c : C} (a b : subobject c) 
   [has_pullback a.hom b.hom] : subobject c :=
@@ -595,6 +621,27 @@ begin
       rwr <- is_precat.assoc } }
 end
 
+/- The intersection of arbitrary many subobjects. -/
+@[hott]
+class has_subobj_iInter {C : Category.{u v}} {c : C} {J : Set.{u'}} (f : J -> subobject c) :=
+  (exists_union : @has_product _ subobject_is_cat _ f)
+
+@[hott, instance]
+def has_subobj_iInter_of_has_inf_pullbacks {C : Category.{u v}} 
+  [has_inf_pullbacks C] {c : C} {J : Set.{u'}} 
+  (f : J -> subobject.{u v} c) : has_subobj_iInter f :=
+begin 
+  apply has_subobj_iInter.mk, apply has_product.mk, apply has_limit.mk,
+  fapply limit_cone.mk, 
+  { fapply fan.mk, 
+    { fapply subobject.mk, sorry, sorry, sorry }, 
+    { intro j, fapply hom_of_monos.mk,
+      { sorry },
+      { sorry } } },
+  { fapply is_limit.mk, 
+    { intro cone_f, sorry }, 
+    { intros cf j, exact is_prop.elim _ _ } }
+end  
 
 /- The pullback functor of subobjects has adjoints if the category has images stable
    under pullbacks. 
