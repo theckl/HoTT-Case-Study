@@ -504,22 +504,53 @@ has_limits_of_shape.mk (λ F, str_has_limit F (lcd_F F))
 
 open signature
 
-/- We define structures of a given signature over a category `C` with products. -/
+/- To define structures of a given signature over a category `C`, the category must have 
+   products of any set of objects interpreting sorts of the signature. -/
+@[hott]
+class has_sign_products (sign : fo_signature) (C : Category) :=
+  (has_arg_products : Π (o : sign.ops), has_limits_of_shape (discrete (sign.ops_arity o)) C)   
+  (has_comp_products : Π (r : sign.rels), 
+                                       has_limits_of_shape (discrete (sign.rels_arity r)) C)
+  (has_var_products : Π (J : Subset (set.to_Set (var sign.labels sign.sorts))), 
+                                    has_limits_of_shape (discrete (pred_Set J)) C)                                     
+
+@[hott, instance] 
+def has_sign_prod_of_has_prod (sign : fo_signature) (C : Category) [H : has_products C] :
+  has_sign_products sign C :=
+begin 
+  fapply has_sign_products.mk, 
+  { intro o, exact @has_products.has_limit_of_shape _ _ H _ }, 
+  { intro r, exact @has_products.has_limit_of_shape _ _ H _ },
+  { intro J, exact @has_products.has_limit_of_shape _ _ H _ }, 
+end
+
+@[hott, instance]
+def has_term_product {sign : fo_signature} {C : Category} {o : sign.ops} 
+  [H : has_sign_products sign C] (f : sign.ops_arity o -> C) : has_product f :=
+@has_product_of_has_limits_of_shape _ _ _ (has_sign_products.has_arg_products C o) f
+
+@[hott, instance]
+def has_rels_product {sign : fo_signature} {C : Category} {r : sign.rels} 
+  [H : has_sign_products sign C] (f : sign.rels_arity r -> C) : has_product f :=
+@has_product_of_has_limits_of_shape _ _ _ (has_sign_products.has_comp_products C r) f
+
+@[hott, instance]
+def has_var_product {sign : fo_signature} {C : Category} 
+  (J : Subset (set.to_Set (var sign.labels sign.sorts))) [H : has_sign_products sign C] 
+  (f : pred_Set J -> C) : has_product f :=
+@has_product_of_has_limits_of_shape _ _ _ (has_sign_products.has_var_products C J) f
+
+/- We now construct the Σ-structure of a signature on a category `C`. -/
 @[hott]  
 structure Sig_structure_on {sign : fo_signature} {C : Category.{u v}} 
-  [has_products.{v u 0} C] (car : sign.sorts -> C) :=  
+  [has_sign_products sign C] (car : sign.sorts -> C) :=  
 ( ops : ∀ o : sign.ops, ∏ (λ a : sign.ops_arity o, car (sign.ops_source o a)) ⟶ 
                                                               car (sign.ops_target o) )
 ( rels : ∀ r : sign.rels, subobject (∏ (λ a : sign.rels_arity r, car (sign.rels_comp a))) )
 
 @[hott]
-def Sig_str_prod {sign : fo_signature} {C : Category.{u v}} 
-  [has_products.{v u 0} C] {car : sign.sorts -> C} (S : Sig_structure_on car) 
-  {I : Set.{0}} (j : I -> sign.sorts) : C := ∏ (λ i : I, car (j i))
-
-@[hott]
 def Sig_str_eq {sign : fo_signature} {C : Category.{u v}} 
-  [has_products.{v u 0} C] {car : sign.sorts -> C} {S T : Sig_structure_on car} :
+  [has_sign_products sign C] {car : sign.sorts -> C} {S T : Sig_structure_on car} :
   (S.ops = T.ops) -> (S.rels = T.rels) -> S = T :=
 begin 
   hinduction S with ops₁ rels₁, hinduction T with ops₂ rels₂, hsimp, 
@@ -528,13 +559,13 @@ end
 
 @[hott]
 def Sig_str_eq_eta {sign : fo_signature} {C : Category.{u v}} 
-  [has_products.{v u 0} C] {car : sign.sorts -> C} {S T : Sig_structure_on car} (p : S = T) :
+  [has_sign_products sign C] {car : sign.sorts -> C} {S T : Sig_structure_on car} (p : S = T) :
   Sig_str_eq (ap Sig_structure_on.ops p) (ap Sig_structure_on.rels p) = p :=
 begin hinduction p, hinduction S, refl end  
 
 @[hott, instance]
 def is_set_Sig_str_on {sign : fo_signature} {C : Category.{u v}} 
-  [has_products.{v u 0} C] (car : sign.sorts -> C) : is_set (Sig_structure_on car) :=
+  [has_sign_products sign C] (car : sign.sorts -> C) : is_set (Sig_structure_on car) :=
 begin
   fapply is_set.mk, intros x y p q, 
   rwr <- Sig_str_eq_eta p, rwr <- Sig_str_eq_eta q,
@@ -543,7 +574,7 @@ end
 
 @[hott]
 structure is_Sig_structure_hom {sign : fo_signature} {C : Category.{u v}} 
-  [has_products.{v u 0} C] {car₁ car₂ : sign.sorts -> C} (S₁ : Sig_structure_on car₁)
+  [has_sign_products sign C] {car₁ car₂ : sign.sorts -> C} (S₁ : Sig_structure_on car₁)
   (S₂ : Sig_structure_on car₂) (f : Π x : sign.sorts, car₁ x ⟶ car₂ x) := 
 ( ops_pres : Π o : sign.ops, S₁.ops o ≫ f (sign.ops_target o) = 
                                       (∏h (λ a, f (sign.ops_source o a))) ≫ S₂.ops o )
@@ -552,7 +583,7 @@ structure is_Sig_structure_hom {sign : fo_signature} {C : Category.{u v}}
 
 @[hott, instance]
 def is_prop_is_Sig_structure_hom {sign : fo_signature} {C : Category.{u v}} 
-  [has_products.{v u 0} C] {car₁ car₂ : sign.sorts -> C} {S₁ : Sig_structure_on car₁}
+  [has_sign_products sign C] {car₁ car₂ : sign.sorts -> C} {S₁ : Sig_structure_on car₁}
   {S₂ : Sig_structure_on car₂} (f : Π x : sign.sorts, car₁ x ⟶ car₂ x) : 
   is_prop (is_Sig_structure_hom S₁ S₂ f) :=
 begin
@@ -566,7 +597,7 @@ end
 
 @[hott]
 def id_is_Sig_str_hom {sign : fo_signature} {C : Category.{u v}} 
-  [has_products.{v u 0} C] {car : sign.sorts -> C} (S : Sig_structure_on car) :
+  [has_sign_products sign C] {car : sign.sorts -> C} (S : Sig_structure_on car) :
   is_Sig_structure_hom S S (λ x, 𝟙 (car x)) :=
 begin 
   fapply is_Sig_structure_hom.mk, 
@@ -576,7 +607,7 @@ end
 
 @[hott]
 def std_str_of_Sig_str (sign : fo_signature) (C : Category.{u v}) 
-  [has_products.{v u 0} C] : std_structure_on C :=
+  [has_sign_products sign C] : std_structure_on C :=
 begin
   fapply std_structure_on.mk,
   { exact sign.sorts }, --sorts
@@ -626,16 +657,16 @@ begin
 end  
 
 @[hott, reducible]
-def Sig_structure (sign : fo_signature) (C : Category.{u v}) [has_products.{v u 0} C] :=
+def Sig_structure (sign : fo_signature) (C : Category.{u v}) [has_sign_products sign C] :=
   std_structure (std_str_of_Sig_str sign C)
 
 @[hott, instance]
-def Sig_str_precategory (sign : fo_signature) (C : Category.{u v}) [has_products.{v u 0} C] : 
-  is_precat (Sig_structure sign C) := 
+def Sig_str_precategory (sign : fo_signature) (C : Category.{u v}) 
+  [has_sign_products sign C] : is_precat (Sig_structure sign C) := 
 std_str_precategory (std_str_of_Sig_str sign C)
 
 @[hott, instance]
-def Sig_str_category (sign : fo_signature) (C : Category.{u v}) [has_products.{v u 0} C] : 
+def Sig_str_category (sign : fo_signature) (C : Category.{u v}) [has_sign_products sign C] : 
   is_cat (Sig_structure sign C) := 
 structure_identity_principle (std_str_of_Sig_str sign C)
 
