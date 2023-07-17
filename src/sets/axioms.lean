@@ -341,7 +341,7 @@ def AC_implies_LEM : Choice_nonempty.{u} -> ExcludedMiddle.{u} :=
 
 /- We deduce LEM (decidability) for the element relation form general LEM. -/
 @[hott, instance]
-def is_dec_elem : has_dec_elem := 
-  begin apply has_dec_elem.mk, intros A a S, exact LEM (a ∈ S) end
+def is_dec_elem (A : Set): has_dec_elem A := 
+  begin apply has_dec_elem.mk, intros a S, exact LEM (a ∈ S) end
 
 end hott
