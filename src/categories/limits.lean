@@ -474,23 +474,23 @@ begin
 end  
 
 @[hott]
-def pi_hom {J : Set.{u'}} {C : Type u} [is_cat.{v} C] [has_products.{v u u'} C] 
-  {f g : J -> C} (h : Π j : J, f j ⟶ g j) : ∏ f ⟶ ∏ g :=
+def pi_hom {J : Set.{u'}} {C : Type u} [is_cat.{v} C] {f g : J -> C} 
+  [has_product f] [has_product g] (h : Π j : J, f j ⟶ g j) : ∏ f ⟶ ∏ g :=
 pi.lift (λ j : J, pi.π f j ≫ h j)
 
 notation `∏h ` h:20 := pi_hom h
 
 @[hott]
-def pi_hom_id {J : Set.{u'}} {C : Type u} [is_cat.{v} C] [has_products.{v u u'} C] (f : J -> C) : 
+def pi_hom_id {J : Set.{u'}} {C : Type u} [is_cat.{v} C] (f : J -> C) [has_product f] : 
   pi_hom (λ j, 𝟙 (f j)) = 𝟙 (∏ f) :=
 have H : (λ j, pi.π f j ≫ 𝟙 (f j)) = λ j, 𝟙 (∏ f) ≫ pi.π f j, from 
   begin apply eq_of_homotopy, intro j, hsimp end,  
 begin change pi.lift (λ j, pi.π f j ≫ 𝟙 (f j)) = _, rwr H, rwr <- pi.hom_is_lift end  
 
 @[hott]
-def pi_hom_comp {J : Set.{u'}} {C : Type u} [is_cat.{v} C] [has_products.{v u u'} C] 
-  {f g h : J -> C}  (i₁ : Π j : J, f j ⟶ g j)  (i₂ : Π j : J, g j ⟶ h j) :
-  (∏h i₁) ≫ (∏h i₂) = ∏h (λ j, i₁ j ≫ i₂ j) :=
+def pi_hom_comp {J : Set.{u'}} {C : Type u} [is_cat.{v} C] {f g h : J -> C} 
+  [has_product f] [has_product g] [has_product h] (i₁ : Π j : J, f j ⟶ g j)  
+  (i₂ : Π j : J, g j ⟶ h j) : (∏h i₁) ≫ (∏h i₂) = ∏h (λ j, i₁ j ≫ i₂ j) :=
 have H : (λ j, pi.lift (λ j, pi.π f j ≫ i₁ j) ≫ pi.π g j ≫ i₂ j) = 
                                              λ j, pi.π f j ≫ i₁ j ≫ i₂ j, from   
   begin 
@@ -504,9 +504,15 @@ calc pi.lift (λ j, pi.π f j ≫ i₁ j) ≫ pi.lift (λ j, pi.π g j ≫ i₂ 
                                                           by rwr <- pi.lift_fac
      ... = pi.lift (λ j, pi.π f j ≫ i₁ j ≫ i₂ j) : by rwr H
 
+@[hott]
+def pi_proj_sset {J : Set.{u'}} {A B : Subset J} (inc : A ⊆ B) {C : Type u} 
+  [is_cat.{v} C] (f : pred_Set B -> C) [has_product f] 
+  [has_product (f ∘ pred_Set_inc inc)] : ∏ f ⟶ ∏ (f ∘ pred_Set_inc inc) :=
+pi.lift (λ j : pred_Set A, pi.π f (pred_Set_inc inc j))
 
-/- `parallel_pair f g` is the diagram in `C` consisting of the two morphisms `f` and `g` with
-    common domain and codomain. -/
+
+/- `parallel_pair f g` is the diagram in `C` consisting of the two morphisms `f` and `g` 
+   with common domain and codomain. -/
 @[hott, hsimp]
 def parallel_pair_obj {C : Type _} [is_cat C] {a b : C} 
   (f g : a ⟶ b) : walking_parallel_pair -> C :=
