@@ -38,7 +38,7 @@ hott_theory_cmd "local prefix `𝒞`:110 := hott.has_complement.compl"
 
 namespace subset
 
-set_option pp.universes true
+--set_option pp.universes true
 
 /- We define subsets of sets [A] by predicates on `A`, with a 
    coercion to the set of all elements of `A` satisfying the predicate, 
@@ -225,6 +225,71 @@ class has_dec_elem (A : Set) :=
 notation `{ ` binder ` ∈ ` B ` | ` P:scoped  ` }` := (P : Subset B)
 notation `{ ` binder ` ∈ ` B ` | ` P:scoped  ` }` := (P : Subset (to_Set B)) 
 
+@[hott]
+structure dec_Set extends trunctype 0 :=
+  (dec_el : Π (a : carrier) (S : Subset (Set.mk carrier struct)), 
+                                                            (a ∈ S) ⊎ ¬(a ∈ S)) 
+
+@[hott, instance]
+def dec_elem_of_dec_Set (A : dec_Set) : has_dec_elem A.to_trunctype :=
+  has_dec_elem.mk A.dec_el
+
+@[hott]
+def dec_Set_is_dec (A : dec_Set) : Π (a b : A.to_trunctype), (a = b) ⊎ ¬(a = b) :=
+begin
+  have p : Π a b : A.to_trunctype, is_prop (a = b), from 
+    begin assume a b, apply is_prop.mk, intros p q, exact is_set.elim _ _ end,
+  let S : Π b : A.to_trunctype, Subset A.to_trunctype := λ b a, Prop.mk (a = b) (p a b), 
+  intros a b, change (S b a) ⊎ ¬(S b a), exact A.dec_el a (S b)
+end  
+
+@[hott]
+def dec_Set_to_Two_pred_sset {A : dec_Set.{u}} : 
+  Subset A.to_trunctype -> (A.to_trunctype -> Two.{u}) :=
+begin intros S a, exact @sum.rec (a ∈ S) (¬(a ∈ S)) (λ s, Two) (λ v, Two.one) 
+                                                    (λ v, Two.zero) (A.dec_el a S) end
+
+@[hott]
+def Two_pred_to_dec_Set_sset {A : dec_Set.{u}} :
+  (A.to_trunctype -> Two.{u}) -> Subset A.to_trunctype :=
+begin intros S a, exact @Two.rec (λ t, Prop) False True (S a) end
+
+@[hott]
+def dec_Set_Two_pred_sset_linv (A : dec_Set.{u}) : Π (S : Subset A.to_trunctype), 
+  Two_pred_to_dec_Set_sset (dec_Set_to_Two_pred_sset S) = S :=
+begin
+  intro S, apply eq_of_homotopy, intro a, 
+  change @Two.rec (λ t, Prop) False True ((dec_Set_to_Two_pred_sset S) a) = _, 
+  hinduction A.dec_el a S with p val, 
+    { change @Two.rec (λ t, Prop) _ _ 
+                 (@sum.rec (a ∈ S) (¬(a ∈ S)) (λ s, Two) _ _ (A.dec_el a S)) = _, 
+      rwr p, change True = _, fapply inhabited_Prop_eq, exact true.intro, exact val }, 
+    { change @Two.rec (λ t, Prop) _ _ 
+                 (@sum.rec (a ∈ S) (¬(a ∈ S)) (λ s, Two) _ _ (A.dec_el a S)) = _, 
+      rwr p, change False = _, fapply uninhabited_Prop_eq, intro f, hinduction f, 
+      exact val } 
+end
+
+@[hott]
+def dec_Set_Two_pred_sset_rinv (A : dec_Set.{u}) : Π (S : A.to_trunctype -> Two.{u}), 
+  dec_Set_to_Two_pred_sset (Two_pred_to_dec_Set_sset S) = S :=
+begin
+  intro S, apply eq_of_homotopy, intro a,
+  let S' : Subset A.to_trunctype := λ a, @Two.rec (λ t, Prop) False True (S a),
+  change @sum.rec (a ∈ S') (¬(a ∈ S')) (λ s, Two) (λ v, Two.one) 
+            (λ v, Two.zero) (A.dec_el a (λ a, S' a)) = _,
+  hinduction S a with p, 
+  { have q : S' a = False, from 
+      begin change @Two.rec (λ t, Prop) False True (S a) = _, rwr p end,
+    hinduction A.dec_el a (λ a, S' a) with q', hinduction q ▸ val, refl },
+  { have q : S' a = True, from 
+      begin change @Two.rec (λ t, Prop) False True (S a) = _, rwr p end,
+    hinduction A.dec_el a (λ a, S' a) with q', refl, 
+    have v' : ↥(S' a), from (ap trunctype.carrier q)⁻¹ ▸[id] true.intro, 
+    hinduction val v' }
+end
+
+/- Correspondence of element relation and predicate. -/
 @[hott, reducible]
 def pred_elem {A : Set} {P : Subset A} (a : A) : a ∈ { a ∈ A | P a } <-> P a :=
   have imp₁ : a ∈ { a ∈ A | P a } -> P a, from
