@@ -102,21 +102,21 @@ end
 /- The full subcategory on a subtype of the type of a category can be defined using
    the injective embedding of the subtype into the type. -/
 @[hott]
-def subtype_emb {C : Type _} [is_cat C] (P : C -> trunctype.{0} -1) :
+def subtype_emb {C : Type _} [is_cat C] (P : C -> trunctype -1) :
   subtype (λ c : C, ↥(P c)) -> C := assume sc, sc.1
 
 @[hott, instance]
-def subtype_emb_is_inj {C : Type _} [is_cat C] (P : C -> trunctype.{0} -1) :
+def subtype_emb_is_inj {C : Type _} [is_cat C] (P : C -> trunctype -1) :
   is_injective (subtype_emb P) :=
 begin intros sc₁ sc₂, exact (subtype_eq_equiv sc₁ sc₂).to_is_equiv end    
 
 @[hott, instance]
-def full_subcat_on_subtype {C : Type _} [H : is_cat C] (P : C -> trunctype.{0} -1) :
+def full_subcat_on_subtype {C : Type _} [H : is_cat C] (P : C -> trunctype -1) :
   is_cat (subtype (λ c : C, ↥(P c))) :=
 @fully_embedded_category (Category.mk C H) _ (subtype_emb P) (subtype_emb_is_inj P)  
 
 @[hott]
-def embed {C : Type _} [HC : is_cat C] {P : C -> trunctype.{0} -1} 
+def embed {C : Type _} [HC : is_cat C] {P : C -> trunctype -1} 
   {D : Type _} [H : is_precat D] (F : D ⥤ subtype (λ c : C, ↥(P c))) : D ⥤ C :=
 have G : subtype (λ c : C, ↥(P c)) ⥤ C, from 
   @emb_functor (Category.mk C HC) _ (subtype_emb P), 
