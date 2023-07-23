@@ -101,8 +101,7 @@ begin
               (eq_of_homotopy (sym_orthogonal_pair_obj f g)) (λ c₁ c₂ : C, c₁ ⟶ c₂) 
               ((orthogonal_pair g f).map h)), 
       rwr ap10_eq_of_homotopy } } } }
-end
- 
+end 
 
 /- Limits of orthogonal pairs are `pullbacks`. -/
 @[hott]
@@ -133,6 +132,13 @@ class has_pullbacks (C : Type _) [is_cat C] :=
   (has_limit_of_shape : has_limits_of_shape orthogonal_wedge C)
 
 @[hott, instance]
+def has_pbs_is_prop (C : Type _) [is_cat C] : is_prop (has_pullbacks C) :=
+begin 
+  apply is_prop.mk, intros hpbs₁ hpbs₂, hinduction hpbs₁, hinduction hpbs₂,
+  apply ap has_pullbacks.mk, exact is_prop.elim _ _ 
+end
+
+@[hott, instance]
 def has_pullback_of_has_pullbacks {C : Type _} [is_cat C] 
   [has_pullbacks C] {a b c : C} (f : a ⟶ c) (g : b ⟶ c) : has_pullback f g :=
 ⟨@has_limits_of_shape.has_limit _ _ _ _ 
@@ -148,37 +154,6 @@ def has_pullback_of_has_limits_of_shape {C : Type _} [is_cat C]
 def has_pullbacks_of_has_limits (C : Category) [H : has_limits C] : 
   has_pullbacks C :=
 has_pullbacks.mk (@has_limits.has_limit_of_shape C _ H orthogonal_wedge _)
-
-
-/- We need similar constructions for diagrams in `C` consisting of the arbitrary many 
-   morphisms `f` and `g` with common codomain, that is, diagrams over `inf_wedge`. -/
-@[hott, hsimp]
-def orthogonal_tuple_obj {C : Type _} [is_cat C] {J : Set} 
-  {f : J -> C} {c : C} (leg : Π j : J, f j ⟶ c) : inf_wedge J -> C :=
-λ s, match s with
-     | inf_w_node.tip j := f j
-     | inf_w_node.base C := c
-     end    
-
-@[hott, hsimp]
-def orthogonal_tuple_map {C : Type _} [is_cat C] {J : Set} 
-  {f : J -> C} {c : C} (leg : Π j : J, f j ⟶ c) : Π {s t : inf_wedge J}, 
-  (s ⟶ t) -> (orthogonal_tuple_obj leg s ⟶ orthogonal_tuple_obj leg t) :=
-begin 
-  intros s t, hinduction s with j, all_goals { hinduction t with k }, 
-  sorry, sorry, sorry, sorry 
-end
-/-assume s t, 
-match s, t with
-  | inf_w_node.tip j, inf_w_node.tip k := assume h, 𝟙 (f j) --id
-  | inf_w_node.tip j, inf_w_node.base C := assume h, leg j --leg arrow
-  | inf_w_node.base C, inf_w_node.tip j := begin intro h, hinduction h end    
-  | inf_w_node.base C, inf_w_node.base C := assume h, 𝟙 c --id
-end -/
-
-@[hott]
-class has_inf_pullbacks (C : Type _) [is_cat C] := 
-  (has_limit_of_shape : Π (A : Set), has_limits_of_shape (inf_wedge A) C)
 
 
 /- A cone over an orthogonal pair is called a `square`. -/
@@ -621,27 +596,6 @@ begin
       rwr <- is_precat.assoc } }
 end
 
-/- The intersection of arbitrary many subobjects. -/
-@[hott]
-class has_subobj_iInter {C : Category.{u v}} {c : C} {J : Set.{u'}} (f : J -> subobject c) :=
-  (exists_union : @has_product _ subobject_is_cat _ f)
-
-@[hott, instance]
-def has_subobj_iInter_of_has_inf_pullbacks {C : Category.{u v}} 
-  [has_inf_pullbacks C] {c : C} {J : Set.{u'}} 
-  (f : J -> subobject.{u v} c) : has_subobj_iInter f :=
-begin 
-  apply has_subobj_iInter.mk, apply has_product.mk, apply has_limit.mk,
-  fapply limit_cone.mk, 
-  { fapply fan.mk, 
-    { fapply subobject.mk, sorry, sorry, sorry }, 
-    { intro j, fapply hom_of_monos.mk,
-      { sorry },
-      { sorry } } },
-  { fapply is_limit.mk, 
-    { intro cone_f, sorry }, 
-    { intros cf j, exact is_prop.elim _ _ } }
-end  
 
 /- The pullback functor of subobjects has adjoints if the category has images stable
    under pullbacks. 
