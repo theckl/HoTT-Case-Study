@@ -328,7 +328,8 @@ class has_order (A : Type _) := (le : A → A → Type _)
 hott_theory_cmd "local infix ` ≼ `:60  := hott.has_order.le"
 
 @[hott, instance]
-def subobject_has_order {C : Category} (c : C) : has_order (subobject c) :=
+def subobject_has_order {C : Category.{u v}} (c : C) : 
+  has_order.{(max u v) v} (subobject c) :=
   has_order.mk (λ a b, a ⟶ b)  
 
 @[hott]
