@@ -1,4 +1,4 @@
-import sets.algebra init2 sets.axioms 
+import sets.algebra init2 sets.axioms sets.finite
 
 universes v v' u u' w 
 hott_theory
@@ -28,15 +28,21 @@ open hott.eq hott.set hott.subset hott.is_trunc hott.is_equiv hott.equiv
    allowed to be index sets of products in interpreting categories. -/
 namespace signature
 
-/- Labels allow to distinguish variables of the same sort. -/
+/- Labels allow to distinguish variables of the same sort. 
+
+   We want variables to have a decidable element relation, but only need to assume that 
+   one of the set of labels and sorts has such a decidable element relation - sorts should
+   usually have less elements than labels. -/
 @[hott]
-structure var (labels : Set.{0}) (sorts : Set.{0}) :=
+structure var (labels : Set.{0}) (sorts : dec_Set.{0}) :=
   (label : labels)
-  (sort : sorts) 
+  (sort : sorts.to_trunctype) 
+
+--#print string
 
 /- The following three lemmas should be produced automatically. -/
 @[hott]
-def var_eq {labels : Set.{0}} {sorts : Set.{0}} {x₁ x₂ : var labels sorts} : 
+def var_eq {labels : Set.{0}} {sorts : dec_Set.{0}} {x₁ x₂ : var labels sorts} : 
   (x₁.label = x₂.label) -> (x₁.sort = x₂.sort) -> (x₁ = x₂) :=
 begin
   intros p_label p_sort, 
@@ -45,58 +51,57 @@ begin
 end    
 
 @[hott]
-def var_eq_eta {labels : Set.{0}} {sorts : Set.{0}} {x₁ x₂ : var labels sorts} 
+def var_eq_eta {labels : Set.{0}} {sorts : dec_Set.{0}} {x₁ x₂ : var labels sorts} 
   (p : x₁ = x₂) : var_eq (ap var.label p) (ap var.sort p) = p := 
 begin hinduction p, hinduction x₁, reflexivity end    
     
 @[hott, instance]
-def var_is_set {labels : Set.{0}} {sorts : Set.{0}}  : is_set (var labels sorts) :=
+def var_is_set {labels : Set.{0}} {sorts : dec_Set.{0}} : is_set (var labels sorts) :=
 begin
   fapply is_set.mk, intros x y p q, 
   rwr <- var_eq_eta p, rwr <- var_eq_eta q,
   apply ap011 var_eq, apply is_set.elim, apply is_set.elim
 end   
 
+@[hott, instance]
+def var_is_dec_set {labels : Set.{0}} {sorts : dec_Set.{0}} : 
+  has_dec_elem (to_Set (var labels sorts)) :=
+begin
+  fapply has_dec_elem.mk, intros a S, hinduction a with l s, 
+  let S_l : Subset sorts.to_trunctype := λ s', S (var.mk l s'),
+  have S_l_dec : s ∈ S_l ⊎ s ∉ S_l, from sorts.dec_el s S_l,
+  hinduction S_l_dec, exact sum.inl val, exact sum.inr val 
+end
+
 @[hott]
 structure fo_signature :=
   (labels : Set.{0}) 
-  (sorts : Set.{0}) (Hs : has_dec_elem sorts)
+  (sorts : dec_Set.{0}) 
   (ops : Set.{0}) 
   (ops_arity : Π (o : ops), Set.{0})
-  (ops_source : Π (o : ops), ops_arity o -> sorts)
-  (ops_target : Π (o : ops), sorts)
+  (ops_source : Π (o : ops), ops_arity o -> sorts.to_trunctype)
+  (ops_target : Π (o : ops), sorts.to_trunctype)
   (rels : Set.{0})
   (rels_arity : Π (r : rels), Set.{0})
-  (rels_comp : Π {r : rels}, rels_arity r -> sorts)
+  (rels_comp : Π {r : rels}, rels_arity r -> sorts.to_trunctype)
   (ind_Set : Set.{0})  --set indexing all index sets
   (I : ind_Set -> Set.{0}) 
 /- If we don't restrict the possible index sets of infinte con- and disjunction to a set
    the type of formulas is not a set. -/
 
-/- We only need to assume that one of the set of labels and sorts has a decidable 
-   element relation - sorts should usually have less elements than labels. -/
-@[hott, instance]
-def sign_var_has_dec_elem (sign : fo_signature) : 
-  has_dec_elem (to_Set (var sign.labels sign.sorts)) :=
-begin 
-  apply has_dec_elem.mk, intros x S, hinduction x with l s,
-  let S_l : Subset sign.sorts := λ s', S (var.mk l s'),
-  have S_l_dec : s ∈ S_l ⊎ s ∉ S_l, from @has_dec_elem.dec_el _ sign.Hs s S_l,
-  hinduction S_l_dec, exact sum.inl val, exact sum.inr val 
-end
 
 namespace term
 
 @[hott] 
-inductive term_of_sort {sign : fo_signature} : sign.sorts -> Type 
-| var (s : sign.sorts) (x : var sign.labels sign.sorts) (pv : x.sort = s) : 
+inductive term_of_sort {sign : fo_signature} : sign.sorts.to_trunctype -> Type 
+| var (s : sign.sorts.to_trunctype) (x : var sign.labels sign.sorts) (pv : x.sort = s) : 
                                                                        term_of_sort s      
-| op (s : sign.sorts) (o : sign.ops) (pot : sign.ops_target o = s)
+| op (s : sign.sorts.to_trunctype) (o : sign.ops) (pot : sign.ops_target o = s)
      (args : Π (oa : sign.ops_arity o), term_of_sort (sign.ops_source o oa)) : 
      term_of_sort s
 
 @[hott, reducible]
-protected def code {sign : fo_signature} : Π {s₁ s₂ : sign.sorts}, 
+protected def code {sign : fo_signature} : Π {s₁ s₂ : sign.sorts.to_trunctype}, 
   term_of_sort s₁ -> term_of_sort s₂ -> Type :=
 begin
   intros s₁ s₂ t₁, revert s₁ t₁ s₂, intros s₁ t₁,
@@ -115,7 +120,7 @@ end
                        code (args₁ oa₁) (args₂ (q ▸ oa₁)) -/
 
 @[hott, instance]
-protected def code_is_prop  {sign : fo_signature} {s₁ s₂ : sign.sorts} : 
+protected def code_is_prop  {sign : fo_signature} {s₁ s₂ : sign.sorts.to_trunctype} : 
   Π (t₁ : term_of_sort s₁) (t₂ : term_of_sort s₂), 
     is_prop (term.code t₁ t₂) :=
 begin
@@ -135,11 +140,11 @@ end
 
 @[hott]
 structure term (sign : fo_signature) :=
-  (sort : sign.sorts)
+  (sort : sign.sorts.to_trunctype)
   (expr : term_of_sort sort)
 
 @[hott]
-def term_eq_term {sign : fo_signature} (s : sign.sorts) :
+def term_eq_term {sign : fo_signature} (s : sign.sorts.to_trunctype) :
   Π (t₁ t₂ : term_of_sort s), term.mk s t₁ = term.mk s t₂ -> t₁ = t₂ :=
 begin
   intros t₁ t₂ q, let p := pathover_ap _ _ (apd term.expr q), 
@@ -223,7 +228,7 @@ begin
 end 
 
 @[hott]
-def term_of_sort_of_term {sign : fo_signature} (s : sign.sorts) :
+def term_of_sort_of_term {sign : fo_signature} (s : sign.sorts.to_trunctype) :
   (term_of_sort s) ≃ (Σ (t : term sign), t.sort = s) :=
 begin 
   fapply equiv.mk, 
@@ -239,7 +244,7 @@ begin
 end  
 
 @[hott, instance]
-def term_of_sort_is_set {sign : fo_signature} (s : sign.sorts) : 
+def term_of_sort_is_set {sign : fo_signature} (s : sign.sorts.to_trunctype) : 
   is_set (term_of_sort s) :=
 begin apply is_trunc_equiv_closed_rev 0 (term_of_sort_of_term s), apply_instance end  
 
@@ -471,6 +476,13 @@ begin hinduction φ, exact True, exact True, all_goals {exact False} end
 class is_atomic {sign : fo_signature} (φ : formula sign) :=
   (atom : formula.atomic φ)
 
+@[hott, instance]
+def is_atomic_is_prop {sign : fo_signature} (φ : formula sign) : is_prop (is_atomic φ) :=
+begin
+  apply is_prop.mk, intros φ₁ φ₂, hinduction φ₁ with a₁, hinduction φ₂ with a₂, 
+  apply ap is_atomic.mk, exact is_prop.elim _ _
+end
+
 @[hott]
 protected def horn {sign : fo_signature} (φ : formula sign) : trunctype.{0} -1 :=
 begin 
@@ -481,6 +493,13 @@ end
 @[hott]
 class is_horn {sign : fo_signature} (φ : formula sign) :=
   (horn : formula.horn φ)
+
+@[hott, instance]
+def is_horn_is_prop {sign : fo_signature} (φ : formula sign) : is_prop (is_horn φ) :=
+begin
+  apply is_prop.mk, intros φ₁ φ₂, hinduction φ₁ with h₁, hinduction φ₂ with h₂, 
+  apply ap is_horn.mk, exact is_prop.elim _ _
+end
 
 @[hott]
 def atomic_implies_horn {sign : fo_signature} (φ : formula sign) : 
@@ -501,6 +520,13 @@ end
 @[hott]
 class is_regular {sign : fo_signature} (φ : formula sign) :=
   (reg : formula.regular φ)
+
+@[hott, instance]
+def is_regular_is_prop {sign : fo_signature} (φ : formula sign) : is_prop (is_regular φ) :=
+begin
+  apply is_prop.mk, intros φ₁ φ₂, hinduction φ₁ with r₁, hinduction φ₂ with r₂, 
+  apply ap is_regular.mk, exact is_prop.elim _ _
+end  
 
 @[hott]
 def horn_implies_regular {sign : fo_signature} (φ : formula sign) : 
@@ -524,6 +550,13 @@ end
 @[hott]
 class is_coherent {sign : fo_signature} (φ : formula sign) :=
   (coh : formula.coherent φ)
+
+@[hott, instance]
+def is_coherent_is_prop {sign : fo_signature} (φ : formula sign) : is_prop (is_coherent φ) :=
+begin
+  apply is_prop.mk, intros φ₁ φ₂, hinduction φ₁ with c₁, hinduction φ₂ with c₂, 
+  apply ap is_coherent.mk, exact is_prop.elim _ _
+end
 
 @[hott]
 def regular_implies_coherent {sign : fo_signature} (φ : formula sign) : 
@@ -551,6 +584,14 @@ end
 class is_first_order {sign : fo_signature} (φ : formula sign) :=
   (fo : formula.first_order φ)
 
+@[hott, instance]
+def is_firts_order_is_prop {sign : fo_signature} (φ : formula sign) : 
+  is_prop (is_first_order φ) :=
+begin
+  apply is_prop.mk, intros φ₁ φ₂, hinduction φ₁ with fo₁, hinduction φ₂ with fo₂, 
+  apply ap is_first_order.mk, exact is_prop.elim _ _
+end
+
 @[hott]
 def coherent_implies_first_order {sign : fo_signature} (φ : formula sign) : 
   formula.coherent φ -> formula.first_order φ :=
@@ -576,6 +617,14 @@ end
 @[hott]
 class is_geometric {sign : fo_signature} (φ : formula sign) :=
   (geom : formula.geometric φ)
+
+@[hott, instance]
+def is_geometric_is_prop {sign : fo_signature} (φ : formula sign) : 
+  is_prop (is_geometric φ) :=
+begin
+  apply is_prop.mk, intros φ₁ φ₂, hinduction φ₁ with g₁, hinduction φ₂ with g₂, 
+  apply ap is_geometric.mk, exact is_prop.elim _ _
+end
 
 @[hott]
 def coherent_implies_geometric {sign : fo_signature} (φ : formula sign) : 
@@ -671,24 +720,41 @@ open formula
 structure sequent (sign : fo_signature) :=
   (ass : formula_in_context sign)
   (con : formula_in_context sign)
-  (cont_eq : ∥ass.cont_of_φ.1 = con.cont_of_φ.1∥  )
+
+@[hott]
+def seq_context {sign : fo_signature} (seq : sequent sign) : context sign := 
+  context.mk (seq.ass.cont_of_φ.cont.vars ∪ seq.con.cont_of_φ.cont.vars)
+
+@[hott]
+def seq_cont_ass {sign : fo_signature} (seq : sequent sign) : formula_in_context sign :=
+begin 
+  fapply formula_in_context.mk, exact seq.ass.φ, 
+  fapply context_of.mk, exact seq_context seq,
+  exact subset_trans _ _ _ (formula.formula_in_context.cont_of_φ seq.ass).in_cont 
+                           (union_sset_l _ _)
+end
+
+@[hott]
+def seq_cont_con {sign : fo_signature} (seq : sequent sign) : formula_in_context sign :=
+begin 
+  fapply formula_in_context.mk, exact seq.con.φ, 
+  fapply context_of.mk, exact seq_context seq,
+  exact subset_trans _ _ _ (formula.formula_in_context.cont_of_φ seq.con).in_cont 
+                           (union_sset_r _ _)
+end
 
 @[hott, hsimp]
 def sequent_eq {sign : fo_signature} {seq₁ seq₂ : sequent sign} :
-  Π (pa : seq₁.ass = seq₂.ass) (pc : seq₁.con = seq₂.con), 
-    (seq₁.cont_eq =[ap011 (λ (a b : formula_in_context sign), 
-            ↥∥a.cont_of_φ.1 = b.cont_of_φ.1∥) pa pc; id] seq₂.cont_eq) -> seq₁ = seq₂ :=
+  Π (pa : seq₁.ass = seq₂.ass) (pc : seq₁.con = seq₂.con), seq₁ = seq₂ :=
 begin 
-  intros pa pc pc_eq, 
-  hinduction seq₁ with ass con cont_eq, hinduction seq₂ with ass' con' cont_eq', 
-  exact apd001 sequent.mk pa pc pc_eq
+  intros pa pc, 
+  hinduction seq₁ with ass con, hinduction seq₂ with ass' con', 
+  exact ap011 sequent.mk pa pc
 end 
 
 @[hott]
 def sequent_eq_eta {sign : fo_signature} {seq₁ seq₂ : sequent sign} (p : seq₁ = seq₂) :
-  sequent_eq (ap sequent.ass p) (ap sequent.con p)
-    (@pathover_ap011 _ _ _ (λ φc₁ φc₂ : formula_in_context sign, 
-      ∥φc₁.cont_of_φ.1 = φc₂.cont_of_φ.1∥) sequent.ass sequent.con sequent.cont_eq _ _ p) = p := 
+  sequent_eq (ap sequent.ass p) (ap sequent.con p) = p := 
 begin hinduction p, hinduction seq₁, exact idp end 
 
 @[hott, instance]
@@ -696,9 +762,7 @@ def sequent_is_set {sign : fo_signature} : is_set (sequent sign) :=
 begin
   fapply is_set.mk, intros seq₁ seq₂ p q, 
   rwr <- sequent_eq_eta p, rwr <- sequent_eq_eta q,
-  fapply apd0111 sequent_eq, exact is_set.elim _ _, 
-  { apply pathover_of_tr_eq, exact is_set.elim _ _ }, 
-  { apply pathover_of_tr_eq, exact dep_set_eq_eq _ _ _ }
+  fapply ap011 sequent_eq, exact is_set.elim _ _, exact is_set.elim _ _
 end 
 
 /- We may need to introduce classes of sequents later on, if we need to invoke the class 
@@ -724,38 +788,137 @@ def sequent.first_order {sign : fo_signature} (seq : sequent sign) : trunctype.{
 def sequent.geometric {sign : fo_signature} (seq : sequent sign) : trunctype.{0} -1 :=
   (formula.geometric seq.ass.φ) and (formula.geometric seq.con.φ) 
 
-/- We need notations for formulas and sequents. -/
+/- TODO : We need notations for formulas and sequents. -/
 
 @[hott]
 def fo_theory (sign : fo_signature) := Subset (to_Set (sequent sign)) 
 
+namespace theory
+
 /- To define modules and algebras we need two sorts in an otherwise algebraic theory. So we
    drop the requirement of only one sort in an algebraic theory. -/
 @[hott]
-def theory.algebraic {sign : fo_signature} (th : fo_theory sign) : trunctype.{0} -1 :=
-  prop_resize (to_Prop (Zero ≃ sign.rels) and 
-              (to_Prop (Π seq : to_Set (sequent sign), seq ∈ th -> 
-                        (prod (seq.ass.φ = formula.T sign) (formula.atomic seq.con.φ)))))
+class is_algebraic {sign : fo_signature} (th : fo_theory sign) :=
+  (alg : prod (fin_Set 0 ≃ sign.rels) (Π seq : to_Set (sequent sign), seq ∈ th -> 
+                        (prod (seq.ass.φ = formula.T sign) (formula.is_atomic seq.con.φ))))
+
+@[hott, instance]
+def is_algebraic_th.to_ass_is_horn {sign : fo_signature} (th : fo_theory sign) 
+  [H : is_algebraic th] (seq : to_Set (sequent sign)) (ax : seq ∈ th) : 
+                                                  (formula.is_horn seq.ass.φ) :=
+begin rwr (H.alg.2 seq ax).1, apply is_horn.mk, exact true.intro end
+
+@[hott, instance]
+def is_algebraic_th.to_con_is_atomic {sign : fo_signature} (th : fo_theory sign) 
+  [H : is_algebraic th] : Π seq : to_Set (sequent sign), seq ∈ th -> 
+                                                  (formula.is_atomic seq.con.φ) :=
+assume seq ax, (H.alg.2 seq ax).2  
 
 @[hott]
-def theory.horn {sign : fo_signature} (th : fo_theory sign) : trunctype.{0} -1 :=
-  prop_resize (to_Prop (Π seq : to_Set (sequent sign), seq ∈ th -> 
-                        (prod (formula.horn seq.ass.φ) (formula.horn seq.con.φ))))
+class is_horn {sign : fo_signature} (th : fo_theory sign) :=
+  (horn : Π seq : to_Set (sequent sign), seq ∈ th -> 
+                        (prod (formula.is_horn seq.ass.φ) (formula.is_horn seq.con.φ)))
+
+@[hott, instance]
+def is_horn_th.to_ass_is_horn {sign : fo_signature} (th : fo_theory sign) 
+  [H : is_horn th] : Π seq : to_Set (sequent sign), seq ∈ th -> 
+                                                  (formula.is_horn seq.ass.φ) :=
+assume seq ax, (@is_horn.horn _ _ H seq ax).1 
+
+@[hott, instance]
+def is_horn_th.to_con_is_horn {sign : fo_signature} (th : fo_theory sign) 
+  [H : is_horn th] : Π seq : to_Set (sequent sign), seq ∈ th -> 
+                                                  (formula.is_horn seq.con.φ) :=
+assume seq ax, (@is_horn.horn _ _ H seq ax).2 
+
+@[hott, instance]
+def algebraic_to_horn_theory {sign : fo_signature} (th : fo_theory sign) [is_algebraic th] : 
+  is_horn th := 
+begin 
+  apply is_horn.mk, intros seq ax, fapply pair, 
+  exact is_algebraic_th.to_ass_is_horn th seq ax, 
+  exact @formula.atomic.to_horn _ _ (is_algebraic_th.to_con_is_atomic th seq ax)  
+end
 
 @[hott]
-def theory.regular {sign : fo_signature} (th : fo_theory sign) : trunctype.{0} -1 :=
-  prop_resize (to_Prop (Π seq : to_Set (sequent sign), seq ∈ th -> 
-                        (prod (formula.regular seq.ass.φ) (formula.regular seq.con.φ))))
+class is_regular {sign : fo_signature} (th : fo_theory sign) :=
+  (reg : Π seq : to_Set (sequent sign), seq ∈ th -> 
+                    (prod (formula.is_regular seq.ass.φ) (formula.is_regular seq.con.φ)))
+
+@[hott, instance]
+def is_reg_th.to_ass_is_reg {sign : fo_signature} (th : fo_theory sign) 
+  [H : is_regular th] : Π seq : to_Set (sequent sign), seq ∈ th -> 
+                                                  (formula.is_regular seq.ass.φ) :=
+assume seq ax, (@is_regular.reg _ _ H seq ax).1 
+
+@[hott, instance]
+def is_reg_th.to_con_is_reg {sign : fo_signature} (th : fo_theory sign) 
+  [H : is_regular th] : Π seq : to_Set (sequent sign), seq ∈ th -> 
+                                                  (formula.is_regular seq.con.φ) :=
+assume seq ax, (@is_regular.reg _ _ H seq ax).2 
+
+@[hott, instance]
+def horn_to_reg_theory {sign : fo_signature} (th : fo_theory sign) [is_horn th] : 
+  is_regular th := 
+begin 
+  apply is_regular.mk, intros seq ax, fapply pair, 
+  exact @formula.horn.to_regular _ _ (is_horn_th.to_ass_is_horn th seq ax),
+  exact @formula.horn.to_regular _ _ (is_horn_th.to_con_is_horn th seq ax)  
+end
 
 @[hott]
-def theory.coherent {sign : fo_signature} (th : fo_theory sign) : trunctype.{0} -1 :=
-  prop_resize (to_Prop (Π seq : to_Set (sequent sign), seq ∈ th -> 
-                        (prod (formula.coherent seq.ass.φ) (formula.coherent seq.con.φ))))
+class is_coherent {sign : fo_signature} (th : fo_theory sign) :=
+  (coh : Π seq : to_Set (sequent sign), seq ∈ th -> 
+                  (prod (formula.is_coherent seq.ass.φ) (formula.is_coherent seq.con.φ)))
+
+@[hott, instance]
+def is_coh_th.to_ass_is_coh {sign : fo_signature} (th : fo_theory sign) 
+  [H : is_coherent th] : Π seq : to_Set (sequent sign), seq ∈ th -> 
+                                                  (formula.is_coherent seq.ass.φ) :=
+assume seq ax, (@is_coherent.coh _ _ H seq ax).1 
+
+@[hott, instance]
+def is_coh_th.to_con_is_coh {sign : fo_signature} (th : fo_theory sign) 
+  [H : is_coherent th] : Π seq : to_Set (sequent sign), seq ∈ th -> 
+                                                  (formula.is_coherent seq.con.φ) :=
+assume seq ax, (@is_coherent.coh _ _ H seq ax).2 
+
+@[hott, instance]
+def reg_to_coh_theory {sign : fo_signature} (th : fo_theory sign) [is_regular th] : 
+  is_coherent th := 
+begin 
+  apply is_coherent.mk, intros seq ax, fapply pair, 
+  exact @formula.regular.to_coherent _ _ (is_reg_th.to_ass_is_reg th seq ax),
+  exact @formula.regular.to_coherent _ _ (is_reg_th.to_con_is_reg th seq ax)  
+end
 
 @[hott]
-def theory.geometric {sign : fo_signature} (th : fo_theory sign) : trunctype.{0} -1 :=
-  prop_resize (to_Prop (Π seq : to_Set (sequent sign), seq ∈ th -> 
-                        (prod (formula.geometric seq.ass.φ) (formula.geometric seq.con.φ))))
+class is_geometric {sign : fo_signature} (th : fo_theory sign) :=
+  (geom : Π seq : to_Set (sequent sign), seq ∈ th -> 
+                  (prod (formula.is_geometric seq.ass.φ) (formula.is_geometric seq.con.φ)))
+
+@[hott, instance]
+def is_geom_th.to_ass_is_geom {sign : fo_signature} (th : fo_theory sign) 
+  [H : is_geometric th] : Π seq : to_Set (sequent sign), seq ∈ th -> 
+                                                  (formula.is_geometric seq.ass.φ) :=
+assume seq ax, (@is_geometric.geom _ _ H seq ax).1 
+
+@[hott, instance]
+def is_geom_th.to_con_is_geom {sign : fo_signature} (th : fo_theory sign) 
+  [H : is_geometric th] : Π seq : to_Set (sequent sign), seq ∈ th -> 
+                                                  (formula.is_geometric seq.con.φ) :=
+assume seq ax, (@is_geometric.geom _ _ H seq ax).2
+
+@[hott, instance]
+def coh_to_geom_theory {sign : fo_signature} (th : fo_theory sign) [is_coherent th] : 
+  is_geometric th := 
+begin 
+  apply is_geometric.mk, intros seq ax, fapply pair, 
+  exact @formula.coherent.to_geometric _ _ (is_coh_th.to_ass_is_coh th seq ax),
+  exact @formula.coherent.to_geometric _ _ (is_coh_th.to_con_is_coh th seq ax)  
+end
+
+end theory
 
 end signature
 
