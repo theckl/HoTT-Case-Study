@@ -1,18 +1,23 @@
 import categories.structures categories.boolean categories.colimits categories.pullback
+       categories.inf_pb
 
 universes v v' u u' w 
 hott_theory
 
 namespace hott
 open signature signature.term signature.formula precategories categories.limits set 
-     subset categories.colimits categories.pullbacks categories.boolean trunc
+     subset categories.colimits categories.pullbacks categories.inf_pullbacks
+     categories.boolean trunc is_trunc hott.set
 
 namespace categories
 
 /- We list the properties needed to interpret particularly constructed formulas in a 
    model category, then attach these properties to the different inductive construction
    steps of formulas and finally define a class mapping each construction step to the 
-   class of these properties. -/
+   class of these properties. 
+   
+   Note that complements are not needed to interpret negated formulas, but are needed
+   when LEM should hold. -/
 @[hott]
 inductive model_properties : Type 
 | equalizer : model_properties
@@ -22,7 +27,7 @@ inductive model_properties : Type
 | all_of_fiber : model_properties
 | complement : model_properties
 | inf_union : model_properties
-| inf_pullback : model_properties
+| inf_inter : model_properties
 
 @[hott]
 def needs_properties {sign : fo_signature} (φ : formula sign) : 
@@ -55,6 +60,13 @@ begin
     exact ih, exact True, exact inf_disj ih }
 end     
 
+/- Formulas in a fragment of the language automatically only need some of the model
+   properties. -/
+@[hott]
+def horn_need_properties {sign : fo_signature} {φ : formula sign} (φh : formula.horn φ) : 
+  Π (mp : model_properties), needs_properties φ mp -> Type := 
+begin intros mp np, hinduction mp, exact true, exact true, all_goals { exact false } end 
+
 /- An instance of this class allows to construct instances of the categorical properties
    needed to interpret formulas of a certain type. Later on, we will construct instances
    of this class from given fragments of the language. -/
@@ -66,8 +78,10 @@ class is_interpretable_in {sign : fo_signature} (φ : formula sign) (C : Categor
 (stable_im : needs_properties φ model_properties.stable_image -> has_pb_and_stab_im C) 
 (all_fib : needs_properties φ model_properties.all_of_fiber -> has_pb_and_all_fib C)
 (compl : needs_properties φ model_properties.complement -> has_pb_and_compl C)
-(inf_union : needs_properties φ model_properties.inf_union -> has_unions C)
-(inf_pb : needs_properties φ model_properties.inf_pullback -> has_inf_pullbacks C)
+(inf_union : needs_properties φ model_properties.inf_union -> Π (c : C) 
+              (i : sign.ind_Set) (f : sign.I i -> subobject c), has_subobj_union f)
+(inf_inter : needs_properties φ model_properties.inf_inter -> Π (c : C) 
+              (i : sign.ind_Set) (f : sign.I i -> subobject c), has_subobj_iInter f)
 
 /- We need to construct instances of `is_interpretable_in` of the components of a 
    composite formula from an instance of `is_interpretable_in` of the composite formula. -/
@@ -84,7 +98,7 @@ begin
   { apply all_fib, apply or_inl, exact np },
   { apply compl, apply or_inl, exact np },
   { apply inf_union, apply or_inl, exact np },
-  { apply inf_pb, apply or_inl, exact np },
+  { apply inf_inter, apply or_inl, exact np },
 end   
 
 @[hott, instance]
@@ -101,7 +115,7 @@ begin
   { apply all_fib, apply or_inr, exact np },
   { apply compl, apply or_inr, exact np },
   { apply inf_union, apply or_inr, exact np },
-  { apply inf_pb, apply or_inr, exact np },
+  { apply inf_inter, apply or_inr, exact np },
 end
 
 @[hott, instance]
@@ -117,7 +131,7 @@ begin
   { apply all_fib, apply or_inl, exact np },
   { apply compl, apply or_inl, exact np },
   { apply inf_union, apply or_inl, exact np },
-  { apply inf_pb, apply or_inl, exact np },
+  { apply inf_inter, apply or_inl, exact np },
 end   
 
 @[hott, instance]
@@ -134,7 +148,7 @@ begin
   { apply all_fib, apply or_inr, exact np },
   { apply compl, apply or_inr, exact np },
   { apply inf_union, apply or_inr, exact np },
-  { apply inf_pb, apply or_inr, exact np },
+  { apply inf_inter, apply or_inr, exact np },
 end
 
 @[hott, instance]
@@ -151,7 +165,7 @@ begin
   { apply all_fib true.intro },
   { apply compl, apply or_inl, exact np },
   { apply inf_union, apply or_inl, exact np },
-  { apply inf_pb, apply or_inl, exact np },
+  { apply inf_inter, apply or_inl, exact np },
 end   
 
 @[hott, instance]
@@ -168,7 +182,7 @@ begin
   { apply all_fib true.intro },
   { apply compl, apply or_inr, exact np },
   { apply inf_union, apply or_inr, exact np },
-  { apply inf_pb, apply or_inr, exact np },
+  { apply inf_inter, apply or_inr, exact np },
 end
 
 @[hott, instance]
@@ -184,7 +198,7 @@ begin
   { apply all_fib true.intro },
   { apply compl, exact np },
   { apply inf_union, exact np },
-  { apply inf_pb, exact np },
+  { apply inf_inter, exact np },
 end
 
 @[hott, instance]
@@ -201,7 +215,7 @@ begin
   { apply all_fib, exact np },
   { apply compl, exact np },
   { apply inf_union, exact np },
-  { apply inf_pb, exact np },
+  { apply inf_inter, exact np },
 end
 
 @[hott, instance]
@@ -218,7 +232,7 @@ begin
   { apply all_fib true.intro },
   { apply compl, exact np },
   { apply inf_union, exact np },
-  { apply inf_pb, exact np },
+  { apply inf_inter, exact np },
 end
 
 @[hott, instance]
@@ -236,7 +250,7 @@ begin
   { apply all_fib, exact tr ⟨j, np⟩ },
   { apply compl, exact tr ⟨j, np⟩ },
   { apply inf_union, exact tr ⟨j, np⟩ },
-  { apply inf_pb true.intro},
+  { apply inf_inter true.intro},
 end
 
 @[hott, instance]
@@ -254,7 +268,7 @@ begin
   { apply all_fib, exact tr ⟨j, np⟩ },
   { apply compl, exact tr ⟨j, np⟩ },
   { apply inf_union true.intro},
-  { apply inf_pb, exact tr ⟨j, np⟩ },
+  { apply inf_inter, exact tr ⟨j, np⟩ },
 end
 
 @[hott]
@@ -313,11 +327,10 @@ def interpret_of_rel {sign : fo_signature} {cont : context sign} {C : Category.{
   subobject (∏ (λ a, Sig_str.carrier (@fo_signature.rels_comp sign r a))) :=
 Sig_str.str.rels r
 
-@[hott] 
-def formula_subobject {sign : fo_signature} 
-  (fc : formula_in_context sign) {C : Category.{u v}} [has_sign_products sign C]
-  (Sig_str : Sig_structure sign C) := 
-subobject (context_in_Sig_str fc.cont_of_φ.cont Sig_str)
+@[hott]
+abbreviation formula_subobject {sign : fo_signature} (fc : formula_in_context sign) 
+  {C : Category.{u v}} [has_sign_products sign C] (Sig_str : Sig_structure sign C) := 
+  subobject (context_in_Sig_str fc.cont_of_φ.cont Sig_str)
 
 @[hott] 
 def interpret_of_equal_form {sign : fo_signature}  
@@ -532,13 +545,13 @@ def interpret_of_inf_conj_form {sign : fo_signature} {C : Category.{u v}}
                     Sig_str :=
 begin
   have p : ↥(needs_properties (formula.inf_conj ind)
-                                      model_properties.inf_pullback), from true.intro,
-  have Hipb : has_inf_pullbacks C, from @is_interpretable_in.inf_pb _ _ _ H p,
-  exact @subobject.union _ (context_in_Sig_str inf_conj_cont.cont Sig_str) (sign.I i) 
+                                      model_properties.inf_inter), from true.intro,
+  let Hint := @is_interpretable_in.inf_inter _ _ _ H p,
+  exact @subobject.iInter _ (context_in_Sig_str inf_conj_cont.cont Sig_str) (sign.I i) 
                  (λ j : sign.I i, @ih j (context_of.mk inf_conj_cont.cont
-                  (subset_trans _ _ _ (sset_iUnion (λ j, formula.free_vars (ind j)) _) 
-                 inf_conj_cont.in_cont)) (@interpret_inf_conj_comp _ _ i ind H j)) 
-                 (@has_union_of_has_unions _ _ Hipb _ _)
+                     (subset_trans _ _ _ (sset_iUnion (λ j, formula.free_vars (ind j)) _) 
+                     inf_conj_cont.in_cont)) (@interpret_inf_conj_comp _ _ i ind H j)) 
+                 (Hint _ _ _)
 end
 
 @[hott]
@@ -555,12 +568,12 @@ def interpret_of_inf_disj_form {sign : fo_signature} {C : Category.{u v}}
 begin
   have p : ↥(needs_properties (formula.inf_disj ind)
                                       model_properties.inf_union), from true.intro,
-  have Hu : has_unions C, from @is_interpretable_in.inf_union _ _ _ H p,
+  let Hu := @is_interpretable_in.inf_union _ _ _ H p,
   exact @subobject.union _ (context_in_Sig_str inf_disj_cont.cont Sig_str) (sign.I i) 
                  (λ j : sign.I i, @ih j (context_of.mk inf_disj_cont.cont
                   (subset_trans _ _ _ (sset_iUnion (λ j, formula.free_vars (ind j)) _) 
                  inf_disj_cont.in_cont)) (@interpret_inf_disj_comp _ _ i ind H j)) 
-                 (@has_union_of_has_unions _ _ Hu _ _)
+                 (Hu _ _ _)
 end
 
 @[hott]
@@ -586,6 +599,165 @@ begin
   { exact interpret_of_inf_disj_form Sig_str i ind ih cont_of_φ }
 end    
 
+/- We extend interpretability to sequents and theories and define when they are satisfied
+   by a Σ-structure. -/
+@[hott]
+class seq_is_interpretable_in {sign : fo_signature} (seq : sequent sign) (C : Category) :=
+  (ass_interpretable : is_interpretable_in (seq_cont_ass seq).φ C)  
+  (con_interpretable : is_interpretable_in (seq_cont_con seq).φ C)
+ 
+@[hott, instance]
+def ass_of_seq_is_interpretable {sign : fo_signature} (seq : sequent sign) (C : Category) 
+  [H : seq_is_interpretable_in seq C] : is_interpretable_in (seq_cont_ass seq).φ C := H.1
+
+@[hott]
+def interpret_of_ass {sign : fo_signature} (seq : sequent sign) {C : Category} 
+  [has_sign_products sign C] [seq_is_interpretable_in seq C]  
+  (M : Sig_structure sign C) : formula_subobject (seq_cont_ass seq) M := 
+interpret_of_form (seq_cont_ass seq) M
+
+@[hott, instance]
+def con_of_seq_is_interpretable {sign : fo_signature} (seq : sequent sign) (C : Category) 
+  [H : seq_is_interpretable_in seq C] : is_interpretable_in (seq_cont_con seq).φ C := H.2
+
+@[hott]
+def interpret_of_con {sign : fo_signature} (seq : sequent sign) {C : Category} 
+  [has_sign_products sign C]  [seq_is_interpretable_in seq C]
+  (M : Sig_structure sign C) : formula_subobject (seq_cont_con seq) M := 
+interpret_of_form (seq_cont_con seq) M
+
+@[hott]
+class theory_is_interpretable_in {sign : fo_signature} (Th : fo_theory sign) (C : Category) :=
+  (axiom_interpretable : Π (seq : to_Set (sequent sign)), seq ∈ Th -> 
+                                                          seq_is_interpretable_in seq C)
+
+@[hott, instance]
+def seq_of_theory_interpretable {sign : fo_signature} (Th : fo_theory sign) {C : Category}
+  [H : theory_is_interpretable_in Th C] (seq : to_Set (sequent sign)) (p : seq ∈ Th) : 
+  seq_is_interpretable_in seq C :=
+@theory_is_interpretable_in.axiom_interpretable _ _ C H seq p
+
+/- We construct instances of `theory_is_interpretable_in` for theories using several 
+   fragments of languages from categories having certain properties. As an intermediate 
+   step we construct such instances for formulas. -/
+@[hott, instance]
+def interpret_horn_of_Cartesian  {sign : fo_signature} (φ : formula sign) 
+  [Hh : formula.is_horn φ] {C : Category} [HC : is_Cartesian C] : 
+  is_interpretable_in φ C :=
+begin
+  apply is_interpretable_in.mk, all_goals { intro np, hinduction Hh with horn },
+  all_goals { hinduction φ, all_goals { try { solve1 { hinduction horn } } } }, 
+  all_goals { try { solve1 { hinduction np } } }, all_goals { try { apply_instance } },
+  all_goals { try { exact or_elim (ih_a horn.1) (ih_a_1 horn.2) np } },
+  --all_goals { hsimp at np }, 
+  all_goals { sorry }
+end
+
+@[hott, instance]
+def interpret_alg_th_of_Cartesian  {sign : fo_signature} (th : fo_theory sign) 
+  [Ha : theory.is_algebraic th] {C : Category} [HC : is_Cartesian C] : 
+  theory_is_interpretable_in th C :=
+begin
+  apply theory_is_interpretable_in.mk, intros seq ax, apply seq_is_interpretable_in.mk,
+  { change is_interpretable_in seq.ass.φ C, 
+    have HT : seq.ass.φ = formula.T sign, from (Ha.alg.2 seq ax).1, rwr HT,
+    fapply is_interpretable_in.mk, all_goals { intro np, hinduction np} },
+  { change is_interpretable_in seq.con.φ C, 
+    have Hat : is_atomic seq.con.φ, from (Ha.alg.2 seq ax).2, hinduction Hat with atom,
+    hinduction seq.con.φ, all_goals { rwr _h at atom, hinduction atom }, 
+    all_goals { fapply is_interpretable_in.mk }, all_goals { intro np, hinduction np }, 
+    all_goals { apply_instance } }
+end
+
+@[hott, instance]
+def interpret_horn_th_of_Cartesian  {sign : fo_signature} (th : fo_theory sign) 
+  [Hh : theory.is_horn th] {C : Category} [HC : is_Cartesian C] : 
+  theory_is_interpretable_in th C :=
+begin
+  apply theory_is_interpretable_in.mk, intros seq ax, apply seq_is_interpretable_in.mk,
+  { change is_interpretable_in seq.ass.φ C, 
+    have Hhφ : is_horn seq.ass.φ, from (@theory.is_horn.horn _ _ Hh seq ax).1, 
+    hinduction Hhφ with horn, hinduction seq.ass.φ, 
+    all_goals { rwr _h at horn }, all_goals { try { solve1 { hinduction horn } } }, 
+    all_goals { fapply is_interpretable_in.mk }, 
+    all_goals { intro np, try { solve1 { hinduction np } } }, 
+    all_goals { try { apply_instance } }, 
+    { change _ or _ at np, sorry },
+    all_goals { hinduction np }, sorry },
+  { change is_interpretable_in seq.con.φ C, sorry } 
+end
+
+@[hott, instance]
+def interpret_reg_th_of_regular  {sign : fo_signature} (th : fo_theory sign) 
+  [Ha : theory.is_regular th] {C : Category} [HC : is_regular C] : 
+  theory_is_interpretable_in th C :=
+begin
+  apply theory_is_interpretable_in.mk, intros seq ax, apply seq_is_interpretable_in.mk,
+  { change is_interpretable_in seq.ass.φ C, sorry },
+  { change is_interpretable_in seq.con.φ C, sorry } 
+end
+
+@[hott, instance]
+def interpret_coh_th_of_coherent  {sign : fo_signature} (th : fo_theory sign) 
+  [Ha : theory.is_coherent th] {C : Category} [HC : is_coherent C] : 
+  theory_is_interpretable_in th C :=
+begin
+  apply theory_is_interpretable_in.mk, intros seq ax, apply seq_is_interpretable_in.mk,
+  { change is_interpretable_in seq.ass.φ C, sorry },
+  { change is_interpretable_in seq.con.φ C, sorry } 
+end
+
+@[hott, instance]
+def interpret_geom_th_of_geometric  {sign : fo_signature} (th : fo_theory sign) 
+  [Ha : theory.is_geometric th] {C : Category} [HC : is_geometric C] : 
+  theory_is_interpretable_in th C :=
+begin
+  apply theory_is_interpretable_in.mk, intros seq ax, apply seq_is_interpretable_in.mk,
+  { change is_interpretable_in seq.ass.φ C, sorry },
+  { change is_interpretable_in seq.con.φ C, sorry } 
+end
+
+/- Finally, we define when sequents and theories are satisfied in a Σ-structure = model -/   
+@[hott]
+class is_satisfied_in {sign : fo_signature} (seq : sequent sign) {C : Category.{u v}} 
+  [has_sign_products sign C] [seq_is_interpretable_in seq C] (M : Sig_structure sign C) := 
+(seq_satisfied : interpret_of_ass seq M ≼ interpret_of_con seq M) 
+
+@[hott, instance]
+def is_satisfied_is_prop {sign : fo_signature} (seq : sequent sign) {C : Category.{u v}} 
+  [has_sign_products sign C] [seq_is_interpretable_in seq C] (M : Sig_structure sign C) :
+  is_prop (is_satisfied_in seq M) :=
+begin
+  apply is_prop.mk, intros s₁ s₂, hinduction s₁ with sat₁, hinduction s₂ with sat₂, 
+  apply ap is_satisfied_in.mk (is_prop.elim sat₁ sat₂)
+end
+
+@[hott]
+class is_model_in {sign : fo_signature} (Th : fo_theory sign) {C : Category}
+  [has_sign_products sign C] [theory_is_interpretable_in Th C] 
+  (M : Sig_structure sign C) :=
+  (axiom_satisfied :  Π (seq : sequent sign) (p : Th seq), 
+                    @is_satisfied_in _ seq _ _ (seq_of_theory_interpretable Th seq p) M)
+
+@[hott, instance]
+def is_model_is_prop {sign : fo_signature} (Th : fo_theory sign) {C : Category}
+  [has_sign_products sign C] [theory_is_interpretable_in Th C] 
+  (M : Sig_structure sign C) : is_prop (is_model_in Th M) :=
+begin
+  apply is_prop.mk, intros m₁ m₂, hinduction m₁ with sat₁, hinduction m₂ with sat₂, 
+  apply ap is_model_in.mk, exact (is_prop.elim sat₁ sat₂)
+end  
+
+@[hott]
+def model_pred {sign : fo_signature} (Th : fo_theory sign) {C : Category.{u v}}
+  [has_sign_products sign C] [theory_is_interpretable_in Th C] : 
+  Sig_structure sign C -> Prop := λ M, Prop.mk (is_model_in Th M) (is_model_is_prop Th M)
+
+@[hott]
+def Theory_model {sign : fo_signature} (Th : fo_theory sign) (C : Category.{u v})
+  [has_sign_products sign C] [theory_is_interpretable_in Th C] : Category :=
+Category.mk (@hott.sigma.subtype (Sig_structure sign C) (λ M, model_pred Th M) _) 
+            (full_subcat_on_subtype (model_pred Th))
 
 end categories
 
