@@ -46,6 +46,11 @@ begin
   { apply tr, exact sum.inl q }
 end 
 
+@[hott]
+def or_elim {P Q : Prop} {C : Type _} [is_prop C] (l : P -> C) (r : Q -> C) :
+  P or Q -> C :=
+begin intro H, hinduction H with x, induction x with a b, exact l a, exact r b end
+
 /- Disjunction of arbitrarily many propositions -/
 @[hott]
 def inf_disj {I : Type _} (B : I -> Prop) : Prop :=
