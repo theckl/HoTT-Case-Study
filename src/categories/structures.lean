@@ -543,15 +543,15 @@ def has_var_product {sign : fo_signature} {C : Category}
 /- We now construct the Σ-structure of a signature on a category `C`. -/
 @[hott]  
 structure Sig_structure_on {sign : fo_signature} {C : Category.{u v}} 
-  [has_sign_products sign C] (car : sign.sorts -> C) :=  
+  [has_sign_products sign C] (car : sign.sorts.to_trunctype -> C) :=  
 ( ops : ∀ o : sign.ops, ∏ (λ a : sign.ops_arity o, car (sign.ops_source o a)) ⟶ 
                                                               car (sign.ops_target o) )
 ( rels : ∀ r : sign.rels, subobject (∏ (λ a : sign.rels_arity r, car (sign.rels_comp a))) )
 
 @[hott]
 def Sig_str_eq {sign : fo_signature} {C : Category.{u v}} 
-  [has_sign_products sign C] {car : sign.sorts -> C} {S T : Sig_structure_on car} :
-  (S.ops = T.ops) -> (S.rels = T.rels) -> S = T :=
+  [has_sign_products sign C] {car : sign.sorts.to_trunctype -> C} 
+  {S T : Sig_structure_on car} : (S.ops = T.ops) -> (S.rels = T.rels) -> S = T :=
 begin 
   hinduction S with ops₁ rels₁, hinduction T with ops₂ rels₂, hsimp, 
   intros ops_eq rels_eq, exact ap011 Sig_structure_on.mk ops_eq rels_eq 
@@ -559,13 +559,15 @@ end
 
 @[hott]
 def Sig_str_eq_eta {sign : fo_signature} {C : Category.{u v}} 
-  [has_sign_products sign C] {car : sign.sorts -> C} {S T : Sig_structure_on car} (p : S = T) :
+  [has_sign_products sign C] {car : sign.sorts.to_trunctype -> C} 
+  {S T : Sig_structure_on car} (p : S = T) :
   Sig_str_eq (ap Sig_structure_on.ops p) (ap Sig_structure_on.rels p) = p :=
 begin hinduction p, hinduction S, refl end  
 
 @[hott, instance]
 def is_set_Sig_str_on {sign : fo_signature} {C : Category.{u v}} 
-  [has_sign_products sign C] (car : sign.sorts -> C) : is_set (Sig_structure_on car) :=
+  [has_sign_products sign C] (car : sign.sorts.to_trunctype -> C) : 
+  is_set (Sig_structure_on car) :=
 begin
   fapply is_set.mk, intros x y p q, 
   rwr <- Sig_str_eq_eta p, rwr <- Sig_str_eq_eta q,
@@ -574,8 +576,9 @@ end
 
 @[hott]
 structure is_Sig_structure_hom {sign : fo_signature} {C : Category.{u v}} 
-  [has_sign_products sign C] {car₁ car₂ : sign.sorts -> C} (S₁ : Sig_structure_on car₁)
-  (S₂ : Sig_structure_on car₂) (f : Π x : sign.sorts, car₁ x ⟶ car₂ x) := 
+  [has_sign_products sign C] {car₁ car₂ : sign.sorts.to_trunctype -> C} 
+  (S₁ : Sig_structure_on car₁) (S₂ : Sig_structure_on car₂) 
+  (f : Π x : sign.sorts.to_trunctype, car₁ x ⟶ car₂ x) := 
 ( ops_pres : Π o : sign.ops, S₁.ops o ≫ f (sign.ops_target o) = 
                                       (∏h (λ a, f (sign.ops_source o a))) ≫ S₂.ops o )
 ( rels_pres : Π r : sign.rels, Σ h : (S₁.rels r).obj ⟶ (S₂.rels r).obj, 
@@ -583,8 +586,9 @@ structure is_Sig_structure_hom {sign : fo_signature} {C : Category.{u v}}
 
 @[hott, instance]
 def is_prop_is_Sig_structure_hom {sign : fo_signature} {C : Category.{u v}} 
-  [has_sign_products sign C] {car₁ car₂ : sign.sorts -> C} {S₁ : Sig_structure_on car₁}
-  {S₂ : Sig_structure_on car₂} (f : Π x : sign.sorts, car₁ x ⟶ car₂ x) : 
+  [has_sign_products sign C] {car₁ car₂ : sign.sorts.to_trunctype -> C} 
+  {S₁ : Sig_structure_on car₁} {S₂ : Sig_structure_on car₂} 
+  (f : Π x : sign.sorts.to_trunctype, car₁ x ⟶ car₂ x) : 
   is_prop (is_Sig_structure_hom S₁ S₂ f) :=
 begin
   fapply is_prop.mk, intros h₁ h₂, hinduction h₁ with op₁ rp₁, hinduction h₂ with op₂ rp₂,
@@ -597,7 +601,7 @@ end
 
 @[hott]
 def id_is_Sig_str_hom {sign : fo_signature} {C : Category.{u v}} 
-  [has_sign_products sign C] {car : sign.sorts -> C} (S : Sig_structure_on car) :
+  [has_sign_products sign C] {car : sign.sorts.to_trunctype -> C} (S : Sig_structure_on car) :
   is_Sig_structure_hom S S (λ x, 𝟙 (car x)) :=
 begin 
   fapply is_Sig_structure_hom.mk, 
@@ -610,8 +614,8 @@ def std_str_of_Sig_str (sign : fo_signature) (C : Category.{u v})
   [has_sign_products sign C] : std_structure_on C :=
 begin
   fapply std_structure_on.mk,
-  { exact sign.sorts }, --sorts
-  { exact λ car : sign.sorts -> C, Sig_structure_on car }, --structure
+  { exact sign.sorts.to_trunctype }, --sorts
+  { exact λ car : sign.sorts.to_trunctype -> C, Sig_structure_on car }, --structure
   { intros x y S T h, 
     exact (to_Prop (is_Sig_structure_hom S T h)) }, --homomorphisms
   { intros car S, fapply is_Sig_structure_hom.mk, 
