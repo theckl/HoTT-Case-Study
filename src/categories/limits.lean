@@ -363,6 +363,14 @@ class has_limits_of_shape (J : Type _) [is_strict_cat J]
   (C : Type u) [is_cat.{v} C] :=
 (has_limit : Π F : J ⥤ C, has_limit F)
 
+@[hott, instance]
+def has_lims_shape_is_prop (J : Type _) [is_strict_cat J] (C : Type u) [is_cat.{v} C] : 
+  is_prop (has_limits_of_shape J C) :=
+begin 
+  apply is_prop.mk, intros hls₁ hls₂, hinduction hls₁, hinduction hls₂,
+  apply ap has_limits_of_shape.mk, exact is_prop.elim _ _ 
+end
+
 @[hott, priority 100]
 instance has_limit_of_has_limits_of_shape
   {J : Type _} [is_strict_cat J] (C : Type u) [is_cat.{v} C] 
