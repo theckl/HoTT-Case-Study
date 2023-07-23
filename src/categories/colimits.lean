@@ -67,6 +67,14 @@ class has_colimit {J : Type _} [is_strict_cat J] {C : Type u} [is_precat.{v} C]
   (F : J ⥤ C) :=
 mk' :: (exists_colimit : ∥colimit_cocone F∥)
 
+@[hott, instance]
+def has_colimit_is_prop {J : Type _} [is_strict_cat J] {C : Type u} [is_precat.{v} C] 
+  (F : J ⥤ C) : is_prop (has_colimit F) :=
+begin 
+  apply is_prop.mk, intros hcl₁ hcl₂, hinduction hcl₁, hinduction hcl₂,
+  apply ap has_colimit.mk', exact is_prop.elim _ _ 
+end
+
 @[hott]
 def has_colimit.mk {J : Type _} [is_strict_cat J] {C : Type u} [is_precat.{v} C] 
   {F : J ⥤ C} (d : colimit_cocone F) :=
@@ -217,6 +225,14 @@ have H' : has_colimits_of_shape J C, from has_colimits.has_colimit_of_shape C J,
 class has_coproduct {C : Type u} [is_cat.{v} C] {J : Set.{u'}} (f : J -> C) := 
   (has_colimit : has_colimit (discrete.functor f)) 
 
+@[hott, instance]
+def has_coproduct_is_prop {C : Type u} [is_cat.{v} C] {J : Set.{u'}} (f : J -> C) :
+  is_prop (has_coproduct f) :=
+begin 
+  apply is_prop.mk, intros hcp₁ hcp₂, hinduction hcp₁, hinduction hcp₂,
+  apply ap has_coproduct.mk, exact is_prop.elim _ _ 
+end  
+
 @[hott, priority 100]
 instance has_colimit_of_has_coproduct {C : Type u} [is_cat.{v} C] {J : Set.{u'}} 
   (f : J -> C) [has_coproduct f] : has_colimit (discrete.functor f) := 
@@ -363,6 +379,14 @@ class has_subobj_union {C : Category.{u v}} {c : C} {J : Set.{u'}} (f : J -> sub
   (exists_union : @has_coproduct _ subobject_is_cat _ f) 
 
 @[hott, instance]
+def has_so_union_is_prop {C : Category.{u v}} {c : C} {J : Set.{u'}} 
+  (f : J -> subobject c) : is_prop (has_subobj_union f) :=
+begin 
+  apply is_prop.mk, intros hsu₁ hsu₂, hinduction hsu₁, hinduction hsu₂,
+  apply ap has_subobj_union.mk, exact is_prop.elim _ _ 
+end
+
+@[hott, instance]
 def has_subobj_union_of_has_coproducts_and_images {C : Category.{u v}} 
   [has_coproducts.{v u u'} C] [has_images C] {c : C} {J : Set.{u'}} 
   (f : J -> subobject.{u v} c) : has_subobj_union f :=
@@ -414,9 +438,16 @@ def union_fac {C : Category} {c : C} {J : Set} (f : J -> subobject c)
 copi.desc h    
 
 @[hott]
-class has_fin_union {C : Category} {c : C} {n : ℕ} 
-  (f : fin_Set n -> subobject c) :=
+class has_fin_union {C : Category} {c : C} {n : ℕ} (f : fin_Set n -> subobject c) :=
 (exists_union : has_subobj_union f)
+
+@[hott, instance]
+def has_fin_union_is_prop {C : Category} {c : C} {n : ℕ} (f : fin_Set n -> subobject c) : 
+  is_prop (has_fin_union f) :=
+begin 
+  apply is_prop.mk, intros hfu₁ hfu₂, hinduction hfu₁, hinduction hfu₂,
+  apply ap has_fin_union.mk, exact is_prop.elim _ _ 
+end
 
 @[hott, instance]
 def has_union_of_has_fin_union {C : Category} {c : C} {n : ℕ} 
@@ -426,6 +457,14 @@ H.exists_union
 @[hott]
 class has_fin_unions (C : Category) :=
   (has_fin_union : Π (c : C) {n : ℕ} (f : fin_Set n -> subobject c), has_fin_union f)
+
+@[hott, instance]
+def has_fin_unions_is_prop {C : Category} : 
+  is_prop (has_fin_unions C) :=
+begin 
+  apply is_prop.mk, intros hfu₁ hfu₂, hinduction hfu₁, hinduction hfu₂,
+  apply ap has_fin_unions.mk, exact is_prop.elim _ _ 
+end
 
 @[hott, instance]
 def has_fin_union_of_has_fin_unions {C : Category} [has_fin_unions C] {c : C} 
