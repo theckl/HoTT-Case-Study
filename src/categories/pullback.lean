@@ -608,9 +608,25 @@ class has_stable_images (C : Category) [has_pullbacks C] extends has_images C  :
   (stable_im : Π {a b c : C} (f : a ⟶ c) (g : b ⟶ c), 
                   hom.image (pullback_homo_l f g) = pullback_subobject f (hom.image g))
 
+@[hott, instance]
+def has_stab_im_is_prop (C : Category) [has_pullbacks C] : is_prop (has_stable_images C) :=
+begin 
+  apply is_prop.mk, intros hsi₁ hsi₂, hinduction hsi₁, hinduction hsi₂,
+  fapply apd011 (@has_stable_images.mk _ _), exact is_prop.elim _ _,
+  apply pathover_of_tr_eq, exact is_prop.elim _ _ 
+end
+
 @[hott]
 class has_pb_and_stab_im (C : Category) :=
   (pb_stab_im : Σ (H : has_pullbacks C), has_stable_images C)
+
+@[hott, instance]
+def has_pb_stab_im_is_prop (C : Category) [has_pullbacks C] : 
+  is_prop (has_pb_and_stab_im C) :=
+begin 
+  apply is_prop.mk, intros hpsi₁ hpsi₂, hinduction hpsi₁, hinduction hpsi₂,
+  apply ap has_pb_and_stab_im.mk, exact is_prop.elim _ _
+end
 
 
 /- The existence of a left adjoint to the pullback functor for subobjects can be deduced
@@ -743,6 +759,14 @@ class has_all_of_fiber {C : Category} [has_pullbacks C]
 (fib_all : has_right_adjoint (pb_subobj_functor f))  
 
 @[hott, instance]
+def has_all_fib_is_prop (C : Category) [has_pullbacks C] {a b : C} (f : a ⟶ b) : 
+  is_prop (has_all_of_fiber f) :=
+begin 
+  apply is_prop.mk, intros hpsi₁ hpsi₂, hinduction hpsi₁, hinduction hpsi₂,
+  apply ap has_all_of_fiber.mk, exact is_prop.elim _ _
+end
+
+@[hott, instance]
 def has_r_adj_of_has_all_fib {C : Category} [has_pullbacks C] 
   {a b : C} (f : a ⟶ b) [H : has_all_of_fiber f] : 
   has_right_adjoint (pb_subobj_functor f) :=
@@ -758,6 +782,14 @@ class has_all_of_fibers (C : Category) [has_pullbacks C] :=
   (has_all_fib : Π {a b : C} (f : a ⟶ b), has_all_of_fiber f)
 
 @[hott, instance]
+def has_all_fibs_is_prop (C : Category) [has_pullbacks C] : 
+  is_prop (has_all_of_fibers C) :=
+begin 
+  apply is_prop.mk, intros hafs₁ hafs₂, hinduction hafs₁, hinduction hafs₂,
+  apply ap has_all_of_fibers.mk, exact is_prop.elim _ _
+end
+
+@[hott, instance]
 def has_all_fib_of_has_all_fibs {C : Category} [has_pullbacks C] [has_all_of_fibers C]
   {a b : C} (f : a ⟶ b) : has_all_of_fiber f := 
 has_all_of_fibers.has_all_fib f  
@@ -765,6 +797,14 @@ has_all_of_fibers.has_all_fib f
 @[hott]
 class has_pb_and_all_fib (C : Category) :=
   (pb_all_fib : Σ (H : has_pullbacks C), has_all_of_fibers C) 
+
+@[hott, instance]
+def has_pb_fibs_is_prop (C : Category) [has_pullbacks C] : 
+  is_prop (has_pb_and_all_fib C) :=
+begin 
+  apply is_prop.mk, intros hafs₁ hafs₂, hinduction hafs₁, hinduction hafs₂,
+  apply ap has_pb_and_all_fib.mk, exact is_prop.elim _ _
+end
 
 /- The fiberwise forall quantifier allows to define implications of subobjects. -/
 @[hott]
