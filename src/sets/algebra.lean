@@ -239,7 +239,7 @@ begin
 end 
 
 /- Complements of subsets only satisfy "boolean" properties if LEM holds (at least for
-   the element relation). -/
+   the element relation in the surrounding set). -/
 @[hott]
 def compl_union_top (U : Subset A) [H : has_dec_elem A] : U ∪ 𝒞(U) = total_Subset A :=
 begin
