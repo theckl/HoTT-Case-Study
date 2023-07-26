@@ -215,76 +215,80 @@ protected def elem {A : Set} (a : A) (S : Subset A) :=
 def set_mem {A : Set} : @has_mem A (Subset A) :=
   has_mem.mk (λ (a : A) (S : Subset A), subset.elem a S)
 
-/- For sets the form of LEM needed is decidability for the element relation. 
-   We put the construction of an instance from general LEM into [sets.axioms], to have a 
-   better control when it is available. -/
+notation `{ ` binder ` ∈ ` B ` | ` P:scoped  ` }` := (P : Subset B)
+notation `{ ` binder ` ∈ ` B ` | ` P:scoped  ` }` := (P : Subset (to_Set B)) 
+
+/- For sets the form of LEM needed is decidability for the element relation for arbitrary
+   subsets. However, even when just assumed for finite sets this is equivalent to LEM, see
+   the article of Andrej Bauer on constructivism and [sets.axioms]. But the element 
+   relation becomes decidable in decidable subsets, that is, subsets defined as 
+   predicates with values equal to True or False (which are of course subsets in the 
+   sense above). 
+   
+   We define a class `has_dec_elem` indicating that the element relation is decidable in 
+   a set. If an instance of this class holds, we show that all subsets are decidable and
+   hence the element relation is decidable. -/
 @[hott]
 class has_dec_elem (A : Set) := 
   (dec_el : Π (a : A) (S : Subset A), (a ∈ S) ⊎ ¬(a ∈ S))
 
-notation `{ ` binder ` ∈ ` B ` | ` P:scoped  ` }` := (P : Subset B)
-notation `{ ` binder ` ∈ ` B ` | ` P:scoped  ` }` := (P : Subset (to_Set B)) 
-
 @[hott]
-structure dec_Set extends trunctype 0 :=
-  (dec_el : Π (a : carrier) (S : Subset (Set.mk carrier struct)), 
-                                                            (a ∈ S) ⊎ ¬(a ∈ S)) 
-
-@[hott, instance]
-def dec_elem_of_dec_Set (A : dec_Set) : has_dec_elem A.to_trunctype :=
-  has_dec_elem.mk A.dec_el
-
-@[hott]
-def dec_Set_is_dec (A : dec_Set) : Π (a b : A.to_trunctype), (a = b) ⊎ ¬(a = b) :=
-begin
-  have p : Π a b : A.to_trunctype, is_prop (a = b), from 
-    begin assume a b, apply is_prop.mk, intros p q, exact is_set.elim _ _ end,
-  let S : Π b : A.to_trunctype, Subset A.to_trunctype := λ b a, Prop.mk (a = b) (p a b), 
-  intros a b, change (S b a) ⊎ ¬(S b a), exact A.dec_el a (S b)
-end  
-
-@[hott]
-def dec_Set_to_Two_pred_sset {A : dec_Set.{u}} : 
-  Subset A.to_trunctype -> (A.to_trunctype -> Two.{u}) :=
-begin intros S a, exact @sum.rec (a ∈ S) (¬(a ∈ S)) (λ s, Two) (λ v, Two.one) 
-                                                    (λ v, Two.zero) (A.dec_el a S) end
-
-@[hott]
-def Two_pred_to_dec_Set_sset {A : dec_Set.{u}} :
-  (A.to_trunctype -> Two.{u}) -> Subset A.to_trunctype :=
+def Two_pred_to_sset {A : Set.{u}} :
+  (A -> Two.{u}) -> Subset A :=
 begin intros S a, exact @Two.rec (λ t, Prop) False True (S a) end
 
 @[hott]
-def dec_Set_Two_pred_sset_linv (A : dec_Set.{u}) : Π (S : Subset A.to_trunctype), 
-  Two_pred_to_dec_Set_sset (dec_Set_to_Two_pred_sset S) = S :=
+def Two_pred_sset_is_dec {A : Set.{u}} {P : A -> Two.{u}} :
+  Π (a : A), Two_pred_to_sset P a ⊎ ¬(Two_pred_to_sset P a) :=
+begin
+  intro a, 
+  change @Two.rec (λ t, Prop) False True (P a) ⊎ ¬(@Two.rec (λ t, Prop) False True (P a)), 
+  hinduction P a with T F,
+    apply sum.inr, intro f, hinduction f, 
+    apply sum.inl, exact true.intro
+end
+
+@[hott]
+def sset_to_Two_pred_sset {A : Set.{u}} [H : has_dec_elem A] : 
+  Subset A -> (A -> Two.{u}) :=
+begin 
+  intros S a, exact @sum.rec (a ∈ S) (¬(a ∈ S)) (λ s, Two) (λ v, Two.one) 
+                             (λ v, Two.zero) (@has_dec_elem.dec_el A H a S) 
+end
+
+@[hott]
+def sset_Two_pred_sset_linv (A : Set.{u}) [H : has_dec_elem A] : Π (S : Subset A), 
+  Two_pred_to_sset (sset_to_Two_pred_sset S) = S :=
 begin
   intro S, apply eq_of_homotopy, intro a, 
-  change @Two.rec (λ t, Prop) False True ((dec_Set_to_Two_pred_sset S) a) = _, 
-  hinduction A.dec_el a S with p val, 
+  change @Two.rec (λ t, Prop) False True ((sset_to_Two_pred_sset S) a) = _, 
+  hinduction @has_dec_elem.dec_el A H a S with p val, 
     { change @Two.rec (λ t, Prop) _ _ 
-                 (@sum.rec (a ∈ S) (¬(a ∈ S)) (λ s, Two) _ _ (A.dec_el a S)) = _, 
+                 (@sum.rec (a ∈ S) (¬(a ∈ S)) (λ s, Two) _ _ 
+                           (@has_dec_elem.dec_el A H a S)) = _, 
       rwr p, change True = _, fapply inhabited_Prop_eq, exact true.intro, exact val }, 
     { change @Two.rec (λ t, Prop) _ _ 
-                 (@sum.rec (a ∈ S) (¬(a ∈ S)) (λ s, Two) _ _ (A.dec_el a S)) = _, 
+                 (@sum.rec (a ∈ S) (¬(a ∈ S)) (λ s, Two) _ _ 
+                           (@has_dec_elem.dec_el A H a S)) = _, 
       rwr p, change False = _, fapply uninhabited_Prop_eq, intro f, hinduction f, 
       exact val } 
 end
 
 @[hott]
-def dec_Set_Two_pred_sset_rinv (A : dec_Set.{u}) : Π (S : A.to_trunctype -> Two.{u}), 
-  dec_Set_to_Two_pred_sset (Two_pred_to_dec_Set_sset S) = S :=
+def sset_Two_pred_sset_rinv (A : Set.{u}) [H : has_dec_elem A] : Π (S : A -> Two.{u}), 
+  sset_to_Two_pred_sset (Two_pred_to_sset S) = S :=
 begin
   intro S, apply eq_of_homotopy, intro a,
-  let S' : Subset A.to_trunctype := λ a, @Two.rec (λ t, Prop) False True (S a),
+  let S' : Subset A := λ a, @Two.rec (λ t, Prop) False True (S a),
   change @sum.rec (a ∈ S') (¬(a ∈ S')) (λ s, Two) (λ v, Two.one) 
-            (λ v, Two.zero) (A.dec_el a (λ a, S' a)) = _,
+            (λ v, Two.zero) (@has_dec_elem.dec_el A H a (λ a, S' a)) = _,
   hinduction S a with p, 
   { have q : S' a = False, from 
       begin change @Two.rec (λ t, Prop) False True (S a) = _, rwr p end,
-    hinduction A.dec_el a (λ a, S' a) with q', hinduction q ▸ val, refl },
+    hinduction @has_dec_elem.dec_el A H a (λ a, S' a) with q', hinduction q ▸ val, refl },
   { have q : S' a = True, from 
       begin change @Two.rec (λ t, Prop) False True (S a) = _, rwr p end,
-    hinduction A.dec_el a (λ a, S' a) with q', refl, 
+    hinduction @has_dec_elem.dec_el A H a (λ a, S' a) with q', refl, 
     have v' : ↥(S' a), from (ap trunctype.carrier q)⁻¹ ▸[id] true.intro, 
     hinduction val v' }
 end
