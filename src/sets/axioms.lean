@@ -339,9 +339,17 @@ def AC_implies_LEM : Choice_nonempty.{u} -> ExcludedMiddle.{u} :=
   have trunc_LEM : ∥ A ⊎ ¬ A ∥, from trunc_functor -1 A_dec mere_g,
   @untrunc_of_is_trunc _ _ is_prop_LEM trunc_LEM
 
-/- We deduce LEM (decidability) for the element relation form general LEM. -/
+/- We deduce LEM (decidability) for the element relation of a set from general LEM, 
+   and conversely, we derive LEM from decidability of the element relation of an 
+   inhabited set, namely `One_Set`. -/
 @[hott, instance]
-def is_dec_elem (A : Set): has_dec_elem A := 
+def has_dec_elem_of_LEM (A : Set): has_dec_elem A := 
   begin apply has_dec_elem.mk, intros a S, exact LEM (a ∈ S) end
+
+@[hott]
+def LEM_of_has_dec_elem : has_dec_elem One_Set -> ExcludedMiddle :=
+begin
+  intros H P, let S : Subset One_Set := λ s, P, exact @has_dec_elem.dec_el _ H One.star S
+end
 
 end hott
