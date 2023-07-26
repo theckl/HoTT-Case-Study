@@ -150,7 +150,7 @@ def counit_tr_R {C : Type u} {D : Type u'} [is_precat C]
   p ▸[λ S, S ⋙ L ⟶ id_functor D] ε = (tr_whisk_r (idtoiso p).ih.inv L) ≫ ε :=
 begin hinduction p, hsimp, rwr tr_whisk_r_id, rwr is_precat.id_comp ε end 
 
-@[hott]
+@[hott, instance]
 def left_adj_is_unique {C : Type u} [is_precat C] {D : Category} 
   (R : D ⥤ C) : is_prop (is_right_adjoint R) :=
 begin 
@@ -193,7 +193,7 @@ begin
     { apply pathover_of_tr_eq, exact is_prop.elim _ _ } }
 end   
 
-@[hott]
+@[hott, instance]
 def right_adj_is_unique {C : Type u} {D : Type u'} [is_cat C] 
   [is_precat D] (L : C ⥤ D) : is_prop (is_left_adjoint L) :=
 begin 
@@ -239,17 +239,25 @@ begin
 end    
 
 @[hott]
-class has_right_adjoint {C : Type u} {D : Type u'} [is_precat C] 
+class has_right_adjoint {C : Type u} {D : Type u'} [is_cat C] 
   [is_precat D] (L : C ⥤ D) :=
 (l_adj : is_left_adjoint L)
 
+@[hott, instance]
+def has_right_adj_is_prop {C : Type u} {D : Type u'} [is_cat C] 
+  [is_precat D] (L : C ⥤ D) : is_prop (has_right_adjoint L) :=
+begin 
+  apply is_prop.mk, intros hra₁ hra₂, hinduction hra₁, hinduction hra₂,
+  apply ap has_right_adjoint.mk, exact is_prop.elim _ _ 
+end
+
 @[hott]
-def right_adjoint_of {C : Type u} {D : Type u'} [is_precat C] 
+def right_adjoint_of {C : Type u} {D : Type u'} [is_cat C] 
   [is_precat D] (L : C ⥤ D) [H : has_right_adjoint L] : D ⥤ C :=
 H.l_adj.R  
 
 @[hott]
-def adjoint_right_adjoint_of {C : Type u} {D : Type u'} [is_precat C] 
+def adjoint_right_adjoint_of {C : Type u} {D : Type u'} [is_cat C] 
   [is_precat D] (L : C ⥤ D) [H : has_right_adjoint L] : 
   adjoint_functors L (right_adjoint_of L) :=
 H.l_adj.adj
@@ -271,13 +279,13 @@ def adjoint_left_adjoint_of {C : Type u} {D : Type u'} [is_precat C]
 H.r_adj.adj
 
 @[hott]
-class has_right_adjoints (C : Type u) (D : Type u') [is_precat C] 
+class has_right_adjoints (C : Type u) (D : Type u') [is_cat C] 
   [is_precat D] :=
 (has_r_adj : Π L : C ⥤ D, has_right_adjoint L)
 
 @[hott, instance]
 def has_right_adj_of_has_right_adjs {C : Type u} {D : Type u'} 
-  [is_precat C] [is_precat D] [H : has_right_adjoints C D] 
+  [is_cat C] [is_precat D] [H : has_right_adjoints C D] 
   (L : C ⥤ D) : has_right_adjoint L :=
 has_right_adjoints.has_r_adj L  
 
@@ -298,7 +306,7 @@ class is_adjoint_functors {C : Type u} {D : Type u'} [is_precat C]
 (is_adj : adjoint_functors L R) 
 
 @[hott, instance]
-def is_adj_of_has_right_adj {C : Type u} {D : Type u'} [is_precat C] 
+def is_adj_of_has_right_adj {C : Type u} {D : Type u'} [is_cat C] 
   [is_precat D] (L : C ⥤ D) [H : has_right_adjoint L] : 
   is_adjoint_functors L H.l_adj.R :=
 is_adjoint_functors.mk H.l_adj.adj
