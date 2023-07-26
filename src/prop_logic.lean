@@ -56,6 +56,11 @@ begin intro H, hinduction H with x, induction x with a b, exact l a, exact r b e
 def inf_disj {I : Type _} (B : I -> Prop) : Prop :=
   ∥Σ (i : I), B i∥
 
+@[hott]
+def inf_disj_elim {I : Type _} {B : I -> Prop} {C : Type _} [is_prop C] 
+  (f : Π i : I, B i -> C) : inf_disj B -> C :=
+begin intro H, hinduction H with Bi, exact f Bi.1 Bi.2 end
+
 /- We define `Not P` as a map from `P` to `False` in the same universe. 
    Otherwise, `Not` introduces universe levels that cannot easily be controlled. -/
 @[hott] 
