@@ -224,6 +224,17 @@ begin
   { exact fin_map_ind ih hd } 
 end
 
+/- Finite sets have decidable equality. -/
+@[hott]
+def fin_Set_is_decidable {n : ℕ} : Π (m₁ m₂ : fin_Set n), (m₁ = m₂) ⊎ ¬(m₁ = m₂) :=
+begin
+  intros m₁ m₂, hinduction m₁ with m₁ bd₁, hinduction m₂ with m₂ bd₂, 
+  hinduction nat_eq_is_decidable m₁ m₂, 
+    apply sum.inl, fapply sigma_eq, exact val, apply pathover_of_tr_eq, 
+                                               exact is_prop.elim _ _,
+    apply sum.inr, intro p, exact val (ap sigma.fst p)
+end
+
 end set
 
 end hott
