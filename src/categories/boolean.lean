@@ -187,32 +187,33 @@ end
 /- Now we can define a class of categories that have complements to all subobjects of 
    all objects. -/
 @[hott]
-class has_complements (C : Category) [has_pullbacks C] extends has_stable_fin_unions C :=
+class has_complements (C : Category) [has_pullbacks C] [has_stable_fin_unions C] :=
   (compl : Π {c : C} (a : subobject c), complement a)
 
 @[hott]
-class has_pb_and_compl (C : Category) :=
-  (pb_and_compl : Σ (H : has_pullbacks C), has_complements C)
+class has_pb_stab_fin_un_compl (C : Category) :=
+  (pb_and_compl : Σ (H : has_pullbacks C), Σ (H' : has_stable_fin_unions C), 
+                                                              has_complements C)
 
 @[hott, instance] 
 def has_compl_of_obj_has_compl {C : Category} (c : C) [has_pullbacks C] 
-  [H : has_complements C] : @has_complement (subobject c) :=
-has_complement.mk (λ a : subobject c, (@has_complements.compl _ _ H c a).na)
+  [has_stable_fin_unions C] [H : has_complements C] : @has_complement (subobject c) :=
+has_complement.mk (λ a : subobject c, (@has_complements.compl _ _ _ H c a).na)
 
 /- We need some calculation rules for complements. -/
 @[hott]
-def top_compl {C : Category} [has_pullbacks C] [H : has_complements C] {a : C} 
-  (c : subobject a) : c ∪ 𝒞(c) = top_subobject a :=
+def top_compl {C : Category} [has_pullbacks C] [has_stable_fin_unions C] 
+  [H : has_complements C] {a : C} (c : subobject a) : c ∪ 𝒞(c) = top_subobject a :=
 (has_complements.compl c).union
 
 @[hott]
-def bottom_compl {C : Category} [has_pullbacks C] [H : has_complements C] {a : C} 
-  (c : subobject a) : c ∩ 𝒞(c) = bottom_subobject a :=
+def bottom_compl {C : Category} [has_pullbacks C] [has_stable_fin_unions C] 
+  [H : has_complements C] {a : C} (c : subobject a) : c ∩ 𝒞(c) = bottom_subobject a :=
 (has_complements.compl c).inter
 
 @[hott]
-def compl_compl {C : Category} [has_pullbacks C] [H : has_complements C] {a : C} 
-  (c : subobject a) : 𝒞(𝒞(c)) = c :=
+def compl_compl {C : Category} [has_pullbacks C] [has_stable_fin_unions C] 
+  [H : has_complements C] {a : C} (c : subobject a) : 𝒞(𝒞(c)) = c :=
 begin
   have t : 𝒞(c) ∪ c = top_subobject a, by rwr union_comm; exact top_compl _,
   have b : 𝒞(c) ∩ c = bottom_subobject a, by rwr subobj_inter_symm; exact bottom_compl _,
@@ -221,8 +222,9 @@ begin
 end
 
 @[hott]
-def compl_inter_bot {C : Category} [has_pullbacks C] [H : has_complements C] {a : C} 
-  {c c' : subobject a} : c ≼ c' -> c ∩ 𝒞(c') = bottom_subobject a :=
+def compl_inter_bot {C : Category} [has_pullbacks C] [has_stable_fin_unions C] 
+  [H : has_complements C] {a : C} {c c' : subobject a} : 
+  c ≼ c' -> c ∩ 𝒞(c') = bottom_subobject a :=
 begin
   intro i, fapply subobj_antisymm, 
   { rwr <- bottom_compl c', apply subobj_inter_lift, 
@@ -232,8 +234,8 @@ begin
 end
 
 @[hott]
-def contra_pos_compl {C : Category} [has_pullbacks C] [has_complements C] {a : C} 
-  {c c' : subobject a} : (c ≼ c') -> (𝒞(c') ≼ 𝒞(c)) :=
+def contra_pos_compl {C : Category} [has_pullbacks C] [has_stable_fin_unions C] 
+  [has_complements C] {a : C} {c c' : subobject a} : (c ≼ c') -> (𝒞(c') ≼ 𝒞(c)) :=
 begin
   intro i, rwr <- top_inter_absorb 𝒞(c'), rwr <- top_compl c, 
   rwr inter_distrib, rwr <- subobj_inter_symm c 𝒞(c'), rwr compl_inter_bot i,
@@ -241,8 +243,8 @@ begin
 end
 
 @[hott]
-def contra_pos_compl_inv {C : Category} [has_pullbacks C] [has_complements C] {a : C} 
-  {c c' : subobject a} : (𝒞(c') ≼ 𝒞(c)) -> (c ≼ c') :=
+def contra_pos_compl_inv {C : Category} [has_pullbacks C] [has_stable_fin_unions C]
+  [has_complements C] {a : C} {c c' : subobject a} : (𝒞(c') ≼ 𝒞(c)) -> (c ≼ c') :=
 begin
   intro Ci, rwr <- compl_compl c, rwr <- compl_compl c',
   exact contra_pos_compl Ci
@@ -273,17 +275,30 @@ class is_regular (C : Category) extends is_Cartesian C :=
 def has_stable_images_of_is_regular (C : Category) [H : is_regular C] : 
   has_stable_images C := H.has_stable_images
 
+@[hott, instance]
+def has_pb_stab_im_of_is_regular (C : Category) [H : is_regular C] :
+  has_pb_and_stab_im C :=
+begin apply has_pb_and_stab_im.mk, fapply sigma.mk, apply_instance, apply_instance end
+
 @[hott]
 class is_coherent (C : Category) extends is_regular C :=
   (has_stable_fin_unions : has_stable_fin_unions C)
 
+@[hott, instance]
+def has_stab_fin_uni_of_is_coherent (C : Category) [H : is_coherent C] : 
+  has_stable_fin_unions C := H.has_stable_fin_unions
+
 @[hott]
-class is_geometric (C : Category) extends is_regular C :=
+class is_geometric (C : Category) extends is_coherent C :=
   (has_stable_unions : has_stable_unions C)
 
 @[hott, instance]
 def has_stable_unions_of_is_geometric (C : Category) [H : is_geometric C] : 
   has_stable_unions C := H.has_stable_unions
+
+@[hott, instance]
+def has_unions_of_is_geometric (C : Category) [H : is_geometric C] : 
+  has_unions C := by apply_instance
 
 @[hott]
 class is_Heyting (C : Category) extends is_coherent C :=
@@ -299,7 +314,7 @@ class is_Boolean (C : Category) extends is_coherent C :=
     
 @[hott, instance]
 def has_complements_of_is_Boolean (C : Category) [H : is_Boolean C] : 
-  @has_complements C (@has_pullbacks_of_has_limits C H.to_is_Cartesian.has_limits) := 
+  @has_complements C (@has_pullbacks_of_has_limits C H.to_is_Cartesian.has_limits) _ := 
 H.has_complements
 
 /- Complements are stable under pullbacks. -/
