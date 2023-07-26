@@ -453,6 +453,13 @@ is_prop.mk (subobject_fac_is_unique f a)
 class has_image {C : Category} {c d : C} (f : c ⟶ d) :=
   (exists_im : ∥cat_image f∥)
 
+@[hott, instance]
+def has_im_is_prop {C : Category} {c d : C} (f : c ⟶ d) : is_prop (has_image f) :=
+begin 
+  apply is_prop.mk, intros hi₁ hi₂, hinduction hi₁, hinduction hi₂,
+  apply ap has_image.mk, exact is_prop.elim _ _ 
+end
+
 @[hott]
 def cat_image_is_unique {C : Category.{u v}} {c d : C} (f : c ⟶ d) :
   Π im₁ im₂ : cat_image f, im₁ = im₂ :=
@@ -550,6 +557,13 @@ end
 @[hott]
 class has_images (C : Category) :=
   (has_im : Π {c d : C} (f : c ⟶ d), has_image f)
+
+@[hott, instance]
+def has_ims_is_prop (C : Category) : is_prop (has_images C) :=
+begin 
+  apply is_prop.mk, intros hi₁ hi₂, hinduction hi₁, hinduction hi₂,
+  apply ap has_images.mk, exact is_prop.elim _ _ 
+end
 
 @[hott, instance]
 def has_image_of_has_images {C : Category} [has_images C] {c d : C} 
