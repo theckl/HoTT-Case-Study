@@ -464,7 +464,7 @@ end
 
 @[hott]
 def refl_Two : Π t : Two, code_Two t t := 
-begin intro t; induction t; exact One.star; exact One.star end
+begin intro t; hinduction t; exact One.star; exact One.star end
 
 @[hott, hsimp]
 def encode_Two : Π t₁ t₂ : Two, (t₁ = t₂) -> code_Two t₁ t₂ :=
@@ -481,8 +481,8 @@ begin
   apply tot_space_contr_ppmap_id_eqv R f, fapply is_contr.mk,
   exact ⟨t₁, refl_Two t₁⟩, intro tp, hinduction tp with t ct, 
   hinduction t₁, 
-    hinduction t, induction ct; refl, exact Zero.rec _ ct,  
-    hinduction t, exact Zero.rec _ ct, induction ct; refl
+    hinduction t, hinduction ct; refl, exact Zero.rec _ ct,  
+    hinduction t, exact Zero.rec _ ct, hinduction ct; refl
   end  
 
 @[hott, instance]
