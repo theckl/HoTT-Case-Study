@@ -693,6 +693,84 @@ end
 @[hott]
 def Prop_Set : Set := Set.mk (trunctype.{u} -1) Prop_is_set
 
+/- Natural numnbers form a set. We need the encode-decode method. -/
+@[hott]
+def nat_code : ℕ -> ℕ -> Type _ :=
+begin
+  intros m, hinduction m with m ihm, 
+    intro n, hinduction n with n ihn, exact One, exact Zero, 
+    intro n, hinduction n with n ihn, exact Zero, exact ihm n 
+end
+
+@[hott, instance]
+def nat_code_is_prop : Π (n m : ℕ), is_prop (nat_code n m) :=
+begin
+  intros m, hinduction m with m ihm, 
+    intro n, hinduction n with n ihn,
+      change is_prop One, apply_instance,
+      change is_prop Zero, apply_instance,
+    intro n, hinduction n with n ihn,  
+      change is_prop Zero, apply_instance,
+      change is_prop (nat_code m n), exact ihm n 
+end 
+
+@[hott]
+def nat_refl : Π (n : ℕ), nat_code n n :=
+  begin intro n, hinduction n, exact One.star, exact ih end 
+
+@[hott, hsimp]
+def nat_encode : Π (m n : ℕ), m = n -> nat_code m n :=
+  begin intros m n p, hinduction p, exact nat_refl m end
+
+@[hott]
+def nat_eq_equiv_code : Π (m n : ℕ), m = n ≃ nat_code m n :=
+begin
+  intros m n,
+  let R := ppred.mk (λ n : ℕ, nat_code m n) (nat_refl m),
+  let f := @ppmap.mk _ _ (id_ppred m) R 
+                    (λ n : ℕ, nat_encode m n) idp,
+  fapply equiv.mk, exact nat_encode m n,
+  apply tot_space_contr_ppmap_id_eqv R f, fapply is_contr.mk,
+  exact ⟨m, nat_refl m⟩, intro np, hinduction np with n cn,
+  revert n, clear n, hinduction m with m ihm, 
+    intros n cn, hinduction n with n ihn, hinduction cn; refl, exact Zero.rec _ cn,  
+    intros n cn, hinduction n with n ihn, exact Zero.rec _ cn, 
+      fapply sigma_eq, exact ap succ (ihm n cn)..1,
+                       apply pathover_of_tr_eq, exact is_prop.elim _ _                    
+end
+
+@[hott, instance]
+def nat_is_set : is_set ℕ :=
+  is_trunc_succ_intro (λ n m : ℕ, is_trunc_equiv_closed_rev 
+          -1 (nat_eq_equiv_code n m) (nat_code_is_prop n m))
+
+@[hott]
+def nat_Set : Set :=
+  Set.mk ℕ nat_is_set
+
+/- Decidability of ℕ in [types.nat.basic] is not hott. -/
+@[hott]
+def nat_eq_is_decidable : Π (m n : ℕ), (m = n) ⊎ ¬(m = n) :=
+begin
+  intro m, hinduction m with m ihm, 
+    intro n, hinduction n with n ihn, 
+      exact sum.inl rfl, 
+      apply sum.inr, intro p, exact hott.nat.succ_ne_zero n p⁻¹,
+    intro n, hinduction n with n ihn,
+      exact sum.inr (hott.nat.succ_ne_zero m),
+      hinduction ihm n,
+        exact sum.inl (ap succ val),
+        apply sum.inr, intro p, exact val (hott.nat.succ.inj p)
+end   
+
+/- For some sets, we want decidable equality. -/
+@[hott]
+structure dec_Set extends trunctype 0 :=
+  (dec : Π (a b : carrier), a = b ⊎ ¬(a = b))
+
+@[hott]
+def dec_nat : dec_Set := @dec_Set.mk nat_Set nat_eq_is_decidable 
+
 end set
 
 end hott
