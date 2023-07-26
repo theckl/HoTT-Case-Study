@@ -25,7 +25,6 @@ inductive model_properties : Type
 | fin_union : model_properties
 | stable_image : model_properties
 | all_of_fiber : model_properties
-| complement : model_properties
 | inf_union : model_properties
 | inf_inter : model_properties
 
@@ -48,10 +47,7 @@ begin
     exact True, exact ih, exact inf_disj ih, exact inf_disj ih },
   { hinduction φ, exact False, exact False, exact False, exact False,  --all of fiber
     exact ih_a or ih_a_1, exact ih_a or ih_a_1, exact True, exact True, exact ih, 
-    exact True, exact inf_disj ih, exact inf_disj ih },
-  { hinduction φ, exact False, exact False, exact False, exact False,  --complement
-    exact ih_a or ih_a_1, exact ih_a or ih_a_1, exact ih_a or ih_a_1, exact ih, 
-    exact ih, exact ih, exact inf_disj ih, exact inf_disj ih},  
+    exact True, exact inf_disj ih, exact inf_disj ih },  
   { hinduction φ, exact False, exact False, exact False, exact False,  --arbitrary unions
     exact ih_a or ih_a_1, exact ih_a or ih_a_1, exact ih_a or ih_a_1, exact ih, exact ih, 
     exact ih, exact inf_disj ih, exact True },
@@ -59,13 +55,6 @@ begin
     exact ih_a or ih_a_1, exact ih_a or ih_a_1, exact ih_a or ih_a_1, exact ih, exact ih, 
     exact ih, exact True, exact inf_disj ih }
 end     
-
-/- Formulas in a fragment of the language automatically only need some of the model
-   properties. -/
-@[hott]
-def horn_need_properties {sign : fo_signature} {φ : formula sign} (φh : formula.horn φ) : 
-  Π (mp : model_properties), needs_properties φ mp -> Type := 
-begin intros mp np, hinduction mp, exact true, exact true, all_goals { exact false } end 
 
 /- An instance of this class allows to construct instances of the categorical properties
    needed to interpret formulas of a certain type. Later on, we will construct instances
@@ -77,7 +66,6 @@ class is_interpretable_in {sign : fo_signature} (φ : formula sign) (C : Categor
 (fin_union : needs_properties φ model_properties.fin_union -> has_fin_unions C) 
 (stable_im : needs_properties φ model_properties.stable_image -> has_pb_and_stab_im C) 
 (all_fib : needs_properties φ model_properties.all_of_fiber -> has_pb_and_all_fib C)
-(compl : needs_properties φ model_properties.complement -> has_pb_and_compl C)
 (inf_union : needs_properties φ model_properties.inf_union -> Π (c : C) 
               (i : sign.ind_Set) (f : sign.I i -> subobject c), has_subobj_union f)
 (inf_inter : needs_properties φ model_properties.inf_inter -> Π (c : C) 
@@ -96,7 +84,6 @@ begin
   { apply fin_union, apply or_inl, exact np },
   { apply stable_im, apply or_inl, exact np },
   { apply all_fib, apply or_inl, exact np },
-  { apply compl, apply or_inl, exact np },
   { apply inf_union, apply or_inl, exact np },
   { apply inf_inter, apply or_inl, exact np },
 end   
@@ -113,7 +100,6 @@ begin
   { apply fin_union, apply or_inr, exact np },
   { apply stable_im, apply or_inr, exact np },
   { apply all_fib, apply or_inr, exact np },
-  { apply compl, apply or_inr, exact np },
   { apply inf_union, apply or_inr, exact np },
   { apply inf_inter, apply or_inr, exact np },
 end
@@ -129,7 +115,6 @@ begin
   { apply fin_union true.intro },
   { apply stable_im, apply or_inl, exact np },
   { apply all_fib, apply or_inl, exact np },
-  { apply compl, apply or_inl, exact np },
   { apply inf_union, apply or_inl, exact np },
   { apply inf_inter, apply or_inl, exact np },
 end   
@@ -146,7 +131,6 @@ begin
   { apply fin_union true.intro },
   { apply stable_im, apply or_inr, exact np },
   { apply all_fib, apply or_inr, exact np },
-  { apply compl, apply or_inr, exact np },
   { apply inf_union, apply or_inr, exact np },
   { apply inf_inter, apply or_inr, exact np },
 end
@@ -163,7 +147,6 @@ begin
   { apply fin_union, apply or_inl, exact np },
   { apply stable_im, apply or_inl, exact np },
   { apply all_fib true.intro },
-  { apply compl, apply or_inl, exact np },
   { apply inf_union, apply or_inl, exact np },
   { apply inf_inter, apply or_inl, exact np },
 end   
@@ -180,7 +163,6 @@ begin
   { apply fin_union, apply or_inr, exact np },
   { apply stable_im, apply or_inr, exact np },
   { apply all_fib true.intro },
-  { apply compl, apply or_inr, exact np },
   { apply inf_union, apply or_inr, exact np },
   { apply inf_inter, apply or_inr, exact np },
 end
@@ -196,7 +178,6 @@ begin
   { apply fin_union true.intro },
   { apply stable_im, exact np },
   { apply all_fib true.intro },
-  { apply compl, exact np },
   { apply inf_union, exact np },
   { apply inf_inter, exact np },
 end
@@ -213,7 +194,6 @@ begin
   { apply fin_union, exact np },
   { apply stable_im true.intro },
   { apply all_fib, exact np },
-  { apply compl, exact np },
   { apply inf_union, exact np },
   { apply inf_inter, exact np },
 end
@@ -230,7 +210,6 @@ begin
   { apply fin_union, exact np },
   { apply stable_im, exact np },
   { apply all_fib true.intro },
-  { apply compl, exact np },
   { apply inf_union, exact np },
   { apply inf_inter, exact np },
 end
@@ -248,7 +227,6 @@ begin
   { apply fin_union, exact tr ⟨j, np⟩ },
   { apply stable_im, exact tr ⟨j, np⟩ },
   { apply all_fib, exact tr ⟨j, np⟩ },
-  { apply compl, exact tr ⟨j, np⟩ },
   { apply inf_union, exact tr ⟨j, np⟩ },
   { apply inf_inter true.intro},
 end
@@ -266,7 +244,6 @@ begin
   { apply fin_union, exact tr ⟨j, np⟩ },
   { apply stable_im, exact tr ⟨j, np⟩ },
   { apply all_fib, exact tr ⟨j, np⟩ },
-  { apply compl, exact tr ⟨j, np⟩ },
   { apply inf_union true.intro},
   { apply inf_inter, exact tr ⟨j, np⟩ },
 end
@@ -648,9 +625,47 @@ begin
   apply is_interpretable_in.mk, all_goals { intro np, hinduction Hh with horn },
   all_goals { hinduction φ, all_goals { try { solve1 { hinduction horn } } } }, 
   all_goals { try { solve1 { hinduction np } } }, all_goals { try { apply_instance } },
-  all_goals { try { exact or_elim (ih_a horn.1) (ih_a_1 horn.2) np } },
-  --all_goals { hsimp at np }, 
-  all_goals { sorry }
+  all_goals { try { exact or_elim (ih_a horn.1) (ih_a_1 horn.2) np } }
+end
+
+@[hott, instance]
+def interpret_reg_of_regular  {sign : fo_signature} (φ : formula sign) 
+  [Hr : formula.is_regular φ] {C : Category} [HC : is_regular C] : 
+  is_interpretable_in φ C :=
+begin
+  apply is_interpretable_in.mk, all_goals { intro np, hinduction Hr with reg },
+  all_goals { hinduction φ, all_goals { try { solve1 { hinduction reg } } } }, 
+  all_goals { try { solve1 { hinduction np } } }, all_goals { try { apply_instance } },
+  all_goals { try { exact or_elim (ih_a reg.1) (ih_a_1 reg.2) np } },
+  all_goals { try { exact ih reg np } }
+end
+
+@[hott, instance]
+def interpret_coh_of_coherent  {sign : fo_signature} (φ : formula sign) 
+  [Hc : formula.is_coherent φ] {C : Category} [HC : is_coherent C] : 
+  is_interpretable_in φ C :=
+begin
+  apply is_interpretable_in.mk, all_goals { intro np, hinduction Hc with coh },
+  all_goals { hinduction φ, all_goals { try { solve1 { hinduction coh } } } }, 
+  all_goals { try { solve1 { hinduction np } } }, all_goals { try { apply_instance } },
+  all_goals { try { exact or_elim (ih_a coh.1) (ih_a_1 coh.2) np } },
+  all_goals { try { exact ih coh np } },
+end
+
+@[hott, instance]
+def interpret_geom_of_geometric  {sign : fo_signature} (φ : formula sign) 
+  [Hc : formula.is_geometric φ] {C : Category} [HC : is_geometric C] : 
+  is_interpretable_in φ C :=
+begin
+  apply is_interpretable_in.mk, all_goals { intro np, hinduction Hc with geom },
+  all_goals { hinduction φ, all_goals { try { solve1 { hinduction geom } } } }, 
+  all_goals { try { solve1 { hinduction np } } }, all_goals { try { apply_instance } },
+  all_goals { try { exact or_elim (ih_a geom.1) (ih_a_1 geom.2) np } },
+  all_goals { try { exact ih geom np } },
+  all_goals { try { exact inf_disj_elim (λ i, ih i (geom i)) np } },
+  { intros c i f, exact @has_union_of_has_unions _ _ 
+                          (@has_stable_unions.to_has_unions _ _ 
+                             (@has_stable_unions_of_is_geometric _ HC)) _ _ }
 end
 
 @[hott, instance]
@@ -677,44 +692,52 @@ begin
   apply theory_is_interpretable_in.mk, intros seq ax, apply seq_is_interpretable_in.mk,
   { change is_interpretable_in seq.ass.φ C, 
     have Hhφ : is_horn seq.ass.φ, from (@theory.is_horn.horn _ _ Hh seq ax).1, 
-    hinduction Hhφ with horn, hinduction seq.ass.φ, 
-    all_goals { rwr _h at horn }, all_goals { try { solve1 { hinduction horn } } }, 
-    all_goals { fapply is_interpretable_in.mk }, 
-    all_goals { intro np, try { solve1 { hinduction np } } }, 
-    all_goals { try { apply_instance } }, 
-    { change _ or _ at np, sorry },
-    all_goals { hinduction np }, sorry },
-  { change is_interpretable_in seq.con.φ C, sorry } 
+    exact @interpret_horn_of_Cartesian _ seq.ass.φ Hhφ _ _ },
+  { change is_interpretable_in seq.con.φ C, 
+    have Hhφ : is_horn seq.con.φ, from (@theory.is_horn.horn _ _ Hh seq ax).2, 
+    exact @interpret_horn_of_Cartesian _ seq.con.φ Hhφ _ _ } 
 end
 
 @[hott, instance]
 def interpret_reg_th_of_regular  {sign : fo_signature} (th : fo_theory sign) 
-  [Ha : theory.is_regular th] {C : Category} [HC : is_regular C] : 
+  [Hr : theory.is_regular th] {C : Category} [HC : is_regular C] : 
   theory_is_interpretable_in th C :=
 begin
   apply theory_is_interpretable_in.mk, intros seq ax, apply seq_is_interpretable_in.mk,
-  { change is_interpretable_in seq.ass.φ C, sorry },
-  { change is_interpretable_in seq.con.φ C, sorry } 
+  { change is_interpretable_in seq.ass.φ C, 
+    have Hhφ : is_regular seq.ass.φ, from (@theory.is_regular.reg _ _ Hr seq ax).1, 
+    exact @interpret_reg_of_regular _ seq.ass.φ Hhφ _ _ },
+  { change is_interpretable_in seq.con.φ C, 
+    have Hhφ : is_regular seq.con.φ, from (@theory.is_regular.reg _ _ Hr seq ax).2, 
+    exact @interpret_reg_of_regular _ seq.con.φ Hhφ _ _ } 
 end
 
 @[hott, instance]
 def interpret_coh_th_of_coherent  {sign : fo_signature} (th : fo_theory sign) 
-  [Ha : theory.is_coherent th] {C : Category} [HC : is_coherent C] : 
+  [Hc : theory.is_coherent th] {C : Category} [HC : is_coherent C] : 
   theory_is_interpretable_in th C :=
 begin
   apply theory_is_interpretable_in.mk, intros seq ax, apply seq_is_interpretable_in.mk,
-  { change is_interpretable_in seq.ass.φ C, sorry },
-  { change is_interpretable_in seq.con.φ C, sorry } 
+  { change is_interpretable_in seq.ass.φ C,
+    have Hcφ : is_coherent seq.ass.φ, from (@theory.is_coherent.coh _ _ Hc seq ax).1, 
+    exact @interpret_coh_of_coherent _ seq.ass.φ Hcφ _ _ },
+  { change is_interpretable_in seq.con.φ C,
+    have Hcφ : is_coherent seq.con.φ, from (@theory.is_coherent.coh _ _ Hc seq ax).2, 
+    exact @interpret_coh_of_coherent _ seq.con.φ Hcφ _ _ } 
 end
 
 @[hott, instance]
 def interpret_geom_th_of_geometric  {sign : fo_signature} (th : fo_theory sign) 
-  [Ha : theory.is_geometric th] {C : Category} [HC : is_geometric C] : 
+  [Hg : theory.is_geometric th] {C : Category} [HC : is_geometric C] : 
   theory_is_interpretable_in th C :=
 begin
   apply theory_is_interpretable_in.mk, intros seq ax, apply seq_is_interpretable_in.mk,
-  { change is_interpretable_in seq.ass.φ C, sorry },
-  { change is_interpretable_in seq.con.φ C, sorry } 
+  { change is_interpretable_in seq.ass.φ C,
+    have Hgφ : is_geometric seq.ass.φ, from (@theory.is_geometric.geom _ _ Hg seq ax).1, 
+    exact @interpret_geom_of_geometric _ seq.ass.φ Hgφ _ HC },
+  { change is_interpretable_in seq.con.φ C, 
+    have Hgφ : is_geometric seq.con.φ, from (@theory.is_geometric.geom _ _ Hg seq ax).2, 
+    exact @interpret_geom_of_geometric _ seq.con.φ Hgφ _ HC } 
 end
 
 /- Finally, we define when sequents and theories are satisfied in a Σ-structure = model -/   
