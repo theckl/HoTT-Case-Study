@@ -58,6 +58,27 @@ instance (A : Set.{u}) : has_coe_to_sort (Subset A) :=
 instance {A : Set} (B : Subset A) : has_coe ↥B ↥A :=
   ⟨λ b, b.1⟩
 
+/- We also want decidable subsets, which can be seen as ordinary subsets with a 
+   decidable element relation. -/
+@[hott]
+def dec_Subset (A : Set.{u}) := A -> Two.{u} 
+
+@[hott]
+def dec_sset_to_sset {A : Set.{u}} :
+  (dec_Subset A) -> Subset A :=
+begin intros S a, exact @Two.rec (λ t, Prop) False True (S a) end
+
+@[hott]
+def dec_sset_is_dec {A : Set.{u}} {P : A -> Two.{u}} :
+  Π (a : A), dec_sset_to_sset P a ⊎ ¬(dec_sset_to_sset P a) :=
+begin
+  intro a, 
+  change @Two.rec (λ t, Prop) False True (P a) ⊎ ¬(@Two.rec (λ t, Prop) False True (P a)), 
+  hinduction P a with T F,
+    apply sum.inr, intro f, hinduction f, 
+    apply sum.inl, exact true.intro
+end
+
 /- The type of all subsets of a set `A` is a set: the power set of `A`. -/
 @[hott, instance]
 def Powerset_is_set {A : Set} : is_set (Subset A) := 
@@ -211,9 +232,17 @@ def pred_eqv_inj_sset {A : Set.{u}} : (Subset A) ≃ (inj_Subset A) :=
 protected def elem {A : Set} (a : A) (S : Subset A) :=
   S a
 
+@[hott]
+protected def dec_elem {A : Set} (a : A) (S : dec_Subset A) :=
+  (dec_sset_to_sset S) a
+
 @[hott, instance]
 def set_mem {A : Set} : @has_mem A (Subset A) :=
   has_mem.mk (λ (a : A) (S : Subset A), subset.elem a S)
+
+@[hott, instance]
+def dec_set_mem {A : Set} : @has_mem A (dec_Subset A) :=
+  has_mem.mk (λ (a : A) (S : dec_Subset A), subset.dec_elem a S)  
 
 notation `{ ` binder ` ∈ ` B ` | ` P:scoped  ` }` := (P : Subset B)
 notation `{ ` binder ` ∈ ` B ` | ` P:scoped  ` }` := (P : Subset (to_Set B)) 
@@ -221,9 +250,7 @@ notation `{ ` binder ` ∈ ` B ` | ` P:scoped  ` }` := (P : Subset (to_Set B))
 /- For sets the form of LEM needed is decidability for the element relation for arbitrary
    subsets. However, even when just assumed for finite sets this is equivalent to LEM, see
    the article of Andrej Bauer on constructivism and [sets.axioms]. But the element 
-   relation becomes decidable in decidable subsets, that is, subsets defined as 
-   predicates with values equal to True or False (which are of course subsets in the 
-   sense above). 
+   relation becomes decidable in decidable subsets, see above.
    
    We define a class `has_dec_elem` indicating that the element relation is decidable in 
    a set. If an instance of this class holds, we show that all subsets are decidable and
@@ -233,23 +260,7 @@ class has_dec_elem (A : Set) :=
   (dec_el : Π (a : A) (S : Subset A), (a ∈ S) ⊎ ¬(a ∈ S))
 
 @[hott]
-def Two_pred_to_sset {A : Set.{u}} :
-  (A -> Two.{u}) -> Subset A :=
-begin intros S a, exact @Two.rec (λ t, Prop) False True (S a) end
-
-@[hott]
-def Two_pred_sset_is_dec {A : Set.{u}} {P : A -> Two.{u}} :
-  Π (a : A), Two_pred_to_sset P a ⊎ ¬(Two_pred_to_sset P a) :=
-begin
-  intro a, 
-  change @Two.rec (λ t, Prop) False True (P a) ⊎ ¬(@Two.rec (λ t, Prop) False True (P a)), 
-  hinduction P a with T F,
-    apply sum.inr, intro f, hinduction f, 
-    apply sum.inl, exact true.intro
-end
-
-@[hott]
-def sset_to_Two_pred_sset {A : Set.{u}} [H : has_dec_elem A] : 
+def sset_to_dec_sset {A : Set.{u}} [H : has_dec_elem A] : 
   Subset A -> (A -> Two.{u}) :=
 begin 
   intros S a, exact @sum.rec (a ∈ S) (¬(a ∈ S)) (λ s, Two) (λ v, Two.one) 
@@ -258,10 +269,10 @@ end
 
 @[hott]
 def sset_Two_pred_sset_linv (A : Set.{u}) [H : has_dec_elem A] : Π (S : Subset A), 
-  Two_pred_to_sset (sset_to_Two_pred_sset S) = S :=
+  dec_sset_to_sset (sset_to_dec_sset S) = S :=
 begin
   intro S, apply eq_of_homotopy, intro a, 
-  change @Two.rec (λ t, Prop) False True ((sset_to_Two_pred_sset S) a) = _, 
+  change @Two.rec (λ t, Prop) False True ((sset_to_dec_sset S) a) = _, 
   hinduction @has_dec_elem.dec_el A H a S with p val, 
     { change @Two.rec (λ t, Prop) _ _ 
                  (@sum.rec (a ∈ S) (¬(a ∈ S)) (λ s, Two) _ _ 
@@ -276,7 +287,7 @@ end
 
 @[hott]
 def sset_Two_pred_sset_rinv (A : Set.{u}) [H : has_dec_elem A] : Π (S : A -> Two.{u}), 
-  sset_to_Two_pred_sset (Two_pred_to_sset S) = S :=
+  sset_to_dec_sset (dec_sset_to_sset S) = S :=
 begin
   intro S, apply eq_of_homotopy, intro a,
   let S' : Subset A := λ a, @Two.rec (λ t, Prop) False True (S a),
@@ -351,6 +362,22 @@ def is_prop_subset {A : Set.{u}} (B C : Subset A) : is_prop (is_subset_of B C) :
 @[hott, instance]
 def set_has_Subsets {A : Set.{u}} : @has_subset (Subset A) :=
   has_subset.mk (λ B C : Subset A, Prop.mk (is_subset_of B C) (is_prop_subset B C))
+
+/- We need inclusions of decidable subsets, too. -/
+@[hott]
+def is_dec_subset_of {A : Set.{u}} (B C : A -> Two.{u}) :=
+  Π a : A, a ∈ B -> a ∈ C
+
+@[hott, instance]
+def is_prop_dec_subset {A : Set.{u}} (B C : A -> Two.{u}) : 
+  is_prop (is_dec_subset_of B C) := 
+have Pss : ∀ a : A, is_prop (a ∈ B -> a ∈ C), from 
+    assume a, is_prop_map ((a ∈ C).struct),
+  is_prop_dprod Pss  
+
+@[hott, instance]
+def set_has_dec_subsets {A : Set.{u}} : @has_subset (A -> Two.{u}) :=
+  has_subset.mk (λ B C : A -> Two, Prop.mk (is_dec_subset_of B C) (is_prop_dec_subset B C))
 
 @[hott]
 def pred_Set_inc {A : Set.{u}} {B C : Subset A} (inc : B ⊆ C) : 
@@ -431,6 +458,27 @@ begin intro el_a, hinduction el_a end
 @[hott]
 def singleton_sset {A : Set} (a : A) : Subset A :=
   λ b : A, to_Prop (b = a) 
+
+/- The construction of a decidable singleton subset requires the set to be decidable. The
+   induced subset is the singleton subset. -/
+@[hott]
+def singleton_dec_sset {A : Set} [H : decidable_eq A] (a : A) : dec_Subset A :=
+begin 
+  intro x, exact @decidable.rec _ (λ d, Two) (λ p, Two.one) (λ np, Two.zero) (H x a) 
+end
+
+@[hott]
+def singleton_dec_sset_is_sset {A : Set} [H : decidable_eq A] (a : A) : 
+  dec_sset_to_sset (singleton_dec_sset a) = singleton_sset a :=
+begin
+  apply (sset_eq_iff_inclusion _ _).2, apply pair,
+  { intros x inc, 
+    change ↥(@Two.rec (λ t, Prop) _ _ (@decidable.rec _ (λ d, Two) _ _ (H x a))) at inc,
+    hinduction H x a, exact a_1, rwr _h at inc, hinduction inc },
+  { intros x inc, 
+    change ↥(@Two.rec (λ t, Prop) _ _ (@decidable.rec _ (λ d, Two) _ _ (H x a))),
+    hinduction H x a, exact true.intro, hinduction a_1 inc }
+end
 
 /- The image subset (of a subset) under a map between sets. The sets lie in the 
    same universe. -/
