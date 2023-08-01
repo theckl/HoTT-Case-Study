@@ -765,8 +765,11 @@ end
 
 /- For some sets, we want decidable equality. -/
 @[hott]
-structure dec_Set extends trunctype 0 :=
+structure dec_Set extends trunctype.{u} 0 :=
   (dec : Π (a b : carrier), a = b ⊎ ¬(a = b))
+
+@[hott] instance : has_coe_to_sort (dec_Set.{u}) := 
+  has_coe_to_sort.mk (Type u) (λ A : dec_Set, trunctype.carrier A.to_trunctype)
 
 @[hott]
 def dec_nat : dec_Set := @dec_Set.mk nat_Set nat_eq_is_decidable 
