@@ -6,12 +6,12 @@ prop_axioms :   679
 prop_logic  :   218  2315
 sets
   basic     :   776
-  finite    :   240
-  subset    :   530
+  finite    :   330
+  subset    :   578
   axioms    :   355
-  algebra   :   299
+  algebra   :   343
   quotients :   205
-  theories  :   915  3320
+  theories  :   915  3502
 categories
   precat    :   738  
   basic     :   312 
@@ -29,13 +29,16 @@ categories
   sets      :   938  
   structures:   680  
   models    :   787  9112 
+algebra
+  rings     :    36    36
                     -----
-                    14807               
+                    15025               
 
 
 Planned changes in Files, from bottom to top: 
 ---------------------------------------------
-algebra.ring : construct ring signature
-sets.subset : remove class `has_dec_elem`, keep `Two_pred_sset`, change `dec_Set` to a 
-              set with decidable equality, follow changes through all files, 
-              change `sorts` in [set.theories] to a decidable set 
+algebra.ring : construct formulas, sequents, theory of ring_hom_is_std_str
+sets.theory : change context, free variables and fo_theory to `Two_pred_sset`
+sets.algebra : finite unions of finite decidable subsets are finite, intersections of
+               finite subsets are finite
+sets.finite : (decidable) singleton subsets are finite 
