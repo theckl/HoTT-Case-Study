@@ -30,19 +30,16 @@ namespace signature
 
 /- Labels allow to distinguish variables of the same sort. 
 
-   Labels and sorts should better be decidable sets, but we do not prescribe that choice.
    Usually, the labels will be countable, for example strings, and there will be only
    finitely many sorts, so decidable equality is automatic. -/
 @[hott]
-structure var (labels : Set.{0}) (sorts : Set.{0}) :=
+structure var (labels : dec_Set.{0}) (sorts : dec_Set.{0}) :=
   (label : labels)
   (sort : sorts) 
 
---#print string
-
 /- The following three lemmas should be produced automatically. -/
 @[hott]
-def var_eq {labels : Set.{0}} {sorts : Set.{0}} {x₁ x₂ : var labels sorts} : 
+def var_eq {labels : dec_Set.{0}} {sorts : dec_Set.{0}} {x₁ x₂ : var labels sorts} : 
   (x₁.label = x₂.label) -> (x₁.sort = x₂.sort) -> (x₁ = x₂) :=
 begin
   intros p_label p_sort, 
@@ -51,31 +48,47 @@ begin
 end    
 
 @[hott]
-def var_eq_eta {labels : Set.{0}} {sorts : Set.{0}} {x₁ x₂ : var labels sorts} 
+def var_eq_eta {labels : dec_Set.{0}} {sorts : dec_Set.{0}} {x₁ x₂ : var labels sorts} 
   (p : x₁ = x₂) : var_eq (ap var.label p) (ap var.sort p) = p := 
 begin hinduction p, hinduction x₁, reflexivity end    
     
 @[hott, instance]
-def var_is_set {labels : Set.{0}} {sorts : Set.{0}} : is_set (var labels sorts) :=
+def var_is_set {labels : dec_Set.{0}} {sorts : dec_Set.{0}} : is_set (var labels sorts) :=
 begin
   fapply is_set.mk, intros x y p q, 
   rwr <- var_eq_eta p, rwr <- var_eq_eta q,
   apply ap011 var_eq, apply is_set.elim, apply is_set.elim
 end   
 
+@[hott, instance]
+def var_is_dec {labels : dec_Set.{0}} {sorts : dec_Set.{0}} : 
+  decidable_eq (var labels sorts) :=
+begin 
+  intros x y, hinduction x with xl xs, hinduction y with yl ys, 
+  hinduction labels.dec xl yl with ihl pl, 
+  all_goals { hinduction sorts.dec xs ys with ihs ps }, 
+    exact decidable.inl (ap011 var.mk pl ps), 
+    apply decidable.inr, intro p, hinduction val (ap var.sort p), 
+    apply decidable.inr, intro p, hinduction val (ap var.label p), 
+    apply decidable.inr, intro p, hinduction val (ap var.label p) 
+end
+
+/- In a first-order signature we want decidable sets of operations, relations and index 
+   sets for infinite con- and disjunctions. But we only allow finite arities for 
+   operations and relations. -/
 @[hott]
 structure fo_signature :=
-  (labels : Set.{0}) 
-  (sorts : Set.{0}) 
-  (ops : Set.{0}) 
-  (ops_arity : Π (o : ops), Set.{0})
-  (ops_source : Π (o : ops), ops_arity o -> sorts)
+  (labels : dec_Set.{0}) 
+  (sorts : dec_Set.{0}) 
+  (ops : dec_Set.{0}) 
+  (ops_arity : Π (o : ops), ℕ)
+  (ops_source : Π (o : ops), fin_Set (ops_arity o) -> sorts)
   (ops_target : Π (o : ops), sorts)
-  (rels : Set.{0})
-  (rels_arity : Π (r : rels), Set.{0})
-  (rels_comp : Π {r : rels}, rels_arity r -> sorts)
-  (ind_Set : Set.{0})  --set indexing all index sets
-  (I : ind_Set -> Set.{0}) 
+  (rels : dec_Set.{0})
+  (rels_arity : Π (r : rels), ℕ)
+  (rels_comp : Π {r : rels}, fin_Set (rels_arity r) -> sorts)
+  (ind_Set : dec_Set.{0})  --set indexing all index sets
+  (I : ind_Set -> dec_Set.{0}) 
 /- If we don't restrict the possible index sets of infinte con- and disjunction to a set
    the type of formulas is not a set. -/
 
@@ -87,7 +100,7 @@ inductive term_of_sort {sign : fo_signature} : sign.sorts -> Type
 | var (s : sign.sorts) (x : var sign.labels sign.sorts) (pv : x.sort = s) : 
                                                                        term_of_sort s      
 | op (s : sign.sorts) (o : sign.ops) (pot : sign.ops_target o = s)
-     (args : Π (oa : sign.ops_arity o), term_of_sort (sign.ops_source o oa)) : 
+     (args : Π (oa : fin_Set (sign.ops_arity o)), term_of_sort (sign.ops_source o oa)) : 
      term_of_sort s
 
 @[hott, reducible]
@@ -98,7 +111,7 @@ begin
   hinduction t₁ with s₁ x₁ px₁ s₁ o₁ pot₁ args₁ ih₁,
   all_goals { intros s₂ t₂, hinduction t₂ with s₂ x₂ px₂ s₂ o₂ pot₂ args₂ ih₂ },
   exact x₁ = x₂, exact Zero, exact Zero,
-  exact Σ (q : o₁ = o₂), Π (oa₁ : sign.ops_arity o₁), ih₁ oa₁ (args₂ (q ▸ oa₁))  
+  exact Σ (q : o₁ = o₂), Π (oa₁ : fin_Set (sign.ops_arity o₁)), ih₁ oa₁ (args₂ (q ▸ oa₁))  
 end  
 /- The equation compiler produces a non-hott term when we use 
    pattern-matching to define `code`: 
@@ -120,7 +133,7 @@ begin
   { change is_prop (x₁ = x₂), apply is_prop.mk, intros q q', exact is_set.elim _ _ },
   { change is_prop Zero, apply_instance },
   { change is_prop Zero, apply_instance },
-  { change is_prop (Σ (q : o₁ = o₂), Π (oa₁ : sign.ops_arity o₁),
+  { change is_prop (Σ (q : o₁ = o₂), Π (oa₁ : fin_Set (sign.ops_arity o₁)),
                         term.code (args₁ oa₁) (args₂ (q ▸ oa₁))),
     apply is_prop.mk, intros t₁_code t₂_code, fapply sigma.sigma_eq, 
     { exact is_set.elim _ _ },
@@ -170,7 +183,7 @@ begin
   { intro t_code, hinduction t_code },
   { intro t_code, hinduction t_code },
   { intro t_code,       
-    change Σ (q : o₁ = o₂), Π (oa₁ : sign.ops_arity o₁),
+    change Σ (q : o₁ = o₂), Π (oa₁ : fin_Set (sign.ops_arity o₁)),
                 term.code (args₁ oa₁) (args₂ (q ▸ oa₁)) at t_code,
     hinduction t_code with q args_code, hinduction q,
     have ps : s₁ = s₂, from pot₁⁻¹ ⬝ pot₂, hinduction ps,
@@ -242,19 +255,29 @@ begin apply is_trunc_equiv_closed_rev 0 (term_of_sort_of_term s), apply_instance
 /- To define formulas we need the free variables of a term. -/
 @[hott]
 def free_vars_of_term {sign : fo_signature} : term sign -> 
-  Subset (to_Set (var sign.labels sign.sorts)) :=
+  dec_Subset (to_Set (var sign.labels sign.sorts)) :=
 begin 
   intro t, hinduction t, hinduction expr, 
-  { exact singleton_sset x }, 
-  { exact iUnion ih }
+  { exact singleton_dec_sset x }, 
+  { exact dec_fin_iUnion ih }
 end
 
+@[hott, instance]
+def free_vars_of_term_is_fin {sign : fo_signature} (t : term sign) : 
+  is_finite_dec_sset (free_vars_of_term t) :=
+begin
+  apply is_finite_dec_sset.mk,
+  hinduction t, hinduction expr,
+  { sorry },
+  { change is_finite (pred_Set (dec_sset_to_sset (dec_fin_iUnion _))), 
+    sorry }
+end
 
 /- Terms and later formulas and sequents should always only contain free variables from a 
-   `context`. -/
+   `context`, a decidable subset of the set of variables. -/
 @[hott]
 structure context (sign : fo_signature) := 
-  (vars : Subset (to_Set (var sign.labels sign.sorts)))
+  (vars : dec_Subset (to_Set (var sign.labels sign.sorts)))
 
 @[hott]
 def context_eq {sign : fo_signature} {cont₁ cont₂ : context sign} : 
@@ -278,17 +301,25 @@ def context_eq_eta {sign : fo_signature} {cont₁ cont₂ : context sign} (p : c
 begin hinduction p, hsimp, exact context_eq_refl cont₁ end 
 
 @[hott, instance]
+def cont_vars_is_set {sign : fo_signature} :
+  is_set ((to_Set (var sign.labels sign.sorts)) -> Two.{0}) :=
+begin 
+  change is_set ((var sign.labels sign.sorts) -> Two_Set), 
+  exact @is_set_map _ _ 
+end
+
+@[hott, instance]
 def context_is_set {sign : fo_signature} : is_set (context sign) :=
 begin 
   fapply is_set.mk, intros x y p q, 
   rwr <- context_eq_eta p, rwr <- context_eq_eta q,
-  apply ap context_eq, apply is_set.elim
+  apply ap context_eq, apply is_set.elim _ _, exact cont_vars_is_set
 end
 
 @[hott]
 structure term_in_context {sign : fo_signature} (cont : context sign) := 
   (t : term sign) 
-  (in_cont : free_vars_of_term t ⊆ cont.vars)
+  (in_cont : free_vars_of_term t ⊆ dec_sset_to_sset cont.vars)
 
 
 /- Formulas in the first-order language built upon a first-order signature, together with 
@@ -298,8 +329,8 @@ namespace formula
 @[hott]
 inductive formula (sign : fo_signature)
 | eq_terms : Π (t₁ t₂ : term sign), (t₁.sort = t₂.sort) -> formula
-| rel_terms : Π (r : sign.rels) 
-       (comp : Π (k : sign.rels_arity r), term_of_sort (sign.rels_comp k)), formula
+| rel_terms : Π (r : sign.rels) (comp : Π (k : fin_Set (sign.rels_arity r)), 
+                                           term_of_sort (sign.rels_comp k)), formula
 | T : formula
 | F : formula 
 | conj : formula -> formula -> formula 
@@ -323,7 +354,7 @@ begin
   exact (t₁ = t₁') × (t₂ = t₂'), --equality
   exact Zero, exact Zero, exact Zero, exact Zero, exact Zero, exact Zero,
   exact Zero, exact Zero, exact Zero, exact Zero, exact Zero, exact Zero,
-  exact Σ (q : r = r'), comp =[q; λ s, Π (k : sign.rels_arity s), --relations
+  exact Σ (q : r = r'), comp =[q; λ s, Π (k : fin_Set (sign.rels_arity s)), --relations
                                          term_of_sort (sign.rels_comp k)] comp', 
   exact Zero, exact Zero, exact Zero, exact Zero, exact Zero, exact Zero,
   exact Zero, exact Zero, exact Zero, exact Zero, exact Zero, exact Zero,                                       
@@ -635,7 +666,7 @@ begin apply is_geometric.mk, exact coherent_implies_geometric φ H.coh end
 
 @[hott]
 protected def free_vars {sign : fo_signature} : 
-  formula sign -> Subset (to_Set (var sign.labels sign.sorts)) :=
+  formula sign -> dec_Subset (to_Set (var sign.labels sign.sorts)) :=
 begin 
   intro form, hinduction form, 
   exact (free_vars_of_term t₁) ∪ (free_vars_of_term t₂), 
