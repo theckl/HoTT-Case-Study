@@ -1,4 +1,4 @@
-import sets.subset sets.finite sets.axioms hott.types.prod 
+import sets.subset sets.finite sets.axioms hott.types.prod hott.types.nat.sub
 
 universes u v w
 hott_theory
@@ -289,6 +289,20 @@ begin
   exact union_sset_r _ _ x val, exact union_sset_l _ _ x (sm_inc x (inc, val)) 
 end
 
+@[hott]
+def setminus_disjoint  {A : Set.{u}} (U V : Subset A) : 
+  V ∩ (setminus U V) = empty_Subset A :=
+begin 
+  apply (sset_eq_iff_inclusion _ _).2, fapply prod.mk, 
+    intros a inc, hinduction inc.2.2 inc.1,
+    intros a inc, hinduction inc 
+end
+
+@[hott]
+def inc_setminus_inc {A : Set.{u}} (U V W : Subset A) : 
+  U ⊆ V -> setminus U W ⊆ setminus V W :=
+begin intros ss a inc, fapply prod.mk, exact ss a inc.1, exact inc.2 end 
+
 /- Lists of elements of a set define subsets. -/
 @[hott]
 def list_to_Subset {S : Set} (l : list S) : Subset S :=
@@ -300,12 +314,24 @@ begin hinduction l with hd tl S', exact empty_Subset S, exact S' ∪ (singleton_
 @[hott]
 def dec_inc_to_inc {S : Set} {A B : dec_Subset S} : 
   A ⊆ B -> dec_sset_to_sset A ⊆ dec_sset_to_sset B :=
-begin intros dec_inc x el_A, exact dec_inc x el_A end
+begin 
+  intros dec_inc x el_A, hinduction A x, 
+  { change ↥(@Two.rec (λ t, Prop) _ _ _) at el_A, rwr _h at el_A, hinduction el_A },
+  { change ↥(@Two.rec (λ t, Prop) _ _ _),
+    have p : B x = Two.one, from dec_inc x _h, rwr p, exact true.intro } 
+end
 
 @[hott]
 def inc_to_dec_inc {S : Set} {A B : dec_Subset S} : 
   dec_sset_to_sset A ⊆ dec_sset_to_sset B -> A ⊆ B :=
-begin intros inc x el_A, exact inc x el_A end 
+begin 
+  intros inc x el_A, 
+  have p : A x = Two.one, from el_A,
+  have P : ↥(dec_sset_to_sset B x), from 
+    begin apply inc x, change ↥(@Two.rec (λ t, Prop) _ _ _), rwr p, exact true.intro end, 
+  change ↥(@Two.rec (λ t, Prop) _ _ _) at P, hinduction B x, rwr _h at P, hinduction P,
+  exact _h 
+end 
 
 @[hott, reducible]
 protected def dec_inter {A : Set.{u}} (S₁ S₂ : dec_Subset A) : dec_Subset A :=
@@ -337,6 +363,13 @@ begin
     all_goals { try {hinduction fst } }, all_goals { try {hinduction snd } },
     exact true.intro }
 end 
+
+@[hott]
+def dec_inter_comm {A : Set.{u}} (S₁ S₂ : dec_Subset A) : S₁ ∩ S₂ = S₂ ∩ S₁ :=
+begin
+  apply dec_sset_eq_of_sset_eq, rwr dec_inter_is_inter, rwr dec_inter_is_inter, 
+  rwr inter.symm
+end
 
 @[hott, reducible]
 protected def dec_union {A : Set.{u}} (S₁ S₂ : dec_Subset A) : dec_Subset A :=
@@ -370,6 +403,14 @@ begin
     all_goals { try {hinduction val } }, 
     all_goals { try { exact true.intro } } }
 end
+
+@[hott]
+def union_dec_sset_l {A : Set.{u}} (S₁ S₂ : dec_Subset A) : S₁ ⊆ (S₁ ∪ S₂) := 
+  begin apply inc_to_dec_inc, rwr dec_union_is_union, exact union_sset_l _ _ end
+
+@[hott]
+def union_dec_sset_r {A : Set.{u}} (S₁ S₂ : dec_Subset A) : S₂ ⊆ (S₁ ∪ S₂) := 
+  begin apply inc_to_dec_inc, rwr dec_union_is_union, exact union_sset_r _ _ end
 
 /- Without further assumptions we can only show that finite intersections and unions of 
    decidable subsets are decidable subsets. -/
@@ -423,6 +464,13 @@ begin
     exact prop_resize_to_prop inc ⟨m.fst, nat.le.step m.snd⟩,
     exact prop_resize_to_prop inc ⟨n, nat.le_refl (n+1)⟩ }
 end
+
+@[hott]
+def dec_fin_iInter_inc {A : Set.{u}} {n : ℕ} (f : fin_Set n -> dec_Subset A) :
+  Π (m : fin_Set n), ⋂ᵢ f ⊆ f m :=
+begin 
+  intro m, apply inc_to_dec_inc, rwr dec_fin_iInter_is_iInter, exact sset_iInter _ m
+end 
 
 @[hott, reducible]
 def dec_fin_iUnion {A : Set.{u}} {n : ℕ} (f : fin_Set n -> dec_Subset A) : 
@@ -479,6 +527,28 @@ begin
         end,
         rwr <- r', exact i_inc.2 }
 end
+
+@[hott]
+def dec_fin_iUnion_inc {A : Set.{u}} {n : ℕ} (f : fin_Set n -> dec_Subset A) :
+  Π (m : fin_Set n), f m ⊆ ⋃ᵢ f :=
+begin
+  intro m, apply inc_to_dec_inc, rwr dec_fin_iUnion_is_iUnion, exact sset_iUnion _ m 
+end  
+
+/- If `A` has decidable equality and the underlying sets of intersection 
+   and union are finite then intersection and union are decidable, since all finite 
+   subsets of `A` are decidable, see [sets.finite].-/
+@[hott]
+def dec_fin_iUnion_of_dec_sset {A : Set.{u}} [decidable_eq A] {I : Set} 
+  (f : I -> dec_Subset A) [is_finite (pred_Set (⋃ᵢ (λ i, dec_sset_to_sset (f i))))] : 
+  dec_Subset A :=
+finite_sset_to_dec_sset (⋃ᵢ (λ i, dec_sset_to_sset (f i))) 
+
+@[hott]
+def dec_fin_iInter_of_dec_sset {A : Set.{u}} [decidable_eq A] {I : Set} 
+  (f : I -> dec_Subset A) [is_finite (pred_Set (⋂ᵢ (λ i, dec_sset_to_sset (f i))))] : 
+  dec_Subset A :=
+finite_sset_to_dec_sset (⋂ᵢ (λ i, dec_sset_to_sset (f i)))
 
 /- The complement of a decidable subset is decidable. -/
 @[hott]
@@ -541,11 +611,353 @@ begin
     hinduction inc₂ true.intro }
 end
 
-/- Without additional assumptions, infinite intersections and unions of decidable subsets
-   in a set `A` cannot be constructed as decidable subsets of `A`. One possibility is to 
-   assume that `A` has decidable equality and that the underlying sets of intersection 
-   and union are finite: Then intersection and union are decidable, since all finite 
-   subsets of `A` are decidable, see [sets.finite]. -/
+@[hott]
+def dec_setminus_disjoint  {A : Set.{u}} (U V : dec_Subset A) : 
+  V ∩ (dec_setminus U V) = empty_dec_Subset A :=
+begin 
+  apply dec_sset_eq_of_sset_eq, rwr dec_inter_is_inter, rwr dec_setminus_is_setminus,
+  rwr empty_dec_sset_empty_sset, rwr setminus_disjoint
+end
+
+@[hott]
+def dec_setminus_inc {A : Set.{u}} (U V : dec_Subset A) : dec_setminus U V ⊆ U :=
+begin apply inc_to_dec_inc, rwr dec_setminus_is_setminus, exact set_minus_inc _ _ end
+
+@[hott]
+def inc_dec_setminus_inc {A : Set.{u}} (U V W : dec_Subset A) : 
+  U ⊆ V -> dec_setminus U W ⊆ dec_setminus V W :=
+begin 
+  intros dec_ss, apply inc_to_dec_inc, rwr dec_setminus_is_setminus,
+  rwr dec_setminus_is_setminus, exact inc_setminus_inc _ _ _ (dec_inc_to_inc dec_ss) 
+end
+
+@[hott]
+def dec_union_setminus_union {A : Set.{u}} (U V : dec_Subset A) : 
+  U ∪ V = U ∪ (dec_setminus V U) :=
+begin 
+  apply eq_of_homotopy, intro a, 
+  hinduction U a with p, all_goals { hinduction V a with q }, 
+  all_goals { change @Two.rec (λ t : Two, Two -> Two) _ _ _ _ = 
+    @Two.rec (λ t : Two, Two -> Two) _ _ _ (@Two.rec (λ t : Two, Two -> Two) _ _ _ _),
+    rwr p, rwr q }
+end
+
+
+/- We prove several facts on finiteness of decidable subsets under algebraic operations.
+   Since some of them rely on the fact that a decidable subset of a finite decidable 
+   subset is finite, decidability is essential here: The finiteness of subsets of finite
+   subsets is equivalent to LEM, see Andrej Bauer's article on constructivism. -/
+@[hott]
+def fin_disj_union_map_0_0 {C : Set} {A B : dec_Subset C}
+  {fin_A : is_finite_dec_sset A} {fin_B : is_finite_dec_sset B} 
+  (disj : A ∩ B = empty_dec_Subset C) {c : C} (el : (A ∪ B) c = Two.one) 
+  (pa : A c = Two.zero) (pb : B c = Two.zero) :
+  fin_Set (fin_A.fin.fin_bij.1 + fin_B.fin.fin_bij.1) :=
+begin
+  change @Two.rec (λ t : Two, Two -> Two) _ _ _ _ = _ at el, 
+  rwr pa at el, rwr pb at el, hinduction encode_Two _ _ el
+end
+
+@[hott]
+def fin_disj_union_map_0_1 {C : Set} {A B : dec_Subset C}
+  {fin_A : is_finite_dec_sset A} {fin_B : is_finite_dec_sset B} 
+  (disj : A ∩ B = empty_dec_Subset C) {c : C} (el : (A ∪ B) c = Two.one) 
+  (pa : A c = Two.zero) (pb : B c = Two.one) :
+  fin_Set (fin_A.fin.fin_bij.1 + fin_B.fin.fin_bij.1) :=
+begin
+  fapply sigma.mk, exact fin_A.fin.fin_bij.1 + (fin_B.fin.fin_bij.2 ⟨c,pb⟩).1, 
+  apply nat.add_lt_add_left, exact (fin_B.fin.fin_bij.2 ⟨c, pb⟩).2
+end
+
+@[hott]
+def fin_disj_union_map_1_0 {C : Set}  {A B : dec_Subset C}
+  {fin_A : is_finite_dec_sset A} {fin_B : is_finite_dec_sset B} 
+  (disj : A ∩ B = empty_dec_Subset C) {c : C} (el : (A ∪ B) c = Two.one) 
+  (pa : A c = Two.one) (pb : B c = Two.zero) :
+  fin_Set (fin_A.fin.fin_bij.1 + fin_B.fin.fin_bij.1) :=
+begin
+  fapply sigma.mk, exact (fin_A.fin.fin_bij.2 ⟨c,pa⟩).1, 
+  exact nat.lt_of_lt_of_le (fin_A.fin.fin_bij.2 ⟨c, pa⟩).2 (nat.le_add_right _ _)
+end
+
+@[hott]
+def fin_disj_union_map_1_1 {C : Set} {A B : dec_Subset C}
+  {fin_A : is_finite_dec_sset A} {fin_B : is_finite_dec_sset B} 
+  (disj : A ∩ B = empty_dec_Subset C) {c : C} (el : (A ∪ B) c = Two.one) 
+  (pa : A c = Two.one) (pb : B c = Two.one) :
+  fin_Set (fin_A.fin.fin_bij.1 + fin_B.fin.fin_bij.1) :=
+begin
+  have p : (A ∩ B) c = Two.zero, from ap10 disj c, 
+  change @Two.rec (λ t : Two, Two -> Two) _ _ _ _ = _ at p, 
+  rwr pa at p, rwr pb at p, hinduction encode_Two _ _ p
+end
+
+@[hott, hsimp]
+def fin_disj_union_map {C : Set} {A B : dec_Subset C}
+  (fin_A : is_finite_dec_sset A) (fin_B : is_finite_dec_sset B) 
+  (disj : A ∩ B = empty_dec_Subset C) : 
+  dec_pred_Set (A ∪ B) -> fin_Set (fin_A.fin.fin_bij.1 + fin_B.fin.fin_bij.1) :=
+begin
+  intro c_el, hinduction c_el with c el,
+  all_goals { hinduction A c with pa }, all_goals { hinduction B c with pb }, 
+  exact fin_disj_union_map_0_0 disj el pa pb,
+  exact fin_disj_union_map_0_1 disj el pa pb,
+  exact fin_disj_union_map_1_0 disj el pa pb,
+  exact fin_disj_union_map_1_1 disj el pa pb 
+end
+
+@[hott]
+def fin_disj_union_map_0_1_eq {C : Set} {A B : dec_Subset C}
+  {fin_A : is_finite_dec_sset A} {fin_B : is_finite_dec_sset B} 
+  (disj : A ∩ B = empty_dec_Subset C) {c : C} (el : (A ∪ B) c = Two.one) 
+  (pa : A c = Two.zero) (pb : B c = Two.one) :
+  fin_disj_union_map fin_A fin_B disj ⟨c, el⟩ = 
+      ⟨fin_A.fin.fin_bij.1 + (fin_B.fin.fin_bij.2 ⟨c,pb⟩).1,
+            nat.add_lt_add_left (fin_B.fin.fin_bij.2 ⟨c,pb⟩).2 fin_A.fin.fin_bij.1⟩ :=
+begin
+  hsimp, 
+  have qa : idpath (A c) =[pa] pa, by apply pathover_of_tr_eq; exact is_prop.elim _ _,
+  rwr @apd011 _ (fin_Set (fin_A.fin.fin_bij.1 + fin_B.fin.fin_bij.1)) _ (A c) Two.zero 
+             (idpath (A c)) pa (@Two.rec (λ t, (A c = t) -> fin_Set _) _ _) pa qa,
+  hsimp,
+  have qb : idpath (B c) =[pb] pb, by apply pathover_of_tr_eq; exact is_prop.elim _ _,
+  rwr @apd011 _ (fin_Set (fin_A.fin.fin_bij.1 + fin_B.fin.fin_bij.1)) _ (B c) Two.one 
+             (idpath (B c)) pb (@Two.rec (λ t, (B c = t) -> fin_Set _) _ _) pb qb
+end
+
+@[hott]
+def fin_disj_union_map_1_0_eq {C : Set} {A B : dec_Subset C}
+  {fin_A : is_finite_dec_sset A} {fin_B : is_finite_dec_sset B} 
+  (disj : A ∩ B = empty_dec_Subset C) {c : C} (el : (A ∪ B) c = Two.one) 
+  (pa : A c = Two.one) (pb : B c = Two.zero) :
+  fin_disj_union_map fin_A fin_B disj ⟨c, el⟩ = ⟨(fin_A.fin.fin_bij.2 ⟨c, pa⟩).1,
+          nat.lt_of_lt_of_le (fin_A.fin.fin_bij.2 ⟨c, pa⟩).2 (nat.le_add_right _ _)⟩ :=
+begin
+  hsimp, 
+  have qa : idpath (A c) =[pa] pa, by apply pathover_of_tr_eq; exact is_prop.elim _ _,
+  rwr @apd011 _ (fin_Set (fin_A.fin.fin_bij.1 + fin_B.fin.fin_bij.1)) _ (A c) Two.one 
+             (idpath (A c)) pa (@Two.rec (λ t, (A c = t) -> fin_Set _) _ _) pa qa,
+  hsimp,
+  have qb : idpath (B c) =[pb] pb, by apply pathover_of_tr_eq; exact is_prop.elim _ _,
+  rwr @apd011 _ (fin_Set (fin_A.fin.fin_bij.1 + fin_B.fin.fin_bij.1)) _ (B c) Two.zero 
+             (idpath (B c)) pb (@Two.rec (λ t, (B c = t) -> fin_Set _) _ _) pb qb
+end
+
+@[hott]
+def fin_disj_union_map_inv {C : Set} [HC : decidable_eq C] {A B : dec_Subset C}
+  (fin_A : is_finite_dec_sset A) (fin_B : is_finite_dec_sset B) 
+  (disj : A ∩ B = empty_dec_Subset C) : 
+  fin_Set (fin_A.fin.fin_bij.1 + fin_B.fin.fin_bij.1) -> dec_pred_Set (A ∪ B) :=
+begin 
+  intro m,
+  fapply @sum.rec _ _ (λ tot_sum, dec_pred_Set (A ∪ B)) _ _ 
+                                                 (nat.lt_sum_ge m.1 fin_A.fin.fin_bij.1),
+  { intro val,
+    fapply sigma.mk, exact (inv_bijection_of fin_A.fin.fin_bij.2 ⟨m.1, val⟩).1,
+    apply union_dec_sset_l _, exact (inv_bijection_of fin_A.fin.fin_bij.2 ⟨m.1, val⟩).2 },
+  { intro val, let val' := nat.sub_lt_of_lt_add m.2 val,
+    fapply sigma.mk, 
+      exact (inv_bijection_of fin_B.fin.fin_bij.2 ⟨m.1 - fin_A.fin.fin_bij.1, val'⟩).1,
+      apply union_dec_sset_r _, 
+      exact (inv_bijection_of fin_B.fin.fin_bij.2 ⟨m.1 - fin_A.fin.fin_bij.1, val'⟩).2 }
+end
+
+@[hott]
+def fin_disj_union_map_linv {C : Set} [HC : decidable_eq C] {A B : dec_Subset C}
+  (fin_A : is_finite_dec_sset A) (fin_B : is_finite_dec_sset B) 
+  (disj : A ∩ B = empty_dec_Subset C) : Π c_el : dec_pred_Set (A ∪ B),
+  fin_disj_union_map_inv fin_A fin_B disj (fin_disj_union_map fin_A fin_B disj c_el) = c_el :=
+begin 
+  intro c_el, hinduction c_el with c el,
+  let m := fin_disj_union_map fin_A fin_B disj ⟨c, el⟩,
+  hinduction A c with pa, all_goals { hinduction B c with pb }, 
+  { change @Two.rec (λ t : Two, Two -> Two) _ _ _ _ = _ at el, 
+    rwr pa at el, rwr pb at el, hinduction encode_Two _ _ el },
+  { change @sum.rec _ _ (λ tot_sum, dec_pred_Set (A ∪ B)) _ _ _ = _,
+    hinduction nat.lt_sum_ge m.1 fin_A.fin.fin_bij.1,
+    { have p : (fin_disj_union_map fin_A fin_B disj ⟨c, el⟩).1 ≥ fin_A.fin.fin_bij.1, by 
+        rwr fin_disj_union_map_0_1_eq disj el pa pb; exact nat.le_add_right _ _,
+      hinduction nat.not_succ_le_self (nat.lt_of_lt_of_le val p) },
+    { change sigma.mk _ _ = _, fapply sigma.sigma_eq,
+      { change ((inv_bijection_of fin_B.fin.fin_bij.2) _).1 = c,
+        have pBm : fin_B.fin.fin_bij.2 ⟨c,pb⟩ = 
+               ⟨(fin_disj_union_map fin_A fin_B disj ⟨c, el⟩).1 - fin_A.fin.fin_bij.1,
+                                                      nat.sub_lt_of_lt_add m.2 val⟩, from 
+        begin 
+          fapply sigma.sigma_eq, 
+          { change _ = (fin_disj_union_map fin_A fin_B disj ⟨c, el⟩).1 - 
+                                                                  fin_A.fin.fin_bij.1, 
+            rwr fin_disj_union_map_0_1_eq disj el pa pb, change _ = _ + _ - _, 
+            rwr nat.add_sub_cancel_left' }, 
+          { apply pathover_of_tr_eq, exact is_prop.elim _ _ } 
+        end,
+        rwr <- pBm, rwr inv_bij_l_inv },
+      { apply pathover_of_tr_eq, exact is_prop.elim _ _ } } },
+  { change @sum.rec _ _ (λ tot_sum, dec_pred_Set (A ∪ B)) _ _ _ = _,
+    hinduction nat.lt_sum_ge m.1 fin_A.fin.fin_bij.1,
+    { change sigma.mk _ _ = _, fapply sigma.sigma_eq,
+      { change ((inv_bijection_of fin_A.fin.fin_bij.2) _).1 = c,
+        have pAm : fin_A.fin.fin_bij.2 ⟨c,pa⟩ = 
+                     ⟨(fin_disj_union_map fin_A fin_B disj ⟨c, el⟩).1, val⟩, from 
+        begin
+          fapply sigma.sigma_eq, 
+          { change _ = (fin_disj_union_map fin_A fin_B disj ⟨c, el⟩).1, 
+            rwr fin_disj_union_map_1_0_eq disj el pa pb },
+          { apply pathover_of_tr_eq, exact is_prop.elim _ _ }
+        end,
+        rwr <- pAm, rwr inv_bij_l_inv },
+      { apply pathover_of_tr_eq, exact is_prop.elim _ _ } },  
+    { have p : (fin_disj_union_map fin_A fin_B disj ⟨c, el⟩).1 < fin_A.fin.fin_bij.1, by 
+        rwr fin_disj_union_map_1_0_eq disj el pa pb; exact (fin_A.fin.fin_bij.2 ⟨c, pa⟩).2,
+      hinduction nat.not_succ_le_self (nat.lt_of_lt_of_le p val) } },
+  { have p : (A ∩ B) c = Two.zero, from ap10 disj c, 
+    change @Two.rec (λ t : Two, Two -> Two) _ _ _ _ = _ at p, 
+    rwr pa at p, rwr pb at p, hinduction encode_Two _ _ p }
+end
+
+@[hott]
+def fin_disj_union_map_rinv {C : Set} [HC : decidable_eq C] {A B : dec_Subset C}
+  (fin_A : is_finite_dec_sset A) (fin_B : is_finite_dec_sset B) 
+  (disj : A ∩ B = empty_dec_Subset C) : 
+  Π m : fin_Set (fin_A.fin.fin_bij.1 + fin_B.fin.fin_bij.1),
+  fin_disj_union_map fin_A fin_B disj (fin_disj_union_map_inv fin_A fin_B disj m) = m :=
+begin 
+  intro m, hinduction m with m pAB, hinduction nat.lt_sum_ge m fin_A.fin.fin_bij.1,
+  { change fin_disj_union_map _ _ _ 
+                          (@sum.rec _ _ (λ tot_sum, dec_pred_Set (A ∪ B)) _ _ _) = _,
+    let c_el := (inv_bijection_of (fin_A.fin.fin_bij.2)) ⟨m, val⟩,
+    rwr _h, change fin_disj_union_map _ _ _ ⟨c_el.1, _⟩ = _,
+    have pa : A c_el.1 = Two.one, from c_el.2,
+    have qa : pa = c_el.2, from is_prop.elim _ _,
+    have pb : B c_el.1 = Two.zero, from 
+    begin 
+      have p : (A ∩ B) c_el.1 = Two.zero, from ap10 disj c_el.1, 
+      change @Two.rec (λ t : Two, Two -> Two) _ _ _ _ = _ at p, 
+      rwr pa at p, hinduction (B c_el.1) with pb, 
+      refl, rwr pb at p, hinduction encode_Two _ _ p
+    end,
+    rwr fin_disj_union_map_1_0_eq _ _ pa pb, fapply sigma.sigma_eq,
+    { hsimp, rwr qa, rwr sigma.eta, rwr inv_bij_r_inv (fin_A.fin.fin_bij.2) ⟨m, val⟩ },
+    { apply pathover_of_tr_eq, exact is_prop.elim _ _ } },
+  { change fin_disj_union_map _ _ _ 
+                          (@sum.rec _ _ (λ tot_sum, dec_pred_Set (A ∪ B)) _ _ _) = _,
+    let val' := nat.sub_lt_of_lt_add pAB val,
+    let c_el := (inv_bijection_of (fin_B.fin.fin_bij.2)) ⟨m - fin_A.fin.fin_bij.1, val'⟩,
+    rwr _h, change fin_disj_union_map _ _ _ ⟨c_el.1, _⟩ = _,
+    have pb : B c_el.1 = Two.one, from c_el.2,
+    have qb : pb = c_el.2, from is_prop.elim _ _,
+    have pa : A c_el.1 = Two.zero, from 
+    begin 
+      have p : (A ∩ B) c_el.1 = Two.zero, from ap10 disj c_el.1, 
+      change @Two.rec (λ t : Two, Two -> Two) _ _ _ _ = _ at p, 
+      rwr pb at p, hinduction (A c_el.1) with pa, 
+      refl, rwr pa at p, hinduction encode_Two _ _ p
+    end,
+    rwr fin_disj_union_map_0_1_eq _ _ pa pb, fapply sigma.sigma_eq,
+    { hsimp, rwr qb, rwr sigma.eta, 
+      rwr inv_bij_r_inv (fin_B.fin.fin_bij.2) ⟨m - fin_A.fin.fin_bij.1, val'⟩,
+      hsimp, change _ + (_ - _) = _, rwr <- nat.add_sub_assoc val, 
+      rwr nat.add_sub_cancel_left' },
+    { apply pathover_of_tr_eq, exact is_prop.elim _ _ } }
+end
+
+@[hott]
+def fin_disj_union_fin {C : Set} [HC : decidable_eq C] {A B : dec_Subset C} :
+  is_finite_dec_sset A -> is_finite_dec_sset B -> (A ∩ B = empty_dec_Subset C) ->
+  is_finite_dec_sset (A ∪ B) := 
+begin
+  intros fin_A fin_B disj, apply is_finite_dec_sset.mk, apply is_finite.mk, 
+  fapply sigma.mk, exact fin_A.fin.fin_bij.1 + fin_B.fin.fin_bij.1,
+  fapply has_inverse_to_bijection,  
+  { exact fin_disj_union_map fin_A fin_B disj },
+  { exact fin_disj_union_map_inv fin_A fin_B disj },
+  { fapply is_set_inverse_of.mk, 
+    { exact fin_disj_union_map_rinv fin_A fin_B disj },
+    { exact fin_disj_union_map_linv fin_A fin_B disj } }
+end 
+
+@[hott]
+def fin_setminus_fin {C : Set} [HC : decidable_eq C] {A : dec_Subset C} (c : C) : 
+  is_finite_dec_sset (dec_setminus A (singleton_dec_sset c)) -> is_finite_dec_sset A :=
+begin 
+  intro fin_dec_sm, hinduction A c with p,
+  { have q : dec_setminus A (singleton_dec_sset c) = A, from --c ∉ A
+    begin 
+      apply eq_of_homotopy, intro c', 
+      change @Two.rec (λ t : Two, Two -> Two) _ _ _ _ = _, hinduction A c' with p',
+      all_goals { hinduction singleton_dec_sset c c' with q }, all_goals { try { refl } }, 
+      hinduction HC c' c with eq r nr, 
+      { exact p⁻¹ ⬝ (ap A r)⁻¹ ⬝ p' }, 
+      { change @decidable.rec (c' = c) _ _ _ (HC c' c) = _ at q, rwr eq at q, exact q } 
+    end, 
+    rwr <- q, assumption },
+  { have q : dec_setminus A (singleton_dec_sset c) ∪ (singleton_dec_sset c) = A, from 
+    begin 
+      apply eq_of_homotopy, intro c', 
+      change @Two.rec (λ t : Two, Two -> Two) _ _ _ _ = _, hinduction A c' with p',
+      all_goals { hinduction singleton_dec_sset c c' with q },
+      all_goals { hinduction dec_setminus A (singleton_dec_sset c) c' with q' },
+      all_goals { try { refl } }, all_goals { hsimp },
+      exact (dec_setminus_inc _ _ c' q')⁻¹ ⬝ p',
+      all_goals { try { rwr singleton_dec_sset_eq c c' q at p, exact p⁻¹ ⬝ p' } },
+      change @Two.rec (λ t : Two, Two -> Two) _ _ _ _ = _ at q', rwr p' at q', 
+      rwr q at q', exact q'⁻¹
+    end,
+    have disj : dec_setminus A (singleton_dec_sset c) ∩ (singleton_dec_sset c) = 
+                empty_dec_Subset C, 
+      by rwr dec_inter_comm; exact dec_setminus_disjoint _ _, 
+    rwr <- q, 
+    exact @fin_disj_union_fin _ HC _ _ fin_dec_sm (singleton_dec_sset_fin c) disj } 
+end 
+   
+/- The decidable intersection of decidable subsets (for example, if only finitely many 
+   sets are intersected) is finite if one of the intersection sets is finite. -/
+@[hott]
+def dec_sset_of_fin_sset_is_fin {C : Set} [HC : decidable_eq C] {n : ℕ} : 
+  Π {A B : dec_Subset C} [H : is_finite_dec_sset B] (p : @card_fin_dec_sset _ B H = n), 
+    A ⊆ B -> is_finite_dec_sset A :=
+begin
+  hinduction n,
+  { intros A B H p inc, apply is_finite_dec_sset.mk, apply is_finite.mk, fapply sigma.mk, 
+    exact 0, fapply has_inverse_to_bijection, 
+    { intro a, hinduction a with a el_a, 
+      have p' : ↥(fin_Set (@card_fin_dec_sset _ B H)) = ↥(fin_Set 0), by rwr p, 
+      rwr <- p', apply H.fin.fin_bij.2.map, exact ⟨a, inc a el_a⟩ }, 
+    { intro m, hinduction nat.not_lt_zero m.1 m.2 }, 
+    { fapply is_set_inverse_of.mk, 
+        intro m, hinduction nat.not_lt_zero m.1 m.2,
+        intro a, hinduction a with a el_a, 
+        have m : ↥(fin_Set (@card_fin_dec_sset _ B H)), from 
+          H.fin.fin_bij.2.map ⟨a, inc a el_a⟩,
+        have p' : ↥(fin_Set (@card_fin_dec_sset _ B H)) = ↥(fin_Set 0), by rwr p,  
+        rwr p' at m, hinduction nat.not_lt_zero m.1 m.2 } },
+  { intros A B H p inc, 
+    let f := (inv_bijection_of H.fin.fin_bij.2).map,
+    have p' : (fin_Set H.fin.fin_bij.1) = (fin_Set (@card_fin_dec_sset _ B H)), from rfl,
+    rwr p' at f, rwr p at f,
+    let fn_sset := singleton_dec_sset (f ⟨n, nat.le_refl (n+1)⟩).1, 
+    let smB := dec_setminus B fn_sset,
+    have smB_bij : bijection (dec_pred_Set smB) (fin_Set n), from 
+      begin 
+        fapply has_inverse_to_bijection, 
+        { intro b_el, fapply @fin_Set_desc n (n+1),
+          { let g := H.fin.fin_bij.2.map,
+            have p' : (fin_Set H.fin.fin_bij.1) =
+              (fin_Set (@card_fin_dec_sset _ B H)), from rfl,
+            rwr p' at g, rwr p at g, apply g, fapply sigma.mk, exact b_el.1, 
+            apply dec_setminus_inc B fn_sset b_el.1, exact b_el.2 },
+          { sorry } },
+        { sorry },
+        { sorry } 
+      end,
+    apply fin_setminus_fin (f ⟨n, nat.le_refl (n+1)⟩).1,
+    let H' : is_finite_dec_sset (smB) := 
+                                      is_finite_dec_sset.mk (is_finite.mk ⟨n, smB_bij⟩), 
+    have q : @card_fin_dec_sset _ smB H' = n, from rfl,
+    exact @ih _ _ H' q (inc_dec_setminus_inc _ _ _ inc) }
+end
+
+/- Finally, the finite union of finite decidable subsets is finite (and decidable). -/
 
 end subset
 
