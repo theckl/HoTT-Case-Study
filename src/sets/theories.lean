@@ -268,7 +268,8 @@ def free_vars_of_term_is_fin {sign : fo_signature} (t : term sign) :
 begin
   apply is_finite_dec_sset.mk,
   hinduction t, hinduction expr,
-  { sorry },
+  { change ↥(to_Set (var sign.labels sign.sorts)) at x,
+    exact (singleton_dec_sset_fin.{0} x).fin },
   { change is_finite (pred_Set (dec_sset_to_sset (dec_fin_iUnion _))), 
     sorry }
 end
