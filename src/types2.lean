@@ -516,4 +516,284 @@ begin
   exact concato_eq (Hp ((@f a)⁻¹ᶠ Ha)) HHa⁻¹
 end  
 
+/- We need a set-type `Two` with two objects to deduce propositional resizing from LEM.
+   To construct it we also need `Zero` and `One`. 
+
+   [Zero] and [One] are equivalent to [true] and [false] in [prop_logic], but
+   we want to use them without logical connotations. -/
+@[hott]
+inductive Zero : Type _
+
+@[hott]
+def eq_Zero : forall f₁ f₂ : Zero, f₁ = f₂ :=
+begin
+  intros,
+  induction f₁,
+end  
+
+@[hott, instance]
+def Zero_is_prop : is_prop Zero :=
+  is_prop.mk eq_Zero 
+
+@[hott]
+def Zero_Set : Set :=
+  Set.mk Zero (is_trunc_succ Zero -1)
+
+@[hott, instance]
+def is_prop_Zero_equiv (A : Type _) : is_prop (Zero ≃ A) :=
+begin 
+  apply is_prop.mk, intros eqv₁ eqv₂,
+  have H : is_prop A, from is_trunc_equiv_closed -1 eqv₁ Zero_is_prop, 
+  hinduction eqv₁ with f₁ is_eqv₁, hinduction eqv₂ with f₂ is_eqv₂,
+  fapply apd011 equiv.mk, 
+  { apply eq_of_homotopy, intro o, exact @is_prop.elim _ H _ _ },
+  { apply pathover_of_tr_eq, exact is_prop.elim _ _ } 
+end
+
+@[hott]
+inductive One : Type _  
+| star : One
+
+@[hott]
+def eq_One : forall t₁ t₂ : One, t₁ = t₂ :=
+begin 
+  intros, 
+  induction t₁, 
+  induction t₂,
+  exact (refl One.star),
+end 
+
+@[hott, instance]
+def One_dec_eq : decidable_eq One := assume t₁ t₂, decidable.inl (eq_One t₁ t₂) 
+
+@[hott, instance]
+def One_is_prop : is_prop One :=
+  is_prop.mk eq_One
+
+@[hott]
+def One_Set : Set :=
+  Set.mk One (is_trunc_succ One -1)
+
+@[hott, instance]
+def is_prop_One_equiv (A : Type _) : is_prop (One ≃ A) :=
+begin 
+  apply is_prop.mk, intros eqv₁ eqv₂,
+  have H : is_prop A, from is_trunc_equiv_closed -1 eqv₁ One_is_prop, 
+  hinduction eqv₁ with f₁ is_eqv₁, hinduction eqv₂ with f₂ is_eqv₂,
+  fapply apd011 equiv.mk, 
+  { apply eq_of_homotopy, intro o, exact @is_prop.elim _ H _ _ },
+  { apply pathover_of_tr_eq, exact is_prop.elim _ _ } 
+end
+
+@[hott]
+inductive Two : Type _ 
+| zero : Two 
+| one : Two 
+
+/- We prove that [Two] is a set using the Fundamental Identity Theorem, 
+   following [Rijke-Book, 11.3]. This is a streamlined version of the
+   encode-decode method presented in [HoTT-book, Sec.2.13], getting rid 
+   of the decoding. -/
+@[hott, hsimp]
+def code_Two : Two -> Two -> Type _ :=
+begin
+  intros t₁ t₂, 
+  hinduction t₁,
+    hinduction t₂, exact One, exact Zero,
+    hinduction t₂, exact Zero, exact One,
+end  
+
+@[hott, instance]
+def code_Two_is_prop : Π t₁ t₂ : Two, is_prop (code_Two t₁ t₂) :=
+begin
+  intros t₁ t₂, hinduction t₁, 
+  hinduction t₂, exact One_is_prop, exact Zero_is_prop,
+  hinduction t₂, exact Zero_is_prop, exact One_is_prop,
+end
+
+@[hott]
+def refl_Two : Π t : Two, code_Two t t := 
+begin intro t; hinduction t; exact One.star; exact One.star end
+
+@[hott, hsimp]
+def encode_Two : Π t₁ t₂ : Two, (t₁ = t₂) -> code_Two t₁ t₂ :=
+  assume t₁ t₂ eq, eq ▸[λ t : Two, code_Two t₁ t] (refl_Two t₁)
+
+@[hott]
+def Two_eq_equiv_code : ∀ t₁ t₂ : Two, (t₁ = t₂) ≃ code_Two t₁ t₂ := 
+begin 
+  intros t₁ t₂, 
+  let R := ppred.mk (λ t₂ : Two, code_Two t₁ t₂) (refl_Two t₁),
+  let f := @ppmap.mk _ _ (id_ppred t₁) R 
+                    (λ t₂ : Two, encode_Two t₁ t₂) idp, 
+  fapply equiv.mk, exact encode_Two t₁ t₂,
+  apply tot_space_contr_ppmap_id_eqv R f, fapply is_contr.mk,
+  exact ⟨t₁, refl_Two t₁⟩, intro tp, hinduction tp with t ct, 
+  hinduction t₁, 
+    hinduction t, hinduction ct; refl, exact Zero.rec _ ct,  
+    hinduction t, exact Zero.rec _ ct, hinduction ct; refl
+  end  
+
+@[hott, instance]
+def Two_eq_is_prop : Π (t₁ t₂ : Two.{u}), is_prop (t₁ = t₂) :=
+  λ t₁ t₂ : Two, is_trunc_equiv_closed_rev.{u u} 
+          -1 (Two_eq_equiv_code t₁ t₂) (code_Two_is_prop t₁ t₂)
+
+@[hott, instance]
+def Two_is_set : is_set Two :=
+  is_trunc_succ_intro (λ t₁ t₂, Two_eq_is_prop t₁ t₂)
+
+@[hott]
+def Two_Set : Set :=
+  Set.mk Two Two_is_set  
+
+@[hott]
+def Two_is_decidable : ∀ t₁ t₂ : Two, (t₁ = t₂) ⊎ ¬ (t₁ = t₂) :=
+begin 
+  intros t₁ t₂, 
+  induction t₁, 
+    induction t₂, exact sum.inl rfl, 
+                  apply sum.inr; intro eq; exact Zero.rec _ (encode_Two _ _ eq),
+    induction t₂, apply sum.inr; intro eq; exact Zero.rec _ (encode_Two _ _ eq),
+                  exact sum.inl rfl,              
+end    
+
+/- Facts about natural numbers not found in the [HoTT3]-library (or theorems). -/
+open nat
+
+@[hott, elab_as_eliminator] 
+def nat.sub_induction' {P : ℕ → ℕ → Type _} (n m : ℕ) (H1 : Πm, P 0 m)
+   (H2 : Πn, P (succ n) 0) (H3 : Πn m, P n m → P (succ n) (succ m)) : P n m :=
+have general : Πm, P n m, from nat.rec_on n H1
+  (λk : ℕ,
+    assume IH : Πm, P k m,
+    λm : ℕ,
+    nat.cases_on m (H2 k) (λl, (H3 k l (IH l)))),
+general m
+
+@[hott, hsimp] 
+def nat.succ_sub_succ_eq_sub' (a b : ℕ) : succ a - succ b = a - b :=
+nat.rec (by hsimp) (λ b, ap pred) b
+
+@[hott] 
+def nat.sub_zero' (n : ℕ) : n - 0 = n := rfl
+
+@[hott] 
+def nat.sub_succ' (n m : ℕ) : n - succ m = pred (n - m) := rfl
+
+@[hott] 
+def nat.sub_sub' (n m k : nat) : n - m - k = n - (m + k) :=
+nat.rec_on k
+  (calc
+    n - m - 0 = n - m        : by rwr nat.sub_zero'
+          ... = n - (m + 0)  : by rwr nat.add_zero)
+  (λl : nat,
+    assume IH : n - m - l = n - (m + l),
+    calc
+      n - m - succ l = pred (n - m - l)   : by rwr nat.sub_succ'
+                 ... = pred (n - (m + l)) : by rwr IH
+                 ... = n - succ (m + l)   : by rwr nat.sub_succ'
+                 ... = n - (m + succ l)   : by rwr add_succ)
+
+
+@[hott] 
+def nat.zero_sub' (n : ℕ) : 0 - n = 0 :=
+nat.rec_on n (nat.sub_zero' _)
+  (λk : nat,
+    assume IH : 0 - k = 0,
+    calc
+      0 - succ k = pred (0 - k) : by rwr nat.sub_succ'
+             ... = pred 0       : by rwr IH
+             ... = 0            : pred_zero)
+
+@[hott] 
+def nat.succ_sub_succ' (n m : ℕ) : succ n - succ m = n - m :=
+  nat.succ_sub_succ_eq_sub' n m
+
+@[hott] 
+def nat.sub_self' (n : ℕ) : n - n = 0 :=
+nat.rec_on n (nat.sub_zero' _) (λk IH, nat.succ_sub_succ' _ _ ⬝ IH)
+
+@[hott] 
+def nat.sub_self_add' (n m : ℕ) : n - (n + m) = 0 :=
+calc
+  n - (n + m) = n - n - m : by rwr nat.sub_sub'
+          ... = 0 - m     : by rwr nat.sub_self'
+          ... = 0         : by rwr nat.zero_sub'
+
+@[hott] 
+def nat.sub_eq_zero_of_le {n m : ℕ} (H : n ≤ m) : n - m = 0 :=
+   begin hinduction le.elim H with p k Hk, rwr <- Hk, apply nat.sub_self_add' end
+
+@[hott] 
+def nat.add_sub_assoc {m k : ℕ} (H : k ≤ m) (n : ℕ) : n + m - k = n + (m - k) :=
+  have l1 : k ≤ m → n + m - k = n + (m - k), from
+    nat.sub_induction' k m
+    (λm : ℕ, assume H : 0 ≤ m,
+       calc
+         n + m - 0 = n + m       : by rwr nat.sub_zero'
+               ... = n + (m - 0) : by rwr nat.sub_zero')
+     (λk : ℕ, assume H : succ k ≤ 0, absurd H (not_succ_le_zero _))
+     (λk m,
+       assume IH : k ≤ m → n + m - k = n + (m - k),
+       λH : succ k ≤ succ m,
+       calc
+         n + succ m - succ k = succ (n + m) - succ k : by rwr add_succ
+                         ... = n + m - k             : by rwr nat.succ_sub_succ'
+                         ... = n + (m - k)           : IH (le_of_succ_le_succ H)
+                         ... = n + (succ m - succ k) : by rwr nat.succ_sub_succ'),
+ l1 H
+
+@[hott] 
+def nat.sub_le_sub_right {n m : ℕ} (H : n ≤ m) (k : ℕ) : n - k ≤ m - k :=
+begin  
+  let l := (le.elim H).1, let Hl := (le.elim H).2,
+  apply sum.elim (@nat.le_total n k),
+  { intro H2, rwr nat.sub_eq_zero_of_le H2, exact nat.zero_le (m - k) },
+  { intro H2,
+    have H3 : n - k + l = m - k, from
+      calc n - k + l = l + (n - k) : by rwr nat.add_comm
+                 ... = l + n - k   : by rwr <- nat.add_sub_assoc H2 l
+                 ... = n + l - k   : by rwr nat.add_comm
+                 ... = m - k       : by rwr Hl,
+    exact le.intro H3}
+end
+
+@[hott] def nat.succ_sub {m n : ℕ} : m ≥ n → succ m - n  = succ (m - n) :=
+  nat.sub_induction' n m (λk, assume H : 0 ≤ k, rfl)
+    (λk,
+     assume H : succ k ≤ 0,
+     absurd H (not_succ_le_zero _))
+   (λk l,
+     assume IH : k ≤ l → succ l - k = succ (l - k),
+     λH : succ k ≤ succ l,
+     calc
+       succ (succ l) - succ k = succ l - k             : by rwr nat.succ_sub_succ'
+                          ... = succ (l - k)           : IH (le_of_succ_le_succ H)
+                          ... = succ (succ l - succ k) : by rwr nat.succ_sub_succ')
+
+@[hott] 
+def nat.add_sub_cancel' (n m : ℕ) : n + m - m = n :=
+nat.rec_on m
+  (begin rwr hott.algebra.add_zero end)
+  (λk : ℕ,
+    assume IH : n + k - k = n,
+    calc
+      n + succ k - succ k = succ (n + k) - succ k : by rwr add_succ
+                      ... = n + k - k             : by rwr nat.succ_sub_succ'
+                      ... = n                     : IH)
+
+@[hott] 
+def nat.add_sub_cancel_left' (n m : ℕ) : n + m - n = m :=
+by rwr nat.add_comm; apply nat.add_sub_cancel'
+
+@[hott]
+def nat.sub_lt_of_lt_add {v n m : nat} (h₁ : v < n + m) (h₂ : v ≥ n) : v - n < m :=
+  have nat.succ v ≤ n + m,   from succ_le_of_lt h₁,
+  have nat.succ (v - n) ≤ m, from
+    calc nat.succ (v - n) = nat.succ v - n : by rwr <- nat.succ_sub h₂
+                  ...     ≤ n + m - n      : nat.sub_le_sub_right this n
+                  ...     = m              : nat.add_sub_cancel_left' n m,
+lt_of_succ_le this
+
 end hott
