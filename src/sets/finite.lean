@@ -54,6 +54,22 @@ begin
       { intro f, hinduction hott.nat.not_lt_zero f.1 f.2 } } }
 end
 
+@[hott, instance]
+def singleton_sset_fin {A : Set} (a : A) : is_finite (pred_Set (singleton_sset a)) :=
+begin 
+  apply is_finite.mk, fapply sigma.mk, exact 1,
+  fapply has_inverse_to_bijection,
+  { exact λ x, ⟨0, nat.le_refl 1⟩ },
+  { exact λ m, ⟨a, idpath a⟩ },
+  { fapply is_set_inverse_of.mk,
+    { intro m, hsimp, apply fin_Set_eq, hsimp, 
+      have ps : m.1 = 0 ⊎ m.1 < 0, from nat.eq_sum_lt_of_le (nat.le_of_succ_le_succ m.2),
+      hinduction ps, rwr val, hinduction nat.not_lt_zero m.1 val },
+    { intro x, hsimp, hinduction x, fapply sigma.sigma_eq, 
+        hsimp, change fst = a at snd, rwr snd, 
+        apply pathover_of_tr_eq, exact is_prop.elim _ _ } } 
+end
+
 @[hott]
 def empty_fin_Set_map (C : Type _) : fin_Set 0 -> C :=
 begin intro f, hinduction (not_lt_zero f.1 f.2) end
@@ -229,7 +245,11 @@ end
 /- For first-order languages we need finiteness of decidable subsets. -/
 @[hott]
 class is_finite_dec_sset {A : Set} (B : dec_Subset A) :=
-  (fin : is_finite (pred_Set (dec_sset_to_sset B)))
+  (fin : is_finite (dec_pred_Set B))
+
+@[hott]
+def card_fin_dec_sset {A : Set} (B : dec_Subset A) [H : is_finite_dec_sset B] : ℕ :=  
+  H.fin.fin_bij.1 
 
 @[hott]
 structure fin_dec_Subset {A : Set} :=
@@ -243,15 +263,8 @@ attribute [instance] fin_dec_Subset.is_fin
 def singleton_dec_sset_fin {A : Set} (a : A) [H : decidable_eq A] : 
   is_finite_dec_sset (singleton_dec_sset a) :=
 begin 
-  apply is_finite_dec_sset.mk, apply is_finite.mk, fapply sigma.mk, exact 1,
-  fapply has_inverse_to_bijection, 
-  { exact λ a, ⟨0, nat.le_refl 1⟩ },
-  { intro m, fapply sigma.mk, exact a,
-    have p : singleton_dec_sset a a = Two.one, from sorry, 
-    change ↥(@Two.rec (λ t, Prop) _ _ _), rwr p, exact true.intro, },
-  { fapply is_set_inverse_of.mk, 
-    { sorry },
-    { sorry } }  
+  fapply is_finite_dec_sset.mk, rwr <- pred_Set_eq_pred_dec_Set,
+  rwr singleton_dec_sset_is_sset, exact singleton_sset_fin a
 end
 
 /- A finite subset of a set with decidable equality is decidable. -/
