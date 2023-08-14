@@ -1,4 +1,4 @@
-import prop_logic sets.basic 
+import prop_logic types2 sets.basic 
 
 universes u v w
 hott_theory
@@ -69,6 +69,24 @@ def dec_sset_to_sset {A : Set.{u}} :
 begin intros S a, exact @Two.rec (λ t, Prop) False True (S a) end
 
 @[hott]
+def dec_sset_eq_of_sset_eq {A : Set.{u}} (B C : dec_Subset A) :
+  dec_sset_to_sset B = dec_sset_to_sset C -> B = C :=
+begin 
+  intro sset_eq, apply eq_of_homotopy, intro a,
+  change (λ b, @Two.rec (λ t, Prop) False True (B b)) = 
+                     (λ b, @Two.rec (λ t, Prop) False True (C b)) at sset_eq, 
+  let sset_eq_a := @ap10 A Prop (λ b, @Two.rec (λ t, Prop) False True (B b))  
+                     (λ b, @Two.rec (λ t, Prop) False True (C b)) sset_eq a, 
+  hsimp at sset_eq_a,
+  hinduction B a with p, all_goals { hinduction C a with q }, all_goals { try { refl } }, 
+  all_goals { rwr p at sset_eq_a, rwr q at sset_eq_a },
+    change False = True at sset_eq_a, 
+    hinduction (sset_eq_a ▸[λ P, ¬(trunctype.carrier P)] False_uninhabited) true.intro, 
+    change True = False at sset_eq_a, 
+    hinduction (sset_eq_a⁻¹ ▸[λ P, ¬(trunctype.carrier P)] False_uninhabited) true.intro 
+end
+
+@[hott]
 def dec_sset_is_dec {A : Set.{u}} {P : A -> Two.{u}} :
   Π (a : A), dec_sset_to_sset P a ⊎ ¬(dec_sset_to_sset P a) :=
 begin
@@ -124,12 +142,27 @@ def is_set_pred {A : Set.{u}} : Π (B : Subset A), is_set (Σ (a : A), B a) :=
     is_trunc_succ (B a) -1, 
   is_trunc_sigma (λ a : A, B a) 0 
 
+@[hott, instance]
+def is_set_dec_pred {A : Set.{u}} : Π (B : dec_Subset A), 
+  is_set (Σ (a : A), B a = Two.one) :=
+assume B, 
+  have H : forall (a : A), is_set (B a = Two.one), from
+    assume a, is_trunc_succ (B a = Two.one) -1,
+@is_trunc_sigma _ (λ a : A, B a = Two.one) 0 _ H
+
 @[hott]
 def pred_Set {A : Set.{u}} (B : Subset A) : Set :=
   Set.mk (Σ (a : A), B a) (is_set_pred B)  
 
+@[hott]
+def dec_pred_Set {A : Set} (B : dec_Subset A) : Set :=
+  Set.mk (Σ (a : A), B a = Two.one) (is_set_dec_pred B)
+
 @[hott] 
 def pred_Set_map {A : Set.{u}} (B : Subset A) : pred_Set B -> A := λ b, b.1  
+
+@[hott]
+def dec_pred_Set_map {A : Set.{u}} (B : dec_Subset A) : dec_pred_Set B -> A := λ b, b.1 
 
 @[hott]
 def pred_Set_map_is_inj {A : Set.{u}} (B : Subset A) : 
@@ -139,6 +172,32 @@ begin
   { exact H }, 
   { apply pathover_of_tr_eq, exact is_prop.elim _ _ } 
 end
+
+@[hott]
+def dec_pred_Set_map_is_inj {A : Set.{u}} (B : dec_Subset A) : 
+  is_set_injective (dec_pred_Set_map B) :=
+begin 
+  intros b₁ b₂ H, fapply sigma_eq, 
+  { exact H }, 
+  { apply pathover_of_tr_eq, exact is_prop.elim _ _ } 
+end
+
+@[hott]
+def pred_Set_eq_pred_dec_Set {A : Set.{u}} (B : dec_Subset A) : 
+  pred_Set (dec_sset_to_sset B) = dec_pred_Set B :=
+begin
+  apply bij_to_set_eq.{u u}, fapply has_inverse_to_bijection,
+  { intro b_el, hinduction b_el with b el, fapply sigma.mk,
+    exact b, change ↥(@Two.rec (λ t, Prop) _ _ _) at el, hinduction B b, 
+    rwr _h at el, hinduction el, refl },
+  { intro b_elt, hinduction b_elt with b elt, fapply sigma.mk,
+    exact b, change ↥(@Two.rec (λ t, Prop) _ _ _), rwr elt, exact true.intro },
+  { fapply is_set_inverse_of.mk, 
+    { intro b_el, hinduction b_el, hsimp, fapply sigma.sigma_eq,
+      refl, hsimp, apply pathover_of_tr_eq, rwr idp_tr, exact is_prop.elim _ _ },
+    { intro b_el, hinduction b_el, hsimp, fapply sigma.sigma_eq,
+      refl, hsimp, apply pathover_of_tr_eq, exact is_prop.elim _ _ } }
+end 
 
 /- Next, we construct maps between the two types of subsets, and show that they are 
    inverse to each other.-/
@@ -233,16 +292,17 @@ protected def elem {A : Set} (a : A) (S : Subset A) :=
   S a
 
 @[hott]
-protected def dec_elem {A : Set} (a : A) (S : dec_Subset A) :=
-  (dec_sset_to_sset S) a
+protected def dec_elem {A : Set.{u}} (a : A) (S : dec_Subset A) :=
+  S a = Two.one
 
 @[hott, instance]
 def set_mem {A : Set} : @has_mem A (Subset A) :=
   has_mem.mk (λ (a : A) (S : Subset A), subset.elem a S)
 
 @[hott, instance]
-def dec_set_mem {A : Set} : @has_mem A (dec_Subset A) :=
-  has_mem.mk (λ (a : A) (S : dec_Subset A), subset.dec_elem a S)  
+def dec_set_mem {A : Set.{u}} : @has_mem A (dec_Subset A) :=
+  has_mem.mk (λ (a : A) (S : dec_Subset A), 
+                          trunctype.mk (subset.dec_elem a S) (Two_eq_is_prop.{u} _ _))  
 
 notation `{ ` binder ` ∈ ` B ` | ` P:scoped  ` }` := (P : Subset B)
 notation `{ ` binder ` ∈ ` B ` | ` P:scoped  ` }` := (P : Subset (to_Set B)) 
@@ -365,23 +425,29 @@ def set_has_Subsets {A : Set.{u}} : @has_subset (Subset A) :=
 
 /- We need inclusions of decidable subsets, too. -/
 @[hott]
-def is_dec_subset_of {A : Set.{u}} (B C : A -> Two.{u}) :=
+def is_dec_subset_of {A : Set.{u}} (B C : dec_Subset A) :=
   Π a : A, a ∈ B -> a ∈ C
 
 @[hott, instance]
-def is_prop_dec_subset {A : Set.{u}} (B C : A -> Two.{u}) : 
+def is_prop_dec_subset {A : Set.{u}} (B C : dec_Subset A) : 
   is_prop (is_dec_subset_of B C) := 
 have Pss : ∀ a : A, is_prop (a ∈ B -> a ∈ C), from 
     assume a, is_prop_map ((a ∈ C).struct),
   is_prop_dprod Pss  
 
 @[hott, instance]
-def set_has_dec_subsets {A : Set.{u}} : @has_subset (A -> Two.{u}) :=
-  has_subset.mk (λ B C : A -> Two, Prop.mk (is_dec_subset_of B C) (is_prop_dec_subset B C))
+def set_has_dec_subsets {A : Set.{u}} : @has_subset (dec_Subset A) :=
+  has_subset.mk (λ B C : dec_Subset A, Prop.mk (is_dec_subset_of B C) 
+                                               (is_prop_dec_subset B C))
 
 @[hott]
 def pred_Set_inc {A : Set.{u}} {B C : Subset A} (inc : B ⊆ C) : 
   pred_Set B -> pred_Set C :=
+begin intro b, exact ⟨b.1, inc b.1 b.2⟩ end
+
+@[hott]
+def dec_pred_Set_inc {A : Set.{u}} {B C : dec_Subset A} (inc : B ⊆ C) : 
+  dec_pred_Set B -> dec_pred_Set C :=
 begin intro b, exact ⟨b.1, inc b.1 b.2⟩ end
 
 
@@ -454,6 +520,15 @@ def empty_Subset (A : Set.{u}) : Subset A :=
 def empty_not_elem {A : Set} (a : A) : a ∉ empty_Subset A :=
 begin intro el_a, hinduction el_a end  
 
+@[hott]
+def empty_dec_Subset (A : Set.{u}) : dec_Subset A :=
+  λ a, Two.zero
+
+@[hott]
+def empty_dec_sset_empty_sset (A : Set.{u}) : 
+  dec_sset_to_sset (empty_dec_Subset A) = empty_Subset A :=
+begin apply eq_of_homotopy, intro a, refl end
+
 /- Singleton subsets containing one element of a set -/
 @[hott]
 def singleton_sset {A : Set} (a : A) : Subset A :=
@@ -464,7 +539,16 @@ def singleton_sset {A : Set} (a : A) : Subset A :=
 @[hott]
 def singleton_dec_sset {A : Set} [H : decidable_eq A] (a : A) : dec_Subset A :=
 begin 
-  intro x, exact @decidable.rec _ (λ d, Two) (λ p, Two.one) (λ np, Two.zero) (H x a) 
+  intro x, exact dite (x = a) (λ p, Two.one) (λ np, Two.zero) 
+end
+
+@[hott]
+def singleton_dec_sset_eq {A : Set} [H : decidable_eq A] (a : A) (a' : A) :
+  singleton_dec_sset a a' = Two.one -> a = a' :=
+begin
+  intro a_el, change @decidable.rec _ (λ d, Two) _ _ (H a' a) = _ at a_el, 
+  hinduction H a' a with h p, exact p⁻¹, rwr h at a_el, hsimp at a_el,
+  hinduction encode_Two _ _ a_el  
 end
 
 @[hott]
