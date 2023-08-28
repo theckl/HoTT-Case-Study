@@ -338,6 +338,16 @@ def apd01111_v2 {A E : Type _} {B : A -> Type _} {C D : Π (a : A), B a -> Type 
   f a₁ b₁ c₁ d₁ = f a₂ b₂ c₂ d₂ :=
 begin hinduction pA, hinduction pB, hinduction pC, hinduction pD, refl end
 
+@[hott]
+def apd01111_1 {A E : Type _} {B : A -> Type _} {C D : Π (a : A), B a -> Type _}
+  {F : E -> Type _} (g : Π (a : A) (b : B a), C a b -> D a b -> E) 
+  (f : Π (a : A) (b : B a) (c : C a b) (d : D a b), F (g a b c d)) {a a' : A} (p : a = a')
+  {b : B a} {b' : B a'} (q : b =[p] b') {c : C a b} {c' : C a' b'} 
+  (rc : c =[apd011 _ p q; id] c') {d : D a b} {d' : D a' b'} 
+  (rd : d =[apd011 _ p q; id] d') : 
+  f a b c d =[apd01111_v2 g p q rc rd; λ e, F e] (f a' b' c' d') :=
+begin hinduction p, hinduction q, hinduction rc, hinduction rd, exact idpo end
+
 @[hott] 
 def ap_apd01111_v2 {A E : Type _} {B : A -> Type _} {C D : Π (a : A), B a -> Type _} 
   (f : Π (a : A) (b : B a) (c : C a b) (d : D a b), E) {a₁ a₂ : A} {b₁ : B a₁} {b₂ : B a₂}
@@ -419,6 +429,14 @@ def apdo01111 {A : Type _} {B E : A -> Type _} {C D : Π a : A, B a -> Type _}
   (r₂ : d₁ =[apd011 D p q; id] d₂) :
   f a₁ b₁ c₁ d₁ =[p] f a₂ b₂ c₂ d₂ :=
 begin hinduction p, hinduction q, hinduction r₁, hinduction r₂, refl end 
+
+@[hott]
+def apdo01111' {A : Type _} {B : A -> Type _} (g : A -> A -> A) 
+  (h : Π (a₁ a₂ : A), B a₁ -> B a₂ -> B (g a₁ a₂)) {a₁ a₂ a₁' a₂' : A} (p₁ : a₁ = a₁')
+  (p₂ : a₂ = a₂') {b₁ : B a₁} {b₁' : B a₁'} {b₂ : B a₂} {b₂' : B a₂'} (q₁ : b₁ =[p₁] b₁')
+  (q₂ : b₂ =[p₂] b₂') : h a₁ a₂ b₁ b₂ =[p₂ ▸[λ a, g a₁ a₂ = g a₁' a] 
+                  (p₁ ▸[λ a, g a₁ a₂ = g a a₂] idpath (g a₁ a₂))] h a₁' a₂' b₁' b₂' :=
+begin hinduction p₁, hinduction p₂, hinduction q₁, hinduction q₂, refl end 
 
 @[hott]
 def apdo011111 {A : Type _} {B C F : A -> Type _} {D E : Π a : A, B a -> C a -> Type _}
@@ -586,6 +604,18 @@ begin
   hinduction p, hsimp, intro hty, apply pathover_idp_of_eq, 
   exact eq_of_homotopy2 (λ (b₁ : B a₁) (c₁ : C a₁), eq_of_pathover_idp (hty b₁ c₁)) 
 end                                                        
+
+@[hott]
+def deq_of_dep_homotopy2 {A C : Type _} {B : A -> Type _} {D : C -> Type _} 
+  {a a' : A} (p : a = a') {g : B a -> C} {g' : B a' -> C} (q : g =[p; λ a, B a -> C] g') 
+  (fa : Π (b : B a), D (g b)) (fa' : Π (b' : B a'), D (g' b'))
+  (h : Π (b : B a), fa b =[apo10_constant_right q b] fa' (p ▸ b)) :
+  fa =[apd011 _ p q; id] fa' :=
+begin 
+  hinduction p, hinduction q, change fa =[idp; id] fa', 
+  apply pathover_of_tr_eq, rwr idp_tr, 
+  apply eq_of_homotopy, intro b, apply eq_of_pathover_idp, exact h b 
+end
 
 @[hott]
 def deq_of_homotopy3 {A B C : Type _} {h₁ h₂ : A -> B -> C -> Type _} {p : h₁ = h₂} 
