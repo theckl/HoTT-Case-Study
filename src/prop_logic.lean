@@ -19,6 +19,11 @@ infix `and`:50 := hott.and
 def is_prop_inf_prod {I : Type _} (B : I -> Prop) : is_prop (Π i : I, B i) :=
 begin apply is_prop.mk, intros f g, apply eq_of_homotopy, intro i, exact is_prop.elim _ _ end 
 
+@[hott, instance]
+def is_prop_inf_prod' {I : Type _} {B : I -> Type _} 
+  (B_is_prop : Π (i : I), is_prop (B i)) : is_prop (Π i : I, B i) :=
+begin apply is_prop.mk, intros f g, apply eq_of_homotopy, intro i, exact is_prop.elim _ _ end
+
 /- Conjunction of arbitrarily many propositions -/
 @[hott]
 def inf_conj {I : Type _} (B : I -> Prop) : Prop :=
