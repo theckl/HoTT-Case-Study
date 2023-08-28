@@ -796,4 +796,8 @@ def nat.sub_lt_of_lt_add {v n m : nat} (h₁ : v < n + m) (h₂ : v ≥ n) : v -
                   ...     = m              : nat.add_sub_cancel_left' n m,
 lt_of_succ_le this
 
+@[hott]
+def nat.lt_of_le_neq {m n : nat} (h₁: m ≤ n) (h₂ : m ≠ n) : m < n :=
+  begin hinduction nat.eq_sum_lt_of_le h₁, hinduction h₂ val, exact val end
+
 end hott
