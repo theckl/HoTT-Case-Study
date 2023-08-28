@@ -57,6 +57,10 @@ def False : trunctype.{u} -1 :=
 def False_uninhabited : ¬ False := 
   begin intro false, hinduction false end  
 
+@[hott] 
+def T_neq_F : ¬ (True = False) :=
+  begin intro p, apply False_uninhabited, rwr <- p, exact true.intro end 
+
 /- Some instances of propositions. -/
 @[hott, instance]
 def is_prop_map {A B : Type _} (pB : is_prop B) : is_prop (A -> B) :=
@@ -328,7 +332,7 @@ def ExcludedMiddle := Π (A : Prop), A ⊎ ¬ A
    Should be in [types.sum] but even if so this file cannot be imported: 
    [invalid import: hott.types.sum
     invalid object declaration, environment already has an object named 'sum.rec._ind_info'] -/
-@[hott]
+@[hott, instance]
 def is_prop_LEM {A : Type _} [is_prop A] : is_prop (A ⊎ ¬ A) :=
   have eq_sum : ∀ x y : A ⊎ ¬ A, x = y, from 
   begin
@@ -345,6 +349,17 @@ def is_prop_LEM {A : Type _} [is_prop A] : is_prop (A ⊎ ¬ A) :=
 
 @[hott]
 axiom LEM : ExcludedMiddle
+
+/- The following version of LEM is also a proposition. -/
+@[hott, instance]
+def Prop_dec_is_prop {P : Prop} : is_prop (P = True ⊎ P = False) :=
+begin 
+  apply is_prop.mk, intros p q, 
+  hinduction p with pt pf, all_goals { hinduction q with qt qf },
+  { apply ap sum.inl, exact is_prop.elim _ _ },
+  hinduction T_neq_F (pt⁻¹ ⬝ qf), hinduction T_neq_F (qt⁻¹ ⬝ pf), 
+  { apply ap sum.inr, exact is_prop.elim _ _ }
+end
 
 @[hott, reducible]  
 def PropResize := is_equiv prop_ulift.{u v} 
