@@ -1,17 +1,19 @@
 Compiling files, in order of dependencies:
 ------------------------------------------
-init2       :   899
-types2      :   799 
-prop_axioms :   541
-prop_logic  :   218  2457
+init2       :   929
+types2      :   803 
+prop_axioms :   556
+prop_logic  :   223  2511
 sets
   basic     :   776
-  subset    :   662
-  finite    :   359
+  subset    :   731
+  finite    :   409
   axioms    :   355
-  algebra   :   343
+  algebra   :   337
+  dec_alg   :   857
   quotients :   205
-  theories  :   915  3615
+  formulas  :   905
+  theories  :   318  4893
 categories
   precat    :   738  
   basic     :   312 
@@ -32,13 +34,9 @@ categories
 algebra
   rings     :    36    36
                     -----
-                    15310               
+                    16642               
 
 
 Planned changes in Files, from bottom to top: 
 ---------------------------------------------
 algebra.ring : construct formulas, sequents, theory of ring_hom_is_std_str
-sets.theory : change context, free variables and fo_theory to `Two_pred_sset`
-sets.algebra : finite unions of finite decidable subsets are finite, intersections of
-               finite subsets are finite
-sets.finite : (decidable) singleton subsets are finite 
