@@ -36,29 +36,35 @@ begin apply fin_Set_eq, refl end
    We can show that finiteness is a predicate on sets, so we can use it as a class. -/
 @[hott]
 class is_finite (S : Set) := 
-  (fin_bij : Σ n : ℕ, bijection S (fin_Set n))
+  (fin_bij : Σ n : ℕ, ∥bijection S (fin_Set n)∥)
 
 @[hott, instance]
 def fin_Set_fin (n : ℕ) : is_finite (fin_Set n) := 
-  is_finite.mk (dpair n (identity (fin_Set n)))
+  is_finite.mk (dpair n (tr (identity (fin_Set n))))
+
+@[hott]
+def bij_empty_fin : bijection empty_Set (fin_Set 0) :=
+begin
+  fapply bijection.mk,
+  { intro f, hinduction f },
+  { fapply is_set_bijective.mk,
+    { intro f, hinduction f },
+    { intro f, hinduction hott.nat.not_lt_zero f.1 f.2 } }
+end
 
 @[hott, instance]
 def empty_is_fin : is_finite empty_Set :=
 begin
   apply is_finite.mk, fapply dpair,
   { exact 0 },
-  { fapply bijection.mk,
-    { intro f, hinduction f },
-    { fapply is_set_bijective.mk,
-      { intro f, hinduction f },
-      { intro f, hinduction hott.nat.not_lt_zero f.1 f.2 } } }
+  { apply tr, exact bij_empty_fin }
 end
 
 @[hott, instance]
 def singleton_sset_fin {A : Set} (a : A) : is_finite (pred_Set (singleton_sset a)) :=
 begin 
   apply is_finite.mk, fapply sigma.mk, exact 1,
-  fapply has_inverse_to_bijection,
+  apply tr, fapply has_inverse_to_bijection,
   { exact λ x, ⟨0, nat.le_refl 1⟩ },
   { exact λ m, ⟨a, idpath a⟩ },
   { fapply is_set_inverse_of.mk,
@@ -204,6 +210,19 @@ begin
       exact ap nat.succ (@ih m (tr (fin_Set_succ_bij_bij bij))) } }
 end    
 
+/- Now we can show that `is_finite A` is a proposition. -/
+@[hott, instance]
+def is_fin_is_prop (A : Set) : is_prop (is_finite A) :=
+begin
+  apply is_prop.mk, intros fin₁ fin₂, 
+  hinduction fin₁ with n_ex_bij₁, hinduction n_ex_bij₁ with n₁ ex_bij₁,
+  hinduction fin₂ with n_ex_bij₂, hinduction n_ex_bij₂ with n₂ ex_bij₂,  
+  apply ap is_finite.mk, fapply sigma.sigma_eq,
+  { change n₁ = n₂, hinduction ex_bij₁ with bij₁, hinduction ex_bij₂ with bij₂,
+    exact fin_Set_bij (tr (comp_bijection (inv_bijection_of bij₁) bij₂)) },
+  { apply pathover_of_tr_eq, exact is_prop.elim _ _ }
+end
+
 @[hott]
 def card_fin_Set {n : ℕ} : fin_card_of (fin_Set n) = n := rfl
 
@@ -247,6 +266,14 @@ end
 class is_finite_dec_sset {A : Set} (B : dec_Subset A) :=
   (fin : is_finite (dec_pred_Set B))
 
+@[hott, instance]
+def is_fin_dec_sset_is_prop {A : Set} (B : dec_Subset A) : is_prop (is_finite_dec_sset B) :=
+begin
+  apply is_prop.mk, intros fin_dec₁ fin_dec₂, 
+  hinduction fin_dec₁ with fin₁, hinduction fin_dec₂ with fin₂,
+  apply ap is_finite_dec_sset.mk, exact is_prop.elim _ _
+end
+
 @[hott]
 def card_fin_dec_sset {A : Set} (B : dec_Subset A) [H : is_finite_dec_sset B] : ℕ :=  
   H.fin.fin_bij.1 
@@ -265,6 +292,15 @@ def singleton_dec_sset_fin {A : Set} (a : A) [H : decidable_eq A] :
 begin 
   fapply is_finite_dec_sset.mk, rwr <- pred_Set_eq_pred_dec_Set,
   rwr singleton_dec_sset_is_sset, exact singleton_sset_fin a
+end
+
+/- Empty decidable subsets are finite. -/
+@[hott]
+def empty_dec_sset_fin {A : Set} : is_finite_dec_sset (empty_dec_Subset A) :=
+begin 
+  fapply is_finite_dec_sset.mk, rwr <- pred_Set_eq_pred_dec_Set,
+  rwr empty_dec_sset_empty_sset, rwr empty_sset_is_empty_set, 
+  exact empty_is_fin
 end
 
 /- A finite subset of a set with decidable equality is decidable. -/
@@ -327,31 +363,45 @@ begin
           fapply sigma.sigma_eq, refl, apply pathover_of_tr_eq, exact is_prop.elim _ _ }
 end 
 
+@[hott, instance]
+def finite_sset_is_dec_sset {A : Set} [decidable_eq A] (B : Subset A) 
+  [H : is_finite (pred_Set B)] : is_dec_sset B :=
+begin
+  hinduction H with n_bij_ex, hinduction n_bij_ex with n bij_ex, hinduction bij_ex with bij,
+  let decB := fin_map_to_dec_sset (pred_Set_map B ∘ (inv_bijection_of bij).map),
+  have p : dec_sset_to_sset decB = B, from 
+  begin
+  apply (sset_eq_iff_inclusion _ _).2, apply pair,
+  { intros a inc, hinduction decB a with q, 
+    { change ↥(@Two.rec (λ t, Prop) _ _ (decB a)) at inc, 
+      rwr q at inc, hinduction inc },
+    { let m_eq := fin_map_to_dec_sset_elem _ _ _ q, rwr <- m_eq.2, 
+      exact ((inv_bijection_of bij).1 m_eq.1).2 } },
+  { intros a inc, change ↥(@Two.rec (λ t, Prop) _ _ (decB a)),
+    hinduction decB a with q, 
+    { have q' : decB a = Two.one, from 
+      begin 
+        fapply fin_map_to_dec_sset_elem', fapply sigma.mk,
+          exact bij ⟨a, inc⟩,
+          change pred_Set_map B ((inv_bijection_of bij) _) = a, rwr inv_bij_l_inv
+      end,
+      rwr q' at q, hinduction encode_Two _ _ q },
+    { exact true.intro } }
+  end,
+  rwr <- p, apply_instance
+end
+
 @[hott]
 def finite_sset_to_dec_sset {A : Set} [decidable_eq A] (B : Subset A) 
   [H : is_finite (pred_Set B)] : dec_Subset A :=
-fin_map_to_dec_sset (pred_Set_map B ∘ inv_bijection_of H.fin_bij.2)
+@sset_to_dec_sset _ B (finite_sset_is_dec_sset B)
 
 @[hott]
 def finite_dec_sset_is_sset {A : Set} [decidable_eq A] (B : Subset A) 
   [H : is_finite (pred_Set B)] : dec_sset_to_sset (finite_sset_to_dec_sset B) = B :=
 begin
-  apply (sset_eq_iff_inclusion _ _).2, apply pair,
-  { intros a inc, hinduction finite_sset_to_dec_sset B a with p, 
-    { change ↥(@Two.rec (λ t, Prop) _ _ (finite_sset_to_dec_sset B a)) at inc, 
-      rwr p at inc, hinduction inc },
-    { let m_eq := fin_map_to_dec_sset_elem _ _ _ p, rwr <- m_eq.2, 
-      exact ((inv_bijection_of (is_finite.fin_bij (pred_Set B)).2).1 m_eq.1).2 } },
-  { intros a inc, change ↥(@Two.rec (λ t, Prop) _ _ (finite_sset_to_dec_sset B a)),
-    hinduction finite_sset_to_dec_sset B a with p, 
-    { have p' : finite_sset_to_dec_sset B a = Two.one, from 
-      begin 
-        fapply fin_map_to_dec_sset_elem', fapply sigma.mk,
-          exact H.fin_bij.2 ⟨a, inc⟩,
-          change pred_Set_map B _ = a, rwr inv_bij_l_inv
-      end,
-      rwr p' at p, hinduction encode_Two _ _ p },
-    { exact true.intro } }
+  change dec_sset_to_sset (@sset_to_dec_sset _ B (finite_sset_is_dec_sset B)) = B,
+  exact @sset_Two_pred_sset_linv _ B (finite_sset_is_dec_sset B)
 end
 
 end set
