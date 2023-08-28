@@ -26,7 +26,7 @@ class has_ind_inter {A : Type _} {I : Set} := (ind_inter : (I -> A) -> A)
 hott_theory_cmd "local prefix `⋂ᵢ`:110 := hott.has_ind_inter.ind_inter"
 
 @[hott]
-class has_ind_union {A : Type _} {I : Set} := (ind_union : (I -> A) -> A) 
+class has_ind_union {A : Type _} {I : Set} (f : I -> A) := (ind_union : A) 
 
 hott_theory_cmd "local prefix `⋃ᵢ`:110 := hott.has_ind_union.ind_union"
 
@@ -118,6 +118,20 @@ def Powerset (A : Set) : Set :=
 
 hott_theory_cmd "local prefix `𝒫`:100 := hott.subset.Powerset"    
 
+/- The decidable subsets of a set `A` are also a set. -/
+@[hott, instance]
+def dec_Powerset_is_set {A : Set} : is_set (dec_Subset A) := 
+begin
+  fapply is_set.mk, intros B C p q,
+  have eq_eqv_hom : (B = C) ≃ (B ~ C), from eq_equiv_homotopy B C,
+  have is_prop_hom : is_prop (B ~ C), from 
+    have pP : forall a : A, is_prop (B a = C a), from 
+      assume a, is_trunc_eq -1 (B a) (C a),
+    @is_prop_dprod _ (λ a : A, B a = C a) pP,  
+  have H_eqv : is_prop (B = C), from 
+    is_trunc_is_equiv_closed -1 (equiv.to_fun eq_eqv_hom)⁻¹ᶠ is_prop_hom, 
+  exact @is_prop.elim _ H_eqv p q
+end 
 
 /- Categorically spoken, we have defined subsets by the characteristic map to a 
    subobject classifier in the category of sets. This is usually a much more effective 
@@ -157,6 +171,13 @@ def pred_Set {A : Set.{u}} (B : Subset A) : Set :=
 @[hott]
 def dec_pred_Set {A : Set} (B : dec_Subset A) : Set :=
   Set.mk (Σ (a : A), B a = Two.one) (is_set_dec_pred B)
+
+@[hott]
+def dec_pred_Set_eq {A : Set} {B : dec_Subset A} {b₁ b₂ : dec_pred_Set B} :
+  b₁.1 = b₂.1 -> b₁ = b₂ :=
+begin 
+  intro p, fapply sigma.sigma_eq, exact p, apply pathover_of_tr_eq, exact is_prop.elim _ _ 
+end 
 
 @[hott] 
 def pred_Set_map {A : Set.{u}} (B : Subset A) : pred_Set B -> A := λ b, b.1  
@@ -314,55 +335,85 @@ notation `{ ` binder ` ∈ ` B ` | ` P:scoped  ` }` := (P : Subset (to_Set B))
    
    We define a class `has_dec_elem` indicating that the element relation is decidable in 
    a set. If an instance of this class holds, we show that all subsets are decidable and
-   hence the element relation is decidable. -/
+   hence the element relation is decidable. As a preliminary step, we define a class 
+   `is_dec_sset` indicating a variant of the decidability of the element relation in a 
+   specific subset, and construct a decidable subset if the class holds. -/
+@[hott]
+class is_dec_sset {A : Set} (S : Subset A) :=
+  (dec_el : Π a : A, S a = True ⊎ S a = False)
+
+@[hott, instance]
+def is_dec_sset_is_prop {A : Set} (S : Subset A) : is_prop (is_dec_sset S) :=
+begin
+  apply is_prop.mk, intros ds₁ ds₂, hinduction ds₁ with de₁, hinduction ds₂ with de₂,
+  apply ap is_dec_sset.mk, apply eq_of_homotopy, intro a, 
+  hinduction de₁ a with h₁ p₁ p₁ h₁, all_goals { hinduction de₂ a with h₂ p₂ p₂ h₂ },
+    apply ap sum.inl, exact is_prop.elim _ _,
+    hinduction T_neq_F (p₁⁻¹ ⬝ p₂), hinduction T_neq_F (p₂⁻¹ ⬝ p₁),
+    apply ap sum.inr, exact is_prop.elim _ _,  
+end
+
+@[hott, instance]
+def dec_sset_is_dec_sset {A : Set} (S : dec_Subset A) : is_dec_sset (dec_sset_to_sset S) :=
+begin
+  apply is_dec_sset.mk, intro a, hinduction S a with h,
+  { apply sum.inr, change @Two.rec (λ t, Prop) False True (S a) = _, rwr h }, 
+  { apply sum.inl, change @Two.rec (λ t, Prop) False True (S a) = _, rwr h }
+end  
+
+@[hott]
+def sset_to_dec_sset {A : Set} (S : Subset A) [H : is_dec_sset S] : (A -> Two.{u}) :=
+begin 
+  intro a, exact @sum.rec (S a = True) (S a = False) (λ s, Two) (λ v, Two.one) 
+                          (λ v, Two.zero) (@is_dec_sset.dec_el A S H a) 
+end
+
+@[hott]
+def sset_Two_pred_sset_linv {A : Set} : Π (S : Subset A) [H : is_dec_sset S], 
+  dec_sset_to_sset (@sset_to_dec_sset A S H) = S :=
+begin
+  intros S H, apply eq_of_homotopy, intro a, 
+  change @Two.rec (λ t, Prop) False True ((@sset_to_dec_sset A S H) a) = _, 
+  hinduction @is_dec_sset.dec_el A S H a with p val, 
+    { change @Two.rec (λ t, Prop) _ _ (@sum.rec (S a = True) (S a = False) (λ s, Two) _ _ 
+                                                (@is_dec_sset.dec_el A S H a)) = _, 
+      rwr p, change True = _, rwr val }, 
+    { change @Two.rec (λ t, Prop) _ _ (@sum.rec (S a = True) (S a = False) (λ s, Two) _ _ 
+                                                (@is_dec_sset.dec_el A S H a)) = _, 
+      rwr p, change False = _, rwr val } 
+end
+
+@[hott]
+def sset_Two_pred_sset_rinv {A : Set} : Π (S : dec_Subset A), 
+  sset_to_dec_sset (dec_sset_to_sset S) = S :=
+begin
+  intro S, apply eq_of_homotopy, intro a,
+  --let S' : Subset A := λ a, @Two.rec (λ t, Prop) False True (S a),
+  change @sum.rec (dec_sset_to_sset S a = True) (dec_sset_to_sset S a = False) (λ s, Two) 
+          (λ v, Two.one) (λ v, Two.zero) (is_dec_sset.dec_el (dec_sset_to_sset S) a) = _,
+  hinduction is_dec_sset.dec_el (dec_sset_to_sset S) a with p val,
+  { hsimp, hinduction S a with h, 
+    { change @Two.rec (λ t, Prop) False True (S a) = _ at val, rwr h at val,
+      change False = True at val, hinduction T_neq_F val_1⁻¹ },
+    { refl }  },
+  { hsimp, hinduction S a with h, refl,
+    change @Two.rec (λ t, Prop) False True (S a) = _ at val, rwr h at val,
+    change True = False at val, hinduction T_neq_F val_1 }
+end
+
 @[hott]
 class has_dec_elem (A : Set) := 
   (dec_el : Π (a : A) (S : Subset A), (a ∈ S) ⊎ ¬(a ∈ S))
 
-@[hott]
-def sset_to_dec_sset {A : Set.{u}} [H : has_dec_elem A] : 
-  Subset A -> (A -> Two.{u}) :=
-begin 
-  intros S a, exact @sum.rec (a ∈ S) (¬(a ∈ S)) (λ s, Two) (λ v, Two.one) 
-                             (λ v, Two.zero) (@has_dec_elem.dec_el A H a S) 
-end
-
-@[hott]
-def sset_Two_pred_sset_linv (A : Set.{u}) [H : has_dec_elem A] : Π (S : Subset A), 
-  dec_sset_to_sset (sset_to_dec_sset S) = S :=
+@[hott, instance]
+def is_dec_sset_of_dec_elem {A : Set} [H : has_dec_elem A] (S : Subset A) : 
+  is_dec_sset S :=
 begin
-  intro S, apply eq_of_homotopy, intro a, 
-  change @Two.rec (λ t, Prop) False True ((sset_to_dec_sset S) a) = _, 
-  hinduction @has_dec_elem.dec_el A H a S with p val, 
-    { change @Two.rec (λ t, Prop) _ _ 
-                 (@sum.rec (a ∈ S) (¬(a ∈ S)) (λ s, Two) _ _ 
-                           (@has_dec_elem.dec_el A H a S)) = _, 
-      rwr p, change True = _, fapply inhabited_Prop_eq, exact true.intro, exact val }, 
-    { change @Two.rec (λ t, Prop) _ _ 
-                 (@sum.rec (a ∈ S) (¬(a ∈ S)) (λ s, Two) _ _ 
-                           (@has_dec_elem.dec_el A H a S)) = _, 
-      rwr p, change False = _, fapply uninhabited_Prop_eq, intro f, hinduction f, 
-      exact val } 
-end
+  apply is_dec_sset.mk, intro a, hinduction has_dec_elem.dec_el a S with h val,
+    apply sum.inl, exact inhabited_Prop_eq _ _ val true.intro,
+    apply sum.inr, exact uninhabited_Prop_eq _ _ val False_uninhabited
+end  
 
-@[hott]
-def sset_Two_pred_sset_rinv (A : Set.{u}) [H : has_dec_elem A] : Π (S : A -> Two.{u}), 
-  sset_to_dec_sset (dec_sset_to_sset S) = S :=
-begin
-  intro S, apply eq_of_homotopy, intro a,
-  let S' : Subset A := λ a, @Two.rec (λ t, Prop) False True (S a),
-  change @sum.rec (a ∈ S') (¬(a ∈ S')) (λ s, Two) (λ v, Two.one) 
-            (λ v, Two.zero) (@has_dec_elem.dec_el A H a (λ a, S' a)) = _,
-  hinduction S a with p, 
-  { have q : S' a = False, from 
-      begin change @Two.rec (λ t, Prop) False True (S a) = _, rwr p end,
-    hinduction @has_dec_elem.dec_el A H a (λ a, S' a) with q', hinduction q ▸ val, refl },
-  { have q : S' a = True, from 
-      begin change @Two.rec (λ t, Prop) False True (S a) = _, rwr p end,
-    hinduction @has_dec_elem.dec_el A H a (λ a, S' a) with q', refl, 
-    have v' : ↥(S' a), from (ap trunctype.carrier q)⁻¹ ▸[id] true.intro, 
-    hinduction val v' }
-end
 
 /- Correspondence of element relation and predicate. -/
 @[hott, reducible]
@@ -521,6 +572,16 @@ def empty_not_elem {A : Set} (a : A) : a ∉ empty_Subset A :=
 begin intro el_a, hinduction el_a end  
 
 @[hott]
+def empty_sset_is_empty_set {A : Set} : pred_Set (empty_Subset A) = empty_Set :=
+begin
+  apply bij_to_set_eq, fapply bijection.mk,
+    intro a, hinduction a.2,
+    fapply is_set_bijective.mk, 
+      intro a, hinduction a.2,
+      intro a, hinduction a
+end
+
+@[hott]
 def empty_dec_Subset (A : Set.{u}) : dec_Subset A :=
   λ a, Two.zero
 
@@ -540,6 +601,14 @@ def singleton_sset {A : Set} (a : A) : Subset A :=
 def singleton_dec_sset {A : Set} [H : decidable_eq A] (a : A) : dec_Subset A :=
 begin 
   intro x, exact dite (x = a) (λ p, Two.one) (λ np, Two.zero) 
+end
+
+@[hott]
+def singleton_dec_sset_el {A : Set} [H : decidable_eq A] (a : A) : 
+  a ∈ singleton_dec_sset a :=
+begin 
+  change @decidable.rec _ (λ d, Two) _ _ (H a a) = _, hinduction H a a with h p,
+  hsimp, hinduction a_1 idp 
 end
 
 @[hott]
