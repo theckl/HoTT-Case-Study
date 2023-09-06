@@ -35,6 +35,10 @@ begin
   exact _h 
 end 
 
+@[hott]
+def dec_subset_refl {A : Set.{u}} (B : dec_Subset A) : B ⊆ B :=
+  inc_to_dec_inc (subset_refl (dec_sset_to_sset B))
+
 @[hott, hsimp]
 def dec_subset_trans {A : Set.{u}} (B C D : dec_Subset A) : 
   B ⊆ C -> C ⊆ D -> B ⊆ D :=
@@ -318,6 +322,15 @@ begin
 end
 
 @[hott]
+def fin_iUnion_dec_sset_inc {A : Set.{u}} [decidable_eq A] {I : Set} 
+  (f : I -> dec_Subset A) [is_finite (pred_Set (⋃ᵢ (λ i, dec_sset_to_sset (f i))))] :
+  Π i : I, f i ⊆ (⋃ᵢ f) :=
+begin
+  intro i, apply inc_to_dec_inc, rwr fin_iUnion_dec_sset_is_iUnion, 
+  exact sset_iUnion (λ (i : ↥I), dec_sset_to_sset (f i)) i 
+end 
+
+@[hott]
 def fin_iInter_dec_sset {A : Set.{u}} [decidable_eq A] {I : Set} 
   (f : I -> dec_Subset A) [is_finite (pred_Set (⋂ᵢ (λ i, dec_sset_to_sset (f i))))] : 
   dec_Subset A :=
@@ -402,6 +415,15 @@ def inc_dec_setminus_inc {A : Set.{u}} (U V W : dec_Subset A) :
 begin 
   intros dec_ss, apply inc_to_dec_inc, rwr dec_setminus_is_setminus,
   rwr dec_setminus_is_setminus, exact inc_setminus_inc _ _ _ (dec_inc_to_inc dec_ss) 
+end
+
+@[hott]
+def dec_set_minus_inc_impl {A : Set.{u}} [H : has_dec_elem A] (U V W : dec_Subset A) : 
+  dec_setminus U V ⊆ W -> U ⊆ (W ∪ V) := 
+begin 
+  intro dec_sm_ss, apply inc_to_dec_inc, rwr dec_union_is_union,
+  apply @set_minus_inc_impl _ _ _ _ H, rwr <- dec_setminus_is_setminus,
+  apply dec_inc_to_inc, exact dec_sm_ss 
 end
 
 @[hott]
