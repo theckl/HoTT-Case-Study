@@ -30,6 +30,15 @@ def fin_Set_lift_desc {n m : ℕ} (H1 : n ≤ m) (b : fin_Set m) (H2 : b.1 < n) 
   fin_Set_lift H1 (fin_Set_desc b H2) = b :=
 begin apply fin_Set_eq, refl end  
 
+@[hott]
+def dec_fin_Set (n : ℕ) : dec_Set :=
+begin 
+  fapply dec_Set.mk, exact fin_Set n, 
+  intros m₁ m₂, hinduction nat_eq_is_decidable m₁.1 m₂.1 with h val, 
+    apply sum.inl, exact fin_Set_eq val,
+    apply sum.inr, intro p, exact val (ap _ p)
+end
+
 /- These finite sets can be used to check whether a set is finite and to define the 
    cardinality of finite sets. 
    
