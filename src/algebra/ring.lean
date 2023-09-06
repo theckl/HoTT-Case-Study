@@ -15,9 +15,9 @@ namespace rings
 def ring_signature : fo_signature :=
 begin
   fapply fo_signature.mk,
-  exact nat_Set, -- let's see whether this is easier than introducing strings
-  exact fin_Set 1, --one sort
-  exact fin_Set 5, --five operations : add, mult, zero, one, neg
+  exact dec_nat, -- let's see whether this is easier than introducing strings
+  exact dec_fin_Set 1, --one sort
+  exact dec_fin_Set 5, --five operations : add, mult, zero, one, neg
   exact fin_map_of_list [fin_Set 2, fin_Set 2, fin_Set 0, fin_Set 0, fin_Set 1], 
                                                             --arities of operations
   exact λ o a, ⟨0, nat.zero_lt_succ 0⟩, --sources and targets of operations can only                                     
