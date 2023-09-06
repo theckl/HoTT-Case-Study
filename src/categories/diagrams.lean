@@ -280,7 +280,7 @@ def own_is_set : is_set ow_node :=
     intro s; hinduction s; hsimp; hsimp,
   have own_eqv_Two: is_equiv own_Two, from
     adjointify own_Two Two_own r_inv l_inv,
-  @is_trunc_is_equiv_closed_rev _ _ 0 own_Two own_eqv_Two Two_is_set.{0 0}
+  @is_trunc_is_equiv_closed_rev _ _ 0 own_Two own_eqv_Two Two_is_set.{0}
 
 @[hott]
 def ow_leg_node : Set :=
@@ -445,7 +445,7 @@ def wpp_is_set : is_set wp_pair :=
     intro s; hinduction s; hsimp; hsimp,
   have wpp_eqv_Two: is_equiv wpp_Two, from
     adjointify wpp_Two Two_wpp r_inv l_inv,
-  @is_trunc_is_equiv_closed_rev _ _ 0 wpp_Two wpp_eqv_Two Two_is_set.{0 0}
+  @is_trunc_is_equiv_closed_rev _ _ 0 wpp_Two wpp_eqv_Two Two_is_set.{0}
 
 @[hott, instance]
 def wpph_is_set : is_set wp_pair_hom :=
@@ -455,7 +455,7 @@ def wpph_is_set : is_set wp_pair_hom :=
     intro s; hinduction s; hsimp; hsimp,
   have wpph_eqv_Two: is_equiv wpph_Two, from
     adjointify wpph_Two Two_wpph r_inv l_inv,
-  @is_trunc_is_equiv_closed_rev _ _ 0 wpph_Two wpph_eqv_Two Two_is_set.{0 0}
+  @is_trunc_is_equiv_closed_rev _ _ 0 wpph_Two wpph_eqv_Two Two_is_set.{0}
 
 @[hott]
 def walking_parallel_pair : Set :=
