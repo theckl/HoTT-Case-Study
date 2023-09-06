@@ -508,11 +508,12 @@ open signature
    products of any set of objects interpreting sorts of the signature. -/
 @[hott]
 class has_sign_products (sign : fo_signature) (C : Category) :=
-  (has_arg_products : Π (o : sign.ops), has_limits_of_shape (discrete (sign.ops_arity o)) C)   
+  (has_arg_products : Π (o : sign.ops), 
+                          has_limits_of_shape (discrete (fin_Set (sign.ops_arity o))) C)   
   (has_comp_products : Π (r : sign.rels), 
-                                       has_limits_of_shape (discrete (sign.rels_arity r)) C)
-  (has_var_products : Π (J : Subset (set.to_Set (var sign.labels sign.sorts))), 
-                                    has_limits_of_shape (discrete (pred_Set J)) C)                                     
+                          has_limits_of_shape (discrete (fin_Set (sign.rels_arity r))) C)
+  (has_var_products : Π (J : dec_Subset (set.to_Set (var sign.labels sign.sorts))), 
+                                    has_limits_of_shape (discrete (dec_pred_Set J)) C)                                     
 
 @[hott, instance] 
 def has_sign_prod_of_has_prod (sign : fo_signature) (C : Category) [H : has_products C] :
@@ -526,27 +527,28 @@ end
 
 @[hott, instance]
 def has_term_product {sign : fo_signature} {C : Category} {o : sign.ops} 
-  [H : has_sign_products sign C] (f : sign.ops_arity o -> C) : has_product f :=
+  [H : has_sign_products sign C] (f : fin_Set (sign.ops_arity o) -> C) : has_product f :=
 @has_product_of_has_limits_of_shape _ _ _ (has_sign_products.has_arg_products C o) f
 
 @[hott, instance]
 def has_rels_product {sign : fo_signature} {C : Category} {r : sign.rels} 
-  [H : has_sign_products sign C] (f : sign.rels_arity r -> C) : has_product f :=
+  [H : has_sign_products sign C] (f : fin_Set (sign.rels_arity r) -> C) : has_product f :=
 @has_product_of_has_limits_of_shape _ _ _ (has_sign_products.has_comp_products C r) f
 
 @[hott, instance]
 def has_var_product {sign : fo_signature} {C : Category} 
-  (J : Subset (set.to_Set (var sign.labels sign.sorts))) [H : has_sign_products sign C] 
-  (f : pred_Set J -> C) : has_product f :=
+  (J : dec_Subset (set.to_Set (var sign.labels sign.sorts))) [H : has_sign_products sign C] 
+  (f : dec_pred_Set J -> C) : has_product f :=
 @has_product_of_has_limits_of_shape _ _ _ (has_sign_products.has_var_products C J) f
 
 /- We now construct the Σ-structure of a signature on a category `C`. -/
 @[hott]  
 structure Sig_structure_on {sign : fo_signature} {C : Category.{u v}} 
   [has_sign_products sign C] (car : sign.sorts -> C) :=  
-( ops : ∀ o : sign.ops, ∏ (λ a : sign.ops_arity o, car (sign.ops_source o a)) ⟶ 
-                                                              car (sign.ops_target o) )
-( rels : ∀ r : sign.rels, subobject (∏ (λ a : sign.rels_arity r, car (sign.rels_comp a))) )
+( ops : ∀ o : sign.ops, ∏ (λ a : fin_Set (sign.ops_arity o), car (sign.ops_source o a)) 
+                                                          ⟶ car (sign.ops_target o) )
+( rels : ∀ r : sign.rels, 
+           subobject (∏ (λ a : fin_Set (sign.rels_arity r), car (sign.rels_comp a))) )
 
 @[hott]
 def Sig_str_eq {sign : fo_signature} {C : Category.{u v}} 
@@ -614,7 +616,7 @@ def std_str_of_Sig_str (sign : fo_signature) (C : Category.{u v})
   [has_sign_products sign C] : std_structure_on C :=
 begin
   fapply std_structure_on.mk,
-  { exact sign.sorts }, --sorts
+  { exact sign.sorts.to_trunctype }, --sorts
   { exact λ car : sign.sorts -> C, Sig_structure_on car }, --structure
   { intros x y S T h, 
     exact (to_Prop (is_Sig_structure_hom S T h)) }, --homomorphisms
