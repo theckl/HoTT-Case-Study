@@ -1,19 +1,19 @@
 Compiling files, in order of dependencies:
 ------------------------------------------
-init2       :   929
+init2       :   936
 types2      :   803 
 prop_axioms :   556
-prop_logic  :   223  2511
+prop_logic  :   223  2518
 sets
   basic     :   776
   subset    :   731
   finite    :   409
   axioms    :   355
   algebra   :   337
-  dec_alg   :   857
+  dec_alg   :   870
   quotients :   205
   formulas  :   905
-  theories  :   318  4893
+  theories  :   382  4970
 categories
   precat    :   738  
   basic     :   312 
@@ -25,18 +25,19 @@ categories
   diagrams  :   617 
   limits    :   826
   colimits  :   593 
-  pullbacks :   908
+  pullback  :   908
   inf_pb    :   252 
   boolean   :   369 
-  sets      :   938  
-  structures:   680  
-  models    :   787  9112 
+  sets      :   937  
+  structures:   682  
+  models    :   787  9113 
 algebra
   rings     :    36    36
                     -----
-                    16642               
+                    16727               
 
 
 Planned changes in Files, from bottom to top: 
 ---------------------------------------------
 algebra.ring : construct formulas, sequents, theory of ring_hom_is_std_str
+categories.models : work in changes of sets.theories
