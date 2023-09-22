@@ -499,35 +499,31 @@ def lift_to_union {C : Category} {d : C} [has_fin_unions C] : Π {a b c : subobj
 begin 
   intros a b c i₁ i₂, fapply union_fac (fin_map_of_list [a, b]), 
   intro j, hinduction j with n ineq, hinduction n, 
-  { have p : fin_map_of_list [a, b] ⟨0, ineq⟩ = b, from 
-      begin hsimp, rwr dite_false ((nat.succ_ne_zero 0) ∘ eq.inverse) end,
-    rwr p, exact i₂ }, 
+  { have p : fin_map_of_list [a, b] ⟨0, ineq⟩ = a, by rwr <- fin_map_of_list_el,
+    rwr p, exact i₁ }, 
   { hinduction n, 
-    {  have q : fin_map_of_list [a, b] ⟨1, ineq⟩ = a, from 
-         begin hsimp, apply dite_true (idpath 1), apply_instance end,
-       rwr q, exact i₁ },
+    {  have q : fin_map_of_list [a, b] ⟨1, ineq⟩ = b, by rwr <- fin_map_of_list_el,
+       rwr q, exact i₂ },
     { change _ < nat.succ 1 at ineq, 
       hinduction nat.not_lt_zero n (nat.le_of_succ_le_succ (nat.le_of_succ_le_succ ineq)) } }
 end 
 
 /- The natural inclusions into the union -/
 @[hott]
-def subobj_union_linc {C : Category} {c : C} [has_fin_unions C]
-  (a b : subobject c) : a ≼ a ∪ b :=
+def subobj_union_rinc {C : Category} {c : C} [has_fin_unions C]
+  (a b : subobject c) : b ≼ a ∪ b :=
 begin
   have ineq1 : 1 < 2, from nat.lt.base 1,
-  have q : fin_map_of_list [a, b] ⟨1, ineq1⟩ = a, from 
-         begin hsimp, apply dite_true (idpath 1), apply_instance end,
+  have q : fin_map_of_list [a, b] ⟨1, ineq1⟩ = b, by rwr <- fin_map_of_list_el, 
   rwr <- q, fapply union_inc (fin_map_of_list [a, b]) ⟨1, ineq1⟩
 end
 
 @[hott]
-def subobj_union_rinc {C : Category} {c : C} [has_fin_unions C]
-  (a b : subobject c) : b ≼ a ∪ b :=
+def subobj_union_linc {C : Category} {c : C} [has_fin_unions C]
+  (a b : subobject c) : a ≼ a ∪ b :=
 begin
   have ineq0 : 0 < 2, from nat.lt_trans (nat.lt.base 0) (nat.lt.base 1),
-  have p : fin_map_of_list [a, b] ⟨0, ineq0⟩ = b, from 
-    begin hsimp, rwr dite_false ((nat.succ_ne_zero 0) ∘ eq.inverse) end,
+  have p : fin_map_of_list [a, b] ⟨0, ineq0⟩ = a, by rwr <- fin_map_of_list_el, 
   rwr <- p, fapply union_inc (fin_map_of_list [a, b]) ⟨0, ineq0⟩
 end
 
