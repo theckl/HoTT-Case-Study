@@ -771,6 +771,17 @@ structure dec_Set extends trunctype.{u} 0 :=
 @[hott] instance : has_coe_to_sort (dec_Set.{u}) := 
   has_coe_to_sort.mk (Type u) (λ A : dec_Set, trunctype.carrier A.to_trunctype)
 
+@[hott, instance]
+def dec_Set_is_prop (A : Set) : is_prop (Π (a b : A), a = b ⊎ ¬(a = b)) :=
+begin 
+  apply is_prop_dprod, intro a, apply is_prop_dprod, intro b, 
+  apply is_prop.mk, intros p q, 
+  hinduction p with p np, all_goals { hinduction q with q nq }, 
+  { apply ap sum.inl, apply is_set.elim _ _, apply_instance },
+  hinduction nq p, hinduction np q,
+  { apply ap sum.inr, apply eq_of_homotopy, intro p, exact is_prop.elim _ _ } 
+end
+
 @[hott]
 def dec_nat : dec_Set := @dec_Set.mk nat_Set nat_eq_is_decidable 
 
