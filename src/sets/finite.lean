@@ -39,6 +39,17 @@ begin
     apply sum.inr, intro p, exact val (ap _ p)
 end
 
+/- `fin_Set 1` and hence `dec_fin_Set 1` are propositions. -/
+@[hott, instance]
+def fin_Set_1_is_prop : is_prop (fin_Set 1) :=
+begin 
+  apply is_prop.mk, intros n m, hinduction n with n p, hinduction m with m q,
+  fapply apd011 dpair,
+  rwr nat.eq_zero_of_le_zero' (nat.le_of_lt_succ p), 
+  rwr nat.eq_zero_of_le_zero' (nat.le_of_lt_succ q), 
+  apply pathover_of_tr_eq, exact is_prop.elim _ _ 
+end
+
 /- These finite sets can be used to check whether a set is finite and to define the 
    cardinality of finite sets. 
    
@@ -102,6 +113,16 @@ begin
   { intro p, exact c },
   { intro np, exact f (fin_Set_desc m (nat.lt_of_le_prod_ne (nat.le_of_lt_succ m.2) np)) }
 end 
+
+@[hott, hsimp]
+def fin_map_ind_rev {C : Type _} {n : ℕ} : Π (f : fin_Set n -> C) (c : C), 
+  (fin_Set (n+1) -> C) :=
+begin
+  intros f c m, hinduction m with m p, fapply dite (m = 0), 
+  { intro q, exact c },
+  { intro nq, hinduction exists_eq_succ_of_ne_zero nq with r k, rwr snd at p,
+    exact f ⟨k, nat.le_of_succ_le_succ p⟩ }
+end
 
 @[hott]
 def fin_card_of (S : Set) [fin : is_finite S] : ℕ := fin.fin_bij.1
@@ -249,14 +270,36 @@ end
 
 notation x `^[` k `]` := fin_Set_kth x k 
 
-/- We can use lists of objects of `C` to construct maps from finite sets into `C`. -/
+/- We can use lists of objects of `C` to construct maps from (decidable) finite sets 
+   into `C`. -/
 @[hott, hsimp] 
 def fin_map_of_list {C : Type _} (l : list C) : fin_Set (list.length l) -> C :=
 begin 
   hinduction l,
   { exact empty_fin_Set_map C },
-  { exact fin_map_ind ih hd } 
+  { exact fin_map_ind_rev ih hd } 
 end
+
+@[hott]
+def fin_map_of_list_el {C : Type _} (l : list C) : Π (m : ℕ) (p : m < list.length l),
+  list_nth_le l m p = fin_map_of_list l ⟨m, p⟩ :=
+begin 
+    hinduction l, intros m p, hinduction not_lt_zero m p, 
+    intros m p, hinduction m, refl, exact ih n (le_of_succ_le_succ p)
+end 
+
+@[hott, hsimp] 
+def dec_fin_map_of_list {C : Type _} (l : list C) : dec_fin_Set (list.length l) -> C :=
+  fin_map_of_list l
+
+@[hott, reducible]
+def sset_of_list {C : Set.{u}} (l : list C) : Subset C :=
+  Image (fin_map_of_list l)
+
+@[hott]
+def sset_of_list_el {C : Set} (l : list C) (m : ℕ) (p : m < list.length l) : 
+  (list_nth_le l m p) ∈ (sset_of_list l) :=  
+begin rwr fin_map_of_list_el, apply tr, exact fiber.mk ⟨m, p⟩ idp end  
 
 /- Finite sets have decidable equality. -/
 @[hott]
@@ -312,8 +355,9 @@ begin
   exact empty_is_fin
 end
 
-/- A finite subset of a set with decidable equality is decidable. -/
-@[hott]
+/- A finite subset of a set with decidable equality is decidable. Therefore, lists 
+   produce decidable subsets. -/
+@[hott, reducible]
 def fin_map_to_dec_sset {A : Set} [H : decidable_eq A] : 
   Π {n : ℕ}, ((fin_Set n) -> A) -> dec_Subset A 
 | 0     := λ map a, Two.zero 
@@ -321,7 +365,16 @@ def fin_map_to_dec_sset {A : Set} [H : decidable_eq A] :
                         (λ v, Two.one) 
                         (λ nv, fin_map_to_dec_sset (λ m, map ⟨m.1, nat.le.step m.2⟩) a) 
                         (H (map ⟨n, nat.le_refl (n+1)⟩) a) 
-      
+
+@[hott, reducible]
+def dec_sset_of_list {C : Set} [H : decidable_eq C] (l : list C) : dec_Subset C :=
+  fin_map_to_dec_sset (fin_map_of_list l)
+
+@[hott]
+def dec_sset_of_list_eq {C : Set} [H : decidable_eq C] (l₁ l₂ : list C) : 
+  l₁ = l₂ -> dec_sset_of_list l₁ = dec_sset_of_list l₂ :=
+λ p, ap dec_sset_of_list p 
+
 @[hott]
 def fin_map_to_dec_sset_ind {A : Set} [H : decidable_eq A] {n : ℕ} 
   (f : (fin_Set (n+1)) -> A) {a : A} (ne : ¬ f ⟨n, nat.le_refl (n+1)⟩ = a) : 
@@ -335,7 +388,7 @@ end
 
 @[hott]
 def fin_map_to_dec_sset_elem {A : Set} [H : decidable_eq A] : 
-  Π (n : ℕ) (a : A) (f : (fin_Set n) -> A), fin_map_to_dec_sset f a = Two.one ->
+  Π {n : ℕ} (a : A) (f : (fin_Set n) -> A), fin_map_to_dec_sset f a = Two.one ->
                                             Σ m : fin_Set n, f m = a :=
 begin 
   intro n, hinduction n, 
@@ -351,7 +404,7 @@ end
 
 @[hott]
 def fin_map_to_dec_sset_elem' {A : Set} [H : decidable_eq A] : 
-  Π (n : ℕ) (a : A) (f : (fin_Set n) -> A), (Σ m : fin_Set n, f m = a) ->
+  Π {n : ℕ} (a : A) (f : (fin_Set n) -> A), (Σ m : fin_Set n, f m = a) ->
                                             fin_map_to_dec_sset f a = Two.one :=
 begin
   intro n, hinduction n, 
@@ -384,7 +437,7 @@ begin
   { intros a inc, hinduction decB a with q, 
     { change ↥(@Two.rec (λ t, Prop) _ _ (decB a)) at inc, 
       rwr q at inc, hinduction inc },
-    { let m_eq := fin_map_to_dec_sset_elem _ _ _ q, rwr <- m_eq.2, 
+    { let m_eq := fin_map_to_dec_sset_elem _ _ q, rwr <- m_eq.2, 
       exact ((inv_bijection_of bij).1 m_eq.1).2 } },
   { intros a inc, change ↥(@Two.rec (λ t, Prop) _ _ (decB a)),
     hinduction decB a with q, 
@@ -411,6 +464,42 @@ def finite_dec_sset_is_sset {A : Set} [decidable_eq A] (B : Subset A)
 begin
   change dec_sset_to_sset (@sset_to_dec_sset _ B (finite_sset_is_dec_sset B)) = B,
   exact @sset_Two_pred_sset_linv _ B (finite_sset_is_dec_sset B)
+end
+
+/- More rules on decidable subsets produced by lists. -/
+@[hott]
+def dec_sset_of_list_to_sset {A : Set} [decidable_eq A] (l : list A) :
+  dec_sset_to_sset (dec_sset_of_list l) = sset_of_list l :=
+begin
+  apply (sset_eq_iff_inclusion _ _).2, fapply pair,
+  { intros a a_el, apply tr, 
+    have p : dec_sset_of_list l a = Two.one, from dec_sset_to_sset_el _ a a_el,
+    fapply fiber.mk,  
+      exact (fin_map_to_dec_sset_elem _ _ p).1, exact (fin_map_to_dec_sset_elem _ _ p).2 },
+  { intros a a_el, hinduction a_el with af, apply dec_sset_to_sset_el', 
+    apply fin_map_to_dec_sset_elem', exact ⟨af.1, af.2⟩ }
+end
+
+@[hott]
+def singleton_dec_sset_of_list {A : Set} [H : decidable_eq A] (a : A) :
+  singleton_dec_sset a = dec_sset_of_list [a] :=
+begin 
+  apply dec_sset_eq_of_sset_eq, rwr singleton_dec_sset_is_sset, 
+  rwr dec_sset_of_list_to_sset, apply (sset_eq_iff_inclusion _ _).2, fapply pair,
+  { intros b b_el, rwr <- dec_sset_of_list_to_sset, 
+    change ↥(@Two.rec (λ t, Prop) _ _ (fin_map_to_dec_sset (fin_map_of_list [a]) b)), 
+    change b = a at b_el, rwr b_el,
+    have p : fin_map_of_list [a] ⟨0, nat.le_refl 1⟩ = a, from rfl,
+    change ↥(@Two.rec (λ t, Prop) False True (@decidable.rec 
+                      (fin_map_of_list [a] ⟨0, nat.le_refl 1⟩ = a) (λ s, Two) _ _ (H _ _))),
+    hinduction H (fin_map_of_list [a] ⟨0, nat.le_refl 1⟩) a, 
+      exact true.intro, hinduction a_1 p },
+  { intros b b_el, change b = a, rwr <- dec_sset_of_list_to_sset at b_el, 
+    have p : dec_sset_of_list [a] b = Two.one, from dec_sset_to_sset_el _ b b_el,
+    change (@decidable.rec 
+              (fin_map_of_list [a] ⟨0, nat.le_refl 1⟩ = b) (λ s, Two) _ _ (H _ _)) = _ at p,
+    hinduction H (fin_map_of_list [a] ⟨0, nat.le_refl 1⟩) b, exact a_1⁻¹, 
+    rwr _h at p, change Two.zero = Two.one at p, hinduction encode_Two _ _ p }
 end
 
 end set
