@@ -676,7 +676,8 @@ def interpret_horn_of_Cartesian  {sign : fo_signature} {FV : free_vars sign}
   (φ : formula FV) [Hh : formula.is_horn φ] {C : Category} [HC : is_Cartesian C] : 
   is_interpretable_in φ C :=
 begin
-  apply is_interpretable_in.mk, all_goals { intro np, hinduction Hh with horn },
+  apply is_interpretable_in.mk, 
+  all_goals { intro np, hinduction Hh with horn },
   all_goals { hinduction φ, all_goals { try { solve1 { hinduction horn } } } }, 
   all_goals { try { solve1 { hinduction np } } }, all_goals { try { apply_instance } },
   all_goals { try { exact or_elim (ih_a horn.1) (ih_a_1 horn.2) np } }
