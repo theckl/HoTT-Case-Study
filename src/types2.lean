@@ -1,10 +1,10 @@
-import hott.init hott.hit.trunc hott.types.trunc hott.types.nat.order init2
+import hott.init hott.hit.trunc hott.types.trunc hott.types.nat.order init2 nat2
 
 universes u v w
 hott_theory
 
 namespace hott
-open hott.is_equiv hott.is_trunc hott.trunc hott.nat
+open hott.is_equiv hott.is_trunc hott.trunc hott.nat 
 
 /- Properties of the product of two types -/
 @[hott]
@@ -159,7 +159,7 @@ def equiv_arg_exchange {A : Type _} {B : Type _} {f : A -> B} (H : is_equiv f)
   {C : B -> Type _} : (∀ a : A, C (f a)) -> (∀ b : B, C b) :=
 begin intros g b, rwr <- is_equiv.right_inv f b, exact g (f⁻¹ᶠ b) end     
 
-/- Inequalities of natural numbers in the core are non-HoTT propositions, so procedures
+/- Some inequalities of natural numbers in the core are non-HoTT propositions, so procedures
    using them need to be rewritten.  -/
 @[hott, hsimp] 
 def list_nth_le {α : Type _} : Π (l : list α) (n), n < l.length → α
@@ -167,11 +167,72 @@ def list_nth_le {α : Type _} : Π (l : list α) (n), n < l.length → α
 | (a :: l) 0     h := a
 | (a :: l) (n+1) h := list_nth_le l n (le_of_succ_le_succ h)
 
-/- Further factes on lists -/
+@[hott]
+def list_nth_le_eq {α : Type _} : Π {l : list α} {n : ℕ} (p p' : n < l.length),
+  list_nth_le l n p = list_nth_le l n p' :=
+assume l n p p', ap (list_nth_le l n) (is_prop.elim p p')
+
+@[hott]
+def list_nth_le_eq' {α : Type _} : Π {l : list α} {n m : ℕ} (p : n < l.length)
+  (p' : m < l.length), n = m -> list_nth_le l n p = list_nth_le l m p' :=
+begin intros l n m p p' q, hinduction q, exact list_nth_le_eq p p' end
+
+/- Further facts on lists -/
 @[hott, hsimp]
 def list_map_size_eq {A B : Type _} (f : A -> B) (l : list A) : 
   list.length (list.map f l) = list.length l :=
 begin hinduction l, refl, hsimp, rwr ih end  
+
+@[hott]
+def list_eq {A : Type _} {l₁ l₂ : list A} {a₁ a₂ : A} (ptl : l₁ = l₂) (phd : a₁ = a₂) :
+  a₁ :: l₁ = a₂ :: l₂ := 
+ap011 list.cons phd ptl
+
+@[hott]
+def list_length_append {A : Type _} (l₁ l₂ : list A) : 
+  list.length (l₁ ++ l₂) = list.length l₁ + list.length l₂ :=
+begin 
+  hinduction l₁, hsimp, 
+  change list.length (tl ++ l₂) + 1 = (list.length tl + 1) + list.length l₂, rwr ih,
+  rwr nat.add_assoc, rwr nat.add_assoc, rwr nat.add_comm _ 1 
+end
+
+@[hott]
+def list_append_el₁ {A : Type u} (l₁ l₂ : list A) (n : ℕ) (p : n < list.length l₁) :
+  let q : n < list.length (l₁ ++ l₂) :=  
+    nat.lt_of_lt_of_le (nat.lt_of_lt_of_le p (nat.le_add_right (list.length l₁) 
+                    (list.length l₂))) (nat.le_of_eq (list_length_append l₁ l₂)⁻¹) in
+  list_nth_le (l₁ ++ l₂) n q = list_nth_le l₁ n p :=
+begin
+  revert n p, hinduction l₁, 
+    intros n p, hinduction nat.not_lt_zero n p,
+    intro n, hinduction eq_zero_sum_eq_succ_pred n,  
+      rwr val, intro p, exact idp,
+      rwr val, intro p, hsimp, 
+      let p' : (nat.pred n) < list.length tl := nat.le_of_succ_le_succ p, 
+      apply square_diag_id (ih (nat.pred n) p'), 
+      exact ap (list_nth_le _ _) (is_prop.elim _ _),
+      exact ap (list_nth_le _ _) (is_prop.elim _ _)
+end 
+
+@[hott]
+def list_append_el₂ {A : Type _} (l₁ l₂ : list A) (n : ℕ) (p : n < list.length l₂) :
+  let q : list.length l₁ + n < list.length (l₁ ++ l₂) := 
+    nat.lt_of_lt_of_le (nat.add_lt_add_left p (list.length l₁)) 
+                                          (nat.le_of_eq (list_length_append l₁ l₂)⁻¹) in
+  list_nth_le (l₁ ++ l₂) (list.length l₁ + n) q = list_nth_le l₂ n p :=
+begin 
+  hinduction l₁, 
+    hsimp, apply list_nth_le_eq' _ _, exact nat.zero_add n, 
+    hsimp, hsimp at ih, rwr <- ih, let q := nat.succ_add (list.length tl) n, 
+    rwr apd011' (list_nth_le (hd :: (tl ++ l₂))) q, hsimp, rwr list_nth_le_eq
+end 
+
+/- Facts on fibers -/
+@[hott]
+def fiber_precomp {A B C : Type _} (f : A -> B) (g : B -> C) (c : C) : 
+  fiber (g ∘ f) c -> fiber g c :=
+begin intro fib_gf, fapply fiber.mk, exact f fib_gf.1, exact fib_gf.2 end
 
 /- We use Egbert Rijke's insight that the main tool to deal with identity types in 
    HoTT is the Structure Identity Principle for Σ-types [Rijke-Book, Thm.11.6.2]. 
@@ -657,147 +718,5 @@ begin
     induction t₂, apply sum.inr; intro eq; exact Zero.rec _ (encode_Two _ _ eq),
                   exact sum.inl rfl,              
 end    
-
-/- Facts about natural numbers not found in the [HoTT3]-library (or theorems). -/
-open nat
-
-@[hott, elab_as_eliminator] 
-def nat.sub_induction' {P : ℕ → ℕ → Type _} (n m : ℕ) (H1 : Πm, P 0 m)
-   (H2 : Πn, P (succ n) 0) (H3 : Πn m, P n m → P (succ n) (succ m)) : P n m :=
-have general : Πm, P n m, from nat.rec_on n H1
-  (λk : ℕ,
-    assume IH : Πm, P k m,
-    λm : ℕ,
-    nat.cases_on m (H2 k) (λl, (H3 k l (IH l)))),
-general m
-
-@[hott, hsimp] 
-def nat.succ_sub_succ_eq_sub' (a b : ℕ) : succ a - succ b = a - b :=
-nat.rec (by hsimp) (λ b, ap pred) b
-
-@[hott] 
-def nat.sub_zero' (n : ℕ) : n - 0 = n := rfl
-
-@[hott] 
-def nat.sub_succ' (n m : ℕ) : n - succ m = pred (n - m) := rfl
-
-@[hott] 
-def nat.sub_sub' (n m k : nat) : n - m - k = n - (m + k) :=
-nat.rec_on k
-  (calc
-    n - m - 0 = n - m        : by rwr nat.sub_zero'
-          ... = n - (m + 0)  : by rwr nat.add_zero)
-  (λl : nat,
-    assume IH : n - m - l = n - (m + l),
-    calc
-      n - m - succ l = pred (n - m - l)   : by rwr nat.sub_succ'
-                 ... = pred (n - (m + l)) : by rwr IH
-                 ... = n - succ (m + l)   : by rwr nat.sub_succ'
-                 ... = n - (m + succ l)   : by rwr add_succ)
-
-
-@[hott] 
-def nat.zero_sub' (n : ℕ) : 0 - n = 0 :=
-nat.rec_on n (nat.sub_zero' _)
-  (λk : nat,
-    assume IH : 0 - k = 0,
-    calc
-      0 - succ k = pred (0 - k) : by rwr nat.sub_succ'
-             ... = pred 0       : by rwr IH
-             ... = 0            : pred_zero)
-
-@[hott] 
-def nat.succ_sub_succ' (n m : ℕ) : succ n - succ m = n - m :=
-  nat.succ_sub_succ_eq_sub' n m
-
-@[hott] 
-def nat.sub_self' (n : ℕ) : n - n = 0 :=
-nat.rec_on n (nat.sub_zero' _) (λk IH, nat.succ_sub_succ' _ _ ⬝ IH)
-
-@[hott] 
-def nat.sub_self_add' (n m : ℕ) : n - (n + m) = 0 :=
-calc
-  n - (n + m) = n - n - m : by rwr nat.sub_sub'
-          ... = 0 - m     : by rwr nat.sub_self'
-          ... = 0         : by rwr nat.zero_sub'
-
-@[hott] 
-def nat.sub_eq_zero_of_le {n m : ℕ} (H : n ≤ m) : n - m = 0 :=
-   begin hinduction le.elim H with p k Hk, rwr <- Hk, apply nat.sub_self_add' end
-
-@[hott] 
-def nat.add_sub_assoc {m k : ℕ} (H : k ≤ m) (n : ℕ) : n + m - k = n + (m - k) :=
-  have l1 : k ≤ m → n + m - k = n + (m - k), from
-    nat.sub_induction' k m
-    (λm : ℕ, assume H : 0 ≤ m,
-       calc
-         n + m - 0 = n + m       : by rwr nat.sub_zero'
-               ... = n + (m - 0) : by rwr nat.sub_zero')
-     (λk : ℕ, assume H : succ k ≤ 0, absurd H (not_succ_le_zero _))
-     (λk m,
-       assume IH : k ≤ m → n + m - k = n + (m - k),
-       λH : succ k ≤ succ m,
-       calc
-         n + succ m - succ k = succ (n + m) - succ k : by rwr add_succ
-                         ... = n + m - k             : by rwr nat.succ_sub_succ'
-                         ... = n + (m - k)           : IH (le_of_succ_le_succ H)
-                         ... = n + (succ m - succ k) : by rwr nat.succ_sub_succ'),
- l1 H
-
-@[hott] 
-def nat.sub_le_sub_right {n m : ℕ} (H : n ≤ m) (k : ℕ) : n - k ≤ m - k :=
-begin  
-  let l := (le.elim H).1, let Hl := (le.elim H).2,
-  apply sum.elim (@nat.le_total n k),
-  { intro H2, rwr nat.sub_eq_zero_of_le H2, exact nat.zero_le (m - k) },
-  { intro H2,
-    have H3 : n - k + l = m - k, from
-      calc n - k + l = l + (n - k) : by rwr nat.add_comm
-                 ... = l + n - k   : by rwr <- nat.add_sub_assoc H2 l
-                 ... = n + l - k   : by rwr nat.add_comm
-                 ... = m - k       : by rwr Hl,
-    exact le.intro H3}
-end
-
-@[hott] def nat.succ_sub {m n : ℕ} : m ≥ n → succ m - n  = succ (m - n) :=
-  nat.sub_induction' n m (λk, assume H : 0 ≤ k, rfl)
-    (λk,
-     assume H : succ k ≤ 0,
-     absurd H (not_succ_le_zero _))
-   (λk l,
-     assume IH : k ≤ l → succ l - k = succ (l - k),
-     λH : succ k ≤ succ l,
-     calc
-       succ (succ l) - succ k = succ l - k             : by rwr nat.succ_sub_succ'
-                          ... = succ (l - k)           : IH (le_of_succ_le_succ H)
-                          ... = succ (succ l - succ k) : by rwr nat.succ_sub_succ')
-
-@[hott] 
-def nat.add_sub_cancel' (n m : ℕ) : n + m - m = n :=
-nat.rec_on m
-  (begin rwr hott.algebra.add_zero end)
-  (λk : ℕ,
-    assume IH : n + k - k = n,
-    calc
-      n + succ k - succ k = succ (n + k) - succ k : by rwr add_succ
-                      ... = n + k - k             : by rwr nat.succ_sub_succ'
-                      ... = n                     : IH)
-
-@[hott] 
-def nat.add_sub_cancel_left' (n m : ℕ) : n + m - n = m :=
-by rwr nat.add_comm; apply nat.add_sub_cancel'
-
-@[hott]
-def nat.sub_lt_of_lt_add {v n m : nat} (h₁ : v < n + m) (h₂ : v ≥ n) : v - n < m :=
-  have nat.succ v ≤ n + m,   from succ_le_of_lt h₁,
-  have nat.succ (v - n) ≤ m, from
-    calc nat.succ (v - n) = nat.succ v - n : by rwr <- nat.succ_sub h₂
-                  ...     ≤ n + m - n      : nat.sub_le_sub_right this n
-                  ...     = m              : nat.add_sub_cancel_left' n m,
-lt_of_succ_le this
-
-@[hott]
-def nat.lt_of_le_neq {m n : nat} (h₁: m ≤ n) (h₂ : m ≠ n) : m < n :=
-  begin hinduction nat.eq_sum_lt_of_le h₁, hinduction h₂ val, exact val end
 
 end hott
