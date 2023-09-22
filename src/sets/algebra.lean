@@ -161,6 +161,14 @@ begin
   exact inc₁ a inc_S₁, exact inc₂ a inc_S₂, 
 end
 
+@[hott]
+def union.idempot {A : Set.{u}} {S : Subset A} : S ∪ S = S :=
+begin
+  fapply (sset_eq_iff_inclusion _ _).2, fapply pair,
+    fapply inc_inc_union_inc, exact subset_refl S, exact subset_refl S,
+    exact union_sset_l S S
+end
+
 @[hott, reducible]
 def sUnion {A : Set.{u}} (S : Subset (𝒫 A)) : Subset A := 
   λ t : A, prop_resize.{u u+1} (@exists_elem (𝒫 A) (λ B : Subset A, S B and t ∈ B))
@@ -215,7 +223,12 @@ begin
   intros Iss a ela, let exi := prop_resize_to_prop ((pred_elem a).1 ela), 
   hinduction exi with elai,
   exact Iss elai.1 a elai.2
-end    
+end  
+
+@[hott]
+def sset_comp_iUnion {A : Set.{u}} {I : Set.{v}} (f : I -> 𝒫 A) (B : Subset A) :
+  (Σ i : I, B ⊆ f i) -> B ⊆ ⋃ᵢ f :=
+begin intro inc_i_f, exact subset_trans _ _ _ inc_i_f.2 (sset_iUnion f inc_i_f.1) end
 
 @[hott]
 protected def complement {A : Set.{u}} (U : Subset A) : Subset A :=
