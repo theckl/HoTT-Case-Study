@@ -325,6 +325,21 @@ def dec_set_mem {A : Set.{u}} : @has_mem A (dec_Subset A) :=
   has_mem.mk (λ (a : A) (S : dec_Subset A), 
                           trunctype.mk (subset.dec_elem a S) (Two_eq_is_prop.{u} _ _))  
 
+@[hott]
+def dec_sset_to_sset_el {A : Set.{u}} (B : dec_Subset A) (a : A) :
+  a ∈ dec_sset_to_sset B -> B a = Two.one := 
+begin
+  intro a_el, change ↥(@Two.rec (λ t, Prop) _ _ (B a)) at a_el,
+  hinduction B a, rwr _h at a_el, hinduction a_el, exact idp
+end
+
+@[hott]
+def dec_sset_to_sset_el' {A : Set.{u}} (B : dec_Subset A) (a : A) :
+  B a = Two.one -> a ∈ dec_sset_to_sset B := 
+begin
+  intro a_eq, change ↥(@Two.rec (λ t, Prop) _ _ (B a)), rwr a_eq, exact true.intro
+end
+
 notation `{ ` binder ` ∈ ` B ` | ` P:scoped  ` }` := (P : Subset B)
 notation `{ ` binder ` ∈ ` B ` | ` P:scoped  ` }` := (P : Subset (to_Set B)) 
 
@@ -551,9 +566,9 @@ def all_elem {A : Set} (a : A) : a ∈ total_Subset A :=
   true.intro
 
 @[hott]
-def total_pred_Set_eq_Set (A : Set) : pred_Set (total_Subset A) = A :=
-begin 
-  apply bij_to_set_eq, fapply has_inverse_to_bijection, 
+def total_pred_Set_bij_Set (A : Set) : bijection (pred_Set (total_Subset A)) A :=
+begin
+  fapply has_inverse_to_bijection, 
   { intro a_pred, exact a_pred.1 },
   { intro a, exact ⟨a, true.intro⟩ },
   { fapply is_set_inverse_of.mk, 
@@ -561,7 +576,11 @@ begin
     { intro a_pred, fapply sigma_eq,
       { refl },
       { apply pathover_of_tr_eq, exact is_prop.elim _ _ } } }
-end     
+end
+
+@[hott]
+def total_pred_Set_eq_Set (A : Set) : pred_Set (total_Subset A) = A :=
+  bij_to_set_eq (total_pred_Set_bij_Set A)    
 
 @[hott]   
 def empty_Subset (A : Set.{u}) : Subset A :=
@@ -633,24 +652,23 @@ begin
     hinduction H x a, exact true.intro, hinduction a_1 inc }
 end
 
-/- The image subset (of a subset) under a map between sets. The sets lie in the 
-   same universe. -/
+/- The image subset (of a subset) under a map between sets. -/
 @[hott]
-def ss_Image {A B : Set.{u}} (f : A -> B) (C : Subset A) : Subset B := 
+def ss_Image {A B : Set} (f : A -> B) (C : Subset A) : Subset B := 
   λ b : B, image (f ∘ (pred_Set_map C)) b 
 
 @[hott]
-def Image {A B : Set.{u}} (f : A -> B) : Subset B :=
-  ss_Image f (total_Subset A)
+def Image {A B : Set} (f : A -> B) : Subset B :=
+  λ b, image f b
 
 /- Some lemmas to exploit the image of a subset under a map. -/
 @[hott]
-def ss_image_preimage {A B : Set.{u}} (f : A -> B) (C : Subset A) : 
+def ss_image_preimage {A B : Set} (f : A -> B) (C : Subset A) : 
   ∀ b : B, b ∈ ss_Image f C -> image (f ∘ (pred_Set_map C)) b :=
 begin intros b el, hinduction el with fa, exact tr fa end   
 
 @[hott]
-def ss_image_el {A B : Set.{u}} (f : A -> B) (C : Subset A) : 
+def ss_image_el {A B : Set} (f : A -> B) (C : Subset A) : 
   ∀ (a : A), a ∈ C -> f a ∈ ss_Image f C :=
 begin 
   intros a ela, 
