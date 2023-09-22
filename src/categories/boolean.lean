@@ -64,17 +64,16 @@ begin
               fin_map_of_list [pullback_subobject f d, pullback_subobject f d'], from 
   begin 
     apply eq_of_homotopy, intro n, hinduction n with n ineq, hinduction n,
-    { have q : fin_map_of_list [d, d'] ⟨0, ineq⟩ = d', from 
-        begin hsimp, rwr dite_false ((nat.succ_ne_zero 0) ∘ eq.inverse) end,
+    { have q : fin_map_of_list [d, d'] ⟨0, ineq⟩ = d, by rwr <- fin_map_of_list_el, 
       change pullback_subobject f (fin_map_of_list [d, d'] ⟨0, ineq⟩) = _,
       rwr q },
     { hinduction n, 
-    {  have r : fin_map_of_list [d, d'] ⟨1, ineq⟩ = d, from 
-         begin hsimp, apply dite_true (idpath 1), apply_instance end,
-       change pullback_subobject f (fin_map_of_list [d, d'] ⟨1, ineq⟩) = _,
-       rwr r },
-    { change _ < nat.succ 1 at ineq, 
-      hinduction nat.not_lt_zero n (nat.le_of_succ_le_succ (nat.le_of_succ_le_succ ineq)) } }
+      {  have r : fin_map_of_list [d, d'] ⟨1, ineq⟩ = d', by rwr <- fin_map_of_list_el, 
+         change pullback_subobject f (fin_map_of_list [d, d'] ⟨1, ineq⟩) = _,
+         rwr r },
+      { change _ < nat.succ 1 at ineq, 
+        hinduction nat.not_lt_zero n (nat.le_of_succ_le_succ 
+                                                      (nat.le_of_succ_le_succ ineq)) } }
   end, 
   rwr p
 end
