@@ -1,4 +1,4 @@
-import sets.dec_alg init2 sets.axioms sets.finite
+import sets.findecalg init2 sets.axioms sets.finite
 
 universes v v' u u' w 
 hott_theory
@@ -266,12 +266,12 @@ def free_vars_is_set (sign : fo_signature) : is_set (free_vars sign) :=
 def no_FV (sign : fo_signature) : free_vars sign := 
   empty_dec_Subset (to_Set (var sign.labels sign.sorts))
 
-@[hott]
+@[hott, reducible]
 def free_vars_of_term {sign : fo_signature} : term sign -> free_vars sign :=
 begin 
   intro t, hinduction t, hinduction expr, 
   { exact singleton_dec_sset x }, 
-  { exact dec_fin_iUnion ih }
+  { exact ⋃ᵢ ih }
 end
 
 @[hott, instance]
