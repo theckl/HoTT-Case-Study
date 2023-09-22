@@ -23,6 +23,10 @@ def id {A : Type _} (a : A) : A := a
 /- All these equalities of pathovers, concatenations and transports of 
    identities should be produced by tactics. -/
 @[hott]
+def square_diag_id {A : Type _} {a b c d : A} : a = b -> a = c -> b = d -> c = d :=
+ assume p q r, q⁻¹ ⬝ p ⬝ r
+
+@[hott]
 def id_tr_eq_id_inv_con {A : Type _} {a₀ a₁ a₂ : A} (q : a₁ = a₂) (p : a₁ = a₀) :
   q ▸ p = q⁻¹ ⬝ p :=
 begin hinduction q, rwr idp_tr, rwr idp_inv, rwr idp_con end  
@@ -111,6 +115,11 @@ by rwr <- ap100_ev_ap; rwr ap100_eq_of_hty2_inv; refl
 def hty2_of_ap100_eq_inv {A B C : Type _} {f g : A → B -> C} (p : f = g) :
   eq_of_homotopy2 (ap100 p) = p :=
 is_equiv.right_inv (funext.is_equiv_apd100 f g).inv p 
+
+@[hott]
+def apd011' {A C : Type _} {B : A -> Type _} (f : Π (a : A), B a -> C) {a₁ a₂ : A} 
+  {b₁ : B a₁} (p : a₁ = a₂) : f a₁ b₁ = f a₂ (p ▸ b₁) :=
+begin hinduction p, rwr idp_tr end
 
 @[hott]
 def ap0111 {A : Type u} {B : Type v} {C D : A -> B -> Type _} {E : Type _}
