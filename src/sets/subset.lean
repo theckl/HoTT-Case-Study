@@ -582,6 +582,15 @@ end
 def total_pred_Set_eq_Set (A : Set) : pred_Set (total_Subset A) = A :=
   bij_to_set_eq (total_pred_Set_bij_Set A)    
 
+@[hott]
+def total_dec_Subset (A : Set.{u}) : dec_Subset A :=
+  λ a, Two.one
+
+@[hott]
+def total_dec_sset_empty_sset (A : Set.{u}) : 
+  dec_sset_to_sset (total_dec_Subset A) = total_Subset A :=
+begin apply eq_of_homotopy, intro a, refl end
+
 @[hott]   
 def empty_Subset (A : Set.{u}) : Subset A :=
   λ a, False.{u}
@@ -743,6 +752,39 @@ begin
   end,
   apply is_trunc_equiv_closed_rev, apply A_eqv_Im_f, apply_instance
 end  
+
+/- Decidability of being an empty decidable subsets (or a proper decidable subset) 
+   cannot be deduced for arbitrary (decidable) set. But the natural numbers and finite 
+   sets have this property. -/
+@[hott, reducible]
+def decidable_inh_dec_sset (A : Set) := 
+  Π (B : dec_Subset A) (t : Two), decidable (Σ a : A, B a = t)
+
+@[hott]
+def decidable_empty_dec_sset {A : Set} [H : decidable_inh_dec_sset A] : 
+  Π (B : dec_Subset A), decidable (B = empty_dec_Subset A) :=
+begin
+  intro B, hinduction H B Two.one, 
+  { apply decidable.inr, intro eq, 
+    have p : B a.1 = Two.zero, from ap10 eq a.1, 
+    have q : B a.1 = Two.one, from a.2, rwr q at p,
+    hinduction encode_Two _ _ p },
+  { apply decidable.inl, apply eq_of_homotopy, intro b, change _ = Two.zero, 
+    hinduction B b, exact idp, hinduction a ⟨b, _h_1⟩ }
+end
+
+@[hott]
+def decidable_total_dec_sset {A : Set} [H : decidable_inh_dec_sset A] : 
+  Π (B : dec_Subset A), decidable (B = total_dec_Subset A) :=
+begin
+  intro B, hinduction H B Two.zero, 
+  { apply decidable.inr, intro eq, 
+    have p : B a.1 = Two.one, from ap10 eq a.1, 
+    have q : B a.1 = Two.zero, from a.2, rwr q at p,
+    hinduction encode_Two _ _ p },
+  { apply decidable.inl, apply eq_of_homotopy, intro b, change _ = Two.one, 
+    hinduction B b, hinduction a ⟨b, _h_1⟩, exact idp }
+end
 
 end subset
 
