@@ -107,12 +107,13 @@ inductive term_of_sort {sign : fo_signature} : sign.sorts -> Type
 
 @[hott, reducible]
 protected def code {sign : fo_signature} : Π {s₁ s₂ : sign.sorts}, 
-  term_of_sort s₁ -> term_of_sort s₂ -> Type :=
+  term_of_sort s₁ -> term_of_sort s₂ -> Two :=
 begin
-  intros s₁ s₂ t₁, revert s₁ t₁ s₂, intros s₁ t₁,
+  intros s₁ s₂ t₁, revert s₂, 
   hinduction t₁ with s₁ x₁ px₁ s₁ o₁ pot₁ args₁ ih₁,
   all_goals { intros s₂ t₂, hinduction t₂ with s₂ x₂ px₂ s₂ o₂ pot₂ args₂ ih₂ },
-  exact x₁ = x₂, exact Zero, exact Zero,
+  hinduction var_is_dec x₁ x₂, exact Two.one, exact Two.zero,
+  exact Two.zero, exact Two.zero,
   exact Σ (q : o₁ = o₂), Π (oa₁ : fin_Set (sign.ops_arity o₁)), ih₁ oa₁ (args₂ (q ▸ oa₁))  
 end  
 /- The equation compiler produces a non-hott term when we use 
