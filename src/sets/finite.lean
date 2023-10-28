@@ -288,6 +288,18 @@ begin
     intros m p, hinduction m, refl, exact ih n (le_of_succ_le_succ p)
 end 
 
+@[hott]
+def fin_dep_map_of_lists {l_T : list (Type _)} 
+  (l_obj : list (Σ (m : fin_Set (list.length l_T)), list_nth_le l_T m.1 m.2)) 
+  (lg_eq : list.length l_T = list.length l_obj)
+  (T_eq : Π m : fin_Set (list.length l_obj), (list_nth_le l_obj m.1 m.2).1.1 = m.1) :
+  Π m : fin_Set (list.length l_T), fin_map_of_list l_T m :=
+begin 
+  hinduction l_T, intro m, hinduction not_lt_zero m.1 m.2,
+  intro m, hinduction m, hsimp only [fin_map_of_list],  
+  exact (list_nth_le l_obj fst (lg_eq ▸ snd)).2 
+end  
+
 @[hott, hsimp] 
 def dec_fin_map_of_list {C : Type _} (l : list C) : dec_fin_Set (list.length l) -> C :=
   fin_map_of_list l
