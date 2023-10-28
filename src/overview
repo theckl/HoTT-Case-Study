@@ -1,21 +1,22 @@
 Compiling files, in order of dependencies:
 ------------------------------------------
 init2       :   945
-nat2        :   167
+nat2        :   174
 types2      :   722 
 prop_axioms :   556
-prop_logic  :   223  2604
+prop_logic  :   223  2620
 sets
   basic     :   790
-  subset    :   749
-  finite    :   508
+  subset    :   791
+  finite    :   507
+  inductive :    25
   axioms    :   355
-  algebra   :   350
+  algebra   :   362
   dec_alg   :   497
   findecalg :   479
   quotients :   205
   formulas  :   905
-  theories  :   382  5220
+  theories  :   382  5298
 categories
   precat    :   738  
   basic     :   312 
@@ -36,7 +37,7 @@ categories
 algebra
   rings     :    36    36
                     -----
-                    17116               
+                    17210               
 
 
 Planned changes in Files, from bottom to top: 
@@ -45,3 +46,4 @@ algebra.ring : signature of (commutative) ring (with 1), rings as models over se
                names for operations & laws, ring from operations & laws on set,
                ring of integers 
 sets.dec_alg : operations with sets from lists
+sets.inductive: sets with inductive structure, constructive functions, decidability
