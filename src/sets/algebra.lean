@@ -22,7 +22,11 @@ assume BC CD a a_in_B, CD a (BC a a_in_B)
 @[hott, hsimp]
 def subset_asymm {A : Set.{u}} (B C : Subset A) : 
   B ⊆ C -> C ⊆ B -> B = C :=
-assume BC CB, (sset_eq_iff_inclusion B C).2 ⟨BC, CB⟩  
+assume BC CB, (sset_eq_iff_inclusion B C).2 ⟨BC, CB⟩
+
+@[hott]
+def empty_sset {A : Set.{u}} (B : Subset A) : empty_Subset A ⊆ B :=
+  begin intros a inc, hinduction inc end
 
 namespace subset
 
@@ -167,6 +171,14 @@ begin
   fapply (sset_eq_iff_inclusion _ _).2, fapply pair,
     fapply inc_inc_union_inc, exact subset_refl S, exact subset_refl S,
     exact union_sset_l S S
+end
+
+@[hott]
+def empty_union {A : Set.{u}} (S : Subset A) : empty_Subset A ∪ S = S :=
+begin 
+  fapply (sset_eq_iff_inclusion _ _).2, fapply pair,
+  { apply inc_inc_union_inc, exact empty_sset _, exact subset_refl _ },
+  { exact union_sset_r _ _ } 
 end
 
 @[hott, reducible]
