@@ -95,32 +95,75 @@ begin
       { rwr p at snd, hinduction nat.lt_irrefl 2 (nat.lt_of_le_of_lt val_1 snd) } } }, 
   { apply inc_inc_dec_union_inc, 
     { apply inc_comp_dec_fin_iUnion, fapply dpair, exact ⟨0, p⁻¹ ▸ nat.zero_lt_succ 1⟩, 
-      sorry },
-    { sorry } }
+      rwr idp_tr, rwr <- fin_map_of_list_el, hsimp only [list_nth_le], apply eq_dec_subset,
+      fapply apd011 (@term_of_sort.rec _ _ _ _ : Π s, term_of_sort s -> free_vars ring.sign),
+      exact is_prop.elim _ _, apply pathover_of_tr_eq, rwr <- con_tr },
+    { apply inc_comp_dec_fin_iUnion, fapply dpair, exact ⟨nat.succ 0, p⁻¹ ▸ nat.le_refl 2⟩,
+      rwr idp_tr, rwr <- fin_map_of_list_el, hsimp only [list_nth_le], apply eq_dec_subset,
+      fapply apd011 (@term_of_sort.rec _ _ _ _ : Π s, term_of_sort s -> free_vars ring.sign),
+      exact is_prop.elim _ _, apply pathover_of_tr_eq, rwr <- con_tr } }
 end
 
-@[hott]
+@[hott, reducible]
 def FV_add_assoc : dec_Subset (to_Set (var ring.sign.labels ring.sign.sorts)) :=
-  (dec_sset_of_list [xv_ 0, xv_ 1, xv_ 2])
+  free_vars_of_term (add (add x₀ x₁) x₂) ∪ 
+                               free_vars_of_term (add x₀ (add x₁ x₂))
 
 @[hott]
-def FV_add_assoc_eq : (free_vars_of_term (add (add x₀ x₁) x₂) ∪ 
-                               free_vars_of_term (add x₀ (add x₁ x₂))) = FV_add_assoc :=
+def FV_add_assoc_eq : FV_add_assoc = (dec_sset_of_list [xv_ 0, xv_ 1, xv_ 2]) :=
 begin
-  have p : free_vars_of_term (add (add x₀ x₁) x₂) = FV_add_assoc, from 
+  have p : free_vars_of_term (add (add x₀ x₁) x₂) = (dec_sset_of_list [xv_ 0, xv_ 1, xv_ 2]), from 
   begin
     rwr add_FV, rwr add_FV, 
     change singleton_dec_sset (xv_ 0) ∪ singleton_dec_sset (xv_ 1) ∪ 
                                                 singleton_dec_sset (xv_ 2) = _,
-    sorry
+    rwr singleton_dec_sset_of_list, rwr singleton_dec_sset_of_list, 
+    rwr singleton_dec_sset_of_list, rwr union_dec_sset_of_list, rwr union_dec_sset_of_list
   end,
-  have q :  free_vars_of_term (add (x₀) (add (x₁) (x₂))) = FV_add_assoc, from sorry,                               
-  rwr p, rwr q, apply dec_sset_eq_of_sset_eq, rwr dec_union_is_union, exact union.idempot
+  have q : free_vars_of_term (add x₀ (add x₁ x₂)) = (dec_sset_of_list [xv_ 0, xv_ 1, xv_ 2]), from 
+  begin
+    rwr add_FV, rwr add_FV, 
+    change singleton_dec_sset (xv_ 0) ∪ (singleton_dec_sset (xv_ 1) ∪ 
+                                                singleton_dec_sset (xv_ 2)) = _,
+    rwr singleton_dec_sset_of_list, rwr singleton_dec_sset_of_list, 
+    rwr singleton_dec_sset_of_list, rwr union_dec_sset_of_list, rwr union_dec_sset_of_list
+  end,                               
+  change _ ∪ _ = _, rwr p, rwr q, apply dec_sset_eq_of_sset_eq, rwr dec_union_is_union, 
+  exact union.idempot
 end                                           
 
 @[hott]
-def add_assoc : formula (dec_sset_of_list [xv_ 0, xv_ 1, xv_ 2]) :=
-  FV_add_assoc_eq ▸ formula.eq_terms (add (add x₀ x₁) x₂) (add x₀ (add x₁ x₂)) idp
+def add_assoc : formula FV_add_assoc :=
+  formula.eq_terms (add (add x₀ x₁) x₂) (add x₀ (add x₁ x₂)) idp
+
+@[hott, instance]
+def add_assoc_is_atom : formula.is_atomic add_assoc :=
+  begin apply is_atomic.mk, hsimp, exact true.intro end
+
+@[hott, reducible]
+def add_assoc_seq : sequent ring.sign :=
+begin
+  fapply sequent.mk,
+  { exact form_FV.mk (no_FV ring.sign) formula.T },
+  { exact form_FV.mk FV_add_assoc add_assoc },
+  { exact context.mk FV_add_assoc },
+  { hsimp, apply inc_to_dec_inc, rwr dec_union_is_union, rwr empty_dec_sset_empty_sset,
+    rwr empty_union, exact subset_refl _ }
+end
+
+@[hott]
+protected def theory : fo_theory ring.sign :=
+  sset_of_list [add_assoc_seq]
+
+@[hott, instance]
+def ring_theory_is_alg : theory.is_algebraic ring.theory :=
+begin
+  fapply theory.is_algebraic.mk, 
+  { exact idp },
+  { intros seq inc, sorry },
+  { sorry },
+  { sorry }
+end
 
 end ring
 
