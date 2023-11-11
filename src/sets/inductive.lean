@@ -8,17 +8,19 @@ open hott.nat is_trunc trunc subset hott.sigma
 
 namespace set
 
+/- An inductive structure on a set `A` consists of finitely many operations of arbitrary 
+   arity which satisfy an induction principle on `A`. -/
 @[hott]
 class has_ind_structure (A : Set) :=
-  (num_const : Σ n : ℕ, n ≥ 1)
-  (const : fin_Set num_const.1 -> A)
-  (num_op_const : ℕ)
-  (op_const_ar : fin_Set num_op_const -> Σ n : ℕ, n ≥ 1)
-  (op_const : Π m : fin_Set num_op_const, (fin_Set (op_const_ar m).1 -> A) -> A)
-  (ind : Π {C : A -> Type _}, (Π m : fin_Set num_const.1, C (const m)) ->
-           (Π (m : fin_Set num_op_const) (ops : fin_Set (op_const_ar m).1 -> A),
-              (Π k : fin_Set (op_const_ar m).1, C (ops k)) -> C (op_const m ops)) ->
-           Π (a : A), C a)
+  (num_op : ℕ)
+  (op_ar : fin_Set num_op -> ℕ)
+  (op : Π m : fin_Set num_op, (fin_Set (op_ar m) -> A) -> A)
+  (ind : Π {C : A -> Type _}, (Π (m : fin_Set num_op) (ops : fin_Set (op_ar m) -> A),
+                                 (Π k : fin_Set (op_ar m), C (ops k)) -> C (op m ops)) ->
+                              Π (a : A), C a)
+
+/- If the inductive construction contains no operation at all, or no constant = operation
+   with arity 0, `A` is empty. -/
 
 @[hott, instance]
 def nat_is_ind_str : has_ind_structure nat_Set :=
