@@ -19,12 +19,14 @@ class has_ind_structure (A : Set) :=
                                  (Π k : fin_Set (op_ar m), C (ops k)) -> C (op m ops)) ->
                               Π (a : A), C a)
 
-/- If the inductive construction contains no operation at all, or no constant = operation
-   with arity 0, `A` is empty. -/
+/- If the inductive construction contains no operation at all, or no constant (= operation
+   with arity 0), `A` is empty. -/
+
+#reduce (fin_map_of_list [0,1]) ⟨1,_⟩
 
 @[hott, instance]
 def nat_is_ind_str : has_ind_structure nat_Set :=
-  has_ind_structure.mk ⟨1,nat.le_refl 1⟩ (fin_map_of_list [0]) 1 
+  has_ind_structure.mk 2 (fin_map_of_list [0,1]) 1 
                        (fin_map_of_list [dpair 1 (nat.le_refl 1)])  
 
 @[hott, instance]
