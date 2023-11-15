@@ -8,6 +8,23 @@ open hott.nat is_trunc trunc subset hott.sigma
 
 namespace set
 
+@[hott]
+inductive is_section_of : Π (lT : list (Type _)),  
+  (list (Σ (m : fin_Set lT.length), list_nth_le lT m.1 m.2)) -> Type _ 
+| empty : is_section_of [] [] 
+   
+
+@[hott]
+def fin_dep_map_of_list {n : ℕ} (lT : list (Type _)) 
+  (l : list (Σ (m : fin_Set lT.length), list_nth_le lT m.1 m.2)) : 
+  Π (m : fin_Set lT.length), list_nth_le lT m.1 m.2 :=
+begin
+  intro m, sorry
+end
+
+--#reduce (@is_section _ (fin_map_of_list [1 ≤ 2, 2 ≤ 2]) 
+--                        [⟨⟨0,_⟩,nat.le_succ 1⟩,⟨⟨1,_⟩,nat.le_refl 2⟩] _) 
+
 /- An inductive structure on a set `A` consists of finitely many operations of arbitrary 
    arity which satisfy an induction principle on `A`. -/
 @[hott]
