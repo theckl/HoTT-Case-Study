@@ -14,8 +14,6 @@ inductive gt_list (a : ℕ) : (list ℕ) -> Type
 | empty : gt_list []
 | next : Π (hd : nat) (tl : list ℕ), (a > hd) -> (gt_list tl) -> (gt_list (hd::tl))  
 
-
-
 @[hott]
 def gt_list_hd {a : ℕ} {l : list ℕ} : 
   gt_list a l -> if' (l.length = 0) then (0 ≤ a) else (a > l.head) :=
@@ -26,9 +24,23 @@ begin
 end
 
 @[hott]
-def gt_list_tl : Π (a : ℕ) (hd : nat) (tl : list ℕ), 
+def gt_list_hd' {a : ℕ} {hd : ℕ} {tl : list ℕ} : 
+  gt_list a (hd::tl) -> a > hd :=
+assume gtl, gt_list_hd gtl
+
+@[hott]
+def gt_list_tl {a : ℕ} {l : list ℕ} : 
+  gt_list a l -> if' (l.length = 0) then (0 ≤ a) else gt_list a l.tail :=
+begin
+  intro gtl, hinduction gtl, 
+    exact nat.zero_le a,
+    exact a_2
+end
+
+@[hott]
+def gt_list_tl' {a : ℕ} {hd : nat} {tl : list ℕ} : 
   gt_list a (hd::tl) -> gt_list a tl :=
-sorry
+assume gtl, gt_list_tl gtl
 
 @[hott, instance]
 def decidable_gt_list : Π (a : ℕ) (l : list ℕ), decidable (gt_list a l) :=
@@ -38,13 +50,9 @@ begin
     hinduction decidable_lt hd a,
       hinduction ih, 
         exact decidable.inl (gt_list.next hd tl a_1 a_2),
-        apply decidable.inr, intro gtl, exact a_2 (gt_list_tl _ _ _ gtl),
-      apply decidable.inr, intro gtl, exact a_1 (gt_list_hd _ _ _ gtl)
+        apply decidable.inr, intro gtl, exact a_2 (gt_list_tl gtl),
+      apply decidable.inr, intro gtl, exact a_1 (gt_list_hd gtl)
 end
-
-#print decidable_gt_list
-
---#reduce ite (gt_list_nat 2 [0, 1]) 1 0
 
 end nat
 
