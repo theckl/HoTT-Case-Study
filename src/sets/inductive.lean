@@ -31,8 +31,12 @@ begin
   fapply has_ind_structure.mk,
     exact [⟨0, λ arg, 0⟩, ⟨1, λ arg, nat.succ (arg ⟨0,nat.zero_lt_succ 0⟩)⟩],
     intros C ih n, hinduction n,
-    sorry,
-    sorry
+    { fapply ih ⟨0, nat.zero_lt_succ 1⟩ (λ arg, 0), intro k, 
+      hinduction nat.not_lt_zero k.1 k.2 }, 
+    { fapply ih ⟨1, nat.le_refl 2⟩ (fin_map_of_list [n]), intro k,
+      change Σ (m : ℕ), m < 1 at k, hinduction k,
+      have p : fst = 0, from nat.eq_zero_of_le_zero' (nat.le_of_succ_le_succ snd), 
+      sorry }
 end  
 
 @[hott, instance]
