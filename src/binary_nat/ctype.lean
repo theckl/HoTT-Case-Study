@@ -9,6 +9,7 @@ open hott.nat
 
 namespace nat
 
+/- Tools to construct strictly increasing lists of natural numbers.-/
 @[hott]
 inductive gt_list (a : ℕ) : (list ℕ) -> Type
 | empty : gt_list []
@@ -50,10 +51,22 @@ begin
     hinduction decidable_lt hd a,
       hinduction ih, 
         exact decidable.inl (gt_list.next hd tl a_1 a_2),
-        apply decidable.inr, intro gtl, exact a_2 (gt_list_tl gtl),
-      apply decidable.inr, intro gtl, exact a_1 (gt_list_hd gtl)
+        apply decidable.inr, intro gtl, exact a_2 (gt_list_tl' gtl),
+      apply decidable.inr, intro gtl, exact a_1 (gt_list_hd' gtl)
 end
 
 end nat
+
+/- Direction sets on which cubes are built are implemented as strictly increasing lists of
+   natural numbers. -/
+@[hott]
+inductive is_ord_set : list ℕ -> Type
+| empty : is_ord_set []
+| next : Π (n : ℕ) (tl : list ℕ), is_ord_set tl -> nat.gt_list n tl -> is_ord_set (n::tl) 
+
+@[hott]
+structure directions :=
+(dir : list ℕ)
+(ord : is_ord_set dir)
 
 end hott
