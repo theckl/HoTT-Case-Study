@@ -66,7 +66,26 @@ inductive is_ord_set : list ℕ -> Type
 
 @[hott]
 structure directions :=
-(dir : list ℕ)
-(ord : is_ord_set dir)
+  (dir : list ℕ)
+  (ord : is_ord_set dir)
+
+namespace partial_order
+
+@[hott, class] 
+structure partial_order (A : Type _) extends has_le A :=
+  (le_refl : Πa, le a a)
+  (le_trans : Πa b c, le a b → le b c → le a c)
+  (le_antisymm : Πa b, le a b → le b a → a = b)
+
+@[hott]
+def is_po_unit {A : Type _} [partial_order A] (one : A) := 
+  Π a : A, a ≤ one 
+
+@[hott]
+def po_unit_is_unique {A : Type _} [po : partial_order A] : 
+  Π a a' : A, is_po_unit a -> is_po_unit a' -> a = a' :=
+λ a a' pou pou', partial_order.le_antisymm _ _ (pou' a) (pou a')   
+
+end partial_order
 
 end hott
