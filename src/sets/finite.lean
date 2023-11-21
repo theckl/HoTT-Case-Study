@@ -274,11 +274,7 @@ notation x `^[` k `]` := fin_Set_kth x k
    into `C`. -/
 @[hott, hsimp] 
 def fin_map_of_list {C : Type _} (l : list C) : fin_Set (list.length l) -> C :=
-begin 
-  hinduction l,
-  { exact empty_fin_Set_map C },
-  { exact fin_map_ind_rev ih hd } 
-end
+  λ m, list_nth_le l m.1 m.2
 
 @[hott]
 def fin_map_of_list_el {C : Type _} (l : list C) : Π (m : ℕ) (p : m < list.length l),
