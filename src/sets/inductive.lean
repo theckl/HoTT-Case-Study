@@ -9,9 +9,14 @@ open hott.nat is_trunc trunc subset hott.sigma
 namespace set
 
 @[hott]
+def fin_dep_map_of_fin_map {n : ℕ} (f : fin_Set n -> (Σ (A : Type _), A)) :
+  Π (m : fin_Set n), (f m).1 :=
+λ m, (f m).2  
+
+@[hott]
 def fin_dep_map_of_list (l : list (Σ (A : Type _), A)) : 
   Π (m : fin_Set l.length), (list_nth_le l m.1 m.2).1 :=
-λ m, (list_nth_le l m.1 m.2).2
+fin_dep_map_of_fin_map (fin_map_of_list l)
 
 /- An inductive structure on a type `A` consists of finitely many operations of arbitrary 
    arity which satisfy an induction principle on `A` together with an eliminator. -/
@@ -41,7 +46,6 @@ begin
     { fapply ih ⟨0, nat.zero_lt_succ 1⟩ (λ arg, 0), intro k, 
       hinduction nat.not_lt_zero k.1 k.2 }, 
     { fapply ih ⟨1, nat.le_refl 2⟩ (fin_map_of_list [n]), intro k,
-      change Σ (m : ℕ), m < 1 at k, 
       have p : k = ⟨0, nat.zero_lt_succ 0⟩, from 
       begin
         hinduction k, fapply sigma_eq, 
@@ -49,7 +53,7 @@ begin
           apply pathover_of_tr_eq, exact is_prop.elim _ _
       end,
       rwr p, exact ih_1 },
-   { intros C ih m args f, sorry }
+   intros C ih m args f, change ↥(fin_Set 2) at m, sorry 
 end  
 
 @[hott, instance]
