@@ -1,4 +1,4 @@
-import sets.algebra init2 sets.axioms sets.theories categories.basic 
+import sets.algebra init2 sets.axioms categories.basic 
        categories.adjoints categories.strict_cat 
 
 universes v v' u u' w 
