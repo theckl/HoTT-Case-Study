@@ -739,7 +739,7 @@ begin
                        apply pathover_of_tr_eq, exact is_prop.elim _ _                    
 end
 
-@[hott, instance]
+@[hott, instance]  --[GEVE]
 def nat_is_set : is_set ℕ :=
   is_trunc_succ_intro (λ n m : ℕ, is_trunc_equiv_closed_rev 
           -1 (nat_eq_equiv_code n m) (nat_code_is_prop n m))
