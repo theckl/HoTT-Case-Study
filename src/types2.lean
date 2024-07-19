@@ -528,7 +528,7 @@ begin
     exact id_sys_tot_space_contr _ id_sys }
 end    
 
-@[hott,reducible]
+@[hott,reducible] --[GEVE]
 def struct_id_char_of_contr {A : Type _} {a₀ : A} {B : A -> Type _} 
   (b₀ : B a₀) (D : dep_ppred a₀ b₀) : 
   is_contr (Σ (a : A), D.ppred_fst.fam a) -> 
@@ -582,7 +582,7 @@ end
 
    [Zero] and [One] are equivalent to [true] and [false] in [prop_logic], but
    we want to use them without logical connotations. -/
-@[hott]
+@[hott]  --[GEVE]
 inductive Zero : Type _
 
 @[hott]
@@ -592,7 +592,7 @@ begin
   induction f₁,
 end  
 
-@[hott, instance]
+@[hott, instance] --[GEVE]
 def Zero_is_prop : is_prop Zero :=
   is_prop.mk eq_Zero 
 
@@ -611,11 +611,11 @@ begin
   { apply pathover_of_tr_eq, exact is_prop.elim _ _ } 
 end
 
-@[hott]
+@[hott]  --[GEVE]
 inductive One : Type _  
 | star : One
 
-@[hott]
+@[hott] --[GEVE]
 def eq_One : forall t₁ t₂ : One, t₁ = t₂ :=
 begin 
   intros, 
@@ -627,7 +627,7 @@ end
 @[hott, instance]
 def One_dec_eq : decidable_eq One := assume t₁ t₂, decidable.inl (eq_One t₁ t₂) 
 
-@[hott, instance]
+@[hott, instance] --[GEVE]
 def One_is_prop : is_prop One :=
   is_prop.mk eq_One
 
@@ -647,7 +647,7 @@ begin
 end
 
 @[hott]
-inductive Two : Type _ 
+inductive Two : Type _  --[GEVE]
 | zero : Two 
 | one : Two 
 
@@ -680,7 +680,7 @@ begin intro t; hinduction t; exact One.star; exact One.star end
 def encode_Two : Π t₁ t₂ : Two, (t₁ = t₂) -> code_Two t₁ t₂ :=
   assume t₁ t₂ eq, eq ▸[λ t : Two, code_Two t₁ t] (refl_Two t₁)
 
-@[hott]
+@[hott] --[GEVE]
 def Two_eq_equiv_code : ∀ t₁ t₂ : Two, (t₁ = t₂) ≃ code_Two t₁ t₂ := 
 begin 
   intros t₁ t₂, 
@@ -695,7 +695,7 @@ begin
     hinduction t, exact Zero.rec _ ct, hinduction ct; refl
   end  
 
-@[hott, instance]
+@[hott, instance] --[GEVE]
 def Two_eq_is_prop : Π (t₁ t₂ : Two.{u}), is_prop (t₁ = t₂) :=
   λ t₁ t₂ : Two, is_trunc_equiv_closed_rev.{u u} 
           -1 (Two_eq_equiv_code t₁ t₂) (code_Two_is_prop t₁ t₂)
