@@ -32,7 +32,7 @@ def fib_set_map_is_set {A B : Set} (f : A -> B) (b : B) : is_set (fiber f b) :=
 /- The two versions of the Axiom of Choice, as presented in the HoTT-Book, (3.8.1)
    and (3.8.3). We postulate both as axioms, to keep track of their use, even if by 
    Lem.3.8.2, the two are equivalent. -/
-@[hott]
+@[hott]  --[GEVE]
 def Choice := Π (X : Set.{u}) (A : X -> Set.{v}) 
   (P: Π x : X, A x -> trunctype.{v} -1),
 (forall x : X, ∥ Σ a : A x, P x a ∥) -> ∥ Σ (g : Π x : X, A x), Π x : X, P x (g x) ∥   
