@@ -9,7 +9,7 @@ open is_trunc trunc equiv hott.is_equiv hott.prod
 set_option pp.universes true
 
 /- [and], [or] and [iff] produce propositions from propositions. -/
-@[hott]
+@[hott]  --[GEVE]
 protected def and (P Q : Prop) : Prop :=
   Prop.mk (P × Q) (prod.is_trunc_prod P Q -1)   
 
@@ -29,7 +29,7 @@ begin apply is_prop.mk, intros f g, apply eq_of_homotopy, intro i, exact is_prop
 def inf_conj {I : Type _} (B : I -> Prop) : Prop :=
   Prop.mk (Π i : I, B i) (is_prop_inf_prod B)
 
-@[hott]
+@[hott] --[GEVE]
 protected def or (P Q : Prop) : Prop :=
   ∥P ⊎ Q∥ 
 
@@ -68,7 +68,7 @@ begin intro H, hinduction H with Bi, exact f Bi.1 Bi.2 end
 
 /- We define `Not P` as a map from `P` to `False` in the same universe. 
    Otherwise, `Not` introduces universe levels that cannot easily be controlled. -/
-@[hott] 
+@[hott] --[GEVE]
 def Not (P : trunctype.{u} -1) : Prop :=
   have empty_is_prop : is_prop empty, from 
     begin apply is_prop.mk, intro x, hinduction x end ,
