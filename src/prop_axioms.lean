@@ -35,7 +35,7 @@ def is_prop_true : is_prop true :=
 def True : trunctype.{u} -1 :=
   Prop.mk true is_prop_true  
 
-@[hott]
+@[hott] --[GEVE]
 inductive false : Type u
 
 @[hott]
@@ -325,7 +325,7 @@ def prop_ulift_inv (P : Prop) : prop_ulift P -> P :=
    Diaconescu's Theorem (see [set_axioms]).
    
    The Law of the Excluded Middle, following the HoTT-book, (3.4.1) -/
-@[hott]   
+@[hott]   --[GEVE]
 def ExcludedMiddle := Π (A : Prop), A ⊎ ¬ A
 
 /- The Law of Excluded Middle of a proposition is a proposition. 
