@@ -555,7 +555,7 @@ def car_eq_bij_to_bij_id (A : Set) :
   (car_eq_bij_equiv_bij A A) ⟨idp, ⟨identity A, idpath (@id (car A))⟩⟩ =
   identity A := idp 
 
-@[hott, reducible]
+@[hott, reducible]  --[GEVE]
 def set_eq_equiv_bij {A B : Set} : (A = B) ≃ (bijection A B) :=
   (set_eq_equiv_car_eq_bij A B) ⬝e (car_eq_bij_equiv_bij A B)
 
