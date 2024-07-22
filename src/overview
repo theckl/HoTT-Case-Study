@@ -7,11 +7,11 @@ prop_axioms :   556
 prop_logic  :   223  2620
 sets
   basic     :   790         
-  subset    :   791         
+  subset    :   798         
   finite    :   503         
   axioms    :   355         
   algebra   :   362         
-  quotients :   205  3006   
+  quotients :   205  3013   
 categories
   precat    :   738          
   basic     :   312         
@@ -26,14 +26,19 @@ categories
   pullback  :   908         
   inf_pb    :   252         
   boolean   :   368         
-  sets      :   937  7630
+  sets      :   937  
+  concrete  :    39  7669
 algebra
-  monoid    :    26    26
-
+  monoid    :   204    
+  group     :    13   217
 
                     -----
-                    13282               
+                    13529               
 
 
 Planned changes in Files, from bottom to top: 
 ---------------------------------------------
+- [algebra.monoid] : Define category structures for magmas, (commutative)
+    semigroups and monoids using (relative) concrete categories
+- [categories.concrete] : Construct concrete categories relative to
+    another category from subsets of homomorphism closed under operations
