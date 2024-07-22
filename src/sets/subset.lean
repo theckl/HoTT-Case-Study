@@ -173,6 +173,13 @@ def dec_pred_Set {A : Set} (B : dec_Subset A) : Set :=
   Set.mk (Σ (a : A), B a = Two.one) (is_set_dec_pred B)
 
 @[hott]
+def pred_Set_eq {A : Set} {B : Subset A} {b₁ b₂ : pred_Set B} :
+  b₁.1 = b₂.1 -> b₁ = b₂ :=
+begin 
+  intro p, fapply sigma.sigma_eq, exact p, apply pathover_of_tr_eq, exact is_prop.elim _ _ 
+end 
+
+@[hott]
 def dec_pred_Set_eq {A : Set} {B : dec_Subset A} {b₁ b₂ : dec_pred_Set B} :
   b₁.1 = b₂.1 -> b₁ = b₂ :=
 begin 
