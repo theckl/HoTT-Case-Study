@@ -85,7 +85,7 @@ instance has_coe_to_sort_Magma : has_coe_to_sort Magma :=
  
 attribute [instance] Magma.struct   
 
-@[hott] 
+@[hott, hsimp] 
 def Magma_sigma_equiv : Magma.{u} ≃ Σ (carrier : Set.{u}), has_mul carrier :=
 begin
   fapply equiv.mk,
@@ -103,9 +103,18 @@ def mul_hom_is_set (A B : Magma.{u}) : is_set (mul_hom A.carrier B.carrier) :=
           (mul_hom_to_fun_is_inj A.carrier B.carrier) 
 
 @[hott]
-instance Magma_has_hom : has_hom Magma.{u}  :=
+instance Magma_has_hom : has_hom Magma.{u} :=
   has_hom.mk (λ A B : Magma, Set.mk (mul_hom A.carrier B.carrier) 
                                     (mul_hom_is_set A B))
+
+@[hott]
+def Magma_map_eq_to_hom_eq {A B : Magma.{u}} : 
+  ∀ (f g : A ⟶ B), mul_hom.to_fun f = mul_hom.to_fun g -> f = g :=
+begin
+  intros f g p_fun, hinduction f with f map_mul_f, hinduction g with g map_mul_g,
+  fapply apd011, exact p_fun, 
+  apply pathover_of_tr_eq, exact is_prop.elim _ _
+end
 
 @[hott]
 def Magma_id_hom (A : Magma) : A ⟶ A :=
@@ -136,7 +145,7 @@ end
 
 @[hott]
 def Magma_comp_eq_equiv_iso {A B : Magma.{u}} :
-  (Σ (p : A.carrier = B.carrier), A.struct =[ap trunctype.carrier p] B.struct) ≃ 
+  (Σ (p : A.carrier = B.carrier), A.struct =[p; λ (a : Set), has_mul ↥a] B.struct) ≃ 
   (Σ (i : A.carrier ≅ B.carrier), (∀ a₁ a₂ : A.carrier, 
     (i.hom : A.carrier -> B.carrier) (a₁ * a₂) = (i.hom a₁) * (i.hom a₂))) :=
 begin
@@ -165,18 +174,83 @@ begin
       { apply pathover_of_tr_eq, exact is_prop.elim _ _ } } }
 end
 
-@[hott]
-def Magma_isoequivid (A B : Magma.{u}) : (A = B) ≃ (A ≅ B) :=
+@[hott, hsimp]
+def Magma_comp_idp_to_id_iso {A : Magma.{u}} : 
+  @Magma_comp_eq_equiv_iso A A ⟨idp, idpo⟩ = 
+                           ⟨id_iso A.carrier, λ a₁ a₂ : A.carrier, idp⟩ :=
 begin
-  sorry 
+  fapply sigma.sigma_eq,
+  { exact idp },
+  { apply pathover_of_tr_eq, exact is_prop.elim _ _ }
 end
+
+@[hott]
+def Magma_comp_iso_equiv_iso {A B : Magma.{u}} :
+  (Σ (i : A.carrier ≅ B.carrier), (∀ a₁ a₂ : A.carrier, 
+    (i.hom : A.carrier -> B.carrier) (a₁ * a₂) = (i.hom a₁) * (i.hom a₂))) 
+    ≃ (A ≅ B) :=
+begin
+  fapply equiv.mk, 
+  { intro i_comp, fapply iso.mk,
+    { exact ⟨i_comp.1.hom, i_comp.2⟩ },
+    { fapply is_iso.mk,
+      { fapply mul_hom.mk,
+        { exact i_comp.1.ih.inv },
+        { intros b₁ b₂, 
+          change i_comp.fst.ih.inv ((𝟙 B.carrier : B.carrier -> B.carrier) b₁ * 
+                                (𝟙 B.carrier : B.carrier -> B.carrier) b₂) = _,
+          rwr <- (ap10 i_comp.1.ih.r_inv b₁), rwr <- (ap10 i_comp.1.ih.r_inv b₂),
+          change i_comp.fst.ih.inv (i_comp.fst.hom _ * i_comp.fst.hom _) = _,
+          rwr <- i_comp.2 (i_comp.fst.ih.inv b₁) _, 
+          change (i_comp.fst.hom ≫ i_comp.fst.ih.inv) _ = _,
+          rwr i_comp.1.ih.l_inv } },
+      { apply Magma_map_eq_to_hom_eq _ _, exact i_comp.1.ih.r_inv },
+      { apply Magma_map_eq_to_hom_eq _ _, exact i_comp.1.ih.l_inv } } },
+  { fapply adjointify,
+    { intro i, fapply dpair,
+      { fapply iso.mk,
+        { exact i.hom.1 },
+        { fapply is_iso.mk,
+          { exact i.ih.inv.1 },
+          { change (i.ih.inv ≫ i.hom).to_fun = _, rwr i.ih.r_inv },
+          { change (i.hom ≫ i.ih.inv).to_fun = _, rwr i.ih.l_inv } } },
+      { intros a₁ a₂, exact i.hom.2 a₁ a₂ } },
+    { intro i, apply hom_eq_to_iso_eq, apply Magma_map_eq_to_hom_eq, exact idp },
+    { intro i_comp, hinduction i_comp with i mul_map, fapply sigma.sigma_eq, 
+      { apply hom_eq_to_iso_eq, exact idp },
+      { apply pathover_of_tr_eq, exact is_prop.elim _ _ } } }
+end
+
+@[hott, hsimp]
+def Magma_comp_id_iso_to_id_iso {A : Magma.{u}} :
+  @Magma_comp_iso_equiv_iso A A ⟨id_iso A.carrier, λ a₁ a₂ : A.carrier, idp⟩ =
+    id_iso A :=
+begin
+  apply hom_eq_to_iso_eq, apply Magma_map_eq_to_hom_eq, exact idp
+end
+
+@[hott, hsimp]
+def Magma_isoequivid (A B : Magma.{u}) : (A = B) ≃ (A ≅ B) :=
+  equiv.eq_equiv_fn_eq_of_equiv Magma_sigma_equiv A B ⬝e 
+  (sigma.sigma_eq_equiv _ _) ⬝e
+  Magma_comp_eq_equiv_iso ⬝e Magma_comp_iso_equiv_iso ⬝e equiv.rfl
+
+@[hott, hsimp]
+def equiv.idp_equiv_fn_idp_of_equiv {A B : Type (u+1)} (f : A ≃ B) 
+  (a : A) : equiv.eq_equiv_fn_eq_of_equiv f a a idp = idp :=
+idp
+
+set_option pp.universes true
 
 @[hott]
 def Magma_idtoiso {A B : Magma.{u}} : 
   (Magma_isoequivid A B).to_fun = idtoiso :=
 begin
-  fapply eq_of_homotopy, intro p, hinduction p, rwr idtoiso_refl_eq,
-  sorry
+  fapply eq_of_homotopy, intro p, hinduction p, rwr idtoiso_refl_eq, 
+  change equiv.rfl.to_fun (Magma_comp_iso_equiv_iso.to_fun 
+    (Magma_comp_eq_equiv_iso.to_fun ⟨idp, idpo⟩)) = equiv.rfl.to_fun (id_iso A), 
+  apply ap equiv.rfl.to_fun, rwr <- Magma_comp_id_iso_to_id_iso,
+  apply ap Magma_comp_iso_equiv_iso.to_fun, rwr <- Magma_comp_idp_to_id_iso 
 end
 
 @[hott, instance]
