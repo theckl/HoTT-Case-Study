@@ -27,13 +27,13 @@ categories
   inf_pb    :   252         
   boolean   :   368         
   sets      :   937  
-  concrete  :    39  7669
+  concrete  :    67  7697
 algebra
-  monoid    :   204    
-  group     :    13   217
+  monoid    :   278    
+  group     :    13   291
 
                     -----
-                    13529               
+                    13621               
 
 
 Planned changes in Files, from bottom to top: 
