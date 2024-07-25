@@ -151,6 +151,25 @@ def idtoiso_comp_eq {C : Type u} [is_precat.{v} C] {c₁ c₂ c₃ : C}
   (idtoiso p).hom ≫ (idtoiso q).hom = (idtoiso (p ⬝ q)).hom :=
 begin hinduction p, hinduction q, hsimp end   
 
+/- Isomorphisms compose to isomorphisms. -/
+@[hott]
+def iso_comp {C : Type u} [is_precat.{v} C] {c₁ c₂ c₃ : C} :  
+  (c₁ ≅ c₂) -> (c₂ ≅ c₃) -> (c₁ ≅ c₃) :=
+begin 
+  intros f g, fapply iso.mk, exact f.hom ≫ g.hom,
+  fapply is_iso.mk,
+  { exact g.ih.inv ≫ f.ih.inv },
+  { rwr is_precat.assoc, rwr <- is_precat.assoc _ f.hom, 
+    rwr f.ih.r_inv, rwr is_precat.id_comp, rwr g.ih.r_inv },
+  { rwr is_precat.assoc, rwr <- is_precat.assoc g.hom, 
+    rwr g.ih.l_inv, rwr is_precat.id_comp, rwr f.ih.l_inv }
+end
+
+@[hott]
+def iso_comp_is_iso {C : Type u} [is_precat.{v} C] {c₁ c₂ c₃ : C} :  
+  ∀ (f : c₁ ≅ c₂) (g : c₂ ≅ c₃), is_iso (f.hom ≫ g.hom) :=
+λ f g, (iso_comp f g).ih
+
 /- `idtoiso` commutes with functors -/
 @[hott]
 def funct_idtoiso {C : Type _} [is_precat C] {c₁ c₂ : C} 
@@ -160,6 +179,19 @@ begin
   hinduction p, rwr idtoiso_refl_eq, rwr ap_idp, 
   rwr idtoiso_refl_eq, change F.map (𝟙 c₁) = _, rwr F.map_id 
 end  
+
+/- Functors map isomorphisms to isomorphisms. -/
+@[hott]
+def funct_iso_iso {C : Type _} [is_precat C] {c₁ c₂ : C} 
+  {D : Type _} [is_precat D] (F : C ⥤ D) : c₁ ≅ c₂ -> (F.obj c₁ ≅ F.obj c₂) :=
+begin
+  intro i, fapply iso.mk, 
+  { exact F.map i.hom },
+  { fapply is_iso.mk, 
+    { exact F.map i.ih.inv },
+    { rwr <- F.map_comp, rwr i.ih.r_inv, rwr F.map_id },
+    { rwr <- F.map_comp, rwr i.ih.l_inv, rwr F.map_id } }
+end
 
 /- The next two facts correspond to [HoTT-Book, Lem.9.1.9]. -/
 @[hott]
