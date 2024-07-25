@@ -14,7 +14,7 @@ sets
   quotients :   205  3013   
 categories
   precat    :   738          
-  basic     :   312         
+  basic     :   344         
   examples  :   564         
   subobj    :   574
   subcat    :   125         
@@ -27,13 +27,13 @@ categories
   inf_pb    :   252         
   boolean   :   368         
   sets      :   937  
-  concrete  :   117  7747
+  concrete  :   163  7825
 algebra
   monoid    :   278    
   group     :    13   291
 
                     -----
-                    13671               
+                    13749               
 
 
 Planned changes in Files, from bottom to top: 
@@ -41,4 +41,6 @@ Planned changes in Files, from bottom to top:
 - [algebra.monoid] : Define category structures for magmas, (commutative)
     semigroups and monoids using (relative) concrete categories
 - [categories.concrete] : Construct concrete categories relative to
-    another category from subsets of homomorphism closed under operations
+    another category from subsets of homomorphism closed under operations &
+    category structures on the fibers
+- [categories.basic] : functors map isomorphisms to isomorphisms
