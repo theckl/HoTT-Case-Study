@@ -99,8 +99,6 @@ begin
     change _ ≫ 𝟙 _ ≫ _ = _, rwr is_precat.id_comp }
 end
 
---set_option trace.class_instances true
-
 @[hott, instance]
 def concrete_fib_is_precat {C : Type u} {X : Category.{u u}} (f : C -> X) 
   [hom_sys : concrete_hom_system f] : Π (x : X), is_precat.{u u} (fiber f x) :=
@@ -151,17 +149,44 @@ begin
 end
 
 /- We deduce that the precategory `C` over the category `X` is a category if the fibers
-   over `X` are a category (which can be assumed as an instance). -/
+   over `X` are a category (which can be assumed as an instance). 
+   
+   We also assume that the fibers are sets. At the moment, this is enough for the
+   applications, but it may be possible to skip this assumption. -/
 @[hott]
 class concrete_fibs_are_cat {C : Type u} {X : Category} (f : C -> X) 
   [hom_sys : concrete_hom_system f] :=
 (ideqviso : ∀ (x : X) (c d : fiber f x), is_equiv (@idtoiso _ _ c d))
+
+@[hott, instance]
+def concrete_fibs_cat {C : Type u} {X : Category} (f : C -> X) 
+  [hom_sys : concrete_hom_system f] [concrete_fibs_are_cat f] :
+  Π (x : X), is_cat (fiber f x) :=
+λ x, is_cat.mk (concrete_fibs_are_cat.ideqviso x)  
 
 @[hott]
 def concrete_fibcat_fib_isotoid {C : Type u} {X : Category} (f : C -> X) 
   [hom_sys : concrete_hom_system f] [concrete_fibs_are_cat f] :
   Π {x : X} {c d : fiber f x}, (c ≅ d) -> (c = d) :=
 λ x c d, (concrete_fibs_are_cat.ideqviso x c d).inv
+
+@[hott]
+def concrete_fibcat_fib_id_iso_to_idp {C : Type u} {X : Category} (f : C -> X) 
+  [hom_sys : concrete_hom_system f] [concrete_fibs_are_cat f] :
+  Π {x : X} {c : fiber f x}, concrete_fibcat_fib_isotoid f (id_iso c) = idp :=
+begin
+  intros x c, rwr <- idtoiso_refl_eq, change idtoiso⁻¹ᶠ _ = _,
+  rwr @is_equiv.left_inv _ _ idtoiso (concrete_fibs_are_cat.ideqviso x c c) idp
+end
+
+@[hott]
+class concrete_fibs_are_set {C : Type u} {X : Category} (f : C -> X) :=
+  (set : ∀ (x : X), is_set (fiber f x))
+
+@[hott, instance]
+def concrete_fibset_set {C : Type u} {X : Category} (f : C -> X) 
+  [concrete_fibs_are_set f] : Π {x : X}, is_set (fiber f x) :=
+λ x, concrete_fibs_are_set.set f x  
 
 /- We construct `isotoid`  and `idtoiso` in several steps which we show to be invertible. -/
 @[hott]
@@ -178,6 +203,23 @@ begin
     { exact concrete_fib_hom_is_iso f _ } } 
 end 
 
+def concrete_id_iso_fib_id_iso {C : Type u} {X : Category} (f : C -> X) 
+  [concrete_hom_system f] [concrete_fibs_are_cat f] [concrete_fibs_are_set f] : 
+  Π {c : C}, concrete_iso_fib_iso f (id_iso c) = dpair idp (id_iso _) :=
+begin
+  intro c, 
+  fapply sigma.sigma_eq, 
+  { change category.isotoid _ = _, rwr funct_id_iso_id_iso, 
+     rwr isotoid_id_refl ((concrete_forget_functor f).obj c) }, 
+  { apply pathover_of_tr_eq,
+    have H : Π (x : X) (c d : fiber f x), is_prop (c ≅ d), from 
+    begin 
+      intros x c d, 
+      exact @cat_set_eq_is_prop.{u u} (fiber f x) _ _ c d 
+    end,   
+    exact @is_prop.elim _ (H _ _ _) _ _ }
+end   
+
 @[hott]
 def concrete_fib_iso_iso {C : Type u} {X : Category} (f : C -> X) 
   [hom_sys : concrete_hom_system f] :  
@@ -191,6 +233,12 @@ begin
     { change (i_fib.ih.inv ≫ i_fib.hom).1 = _, rwr i_fib.ih.r_inv },
     { change (i_fib.hom ≫ i_fib.ih.inv).1 = _, rwr i_fib.ih.l_inv } }
 end
+
+@[hott]
+def concrete_fib_id_iso_id_iso {C : Type u} {X : Category} (f : C -> X) 
+  [hom_sys : concrete_hom_system f] :  
+  Π {c : C}, concrete_fib_iso_iso f (dpair (@idp _ (f c)) (id_iso _)) = id_iso c :=
+λ c, hom_eq_to_iso_eq idp   
 
 @[hott]
 def concrete_iso_fib_iso_rinv {C : Type u} {X : Category} (f : C -> X) 
@@ -219,6 +267,26 @@ begin
 end
 
 @[hott]
+def concrete_fib_idp_fib_id_iso {C : Type u} {X : Category} (f : C -> X) 
+  [hom_sys : concrete_hom_system f] : 
+  Π {c : C}, concrete_fib_eq_fib_iso f (dpair (@idp _ (f c)) idp) = 
+             ⟨@idp _ (f c), id_iso _⟩ :=
+λ c, idp
+
+@[hott]
+def concrete_fib_id_iso_fib_idp {C : Type u} {X : Category} (f : C -> X) 
+  [hom_sys : concrete_hom_system f] [concrete_fibs_are_cat f]: 
+  Π {c : C}, concrete_fib_iso_fib_eq f ⟨@idp _ (f c), id_iso _⟩ =
+              (dpair (@idp _ (f c)) idp):=
+begin 
+  intro c, fapply sigma.sigma_eq,
+  { exact idp },
+  { apply pathover_of_tr_eq, rwr idp_tr, 
+    change concrete_fibcat_fib_isotoid f (id_iso _) = _,
+    rwr concrete_fibcat_fib_id_iso_to_idp } 
+end
+
+@[hott]
 def concrete_fib_iso_fib_eq_rinv {C : Type u} {X : Category} (f : C -> X) 
   [hom_sys : concrete_hom_system f] [concrete_fibs_are_cat f] :  
   Π {c d : C} (pi : Σ (p : f c = f d), fiber.mk c p ≅ ⟨d, idp⟩),
@@ -229,43 +297,73 @@ begin
   apply (concrete_fibs_are_cat.ideqviso _ _ _).right_inv
 end 
 
+/- In the last step for an equivalent characterisation of identity types in a type `C` 
+   over a category `X` we use that the fibers are sets to show inverseness, because for
+   this we need to prove equalities of equalities of objects. -/
+@[hott, hsimp]
 def concrete_fib_eq_eq {C : Type u} {X : Category} (f : C -> X) 
   [hom_sys : concrete_hom_system f] :  
   Π {c d : C}, (Σ (p : f c = f d), fiber.mk c p = ⟨d, idp⟩) -> (c = d) :=
 λ c d pp, ap fiber.point pp.2 
 
+@[hott, hsimp]
 def concrete_eq_fib_eq {C : Type u} {X : Category} (f : C -> X) 
   [hom_sys : concrete_hom_system f] :  
   Π {c d : C}, (c = d) -> (Σ (p : f c = f d), fiber.mk c p = ⟨d, idp⟩) :=
-sorry
+begin
+  intros c d p, fapply dpair, exact ap f p, fapply apd011 fiber.mk, exact p,
+  hinduction p, rwr ap_idp
+end
+
+@[hott]
+def concrete_fib_eq_eq_rinv {C : Type u} {X : Category} (f : C -> X) 
+  [hom_sys : concrete_hom_system f] [concrete_fibs_are_set f] :  
+  Π {c d : C} (pp : Σ (p : f c = f d), fiber.mk c p = ⟨d, idp⟩),
+    concrete_eq_fib_eq f (concrete_fib_eq_eq f pp) = pp :=
+begin
+  intros c d pp, hinduction pp with pf p_fib, hsimp,
+  fapply sigma.sigma_eq, 
+  { change ap f _ = pf, rwr fiber_ap_ap },
+  { apply pathover_of_tr_eq, exact is_set.elim _ _ }
+end
+
+@[hott, hsimp]
+def concrete_fibcat_idtoiso {C : Type u} {X : Category} (f : C -> X) 
+  [concrete_hom_system f] [concrete_fibs_are_cat f] : 
+  Π {c d : C}, (c = d) -> (c ≅ d) :=
+λ c d i, concrete_fib_iso_iso f (concrete_fib_eq_fib_iso f (concrete_eq_fib_eq f i))
+
+@[hott]
+def concrete_fibcat_idtoiso_eq {C : Type u} {X : Category} (f : C -> X) 
+  [concrete_hom_system f] [concrete_fibs_are_cat f] : 
+  Π {c d : C} (p : c = d), idtoiso p = concrete_fibcat_idtoiso f p :=
+begin
+  intros c d p, hinduction p, rwr idtoiso_refl_eq, hsimp, 
+  change id_iso _ = concrete_fib_iso_iso f (concrete_fib_eq_fib_iso f (dpair idp idp)),
+  rwr concrete_fib_idp_fib_id_iso, rwr concrete_fib_id_iso_id_iso
+end 
 
 @[hott]
 def concrete_fibcat_isotoid {C : Type u} {X : Category} (f : C -> X) 
-  [hom_sys : concrete_hom_system f] [concrete_fibs_are_cat f] : 
+  [concrete_hom_system f] [concrete_fibs_are_cat f] : 
   Π {c d : C}, (c ≅ d) -> (c = d) :=
-begin
-  intros c d i, 
-  let p : f c = f d := category.isotoid (funct_iso_iso (concrete_forget_functor f) i),
-  fapply @ap (fiber f (f d)) C fiber.point ⟨c,p⟩ ⟨d,idp⟩, apply concrete_fibcat_fib_isotoid f,
-  fapply iso.mk,
-  { fapply dpair, exact i.hom, rwr idtoiso_comp_eq, rwr idp_inv, rwr con_idp, 
-    rwr category.idtoiso_rinv' },
-  { fapply is_iso.mk,
-    { fapply dpair, exact i.ih.inv, rwr idtoiso_comp_eq, rwr idp_con, rwr id_inv_iso_inv,
-      rwr category.idtoiso_rinv' },
-    { apply concrete_fib_hom_eq_from_concrete_hom_eq, exact i.ih.r_inv },
-    { apply concrete_fib_hom_eq_from_concrete_hom_eq, exact i.ih.l_inv } }
-end 
+λ c d i, concrete_fib_eq_eq f (concrete_fib_iso_fib_eq f (concrete_iso_fib_iso f i)) 
 
 @[hott, instance]
 def concrete_fib_cat_to_concrete_cat {C : Type u} {X : Category} (f : C -> X) 
-  [hom_sys : concrete_hom_system f] [concrete_fibs_are_cat f] : 
+  [concrete_hom_system f] [concrete_fibs_are_cat f] [concrete_fibs_are_set f] : 
   is_cat C :=
 begin
   apply is_cat.mk , intros c d, fapply adjointify,
   { intro i, exact concrete_fibcat_isotoid f i },
-  { intro i, apply hom_eq_to_iso_eq, apply concrete_hom_eq_from_hom_eq, sorry },
-  { intro p, hinduction p, rwr idtoiso_refl_eq, sorry }
+  { intro i, rwr concrete_fibcat_idtoiso_eq f, 
+    change concrete_fib_iso_iso f (concrete_fib_eq_fib_iso f (concrete_eq_fib_eq f
+                                                        (concrete_fib_eq_eq f _))) = _,
+    rwr concrete_fib_eq_eq_rinv f, rwr concrete_fib_iso_fib_eq_rinv f, 
+    rwr concrete_iso_fib_iso_rinv f },
+  { intro p, hinduction p, rwr idtoiso_refl_eq, 
+    change concrete_fib_eq_eq _ _ = _, rwr concrete_id_iso_fib_id_iso f, 
+    rwr concrete_fib_id_iso_fib_idp f }
 end
 
 end hott
