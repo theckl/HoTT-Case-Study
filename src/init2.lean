@@ -137,6 +137,12 @@ def ap0111' {A B C : Type _} {D : Type _} (f : A -> B -> C -> D)
   f a₁ b₁ c₁ = f a₂ b₂ c₂ := 
 begin hinduction p₁, hinduction p₂, hinduction p₃, refl end
 
+@[hott]
+def apd011_idp_idpo {A : Type _} {B : A -> Type _} {C : Type _} 
+  (f : Π (a : A), B a -> C) {a : A} {b : B a} :
+  apd011 f (@idp _ a) (@idpo _ _ a b) = idp :=
+idp
+
 @[hott] 
 def apd0111' {A : Type _} {B C : A -> Type _} {D : Type _} 
   (f : Π (a : A), B a -> C a → D) {a₁ a₂ : A} {b₁ : B a₁} {b₂ : B a₂} {c₁ : C a₁} 
