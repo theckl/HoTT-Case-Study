@@ -116,7 +116,9 @@ calc g   = g ≫ 𝟙 a : by hsimp
 
 /- Isomorphisms are uniquely determined by their underlying homomorphism:
    The inverse map by functorial equalities, and the functorial equalities 
-   because the types of homomorphisms are sets. -/
+   because the types of homomorphisms are sets. 
+   
+   As a consequence, isomorphisms between two given objects are also sets. -/
 @[hott]
 def hom_eq_to_iso_eq {C : Type u} [is_precat.{v} C] {a b : C} {i j : a ≅ b} :
   i.hom = j.hom -> i = j :=
@@ -124,6 +126,27 @@ begin
   hinduction i, hinduction j,
   intro hom_eq, fapply apd011 iso.mk, 
   exact hom_eq, apply pathover_of_tr_eq, exact is_prop.elim _ _
+end
+
+@[hott]
+def iso_eq_eqv_hom_eq {C : Type u} [is_precat.{v} C] {a b : C} {i j : a ≅ b} :
+  (i = j) ≃ i.hom = j.hom :=
+begin
+  fapply equiv.mk, exact ap iso.hom, 
+  fapply adjointify, exact hom_eq_to_iso_eq, 
+  { intro h, hinduction i, hinduction j, 
+    change ap _ (apd011 _ _ _) = h, rwr ap_apd011 iso.mk _ _ iso.hom (λ a b, idp), 
+    rwr idp_con },
+  { intro i_eq, hinduction i_eq, rwr ap_idp, hinduction i, 
+    change apd011 iso.mk idp (pathover_of_tr_eq (is_prop.elim ih ih)) = _, hsimp,
+    change apd011 iso.mk idp idpo = _, rwr apd011_idp_idpo },
+end
+
+@[hott, instance]
+def iso_is_set {C : Type u} [is_precat.{v} C] (a b : C) : is_set (a ≅ b) :=
+begin
+  apply is_trunc_succ_intro, intros i j,
+  apply @is_trunc_equiv_closed_rev _ _ -1 iso_eq_eqv_hom_eq, apply_instance
 end
 
 @[hott, hsimp]
@@ -193,6 +216,13 @@ begin
     { rwr <- F.map_comp, rwr i.ih.l_inv, rwr F.map_id } }
 end
 
+@[hott]
+def funct_id_iso_id_iso {C : Type _} [is_precat C] {D : Type _} [is_precat D] 
+  (F : C ⥤ D) : Π {c : C}, funct_iso_iso F (id_iso c) = id_iso (F.obj c) :=
+begin
+  intro c, apply hom_eq_to_iso_eq, change F.map (𝟙 _) = _, rwr functor.map_id
+end
+
 /- The next two facts correspond to [HoTT-Book, Lem.9.1.9]. -/
 @[hott]
 def id_hom_tr_comp {C : Type u} [is_precat.{v} C] {c₁ c₂ d : C} 
@@ -241,6 +271,11 @@ assume a b iso,
 @is_equiv.inv _ _ _ (is_cat.ideqviso a b) iso  
 
 @[hott, hsimp]
+def category.ideqviso {C : Category} : 
+  Π {a b : C}, (a = b) ≃ (a ≅ b) :=
+λ a b, equiv.mk idtoiso (is_cat.ideqviso a b)
+
+@[hott, hsimp]
 def category.idtoiso_rinv {C : Category} {a b : C} :
   ∀ i : a ≅ b, idtoiso (idtoiso⁻¹ᶠ i) = i :=
 is_equiv.right_inv (@idtoiso _ _ a b) 
@@ -282,6 +317,16 @@ begin
   rwr category.idtoiso_linv (idtoiso⁻¹ᶠ i),
   exact id_hom_tr_comp' (idtoiso⁻¹ᶠ i) h
 end 
+
+/- In categories, identity types are sets. In categories whose objects form a set, 
+   isomorphism types are propositions (since identity types are propositions). -/
+@[hott, instance]
+def cat_eq_is_set {C : Category} {c₁ c₂ : C} : is_set (c₁ = c₂) :=
+  is_trunc_equiv_closed_rev 0 category.ideqviso (iso_is_set c₁ c₂)
+
+@[hott, instance]
+def cat_set_eq_is_prop {C : Type _} [is_set C] [H : is_cat C] {c₁ c₂ : C} : is_prop (c₁ ≅ c₂) :=
+  is_trunc_equiv_closed -1 (@category.ideqviso (Category.mk C H) _ _) (is_trunc_eq -1 _ _)
 
 /- A modified criterion for equality of functors -/
 @[hott]
