@@ -234,6 +234,13 @@ def fiber_precomp {A B C : Type _} (f : A -> B) (g : B -> C) (c : C) :
   fiber (g ∘ f) c -> fiber g c :=
 begin intro fib_gf, fapply fiber.mk, exact f fib_gf.1, exact fib_gf.2 end
 
+@[hott]
+def fiber_ap_ap {A B : Type _} (f : A -> B) {b : B} {fib₁ fib₂ : fiber f b}
+  (p : fib₁ = fib₂) : ap f (ap fiber.point p) = fib₁.2 ⬝ fib₂.2⁻¹ :=
+begin 
+  hinduction p, rwr con.right_inv
+end
+
 /- We use Egbert Rijke's insight that the main tool to deal with identity types in 
    HoTT is the Structure Identity Principle for Σ-types [Rijke-Book, Thm.11.6.2]. 
    It is the dependent version of the Fundamental Theorem of identity types
