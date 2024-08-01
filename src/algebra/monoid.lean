@@ -1,4 +1,4 @@
-import hott.algebra.group hott.arity sets.subset categories.sets
+import hott.algebra.group hott.arity sets.subset categories.sets categories.concrete
 
 universes u u' v w
 hott_theory
@@ -9,9 +9,64 @@ open is_trunc hott.algebra hott.eq precategories categories hott.is_equiv
 
 namespace algebra
 
-/- Building on the algebraic hierarchy in [hott.algebra] we introduce 
-   homomorphisms of algebraic structures and show that they form 
-   categories. -/
+/- Building on the algebraic hierarchy in [hott.algebra] we introduce homomorphisms of 
+   algebraic structures as extensions of homomorphisms of underlying algebraic structures
+   and use the machinery of concrete categories to show that together with the objects, 
+   they form categories. 
+   
+   In more details, we need to construct a homomorphism system over the projection map to 
+   the underlying algebraic structure, show that the fibers are a set and that the 
+   induced precategory structure on the fibers is actually a category. -/
+
+/- We start with magmas: An underlying set is provided with a multiplication. -/
+@[hott]
+structure Magma := 
+  (carrier : Set)
+  (struct : has_mul carrier)
+
+@[hott] 
+instance has_coe_to_sort_Magma : has_coe_to_sort Magma := 
+  ⟨_, Magma.carrier⟩
+
+attribute [instance] Magma.struct   
+
+/- The projection map. -/
+@[hott]
+def Magma_forget : Magma -> Set_Category.{u} :=
+  Magma.carrier
+
+@[hott, instance]
+def Magma_has_mul (A : Magma) : has_mul (Magma_forget A).carrier :=
+  A.struct
+
+@[hott, hsimp] 
+def Magma_sigma_equiv : Magma.{u} ≃ Σ (carrier : Set.{u}), has_mul carrier :=
+begin
+  fapply equiv.mk,
+  { intro A, exact ⟨A.carrier, A.struct⟩ },
+  { fapply adjointify, 
+    { intro AS, exact Magma.mk AS.1 AS.2 },
+    { intro AS, hinduction AS, exact idp },
+    { intro A, hinduction A, exact idp } }
+end
+
+/- The homomorphism system over the projection map. -/
+@[hott, instance]
+def Magma_hom_system : concrete_hom_system.{u u+1} Magma_forget := 
+begin 
+  fapply concrete_hom_system.mk, 
+  { intros A B, intro f, fapply trunctype.mk, 
+    { exact ∀ a₁ a₂ : A.carrier, f (a₁ * a₂) = f a₁ * f a₂ }, 
+    apply_instance },
+  { intro A, intros a₁ a₂, exact idp }, 
+  { intros A B C g h el_g el_h a₁ a₂, change h (g _) = h (g _) * h (g _), 
+    rwr el_g, rwr el_h },
+  { intros A B g gih el_g b₁ b₂, 
+    change gih.inv ((𝟙 (Magma_forget B) : B.carrier -> B.carrier) b₁ * 
+                    (𝟙 (Magma_forget B) : B.carrier -> B.carrier) b₂) = _,
+    rwr <- ap10 gih.r_inv b₁, rwr <- ap10 gih.r_inv b₂, change gih.inv (g _ * g _) = _, 
+    rwr <- el_g, change (g ≫ gih.inv) _ = _, rwr gih.l_inv }
+end
 
 @[hott, instance]
 def has_mul_is_set {A : Type _} [is_set A] : is_set (has_mul A) :=
@@ -24,6 +79,49 @@ begin
       { intro hm, hinduction hm, exact idp },
       { intro mul, exact idp } } },
   { apply_instance }
+end
+
+@[hott]
+def Magma_forget_fib_equiv_pr1_fib (A : Set.{u}) :
+  fiber Magma_forget A ≃ fiber (@sigma.fst.{u+1 u} _ (λ A : Set, has_mul A)) A :=
+begin
+  fapply equiv.mk,
+  { intro M_fib, fapply fiber.mk, 
+    { exact ⟨M_fib.1.carrier, M_fib.1.struct⟩ },
+    { exact M_fib.2 } },
+  { fapply adjointify,
+    { intro s_fib, fapply fiber.mk,
+      { exact Magma.mk s_fib.1.1 s_fib.1.2 },
+      { exact s_fib.2 } },
+    { intro s_fib, hinduction s_fib with s s_eq, hinduction s with s1 s2, exact idp },
+    { intro M_fib, hinduction M_fib with M M_eq, hinduction M with Mc Mh, exact idp } }
+end
+
+/- Fibers are sets. -/
+@[hott, instance]
+def Magma_forget_fib_is_set {A : Set} : concrete_fibs_are_set Magma_forget :=
+begin
+  apply concrete_fibs_are_set.mk, intro A,
+  fapply is_trunc_equiv_closed_rev 0 (Magma_forget_fib_equiv_pr1_fib A), 
+  fapply is_trunc_equiv_closed_rev 0, exact fiber.fiber_pr1 (λ A : Set, has_mul A) A,
+  exact has_mul_is_set
+end
+
+/- Fibers are categories. -/
+@[hott, instance]
+def Magma_forget_fib_is_cat : concrete_fibs_are_cat Magma_forget :=
+begin
+  apply concrete_fibs_are_cat.mk, intros A M N, 
+  hinduction M with M M_eq, hinduction M with B mul_B,
+  hinduction N with N N_eq, hinduction N with C mul_C, 
+  fapply adjointify, 
+  { intro i, fapply fiber.fiber_eq,
+    { fapply apd011 Magma.mk, 
+      { exact M_eq ⬝ N_eq⁻¹ },
+      { sorry } },
+    { sorry } },
+  { sorry },
+  { sorry }
 end
 
 /- `mul_hom A B` are the homomorphisms in the category of `Magma`s. -/
@@ -73,28 +171,6 @@ is_mul_hom.map_mul' f
 def is_mul_hom.to_mul_hom (A : Type _) (B : Type _) [has_mul A] [has_mul B] 
   [is_set A] [is_set B] (f : A -> B) [is_mul_hom f] : mul_hom A B :=
 mul_hom.mk f (map_mul f)
-
-@[hott]
-structure Magma := 
-  (carrier : Set.{u})
-  (struct : has_mul carrier)
-
-@[hott] 
-instance has_coe_to_sort_Magma : has_coe_to_sort Magma := 
-  ⟨_, Magma.carrier⟩
- 
-attribute [instance] Magma.struct   
-
-@[hott, hsimp] 
-def Magma_sigma_equiv : Magma.{u} ≃ Σ (carrier : Set.{u}), has_mul carrier :=
-begin
-  fapply equiv.mk,
-  { intro A, exact ⟨A.carrier, A.struct⟩ },
-  { fapply adjointify, 
-    { intro AS, exact Magma.mk AS.1 AS.2 },
-    { intro AS, hinduction AS, exact idp },
-    { intro A, hinduction A, exact idp } }
-end
 
 @[hott]
 def mul_hom_is_set (A B : Magma.{u}) : is_set (mul_hom A.carrier B.carrier) :=
