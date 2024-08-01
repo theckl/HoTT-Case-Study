@@ -165,7 +165,7 @@ assume B,
 @is_trunc_sigma _ (λ a : A, B a = Two.one) 0 _ H
 
 @[hott]
-def pred_Set {A : Set.{u}} (B : Subset A) : Set :=
+def pred_Set {A : Set} (B : Subset A) : Set :=
   Set.mk (Σ (a : A), B a) (is_set_pred B)  
 
 @[hott]
@@ -173,7 +173,7 @@ def dec_pred_Set {A : Set} (B : dec_Subset A) : Set :=
   Set.mk (Σ (a : A), B a = Two.one) (is_set_dec_pred B)
 
 @[hott]
-def pred_Set_eq {A : Set} {B : Subset A} {b₁ b₂ : pred_Set B} :
+def pred_Set_eq {A : Set.{u}} {B : Subset A} {b₁ b₂ : pred_Set B} :
   b₁.1 = b₂.1 -> b₁ = b₂ :=
 begin 
   intro p, fapply sigma.sigma_eq, exact p, apply pathover_of_tr_eq, exact is_prop.elim _ _ 
