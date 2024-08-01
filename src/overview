@@ -40,7 +40,5 @@ Planned changes in Files, from bottom to top:
 ---------------------------------------------
 - [algebra.monoid] : Define category structures for magmas, (commutative)
     semigroups and monoids using (relative) concrete categories
-- [categories.concrete] : Construct concrete categories relative to
-    another category from subsets of homomorphism closed under operations &
-    category structures on the fibers
-- [categories.basic] : functors map isomorphisms to isomorphisms
+- [categories.concrete] : Construct concrete categories of sigma types
+- [categories.basic] : isomorphic precategories are both categories
