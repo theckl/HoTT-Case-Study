@@ -384,6 +384,20 @@ begin
   rwr (@is_cat.ideqviso _ (Category.struct A) _ _).adj
 end 
 
+/- Isomorphic precategories both have a category structure, or none. -/
+@[hott]
+def is_precat_iso (C D : Type _) [HC : is_precat C] [HD : is_precat D] :=
+  precat_iso (Precategory.mk C HC) (Precategory.mk D HD)
+
+@[hott]
+def precat_iso_cat_cat {C D : Type _} [HC : is_precat C] [HD : is_precat D] :
+  is_precat_iso C D -> is_cat C -> is_cat D :=
+begin
+  intros is_precat_iso is_cat_C, change is_cat (Precategory.mk D HD).obj, 
+  rwr <- ap Precategory.obj ((precat_id_equiv_iso _ _).to_fun⁻¹ᶠ is_precat_iso),
+  assumption
+end 
+
 end categories
 
 end hott
