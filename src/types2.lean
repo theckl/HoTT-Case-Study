@@ -46,6 +46,12 @@ begin
   fapply sigma.sigma_eq, refl, apply pathover_idp_of_eq, exact r
 end  
 
+@[hott]
+def sigma.sigma_equiv_sigma_right_fst_eq : Π {A : Type _} {B C : A → Type _} 
+  (Heqv : Π (a : A), B a ≃ C a) (ab : Σ (a : A), B a), 
+  (sigma.sigma_equiv_sigma_right Heqv ab).1 = ab.1 :=
+begin intros A B C Heqv ab, hinduction ab, exact idp end 
+
 /- The decode-encode technique for sums; it is contained in [types.sum] from the HoTT3 
    library, but this file does not compile. -/
 @[hott, reducible, hsimp] 
