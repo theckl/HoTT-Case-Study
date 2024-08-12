@@ -20,8 +20,19 @@ namespace algebra
 
 /- We start with magmas: An underlying set is provided with a multiplication. -/
 @[hott]
+def has_hom_eqv_hom (A : Set.{u}) : has_mul A ≃ (A -> A -> A) :=
+begin
+  fapply equiv.mk,
+  { intro hm, exact hm.mul },
+  { fapply adjointify,
+    { intro mul, exact has_mul.mk mul },
+    { intro mul, exact idp },
+    { intro hm, induction hm, exact idp } }
+end
+
+@[hott]
 structure Magma := 
-  (carrier : Set)
+  (carrier : Set.{u})
   (struct : has_mul carrier)
 
 @[hott] 
@@ -50,6 +61,38 @@ begin
     { intro A, hinduction A, exact idp } }
 end
 
+@[hott]
+def Magma_sigma_mul_equiv : 
+  Magma.{u} ≃ Σ (carrier : Set.{u}), carrier -> carrier -> carrier :=
+Magma_sigma_equiv ⬝e sigma.sigma_equiv_sigma_right 
+                                      (λ A : Set.{u}, has_hom_eqv_hom A)
+
+@[hott]
+def Magma_sigma_mul_forget_pr1_htpy : Π (M : Magma), 
+  Magma_forget M = sigma.fst (Magma_sigma_mul_equiv.to_fun M) :=
+begin 
+  intro M, hsimp, rwr sigma.sigma_equiv_sigma_right_fst_eq _ (Magma_sigma_equiv M)
+end
+
+@[hott]
+def Magma_sigma_mul_forget_pr1_eq : 
+  Magma_forget = sigma.fst ∘ Magma_sigma_mul_equiv.to_fun :=
+eq_of_homotopy Magma_sigma_mul_forget_pr1_htpy
+
+@[hott]
+def Magma_fib_eqv_mul : Π (A : Set.{u}), fiber Magma_forget A ≃ (A -> A -> A) :=
+begin  
+  intro A, 
+  have g : fiber Magma_forget A ≃ fiber (@sigma.fst Set (λ A, A -> A -> A)) A, from
+  begin 
+    rwr Magma_sigma_mul_forget_pr1_eq, 
+    exact fiber.equiv_precompose sigma.fst Magma_sigma_mul_equiv A 
+  end,
+  have h : fiber (@sigma.fst Set (λ A, A -> A -> A)) A ≃ (A -> A -> A), from
+    fiber.fiber_pr1 _ _,   
+  exact g ⬝e h
+end
+
 /- The homomorphism system over the projection map. -/
 @[hott, instance]
 def Magma_hom_system : concrete_hom_system.{u u+1} Magma_forget := 
@@ -57,7 +100,7 @@ begin
   fapply concrete_hom_system.mk, 
   { intros A B, intro f, fapply trunctype.mk, 
     { exact ∀ a₁ a₂ : A.carrier, f (a₁ * a₂) = f a₁ * f a₂ }, 
-    apply_instance },
+    { apply_instance } },
   { intro A, intros a₁ a₂, exact idp }, 
   { intros A B C g h el_g el_h a₁ a₂, change h (g _) = h (g _) * h (g _), 
     rwr el_g, rwr el_h },
@@ -109,19 +152,18 @@ end
 
 /- Fibers are categories. -/
 @[hott, instance]
-def Magma_forget_fib_is_cat : concrete_fibs_are_cat Magma_forget :=
+def Magma_forget_fib_is_cat : concrete_fibs_are_cat.{u u+1} Magma_forget :=
 begin
-  apply concrete_fibs_are_cat.mk, intros A M N, 
-  hinduction M with M M_eq, hinduction M with B mul_B,
-  hinduction N with N N_eq, hinduction N with C mul_C, 
-  fapply adjointify, 
-  { intro i, fapply fiber.fiber_eq,
-    { fapply apd011 Magma.mk, 
-      { exact M_eq ⬝ N_eq⁻¹ },
-      { sorry } },
+  fapply concrete_fibs_are_cat.mk, 
+  { intros A M N f, 
+    hinduction M with M M_eq, hinduction M with B mul_B,
+    change B = A at M_eq, hinduction M_eq,
+    hinduction N with N N_eq, hinduction N with C mul_C, 
+    change C = B at N_eq, hinduction N_eq,
+    fapply fiber.fiber_eq,
+    { hsimp, fapply apd011 Magma.mk idp, sorry },
     { sorry } },
-  { sorry },
-  { sorry }
+  { intros, sorry }
 end
 
 /- `mul_hom A B` are the homomorphisms in the category of `Magma`s. -/
