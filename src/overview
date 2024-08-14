@@ -7,13 +7,13 @@ prop_axioms :   556
 prop_logic  :   223  2639
 sets
   basic     :   790         
-  subset    :   798         
+  subset    :   819         
   finite    :   503         
   axioms    :   355         
   algebra   :   362         
-  quotients :   205  3013   
+  quotients :   205  3034   
 categories
-  precat    :   738          
+  precat    :   740          
   basic     :   403         
   examples  :   564         
   subobj    :   574
@@ -27,13 +27,13 @@ categories
   inf_pb    :   252         
   boolean   :   368         
   sets      :   937  
-  concrete  :   535  8256
+  concrete  :   744  8467
 algebra
   monoid    :   278    
   group     :    13   291
 
                     -----
-                    14199               
+                    14431               
 
 
 Planned changes in Files, from bottom to top: 
