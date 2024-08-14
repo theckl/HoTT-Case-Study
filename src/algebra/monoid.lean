@@ -50,6 +50,7 @@ def Magma_forget : Magma -> Set_Category.{u} :=
 def Magma_has_mul (A : Magma) : has_mul (Magma_forget A).carrier :=
   A.struct
 
+/- Descriptions of the fibers of `Magma_forget`. -/
 @[hott, hsimp] 
 def Magma_sigma_equiv : Magma.{u} ≃ Σ (carrier : Set.{u}), has_mul carrier :=
 begin
@@ -92,6 +93,12 @@ begin
     fiber.fiber_pr1 _ _,   
   exact g ⬝e h
 end
+
+@[hott, instance]
+def Magma_obj_system : concrete_obj_system Magma_forget 
+       (λ A : Set_Category.{u}, A.carrier -> A.carrier -> A.carrier) :=
+concrete_obj_system.mk (concrete_equiv.mk Magma_sigma_mul_equiv 
+                                          Magma_sigma_mul_forget_pr1_eq)
 
 /- The homomorphism system over the projection map. -/
 @[hott, instance]
@@ -151,6 +158,17 @@ begin
 end
 
 /- Fibers are categories. -/
+@[hott, instance]
+def Magma_fibs_are_cat : 
+  sigma_fibs_are_cat (λ A : Set_Category, A.carrier -> A.carrier -> A.carrier) :=
+begin
+  fapply sigma_fibs_are_cat.mk, 
+  { intros A mul₁ mul₂ h, apply eq_of_homotopy2, intros a b,
+    let H := (h.1.2 a b), let p := h.2, rwr p at H, 
+    sorry },
+  { intros A mul, exact is_prop.elim _ _ }
+end
+
 @[hott, instance]
 def Magma_forget_fib_is_cat : concrete_fibs_are_cat.{u u+1} Magma_forget :=
 begin
