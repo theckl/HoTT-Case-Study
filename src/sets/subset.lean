@@ -314,6 +314,27 @@ def pred_eqv_inj_sset {A : Set.{u}} : (Subset A) ≃ (inj_Subset A) :=
   equiv.mk pred_to_inj_sset (adjointify pred_to_inj_sset inj_to_pred_sset
                                         pred_sset_linv pred_sset_rinv) 
 
+/- Maps between subsets are induced by maps between the sets they are contained in and 
+   implications of the predicates. -/
+@[hott]
+def map_of_pred_Sets {A₁ A₂ : Set} {B₁ : Subset A₁} {B₂ : Subset A₂} (f : A₁ -> A₂)
+  (imp : Π  {a₁ : A₁}, B₁ a₁ -> B₂ (f a₁)) : pred_Set B₁ -> pred_Set B₂ :=
+begin intro b₁, fapply dpair, exact f b₁.1, exact imp b₁.2 end
+
+@[hott]
+def bij_map_of_pred_Sets {A₁ A₂ : Set} {B₁ : Subset A₁} {B₂ : Subset A₂} {f : A₁ -> A₂}
+  (f_bij : is_set_bijective f) (eqv : Π  {a₁ : A₁}, B₁ a₁ <-> B₂ (f a₁)) :
+  is_set_bijective (map_of_pred_Sets f (λ (a₁ : A₁), (@eqv a₁).1)) :=
+begin
+  fapply has_inverse_to_is_bijective,
+  { apply map_of_pred_Sets (inv_of_bijection (bijection.mk f f_bij)).1,
+    intro a₂, intro Ba₂, rwr <- inv_bij_r_inv (bijection.mk f f_bij) a₂ at Ba₂, 
+    exact eqv.2 Ba₂ },
+  { fapply is_set_inverse_of.mk,
+    { intro b₂, apply pred_Set_eq, exact inv_bij_r_inv (bijection.mk f f_bij) b₂.1 },
+    { intro b₁, apply pred_Set_eq, exact inv_bij_l_inv (bijection.mk f f_bij) b₁.1 } }
+end
+
 /- On subsets we can introduce the `∈`-notation and the `⊆`-notation of set theory. -/
 @[hott]
 protected def elem {A : Set} (a : A) (S : Subset A) :=
