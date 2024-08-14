@@ -279,7 +279,7 @@ structure Precategory :=
   (obj : Type u)
   (struct : is_precat obj)
 
-@[hott] instance : has_coe_to_sort Precategory := 
+@[hott, hsimp] instance : has_coe_to_sort Precategory := 
   has_coe_to_sort.mk Type.{u} Precategory.obj
 
 attribute [instance] Precategory.struct
@@ -550,14 +550,14 @@ end
    precategories and on category structures to deduce this 
    characterisation from univalence of the underlying types. -/
 @[hott]
-structure precat_iso (C D : Precategory) :=
+structure precat_iso (C D : Type _) [is_precat C] [is_precat D] :=
   (functor : C ⥤ D) 
   (ff : is_fully_faithful_functor functor) 
   (equiv : is_equiv functor.obj)
 
 @[hott]
-def precat_iso_eq_of_funct_eq {C D : Precategory} {pc₁ pc₂ : precat_iso C D} : 
-  (pc₁.functor = pc₂.functor) -> (pc₁ = pc₂) :=
+def precat_iso_eq_of_funct_eq (C D : Type _) [is_precat C] [is_precat D] 
+  {pc₁ pc₂ : precat_iso C D} : (pc₁.functor = pc₂.functor) -> (pc₁ = pc₂) :=
 begin
   intro funct_eq, hinduction pc₁, hinduction pc₂,
   fapply apd0111' precat_iso.mk, 
@@ -567,8 +567,8 @@ begin
 end
 
 @[hott]
-structure precat_iso_of_obj {C₀ C : Precategory} 
-  (obj_eqv : C₀ ≃ C.obj) :=
+structure precat_iso_of_obj (C₀ C : Type _) [is_precat C₀] [is_precat C] 
+  (obj_eqv : C₀ ≃ C) :=
   (hom_map      : Π {x y : C₀}, (x ⟶ y) → 
                              ((obj_eqv x) ⟶ (obj_eqv y)))
   (hom_map_id   : ∀ {x : C₀}, hom_map (𝟙 x) = 𝟙 (obj_eqv x))
@@ -577,9 +577,9 @@ structure precat_iso_of_obj {C₀ C : Precategory}
   (ff : Π {x y : C₀}, is_set_bijective (@hom_map x y) )   
 
 @[hott, reducible]
-def precat_iso_of_obj_equiv_iso (C₀ C : Precategory) :
-  (Σ (obj_eqv : C₀ ≃ C.obj), @precat_iso_of_obj C₀ 
-     (Precategory.mk C.obj C.struct) obj_eqv) ≃ precat_iso C₀ C :=
+def precat_iso_of_obj_equiv_iso (C₀ C : Type _) [is_precat C₀] [C_str : is_precat C] :
+  (Σ (obj_eqv : C₀ ≃ C), @precat_iso_of_obj C₀ C _ C_str obj_eqv) ≃ 
+  precat_iso C₀ C :=
 begin
   fapply equiv.mk,
   { intro pc_oi_sig, fapply precat_iso.mk,
@@ -600,12 +600,16 @@ begin
       hinduction pc_io, hsimp } }  
 end
 
+@[hott]
+def precat_iso_to_obj_eq (C₀ C : Type _) [is_precat C₀] [is_precat C] :
+  precat_iso C₀ C -> C₀ = C :=
+λ pc_iso, ua (((precat_iso_of_obj_equiv_iso C₀ C).to_fun⁻¹ᶠ pc_iso).1)
+
 @[hott, reducible]
 def cat_iso_eqv_pc_io {C : Type _} (pc_str₁ pc_str₂ : is_precat C) :
   (cat_str_sig_iso (cat_str_eqv_sig C pc_str₁.to_category_struct) 
                    (cat_str_eqv_sig C pc_str₂.to_category_struct)) ≃
-  (@precat_iso_of_obj (Precategory.mk C pc_str₁) (Precategory.mk C pc_str₂)
-                      (equiv.refl C)) :=
+  (@precat_iso_of_obj C C pc_str₁ pc_str₂) (equiv.refl C) :=
 begin
   fapply equiv.mk,
   { intro css_iso, fapply precat_iso_of_obj.mk, 
@@ -616,9 +620,12 @@ begin
   { fapply adjointify,
     { intro pc_io, fapply sigma.mk, 
       { exact λ x y, bijection.mk 
-                     (@precat_iso_of_obj.hom_map _ _ _ pc_io x y) 
-                     (@precat_iso_of_obj.ff _ _ _ pc_io x y) },
-      { exact cat_map_laws.mk pc_io.hom_map_id pc_io.hom_map_comp } },
+                     (@precat_iso_of_obj.hom_map _ _ pc_str₁ pc_str₂ _ pc_io x y) 
+                     (@precat_iso_of_obj.ff _ _ pc_str₁ pc_str₂ _ pc_io x y) },
+      { fapply @cat_map_laws.mk C (cat_str_eqv_sig C pc_str₁.to_category_struct)
+                                  (cat_str_eqv_sig C pc_str₂.to_category_struct), 
+        { exact @precat_iso_of_obj.hom_map_id _ _ pc_str₁ pc_str₂ _ pc_io }, 
+        { exact @precat_iso_of_obj.hom_map_comp _ _ pc_str₁ pc_str₂ _ pc_io } } },
     { intro pc_io, hsimp, hinduction pc_io, hsimp },
     { intro css_iso, hsimp, hinduction css_iso with bhm laws, 
       hsimp, fapply sigma.sigma_eq,
@@ -629,22 +636,19 @@ end
 
 @[hott, reducible]
 def pc_str_eqv_pc_io {C : Type _} (pc_str₁ pc_str₂ : is_precat C) :
-  (pc_str₁ = pc_str₂) ≃
-  (@precat_iso_of_obj (Precategory.mk C pc_str₁) (Precategory.mk C pc_str₂)
-                      (equiv.refl C)) :=
+  (pc_str₁ = pc_str₂) ≃ (@precat_iso_of_obj C C pc_str₁ pc_str₂ (equiv.refl C)) :=
 (precat_str_eqv_cat_str C pc_str₁ pc_str₂) ⬝e 
 (cat_str_eq_eqv_iso pc_str₁.to_category_struct pc_str₂.to_category_struct) ⬝e
 (cat_iso_eqv_pc_io pc_str₁ pc_str₂)                     
 
 @[hott, reducible]
-def precat_obj_ppred (C₀ : Precategory) : ppred C₀.obj :=
+def precat_obj_ppred (C₀ : Type _) [is_precat C₀] : ppred C₀ :=
   ppred.mk (λ C : Type _, C₀ ≃ C) (@equiv.rfl C₀)
 
 @[hott, reducible]
-def precat_dep_ppred (C₀ : Precategory) : dep_ppred C₀.obj C₀.struct :=              
+def precat_dep_ppred (C₀ : Type _) [pc : is_precat C₀] : dep_ppred C₀ pc :=              
   dep_ppred.mk (precat_obj_ppred C₀) 
-    (λ C pc_str_C pc_obj, @precat_iso_of_obj C₀ 
-                             (Precategory.mk C pc_str_C) pc_obj) 
+    (λ C pc_str_C pc_obj, @precat_iso_of_obj C₀ C pc pc_str_C pc_obj) 
     (precat_iso_of_obj.mk (id_functor C₀).map (id_functor C₀).map_id
        (id_functor C₀).map_comp (@id_functor_is_fully_faithful C₀ _)) 
 
@@ -672,8 +676,7 @@ begin
   { exact ⟨C₀.struct, (precat_dep_ppred _).dep_base⟩ },
   { intro pc_str_iso, hinduction pc_str_iso with pc_str pc_iso,
     hinduction C₀ with C₀_obj C₀_struct,
-    change @precat_iso_of_obj (Precategory.mk C₀_obj C₀_struct) 
-              (Precategory.mk C₀_obj pc_str) (equiv.refl C₀_obj) 
+    change @precat_iso_of_obj C₀_obj C₀_obj C₀_struct pc_str (equiv.refl C₀_obj) 
       at pc_iso,
     fapply sigma.sigma_eq, 
     { exact (pc_str_eqv_pc_io C₀_struct pc_str)⁻¹ᶠ pc_iso },
@@ -683,8 +686,7 @@ end
 @[hott]
 def precat_sig_equiv_obj_iso (C₀ C : Precategory) : 
   ((Precat_str_equiv_sig C₀) = (Precat_str_equiv_sig C)) ≃
-  (Σ (pc_obj : C₀ ≃ C.obj), @precat_iso_of_obj C₀ 
-                     (Precategory.mk C.obj C.struct) pc_obj) :=
+  (Σ (pc_obj : C₀ ≃ C.obj), @precat_iso_of_obj C₀ C.obj C₀.struct C.struct pc_obj) :=
 begin
   fapply struct_id_char_of_contr C₀.struct (precat_dep_ppred C₀)
                                  _ _ (Precat_str_equiv_sig C),
@@ -727,11 +729,11 @@ begin
 end
 
 @[hott]
-def precat_id_equiv_iso (C D : Precategory) : 
+def precat_id_equiv_iso (C : Precategory) (D : Precategory): 
   (C = D) ≃ (precat_iso C D) :=
-(eq_equiv_fn_eq_of_equiv Precat_str_equiv_sig C D) ⬝e
-(precat_sig_equiv_obj_iso C D) ⬝e
-(precat_iso_of_obj_equiv_iso C D)
+eq_equiv_fn_eq_of_equiv Precat_str_equiv_sig C D ⬝e
+precat_sig_equiv_obj_iso C D ⬝e
+precat_iso_of_obj_equiv_iso C D
 
 end precategories
 
