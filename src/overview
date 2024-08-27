@@ -27,17 +27,18 @@ categories
   inf_pb    :   252         
   boolean   :   368         
   sets      :   937  
-  concrete  :   744  8467
+  concrete  :   808  8531
 algebra
-  monoid    :   278    
-  group     :    13   291
+  monoid    :   210    
+  group     :    13   223
 
                     -----
-                    14431               
+                    14427               
 
 
 Planned changes in Files, from bottom to top: 
 ---------------------------------------------
 - [algebra.monoid] : Define category structures for magmas, (commutative)
     semigroups and monoids using (relative) concrete categories
+- [types2] : maps are injective if all fibers are propositions
 
