@@ -1,4 +1,5 @@
 import hott.algebra.group hott.arity sets.subset categories.sets categories.concrete
+       hott.algebra.bundled
 
 universes u u' v w
 hott_theory
@@ -75,30 +76,11 @@ begin
   intro M, hsimp, rwr sigma.sigma_equiv_sigma_right_fst_eq _ (Magma_sigma_equiv M)
 end
 
-@[hott]
-def Magma_sigma_mul_forget_pr1_eq : 
-  Magma_forget = sigma.fst ∘ Magma_sigma_mul_equiv.to_fun :=
-eq_of_homotopy Magma_sigma_mul_forget_pr1_htpy
-
-@[hott]
-def Magma_fib_eqv_mul : Π (A : Set.{u}), fiber Magma_forget A ≃ (A -> A -> A) :=
-begin  
-  intro A, 
-  have g : fiber Magma_forget A ≃ fiber (@sigma.fst Set (λ A, A -> A -> A)) A, from
-  begin 
-    rwr Magma_sigma_mul_forget_pr1_eq, 
-    exact fiber.equiv_precompose sigma.fst Magma_sigma_mul_equiv A 
-  end,
-  have h : fiber (@sigma.fst Set (λ A, A -> A -> A)) A ≃ (A -> A -> A), from
-    fiber.fiber_pr1 _ _,   
-  exact g ⬝e h
-end
-
 @[hott, instance]
 def Magma_obj_system : concrete_obj_system Magma_forget 
        (λ A : Set_Category.{u}, A.carrier -> A.carrier -> A.carrier) :=
 concrete_obj_system.mk (concrete_equiv.mk Magma_sigma_mul_equiv 
-                                          Magma_sigma_mul_forget_pr1_eq)
+                                          Magma_sigma_mul_forget_pr1_htpy)
 
 /- The homomorphism system over the projection map. -/
 @[hott, instance]
@@ -158,30 +140,93 @@ begin
 end
 
 /- Fibers are categories. -/
+@[hott]
+def Magma_sigma_equiv_id {A : Set_Category} {mul₁ mul₂ : A.carrier → A.carrier → A.carrier}
+  (hA : (dpair A mul₁).fst ⟶ (dpair A mul₂).fst) (h_eq : hA = 𝟙 A): 
+  (concrete_full_hom_equiv (concrete_equiv_inv (concrete_obj_system.fib_eqv 
+                Magma_forget (λ (A : ↥Set_Category), A.carrier → A.carrier → 
+                                                        A.carrier)))).map hA = 𝟙 A :=
+begin
+  change ↥((dpair A mul₁).fst ⟶ (dpair A mul₁).fst) at hA,
+  change hA = 𝟙 (dpair A mul₁).fst at h_eq, rwr h_eq
+end                                                        
+
 @[hott, instance]
 def Magma_fibs_are_cat : 
   sigma_fibs_are_cat (λ A : Set_Category, A.carrier -> A.carrier -> A.carrier) :=
 begin
   fapply sigma_fibs_are_cat.mk, 
-  { intros A mul₁ mul₂ h, apply eq_of_homotopy2, intros a b,
-    let H := (h.1.2 a b), let p := h.2, rwr p at H, 
-    sorry },
-  { intros A mul, exact is_prop.elim _ _ }
+  { intros A mul₁ mul₂ h, 
+    hinduction h with h h_eq, hinduction h with hA hA_pred,
+    change ∀ a b : A.carrier, (concrete_full_hom_equiv (concrete_equiv_inv
+                (concrete_obj_system.fib_eqv Magma_forget
+                (λ (A : ↥Set_Category), A.carrier → A.carrier → A.carrier)))).map hA 
+                (mul₁ a b) = _ at hA_pred,
+    apply eq_of_homotopy2, intros a b,
+    change (𝟙 A : A.carrier -> A.carrier) (mul₁ a b) = 
+              mul₂ ((𝟙 A : A.carrier -> A.carrier) a) ((𝟙 A : A.carrier -> A.carrier) b),
+    rwr <- Magma_sigma_equiv_id, rwr hA_pred a b },
+  { intros A mul, exact is_prop.elim _ _, exact h_eq }
 end
 
 @[hott, instance]
-def Magma_forget_fib_is_cat : concrete_fibs_are_cat.{u u+1} Magma_forget :=
+def Magma_is_cat : is_cat Magma :=
+  @concrete_type_with_obj_sys_is_cat _ _ Magma_forget 
+    (λ A : Set_Category, A.carrier -> A.carrier -> A.carrier) _ _ Magma_fibs_are_cat
+
+@[hott]
+def Magma_Category : Category :=
+  Category.mk Magma Magma_is_cat 
+
+/- Semigroups form a subcategory of magmas. We use the mechanism in [categories.concrete]
+   to produce an instance of semigroups being a category. -/
+@[hott]
+def Semigroup_eqv_Magma_mul_assoc : 
+  Semigroup ≃ Σ (M : Magma), Π (a b c : M.carrier), (a * b) * c = a * (b * c) :=
 begin
-  fapply concrete_fibs_are_cat.mk, 
-  { intros A M N f, 
-    hinduction M with M M_eq, hinduction M with B mul_B,
-    change B = A at M_eq, hinduction M_eq,
-    hinduction N with N N_eq, hinduction N with C mul_C, 
-    change C = B at N_eq, hinduction N_eq,
-    fapply fiber.fiber_eq,
-    { hsimp, fapply apd011 Magma.mk idp, sorry },
-    { sorry } },
-  { intros, sorry }
+  fapply equiv.mk,
+  { intro SG, hinduction SG with SG SG_struct, 
+    hinduction SG_struct with is_set_SG mul_SG mul_assoc,
+    exact dpair (Magma.mk (Set.mk SG is_set_SG) (has_mul.mk mul_SG)) mul_assoc },
+  { fapply adjointify,
+    { intro M_mul_ass, hinduction M_mul_ass with M mul_assoc, hinduction M with M mul_M,
+      hinduction M with M is_set_M, hinduction mul_M with mul_M,
+      exact Semigroup.mk M (semigroup.mk is_set_M mul_M mul_assoc) },
+    { intro M_mul_ass, hinduction M_mul_ass with M mul_assoc, hinduction M with M mul_M,
+      hinduction M with M is_set_M, hinduction mul_M with mul_M, exact idp },
+    { intro SG, hinduction SG with SG SG_struct, 
+      hinduction SG_struct with is_set_SG mul_SG mul_assoc, exact idp } }
+end
+
+@[hott, hsimp]
+def Semigroup.to_Magma : Semigroup -> Magma := 
+begin
+  intro SG, hinduction SG with SG SG_struct, 
+  hinduction SG_struct with is_set_SG mul_SG mul_assoc,
+  exact Magma.mk (Set.mk SG is_set_SG) (has_mul.mk mul_SG)
+end
+
+@[hott]
+def Semigroup_Magma_mul_assoc_proj_comm : 
+  Semigroup.to_Magma = sigma.fst ∘ Semigroup_eqv_Magma_mul_assoc :=
+begin
+  apply eq_of_homotopy, intro SG, hinduction SG with SG SG_struct, 
+  hinduction SG_struct with is_set_SG mul_SG mul_assoc, exact idp
+end
+
+@[hott]
+def Semigroup_to_Magma_fib : Π (M : Magma), 
+  fiber Semigroup.to_Magma M ≃ Π (a b c : M.carrier), (a * b) * c = a * (b * c) :=
+begin  
+  rwr Semigroup_Magma_mul_assoc_proj_comm, intro M,
+  exact fiber.equiv_precompose sigma.fst Semigroup_eqv_Magma_mul_assoc M ⬝e 
+  fiber.fiber_pr1 _ M 
+end
+
+@[hott, instance]
+def Semigroup_to_Magma_is_inj : is_injective Semigroup.to_Magma :=
+begin
+  sorry
 end
 
 /- `mul_hom A B` are the homomorphisms in the category of `Magma`s. -/
@@ -195,203 +240,6 @@ structure mul_hom (A : Type _) (B : Type _) [has_mul A] [has_mul B]
 instance mul_hom_to_fun (A : Type _) (B : Type _) [has_mul A] [has_mul B] 
   [is_set A] [is_set B] : has_coe_to_fun (mul_hom A B) :=
 ⟨λ _, A -> B, λ m, m.to_fun⟩
-
-/- Magma homomorphisms are determined by the underlying map of sets. This 
-   will show that the forgetful functor to sets is faithful, but first of 
-   all that Magma homomorphisms are sets. -/
-@[hott]
-def mul_hom_to_fun_is_inj (A : Type _) (B : Type _) [has_mul A] [has_mul B] 
-  [is_set A] [is_set B] :
-  ∀ m₁ m₂ : mul_hom A B, m₁.to_fun = m₂.to_fun -> m₁ = m₂ :=
-begin
-  intros m₁ m₂ fun_eq,
-  hinduction m₁, hinduction m₂,
-  fapply apd011, exact fun_eq, 
-    apply pathover_of_tr_eq, apply eq_of_homotopy2, intros a₁ a₂, 
-    exact is_prop.elim _ _
-end 
-
-@[hott]
-class is_mul_hom {A : Type _} {B : Type _} [has_mul A] [has_mul B] 
-  [is_set A] [is_set B] (f : A → B) :=
-  (map_mul' : ∀ a₁ a₂ : A, f (a₁ * a₂) = f a₁ * f a₂)
-
-@[hott]
-instance mul_hom.is_mul_hom {A : Type _} {B : Type _} [has_mul A] [has_mul B] 
-  [is_set A] [is_set B] (m : mul_hom A B) : is_mul_hom m :=
-is_mul_hom.mk m.map_mul
-
-@[hott]
-def map_mul {A : Type _} {B : Type _} [has_mul A] [has_mul B] 
-  [is_set A] [is_set B] (f : A → B) [is_mul_hom f] : 
-  ∀ a₁ a₂ : A, f (a₁ * a₂) = f a₁ * f a₂ :=
-is_mul_hom.map_mul' f
-
-@[hott]
-def is_mul_hom.to_mul_hom (A : Type _) (B : Type _) [has_mul A] [has_mul B] 
-  [is_set A] [is_set B] (f : A -> B) [is_mul_hom f] : mul_hom A B :=
-mul_hom.mk f (map_mul f)
-
-@[hott]
-def mul_hom_is_set (A B : Magma.{u}) : is_set (mul_hom A.carrier B.carrier) :=
-@subset.inj_to_Set_is_set.{u u} (mul_hom A.carrier B.carrier) 
-          (set.to_Set.{u} (A.carrier -> B.carrier)) mul_hom.to_fun 
-          (mul_hom_to_fun_is_inj A.carrier B.carrier) 
-
-@[hott]
-instance Magma_has_hom : has_hom Magma.{u} :=
-  has_hom.mk (λ A B : Magma, Set.mk (mul_hom A.carrier B.carrier) 
-                                    (mul_hom_is_set A B))
-
-@[hott]
-def Magma_map_eq_to_hom_eq {A B : Magma.{u}} : 
-  ∀ (f g : A ⟶ B), mul_hom.to_fun f = mul_hom.to_fun g -> f = g :=
-begin
-  intros f g p_fun, hinduction f with f map_mul_f, hinduction g with g map_mul_g,
-  fapply apd011, exact p_fun, 
-  apply pathover_of_tr_eq, exact is_prop.elim _ _
-end
-
-@[hott]
-def Magma_id_hom (A : Magma) : A ⟶ A :=
-  mul_hom.mk (set.id_map A.carrier) (λ a₁ a₂, idp)
-
-@[hott]
-def Magma_comp_hom {A B C : Magma} : (A ⟶ B) -> (B ⟶ C) -> (A ⟶ C) :=
-begin  
-  intros f g,
-  apply mul_hom.mk (g ∘ f),
-  intros a₁ a₂, 
-  change g.to_fun (f.to_fun _) = g (f _) * g (f _),
-  rwr f.map_mul, rwr g.map_mul
-end
-
-@[hott, instance]
-def Magma_cat_struct : category_struct Magma.{u} :=
-  category_struct.mk (λ A : Magma, Magma_id_hom A) @Magma_comp_hom
-
-@[hott, instance]
-def Magma_is_precat : is_precat Magma.{u} :=
-begin
-  apply is_precat.mk,
-    intros A B f, apply mul_hom_to_fun_is_inj, refl,
-    intros A B f, apply mul_hom_to_fun_is_inj, refl,
-    intros A B C D f g h, apply mul_hom_to_fun_is_inj, refl
-end  
-
-@[hott]
-def Magma_comp_eq_equiv_iso {A B : Magma.{u}} :
-  (Σ (p : A.carrier = B.carrier), A.struct =[p; λ (a : Set), has_mul ↥a] B.struct) ≃ 
-  (Σ (i : A.carrier ≅ B.carrier), (∀ a₁ a₂ : A.carrier, 
-    (i.hom : A.carrier -> B.carrier) (a₁ * a₂) = (i.hom a₁) * (i.hom a₂))) :=
-begin
-  fapply equiv.mk,  
-  { intro p_comp, hinduction p_comp with p q, fapply dpair, 
-    { exact idtoiso p },
-    { hinduction A with A mul_hom_A, hinduction B with B mul_hom_B, 
-      change A = B at p, hinduction p, intros a₁ a₂, 
-      hinduction (eq_of_pathover_idp q), exact idp } },
-  { fapply adjointify,
-    { intro i_comp, hinduction i_comp with i i_mul, fapply dpair,
-      { exact categories.sets.Set_isotoid i },
-      { hinduction A with A mul_hom_A, hinduction B with B mul_hom_B,
-        change A ≅ B at i, hinduction (Set_isotoid i) with p,
-        have q : i = id_iso A, from 
-          (Set_id_iso_rinv i)⁻¹ ⬝ (ap idtoiso p) ⬝ idtoiso_refl_eq A, 
-        apply pathover_idp_of_eq, 
-        hinduction mul_hom_A with mul_A, hinduction mul_hom_B with mul_B,
-        apply ap has_mul.mk, apply eq_of_homotopy2, 
-        rwr q at i_mul, exact i_mul } },
-    { intro i_comp, fapply sigma.sigma_eq, 
-      { hinduction i_comp with i i_mul, exact Set_id_iso_rinv i },
-      { apply pathover_of_tr_eq, exact is_prop.elim _ _ } },
-    { intro p_comp, fapply sigma.sigma_eq,
-      { hinduction p_comp with p struct_eq, exact Set_id_iso_linv p },
-      { apply pathover_of_tr_eq, exact is_prop.elim _ _ } } }
-end
-
-@[hott, hsimp]
-def Magma_comp_idp_to_id_iso {A : Magma.{u}} : 
-  @Magma_comp_eq_equiv_iso A A ⟨idp, idpo⟩ = 
-                           ⟨id_iso A.carrier, λ a₁ a₂ : A.carrier, idp⟩ :=
-begin
-  fapply sigma.sigma_eq,
-  { exact idp },
-  { apply pathover_of_tr_eq, exact is_prop.elim _ _ }
-end
-
-@[hott]
-def Magma_comp_iso_equiv_iso {A B : Magma.{u}} :
-  (Σ (i : A.carrier ≅ B.carrier), (∀ a₁ a₂ : A.carrier, 
-    (i.hom : A.carrier -> B.carrier) (a₁ * a₂) = (i.hom a₁) * (i.hom a₂))) 
-    ≃ (A ≅ B) :=
-begin
-  fapply equiv.mk, 
-  { intro i_comp, fapply iso.mk,
-    { exact ⟨i_comp.1.hom, i_comp.2⟩ },
-    { fapply is_iso.mk,
-      { fapply mul_hom.mk,
-        { exact i_comp.1.ih.inv },
-        { intros b₁ b₂, 
-          change i_comp.fst.ih.inv ((𝟙 B.carrier : B.carrier -> B.carrier) b₁ * 
-                                (𝟙 B.carrier : B.carrier -> B.carrier) b₂) = _,
-          rwr <- (ap10 i_comp.1.ih.r_inv b₁), rwr <- (ap10 i_comp.1.ih.r_inv b₂),
-          change i_comp.fst.ih.inv (i_comp.fst.hom _ * i_comp.fst.hom _) = _,
-          rwr <- i_comp.2 (i_comp.fst.ih.inv b₁) _, 
-          change (i_comp.fst.hom ≫ i_comp.fst.ih.inv) _ = _,
-          rwr i_comp.1.ih.l_inv } },
-      { apply Magma_map_eq_to_hom_eq _ _, exact i_comp.1.ih.r_inv },
-      { apply Magma_map_eq_to_hom_eq _ _, exact i_comp.1.ih.l_inv } } },
-  { fapply adjointify,
-    { intro i, fapply dpair,
-      { fapply iso.mk,
-        { exact i.hom.1 },
-        { fapply is_iso.mk,
-          { exact i.ih.inv.1 },
-          { change (i.ih.inv ≫ i.hom).to_fun = _, rwr i.ih.r_inv },
-          { change (i.hom ≫ i.ih.inv).to_fun = _, rwr i.ih.l_inv } } },
-      { intros a₁ a₂, exact i.hom.2 a₁ a₂ } },
-    { intro i, apply hom_eq_to_iso_eq, apply Magma_map_eq_to_hom_eq, exact idp },
-    { intro i_comp, hinduction i_comp with i mul_map, fapply sigma.sigma_eq, 
-      { apply hom_eq_to_iso_eq, exact idp },
-      { apply pathover_of_tr_eq, exact is_prop.elim _ _ } } }
-end
-
-@[hott, hsimp]
-def Magma_comp_id_iso_to_id_iso {A : Magma.{u}} :
-  @Magma_comp_iso_equiv_iso A A ⟨id_iso A.carrier, λ a₁ a₂ : A.carrier, idp⟩ =
-    id_iso A :=
-begin
-  apply hom_eq_to_iso_eq, apply Magma_map_eq_to_hom_eq, exact idp
-end
-
-@[hott, hsimp]
-def Magma_isoequivid (A B : Magma.{u}) : (A = B) ≃ (A ≅ B) :=
-  equiv.eq_equiv_fn_eq_of_equiv Magma_sigma_equiv A B ⬝e 
-  (sigma.sigma_eq_equiv _ _) ⬝e
-  Magma_comp_eq_equiv_iso ⬝e Magma_comp_iso_equiv_iso ⬝e equiv.rfl
-
-@[hott, hsimp]
-def equiv.idp_equiv_fn_idp_of_equiv {A B : Type (u+1)} (f : A ≃ B) 
-  (a : A) : equiv.eq_equiv_fn_eq_of_equiv f a a idp = idp :=
-idp
-
-set_option pp.universes true
-
-@[hott]
-def Magma_idtoiso {A B : Magma.{u}} : 
-  (Magma_isoequivid A B).to_fun = idtoiso :=
-begin
-  fapply eq_of_homotopy, intro p, hinduction p, rwr idtoiso_refl_eq, 
-  change equiv.rfl.to_fun (Magma_comp_iso_equiv_iso.to_fun 
-    (Magma_comp_eq_equiv_iso.to_fun ⟨idp, idpo⟩)) = equiv.rfl.to_fun (id_iso A), 
-  apply ap equiv.rfl.to_fun, rwr <- Magma_comp_id_iso_to_id_iso,
-  apply ap Magma_comp_iso_equiv_iso.to_fun, rwr <- Magma_comp_idp_to_id_iso 
-end
-
-@[hott, instance]
-def Magma_is_cat : is_cat Magma.{u} :=
-  is_cat.mk (λ A B, Magma_idtoiso ▸ ((Magma_isoequivid A B).to_is_equiv))
 
 @[hott]
 structure semigroup_hom (A : Type _) (B : Type _) [hott.algebra.semigroup A] 
