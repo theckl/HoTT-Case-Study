@@ -138,10 +138,34 @@ end
 
 /- The injectivity of a map of types is only useful if it also implies relations between
    equalities of objects of domain and codomain, in particular that `rfl` is mapped to 
-   `rfl`. For sets, this is automatic and shown in [sets.basic] -/
+   `rfl`. For sets, this is automatic and shown in [sets.basic]. We also show a criterion
+   for injectivity using fibers. -/
 @[hott, class]
 def is_injective {A : Type u} {B : Type v} (f : B -> A) := 
   forall b1 b2 : B, is_equiv (λ p : b1 = b2, ap f p)
+
+@[hott]
+def prop_fiber_is_inj {A : Type u} {B : Type v} (f : B -> A) : 
+  (Π (a : A), is_prop (fiber f a)) -> is_injective f :=
+begin
+  intro is_prop_fib, 
+  have H : Π {a : A} {fib₁ fib₂ : fiber f a} (q₁ q₂ : fib₁ = fib₂), q₁ = q₂, from 
+    λ a fib₁ fib₂ q₁ q₂, @is_set.elim _ (@is_trunc_succ _ -1 (is_prop_fib a)) fib₁ fib₂ _ _, 
+  intros b₁ b₂, fapply adjointify,
+  { intro f_eq, 
+    exact ap fiber.point (@is_prop.elim (fiber f (f b₂)) (is_prop_fib (f b₂)) 
+                                        (fiber.mk b₁ f_eq) (fiber.mk b₂ idp)) },
+  { intro p, let fib₁ := fiber.mk b₁ p, let fib₂ := fiber.mk b₂ (@idp _ (f b₂)), 
+    have H' : (Σ(q : fib₁.point = fib₂.point), p = ap f q ⬝ idp), from 
+      (fiber.fiber_eq_equiv _ _).to_fun (@is_prop.elim _ (is_prop_fib (f b₂)) 
+                                           (fiber.mk b₁ p) (fiber.mk b₂ (@idp _ (f b₂)))),
+    let r : p = ap f H'.1 := H'.2, apply concat _ r⁻¹,
+    apply ap (ap f), apply concat _ (fiber.point_fiber_eq H'.1 H'.2),
+    apply ap (ap fiber.point),
+    rwr H (@is_prop.elim _ (is_prop_fib (f b₂))_ _) 
+          (@fiber.fiber_eq _ _ _ _ (fiber.mk b₁ p) (fiber.mk b₂ idp) H'.1 H'.2) },
+  { intro p, hinduction p, rwr ap_idp, rwr H (is_prop.elim _ _) idp } 
+end
 
 @[hott]
 def inj_imp {A : Type u} {B : Type v} {f : B -> A} (inj : is_injective f) :  
