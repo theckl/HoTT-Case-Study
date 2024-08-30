@@ -2,9 +2,9 @@ Compiling files, in order of dependencies:
 ------------------------------------------
 init2       :   951
 nat2        :   174
-types2      :   735         
+types2      :   758         
 prop_axioms :   556         
-prop_logic  :   223  2639
+prop_logic  :   223  2662
 sets
   basic     :   790         
   subset    :   819         
@@ -29,11 +29,11 @@ categories
   sets      :   937  
   concrete  :   808  8531
 algebra
-  monoid    :   210    
-  group     :    13   223
+  monoid    :   244    
+  group     :    13   257
 
                     -----
-                    14427               
+                    14484               
 
 
 Planned changes in Files, from bottom to top: 
