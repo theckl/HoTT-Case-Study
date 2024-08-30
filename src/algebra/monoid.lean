@@ -226,36 +226,18 @@ end
 @[hott, instance]
 def Semigroup_to_Magma_is_inj : is_injective Semigroup.to_Magma :=
 begin
-  sorry
+  fapply prop_fiber_is_inj, intro M, 
+  fapply @is_trunc_is_equiv_closed_rev _ _ -1 (Semigroup_to_Magma_fib M).to_fun,
+  apply_instance
 end
 
-/- `mul_hom A B` are the homomorphisms in the category of `Magma`s. -/
-@[hott]
-structure mul_hom (A : Type _) (B : Type _) [has_mul A] [has_mul B] 
-  [is_set A] [is_set B] :=
-  (to_fun : A -> B)
-  (map_mul : ∀ a₁ a₂ : A, to_fun (a₁ * a₂) = (to_fun a₁) * (to_fun a₂)) 
+@[hott, instance]
+def Semigroup_is_cat : is_cat Semigroup :=
+  @full_subcat_is_cat _ Magma_Category Semigroup.to_Magma Semigroup_to_Magma_is_inj
 
 @[hott]
-instance mul_hom_to_fun (A : Type _) (B : Type _) [has_mul A] [has_mul B] 
-  [is_set A] [is_set B] : has_coe_to_fun (mul_hom A B) :=
-⟨λ _, A -> B, λ m, m.to_fun⟩
-
-@[hott]
-structure semigroup_hom (A : Type _) (B : Type _) [hott.algebra.semigroup A] 
-  [hott.algebra.semigroup B] :=
-(to_mul_hom : mul_hom A B)
-
-@[hott]
-structure monoid_hom (A : Type _) (B : Type _) [hott.algebra.monoid A] 
-  [hott.algebra.monoid B] :=
-(to_semigroup_hom : semigroup_hom A B)
-(map_one : to_semigroup_hom.to_mul_hom 1 = 1)
-
-@[hott]
-structure comm_monoid_Hom (A : Type _) (B : Type _) 
-  [hott.algebra.comm_monoid A] [hott.algebra.comm_monoid B] :=
-(to_monoid_hom : monoid_hom A B)
+def Semigroup_category : Category :=
+  Category.mk Semigroup Semigroup_is_cat
 
 end algebra
 
