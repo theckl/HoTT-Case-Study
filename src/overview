@@ -2,9 +2,9 @@ Compiling files, in order of dependencies:
 ------------------------------------------
 init2       :   951
 nat2        :   174
-types2      :   758         
+types2      :   844        
 prop_axioms :   556         
-prop_logic  :   223  2662
+prop_logic  :   223  2748
 sets
   basic     :   790         
   subset    :   819         
@@ -14,7 +14,7 @@ sets
   quotients :   205  3034   
 categories
   precat    :   740          
-  basic     :   403         
+  basic     :   411         
   examples  :   564         
   subobj    :   574
   subcat    :   125         
@@ -27,18 +27,18 @@ categories
   inf_pb    :   252         
   boolean   :   368         
   sets      :   937  
-  concrete  :   808  8531
+  concrete  :   808  8539
 algebra
   monoid    :   244    
   group     :    13   257
 
                     -----
-                    14484               
+                    14578               
 
 
 Planned changes in Files, from bottom to top: 
 ---------------------------------------------
 - [algebra.monoid] : Define category structures for magmas, (commutative)
     semigroups and monoids using (relative) concrete categories
-- [types2] : maps are injective if all fibers are propositions
+- [categories.concrete] : extended concrete categories
 
