@@ -62,12 +62,12 @@ begin
   fapply equiv_arg_exchange,
   { exact d₁ = d₂ },
   { intro p, exact ap f p },
-  { exact inj d₁ d₂ },
+  { exact @is_injective.eqv _ _ _ inj d₁ d₂ },
   { intro q, fapply @eq.rec _ d₁ (λ d₂, λ q : d₁ = d₂, 
                (idtoiso (inj_imp inj d₁ d₂ (ap f q))).hom = (idtoiso (ap f q)).hom), 
     change (idtoiso (inj_imp inj d₁ d₁ (ap f (refl d₁)))).hom = 𝟙 d₁, 
     have H : inj_imp inj d₁ d₁ (ap f (refl d₁)) = refl d₁, from
-      @is_equiv.left_inv _ _ _ (inj d₁ d₁) (refl d₁), 
+      @is_equiv.left_inv _ _ _ (@is_injective.eqv _ _ _ inj d₁ d₁) (refl d₁), 
     rwr H }
 end
 
@@ -108,7 +108,7 @@ def subtype_emb {C : Type _} [is_cat C] (P : C -> trunctype -1) :
 @[hott, instance]
 def subtype_emb_is_inj {C : Type _} [is_cat C] (P : C -> trunctype -1) :
   is_injective (subtype_emb P) :=
-begin intros sc₁ sc₂, exact (subtype_eq_equiv sc₁ sc₂).to_is_equiv end    
+begin apply is_injective.mk, intros sc₁ sc₂, exact (subtype_eq_equiv sc₁ sc₂).to_is_equiv end    
 
 @[hott, instance]
 def full_subcat_on_subtype {C : Type _} [H : is_cat C] (P : C -> trunctype -1) :
