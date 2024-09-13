@@ -68,7 +68,7 @@ def is_set_injective {A : Set} {B : Set} (f : B -> A) :=
 def set_inj_to_type_inj {A : Set} {B : Set} (f : B -> A) :
   (is_set_injective f) -> is_injective f :=
 begin 
-  intro inj, intros b1 b2, fapply is_equiv.adjointify, 
+  intro inj, apply is_injective.mk, intros b1 b2, fapply is_equiv.adjointify, 
   { exact inj b1 b2 },
   { intro p, exact is_set.elim _ _ },
   { intro q, exact is_set.elim _ _ }
