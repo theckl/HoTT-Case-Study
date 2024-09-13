@@ -140,9 +140,9 @@ end
    equalities of objects of domain and codomain, in particular that `rfl` is mapped to 
    `rfl`. For sets, this is automatic and shown in [sets.basic]. We also show a criterion
    for injectivity using fibers. -/
-@[hott, class]
-def is_injective {A : Type u} {B : Type v} (f : B -> A) := 
-  forall b1 b2 : B, is_equiv (λ p : b1 = b2, ap f p)
+@[hott]
+class is_injective {A : Type u} {B : Type v} (f : B -> A) := 
+  (eqv : forall b1 b2 : B, is_equiv (λ p : b1 = b2, ap f p))
 
 @[hott]
 def prop_fiber_is_inj {A : Type u} {B : Type v} (f : B -> A) : 
@@ -151,7 +151,7 @@ begin
   intro is_prop_fib, 
   have H : Π {a : A} {fib₁ fib₂ : fiber f a} (q₁ q₂ : fib₁ = fib₂), q₁ = q₂, from 
     λ a fib₁ fib₂ q₁ q₂, @is_set.elim _ (@is_trunc_succ _ -1 (is_prop_fib a)) fib₁ fib₂ _ _, 
-  intros b₁ b₂, fapply adjointify,
+  apply is_injective.mk, intros b₁ b₂, fapply adjointify,
   { intro f_eq, 
     exact ap fiber.point (@is_prop.elim (fiber f (f b₂)) (is_prop_fib (f b₂)) 
                                         (fiber.mk b₁ f_eq) (fiber.mk b₂ idp)) },
@@ -170,16 +170,17 @@ end
 @[hott]
 def inj_imp {A : Type u} {B : Type v} {f : B -> A} (inj : is_injective f) :  
   ∀ b1 b2 : B, f b1 = f b2 -> b1 = b2 :=
-begin intros b1 b2, exact (inj b1 b2).inv end  
+begin intros b1 b2, exact (is_injective.eqv f b1 b2).inv end  
 
 @[hott]
 def inj_idp {A : Type u} {B : Type v} {f : B -> A} [inj : is_injective f] :  
   ∀ b : B, inj_imp inj b b idp = idp :=
 begin 
   intro b, 
-  change @is_equiv.inv _ _ (λ p : b = b, ap f p) (inj b b) (@idp _ (f b)) = idp, 
+  change @is_equiv.inv _ _ (λ p : b = b, ap f p) (is_injective.eqv f b b) 
+                                                                (@idp _ (f b)) = idp, 
   have H : (λ p : b = b, ap f p) idp = idp, from rfl,
-  rwr <- H, rwr @is_equiv.left_inv _ _ (λ p : b = b, ap f p) (inj b b) (@idp _ b)
+  rwr <- H, rwr @is_equiv.left_inv _ _ (λ p : b = b, ap f p) (is_injective.eqv f b b) (@idp _ b)
 end 
 
 /- Maps that are equivalences allow to exchange types of arguments in dependent 
@@ -260,6 +261,11 @@ end
 
 /- Facts on fibers -/
 @[hott]
+def fiber_base_eq {A B : Type _} {f : A -> B} {b₁ b₂ : B} :
+  fiber f b₁ -> b₁ = b₂ -> fiber f b₂ :=
+λ fib₁ p, fiber.mk fib₁.point (fib₁.point_eq ⬝ p) 
+
+@[hott]
 def fiber_precomp {A B C : Type _} (f : A -> B) (g : B -> C) (c : C) : 
   fiber (g ∘ f) c -> fiber g c :=
 begin intro fib_gf, fapply fiber.mk, exact f fib_gf.1, exact fib_gf.2 end
@@ -270,6 +276,85 @@ def fiber_ap_ap {A B : Type _} (f : A -> B) {b : B} {fib₁ fib₂ : fiber f b}
 begin 
   hinduction p, rwr con.right_inv
 end
+
+@[hott]
+def fiber_comp {A B C : Type _} {f : A -> B} {g : B -> C} {c : C} 
+  (fib_gf : fiber (g ∘ f) c) : Σ (fib_g : fiber g c), fiber f fib_g.point :=
+dpair (fiber.mk (f fib_gf.point) fib_gf.point_eq) 
+      (fiber.mk fib_gf.point idp)
+
+@[hott]
+def comp_fiber {A B C : Type _} {f : A -> B} {g : B -> C} {c : C} (fib_g : fiber g c) 
+  (fib_f : fiber f fib_g.point) : fiber (g ∘ f) c :=
+fiber.mk fib_f.point (ap g fib_f.point_eq ⬝ fib_g.point_eq)  
+
+@[hott]
+def comp_fib_eq {A B C : Type _} (f : A -> B) (g : B -> C) {c : C} 
+  {fib_g₁ fib_g₂ : fiber g c} (p : fib_g₁ = fib_g₂) {fib_f₁ : fiber f fib_g₁.point}
+  {fib_f₂ : fiber f fib_g₂.point} (q₁ : fib_f₁.point = fib_f₂.point)
+  (q₂ : fib_f₁.point_eq ⬝ ap fiber.point p = ap f q₁ ⬝ fib_f₂.point_eq) : 
+  comp_fiber fib_g₁ fib_f₁ = comp_fiber fib_g₂ fib_f₂ :=
+begin
+  hinduction p, hinduction fib_f₁ with a₁ f_eq₁, hinduction fib_f₂ with a₂ f_eq₂, 
+  change a₁ = a₂ at q₁, hinduction q₁, change f_eq₁ = idp ⬝ f_eq₂ at q₂, 
+  fapply fiber.fiber_eq,
+  { exact idp },
+  { change ap g f_eq₁ ⬝ fib_g₁.point_eq = idp ⬝ (ap g f_eq₂ ⬝ fib_g₁.point_eq),
+    rwr q₂, rwr ap_con, exact con.assoc _ _ _ }
+end
+
+@[hott]
+def fib_comp_fib_eq {A B C : Type _} {f : A -> B} {g : B -> C} {c : C} 
+  (fib_gf : fiber (g ∘ f) c) : 
+  fib_gf = comp_fiber (fiber_comp fib_gf).1 (fiber_comp fib_gf).2 :=
+begin 
+  hinduction fib_gf with a gf_eq, change _ = fiber.mk a (idp ⬝ gf_eq), rwr idp_con
+end 
+
+@[hott]
+def eq_equiv_fn_eq_of_equiv_idp {A : Type u} {B : Type v} (f : A ≃ B) (a : A) :
+  equiv.eq_equiv_fn_eq_of_equiv f a a idp = idp := idp  
+
+@[hott]
+def sigma_eq_equiv_idp {A : Type _} {B : A → Type _} (u : Σ (a : A), B a) :
+  sigma.sigma_eq_equiv u u idp = ⟨idp, idpo⟩ := idp
+
+@[hott]
+def sigma_equiv_sigma_right_red {A : Type _} {B : A → Type _} {B' : A → Type _}
+  (f : (Π (a : A), B a ≃ B' a)) : (sigma.sigma_equiv_sigma_right f).to_fun =
+  sigma.sigma_functor id (λ a, (f a).to_fun) := idp 
+
+@[hott]
+def sigma_equiv_sigma_right_idp {A B : Type _} {f : A -> B} {a : A} {b : B}
+  {q : f a = b} : sigma.sigma_equiv_sigma_right (λ (p : a = a),
+                   @eq_pathover_equiv_Fl A B a a b f p q q) ⟨idp, idpo⟩ = 
+                   ⟨idp, (idp_con q)⁻¹⟩ := 
+begin 
+  change (sigma.sigma_equiv_sigma_right (λ (p : a = a),
+                   @eq_pathover_equiv_Fl A B a a b f p q q)).to_fun _ = _,
+  rwr sigma_equiv_sigma_right_red, 
+  change dpair idp _ = _, fapply sigma.sigma_eq, exact idp,
+  apply pathover_of_tr_eq, rwr idp_tr,
+  change (pathover_idp _ _ _ ⬝e equiv_eq_closed_right _ (eq.inverse (idp_con q))).to_fun 
+                                                                  idpo = (idp_con q)⁻¹, 
+  rwr equiv.to_fun_trans,
+  change (equiv_eq_closed_right q (idp_con q)⁻¹).to_fun idp = _,
+  change idp ⬝ _ = _, rwr idp_con (idp_con q)⁻¹  
+end
+
+@[hott]
+def fiber_eq_idp {A B : Type _} (f : A -> B) {b : B} (fib : fiber f b) :
+  fiber.fiber_eq (@idp _ fib.1) (idp_con fib.2)⁻¹ = idp :=
+begin 
+  change (_ ⬝e (_ ⬝e _)).to_fun⁻¹ᶠ _ = _, 
+  rwr equiv.to_inv_trans, rwr equiv.to_inv_trans, 
+  apply equiv.to_inv_eq_of_eq (equiv.eq_equiv_fn_eq_of_equiv _ _ _), 
+  rwr eq_equiv_fn_eq_of_equiv_idp, 
+  apply equiv.to_inv_eq_of_eq (sigma.sigma_eq_equiv _ _),
+  rwr sigma_eq_equiv_idp, 
+  apply equiv.to_inv_eq_of_eq (sigma.sigma_equiv_sigma_right _), 
+  rwr sigma_equiv_sigma_right_idp 
+end 
 
 /- We use Egbert Rijke's insight that the main tool to deal with identity types in 
    HoTT is the Structure Identity Principle for Σ-types [Rijke-Book, Thm.11.6.2]. 
