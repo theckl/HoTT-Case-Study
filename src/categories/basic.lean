@@ -304,7 +304,7 @@ begin intro a, exact category.idtoiso_linv (refl a) end
 def iso_hom_tr_comp {C : Category} {c₁ c₂ d : C} (i : c₁ ≅ c₂)
   (h : c₁ ⟶ d) : (idtoiso⁻¹ᶠ i) ▸ h = i⁻¹ʰ.hom ≫ h :=
 begin 
-  rwr <-(category.idtoiso_rinv i),  
+  rwr <- (category.idtoiso_rinv i),  
   rwr category.idtoiso_linv (idtoiso⁻¹ᶠ i),
   exact id_hom_tr_comp (idtoiso⁻¹ᶠ i) h
 end 
@@ -317,6 +317,14 @@ begin
   rwr category.idtoiso_linv (idtoiso⁻¹ᶠ i),
   exact id_hom_tr_comp' (idtoiso⁻¹ᶠ i) h
 end 
+
+@[hott]
+def idtoiso_is_inj {C : Category} {c₁ c₂ : C} {p q : c₁ = c₂} :
+  idtoiso p = idtoiso q -> p = q :=
+begin 
+  intro r, rwr <- (category.idtoiso_linv p), rwr <- (category.idtoiso_linv q), 
+  apply ap idtoiso⁻¹ᶠ, exact r
+end
 
 /- In categories, identity types are sets. In categories whose objects form a set, 
    isomorphism types are propositions (since identity types are propositions). -/
