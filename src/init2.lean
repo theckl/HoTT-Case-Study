@@ -61,11 +61,19 @@ begin
 end
 
 @[hott]
+def idpo_of_idp_tr {A : Type _} {B : A -> Type _} {a : A} {b : B a} :
+  pathover_of_tr_eq (idp_tr b) = idpo := by refl
+
+@[hott]
 def pathover_of_tr_eq_inv {A : Type _} {B : A -> Type _} {a₁ a₂ : A} (p : a₁ = a₂)
   {b₁ : B a₁} {b₂: B a₂} (q : p ▸ b₁ = b₂) : 
   (pathover_of_tr_eq q)⁻¹ᵒ = pathover_of_tr_eq (inv_tr_eq_of_eq_tr q⁻¹) :=
 begin hinduction p, hinduction q, refl end
 
+@[hott]
+def idp_ap_idp {A B : Type _} (f : A -> B) {a : A} (p : a = a) :
+  p = @idp _ a -> ap f p = @idp _ (f a) :=
+begin intro q, exact ap (ap f) q ⬝ ap_idp a f end
 
 @[hott]
 def ap10_eq_of_homotopy {A B : Type _} {f g : A -> B} (Hp : f ~ g) :
@@ -260,6 +268,11 @@ def apdd2_inj_eq {A : Type _} {B C : A -> Type _} {D : Type _}
   ((apo01 f₁ f₂ e).1 (apd f₂ e)) ((apo01 f₁ f₃ e).1 (apd f₃ e))) 
   ⬝ (inj d₂)⁻¹ :=
 begin intro e, hinduction e, hsimp end        
+
+@[hott]
+def ap_fn_eq {A B : Type _} {f g : A -> B} {a₁ a₂ : A} (q : f = g) (p : a₁ = a₂) :
+  ap f p = ap10 q a₁ ⬝ ap g p ⬝ (ap10 q a₂)⁻¹ :=
+begin hinduction q, change _ = idp ⬝ _ ⬝ idp, rwr idp_con end 
 
 @[hott]
 def ap_ap01 {A B : Type _} (f : A -> B) {a₁ a₂ : A} (pA : a₁ = a₂)
@@ -947,5 +960,10 @@ def tr_tr_fn2_fn2_fn {A D E : Type _} {a₁ a₂ : A} (p : a₁ = a₂) {B : A -
   f a₂ b₂ = ((ap h p) ▸[λ e : E, C (g a₂ b₂) e] ((apd011 g p q) ▸[λ d : D, C d (h a₁)] 
             f a₁ b₁)) :=
 begin hinduction p, hinduction q, refl end
+
+@[hott]
+def equiv.idp_of_fn_idp_fn {A B : Type _} (f : A ≃ B) {x : A} :
+  equiv.eq_of_fn_eq_fn f (@idp B (f x)) = idp :=
+con.left_inv _ 
 
 end hott
