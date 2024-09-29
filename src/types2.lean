@@ -52,6 +52,13 @@ def sigma.sigma_equiv_sigma_right_fst_eq : Π {A : Type _} {B C : A → Type _}
   (sigma.sigma_equiv_sigma_right Heqv ab).1 = ab.1 :=
 begin intros A B C Heqv ab, hinduction ab, exact idp end 
 
+@[hott]
+def sigma.sigma_eq_idp_idpo {A : Type _} {B : A -> Type _} {u : Σ (a : A), B a} :
+  sigma.sigma_eq (@idp _ u.1) (@idpo _ _ u.1 u.2) = idp :=
+begin 
+  hinduction u, change sigma.dpair_eq_dpair _ _ = _, change apd011 _ _ _ = _, refl
+end
+
 /- The decode-encode technique for sums; it is contained in [types.sum] from the HoTT3 
    library, but this file does not compile. -/
 @[hott, reducible, hsimp] 
@@ -274,7 +281,7 @@ begin intro fib_gf, fapply fiber.mk, exact f fib_gf.1, exact fib_gf.2 end
 def fiber_ap_ap {A B : Type _} (f : A -> B) {b : B} {fib₁ fib₂ : fiber f b}
   (p : fib₁ = fib₂) : ap f (ap fiber.point p) = fib₁.2 ⬝ fib₂.2⁻¹ :=
 begin 
-  hinduction p, rwr con.right_inv
+  hinduction p, exact (con.right_inv fib₁.2)⁻¹
 end
 
 @[hott]
@@ -290,8 +297,8 @@ fiber.mk fib_f.point (ap g fib_f.point_eq ⬝ fib_g.point_eq)
 
 @[hott]
 def comp_fib_eq {A B C : Type _} (f : A -> B) (g : B -> C) {c : C} 
-  {fib_g₁ fib_g₂ : fiber g c} (p : fib_g₁ = fib_g₂) {fib_f₁ : fiber f fib_g₁.point}
-  {fib_f₂ : fiber f fib_g₂.point} (q₁ : fib_f₁.point = fib_f₂.point)
+  {fib_g₁ fib_g₂ : fiber g c} {fib_f₁ : fiber f fib_g₁.point}
+  {fib_f₂ : fiber f fib_g₂.point} (p : fib_g₁ = fib_g₂) (q₁ : fib_f₁.point = fib_f₂.point)
   (q₂ : fib_f₁.point_eq ⬝ ap fiber.point p = ap f q₁ ⬝ fib_f₂.point_eq) : 
   comp_fiber fib_g₁ fib_f₁ = comp_fiber fib_g₂ fib_f₂ :=
 begin
@@ -299,14 +306,14 @@ begin
   change a₁ = a₂ at q₁, hinduction q₁, change f_eq₁ = idp ⬝ f_eq₂ at q₂, 
   fapply fiber.fiber_eq,
   { exact idp },
-  { change ap g f_eq₁ ⬝ fib_g₁.point_eq = idp ⬝ (ap g f_eq₂ ⬝ fib_g₁.point_eq),
-    rwr q₂, rwr ap_con, exact con.assoc _ _ _ }
+  { apply (λ q, q ⬝ (idp_con (ap g f_eq₂ ⬝ fib_g₁.point_eq))⁻¹), 
+    apply ap (λ q, ap g q ⬝ fib_g₁.point_eq), exact q₂ ⬝ (idp_con _) }
 end
 
 @[hott]
 def fib_comp_fib_eq {A B C : Type _} {f : A -> B} {g : B -> C} {c : C} 
   (fib_gf : fiber (g ∘ f) c) : 
-  fib_gf = comp_fiber (fiber_comp fib_gf).1 (fiber_comp fib_gf).2 :=
+  fib_gf = comp_fiber (fiber.mk (f fib_gf.1) fib_gf.2) (fiber.mk fib_gf.1 idp) :=
 begin 
   hinduction fib_gf with a gf_eq, change _ = fiber.mk a (idp ⬝ gf_eq), rwr idp_con
 end 
@@ -355,6 +362,27 @@ begin
   apply equiv.to_inv_eq_of_eq (sigma.sigma_equiv_sigma_right _), 
   rwr sigma_equiv_sigma_right_idp 
 end 
+
+@[hott]
+def comp_fib_eq_idp {A B C : Type _} (f : A -> B) (g : B -> C) {c : C} 
+  {fib_g : fiber g c} {fib_f : fiber f fib_g.point} : 
+  comp_fib_eq f g (@idp _ fib_g) (@idp _ fib_f.point) (idp_con fib_f.point_eq)⁻¹ = idp :=
+begin
+  hinduction fib_f with a f_eq, change fiber.fiber_eq idp _ = idp,
+  change fiber.fiber_eq idp (_ ⬝ _) = idp, rwr con.left_inv, 
+  apply λ p, p ⬝ fiber_eq_idp (g ∘ f) _, 
+  fapply apd011 fiber.fiber_eq, exact idp, apply pathover_of_tr_eq, rwr idp_tr,
+  apply con_inv_eq_of_eq_con, change _ = (idp_con (ap g f_eq ⬝ fib_g.point_eq))⁻¹ ⬝ _, 
+  rwr con.left_inv
+end
+
+@[hott]
+def comp_fib_eq_idp_idp {A B C : Type _} {f : A -> B} {g : B -> C} {c : C} 
+  (fib_g : fiber g c) (fib_f : fiber f fib_g.point) 
+  {r : fib_f.point_eq ⬝ ap fiber.point idp = ap f idp ⬝ fib_f.point_eq} : 
+  r = (idp_con fib_f.point_eq)⁻¹ ->
+  comp_fib_eq f g (@idp _ fib_g) (@idp _ fib_f.point) r = idp :=
+begin intro s, rwr s, exact comp_fib_eq_idp f g end
 
 /- We use Egbert Rijke's insight that the main tool to deal with identity types in 
    HoTT is the Structure Identity Principle for Σ-types [Rijke-Book, Thm.11.6.2]. 
