@@ -69,6 +69,14 @@ def Magma_sigma_mul_equiv :
 Magma_sigma_equiv ⬝e sigma.sigma_equiv_sigma_right 
                                       (λ A : Set.{u}, has_hom_eqv_hom A)
 
+@[hott, instance]
+def Magma_eq_are_sets : ∀ M₁ M₂ : Magma, is_set (M₁ = M₂) :=
+begin 
+  apply λ H : is_trunc 1 Magma, @is_trunc_eq Magma 0 H,
+  fapply is_trunc_equiv_closed_rev 1 Magma_sigma_mul_equiv, 
+  fapply sigma.is_trunc_sigma
+end
+
 @[hott]
 def Magma_sigma_mul_forget_pr1_htpy : Π (M : Magma), 
   Magma_forget M = sigma.fst (Magma_sigma_mul_equiv.to_fun M) :=
@@ -156,11 +164,11 @@ def Magma_fibs_are_cat :
   sigma_fibs_are_cat (λ A : Set_Category.{u}, A.carrier -> A.carrier -> A.carrier) :=
 begin
   fapply sigma_fibs_are_cat.mk, 
-  { intros A mul₁ mul₂ h, 
-    hinduction h with h h_eq, hinduction h with hA hA_pred,
+  { intros A mul₁ mul₂ h h_eq, 
+    hinduction h with h hA_pred, 
     change ∀ a b : A.carrier, (concrete_full_hom_equiv (concrete_equiv_inv
                 (concrete_obj_system.fib_eqv Magma_forget
-                (λ (A : ↥Set_Category), A.carrier → A.carrier → A.carrier)))).map hA 
+                (λ (A : ↥Set_Category), A.carrier → A.carrier → A.carrier)))).map h 
                 (mul₁ a b) = _ at hA_pred,
     apply eq_of_homotopy2, intros a b,
     change (𝟙 A : A.carrier -> A.carrier) (mul₁ a b) = 
@@ -184,8 +192,27 @@ begin
   intro h, hinduction h with h_M, exact h_M
 end
 
-/- Semigroups form a subcategory of magmas. We use the mechanism in [categories.concrete]
-   to produce an instance of semigroups being a category. -/
+/- We show that semigroups form a category, by constructing `Semigroup` as an extension of
+   the concrete category `Magma` over `Set_Category`. -/
+   
+@[hott]
+def Semigroup.to_Magma : Semigroup -> Magma :=
+begin
+  intro SG, hinduction SG with SG SG_struct, 
+  hinduction SG_struct with is_set_SG mul_SG mul_assoc,
+  exact Magma.mk (Set.mk SG is_set_SG) (has_mul.mk mul_SG)
+end
+
+@[hott, instance]
+def Semigroup_extra_hom_system : extra_hom_system Semigroup.to_Magma Magma_forget :=
+extra_hom_system.mk (λ SG₁ SG₂, subset.total_Subset _)
+                    (λ SG, true.intro)
+                    (λ SG₁ SG₂ SG₃ h₁ h₂ h₁_in h₂_in, true.intro)
+                    (λ SG₁ SG₂ h h_iso h_in, true.intro)
+
+/- To prove that fibers of `Semigroup.to_Magma` over a given underlying Magma form a 
+  category, we show how equality of semigroups follows from equality of the underlying 
+  magmas. -/
 @[hott]
 def Semigroup_eqv_Magma_mul_assoc : 
   Semigroup ≃ Σ (M : Magma.{u}), Π (a b c : M.carrier), (a * b) * c = a * (b * c) :=
@@ -204,68 +231,81 @@ begin
       hinduction SG_struct with is_set_SG mul_SG mul_assoc, exact idp } }
 end
 
-@[hott, hsimp]
-def Semigroup.to_Magma : Semigroup -> Magma_Category.{u} := 
+@[hott]
+def Semigroup_Magma_mul_assoc_proj_htp : ∀ SG : Semigroup,
+  Semigroup.to_Magma SG = sigma.fst (Semigroup_eqv_Magma_mul_assoc SG) :=
 begin
   intro SG, hinduction SG with SG SG_struct, 
-  hinduction SG_struct with is_set_SG mul_SG mul_assoc,
-  exact Magma.mk (Set.mk SG is_set_SG) (has_mul.mk mul_SG)
-end
-
-@[hott]
-def Semigroup_to_Magma_carrier_eq (SG : Semigroup) :
-  ↥(Semigroup.to_Magma SG).carrier = SG.carrier :=
-begin 
-  hinduction SG with SG SG_struct, 
-  hinduction SG_struct with is_set_SG mul_SG mul_assoc,
-  hsimp 
-end
-
-@[hott]
-def Semigroup_Magma_mul_assoc_proj_comm : 
-  Semigroup.to_Magma = sigma.fst ∘ Semigroup_eqv_Magma_mul_assoc :=
-begin
-  apply eq_of_homotopy, intro SG, hinduction SG with SG SG_struct, 
   hinduction SG_struct with is_set_SG mul_SG mul_assoc, exact idp
 end
 
 @[hott]
-def Semigroup_to_Magma_fib : Π (M : Magma.{u}), 
-  fiber Semigroup.to_Magma M ≃ Π (a b c : M.carrier), (a * b) * c = a * (b * c) :=
-begin  
-  rwr Semigroup_Magma_mul_assoc_proj_comm, intro M,
-  exact fiber.equiv_precompose sigma.fst Semigroup_eqv_Magma_mul_assoc M ⬝e 
-  fiber.fiber_pr1 _ M 
+def Semigroup_Magma_mul_assoc_proj_fn_eq : 
+  Semigroup.to_Magma = sigma.fst ∘ Semigroup_eqv_Magma_mul_assoc :=
+eq_of_homotopy Semigroup_Magma_mul_assoc_proj_htp
+
+@[hott]
+def Semigroup_eq_of_Magma_eq : ∀ {SG₁ SG₂ : Semigroup}, 
+  Semigroup.to_Magma SG₁ = Semigroup.to_Magma SG₂ -> SG₁ = SG₂ :=
+begin 
+  intros SG₁ SG₂ pM, 
+  apply equiv.eq_of_fn_eq_fn Semigroup_eqv_Magma_mul_assoc, 
+  { fapply sigma.sigma_eq, 
+    { exact (ap10 Semigroup_Magma_mul_assoc_proj_fn_eq SG₁)⁻¹ ⬝ pM ⬝ 
+            (ap10 Semigroup_Magma_mul_assoc_proj_fn_eq SG₂) },
+    { apply pathover_of_tr_eq, exact is_prop.elim _ _ } },
+end  
+
+@[hott]
+def Semigroup_idp_of_Magma_idp (SG : Semigroup) :
+  Semigroup_eq_of_Magma_eq (@idp _ (Semigroup.to_Magma SG)) = idp :=
+begin 
+  change equiv.eq_of_fn_eq_fn _ _ = idp, rwr con_idp, rwr con.left_inv, 
+  apply λ p, p ⬝ (equiv.idp_of_fn_idp_fn Semigroup_eqv_Magma_mul_assoc),
+  apply ap (equiv.eq_of_fn_eq_fn Semigroup_eqv_Magma_mul_assoc),
+  apply λ p, p ⬝ sigma.sigma_eq_idp_idpo, apply ap (sigma.sigma_eq idp), 
+  apply λ p, p ⬝ idpo_of_idp_tr, apply ap pathover_of_tr_eq,
+  exact is_prop.elim _ _
 end
 
-@[hott, instance]
-def Semigroup_to_Magma_is_inj : is_injective Semigroup.to_Magma.{u} :=
+@[hott]
+def Semigroup_eq_of_Magma_eq.left_inv : ∀ {SG₁ SG₂ : Semigroup} 
+  (pM : Semigroup.to_Magma SG₁ = Semigroup.to_Magma SG₂), 
+  ap Semigroup.to_Magma (Semigroup_eq_of_Magma_eq pM) = pM :=
 begin
-  fapply prop_fiber_is_inj, intro M, 
-  fapply @is_trunc_is_equiv_closed_rev _ _ -1 (Semigroup_to_Magma_fib M).to_fun,
-  apply_instance
+  intros SG₁ SG₂ pM, change ap _ (equiv.eq_of_fn_eq_fn _ _) = _, 
+  rwr ap_fn_eq Semigroup_Magma_mul_assoc_proj_fn_eq, 
+  rwr ap_compose sigma.fst Semigroup_eqv_Magma_mul_assoc,
+  rwr equiv.ap_eq_of_fn_eq_fn, change _ ⬝ (sigma.sigma_eq _ _)..1 ⬝ _ = _, 
+  rwr sigma.sigma_eq_fst, rwr con.assoc5, rwr con.right_inv, rwr con.right_inv,
+  rwr idp_con
 end
 
 @[hott, instance]
-def Semigroup_is_cat : is_cat Semigroup.{u} :=
-  full_subcat_is_cat Semigroup.to_Magma
+def Semigroup_to_Magma_fibs_are_cat : rel_fibs_are_cat Semigroup.to_Magma Magma_forget :=
+begin 
+  fapply rel_fibs_are_cat.mk, 
+  { intros M sg_ext₁ sg_ext₂ h,
+    fapply fiber.fiber_eq, 
+    { exact Semigroup_eq_of_Magma_eq (sg_ext₁.point_eq ⬝ sg_ext₂.point_eq⁻¹) },
+    { apply eq_con_of_con_inv_eq, exact (Semigroup_eq_of_Magma_eq.left_inv _)⁻¹ } },
+  { intros M sg_ext, change fiber.fiber_eq _ _ = _, 
+    apply λ p, p ⬝ fiber_eq_idp _ _, fapply apd011 fiber.fiber_eq, 
+    { apply eq.concat (ap Semigroup_eq_of_Magma_eq (con.right_inv sg_ext.point_eq)), 
+      exact Semigroup_idp_of_Magma_idp sg_ext.point },
+    { apply pathover_of_tr_eq, exact is_prop.elim _ _ } }
+end
+
+@[hott, instance]
+def Semigroup_is_cat : is_cat Semigroup :=
+begin 
+  apply λ c : concrete_fibs_are_cat _, @concrete_fib_cat_to_concrete_cat _ _ (Magma_forget ∘ Semigroup.to_Magma) _ c,
+  exact rel_fib_cat_to_concrete_fibs_cat _ _, sorry 
+end
 
 @[hott]
 def Semigroup_Category : Category :=
   Category.mk Semigroup.{u} Semigroup_is_cat
-
-@[hott,instance]
-def Semigroup_has_hom : has_hom Semigroup.{u} :=
-  has_hom.mk (λ S₁ S₂ : Semigroup.{u}, 
-                              Semigroup.to_Magma S₁ ⟶ Semigroup.to_Magma S₂)
-
-@[hott]
-def Semigroup_hom_map {SG₁ SG₂ : Semigroup.{u}} : 
-  (SG₁ ⟶ SG₂) -> (SG₁.carrier -> SG₂.carrier) :=  
-begin
-  intro h, rwr <- Semigroup_to_Magma_carrier_eq, rwr <- Semigroup_to_Magma_carrier_eq, 
-  apply Magma_hom_map, exact h
-end
 
 /- Monoids extend semigroups by a one-element satisfying the usual laws. -/
 @[hott, hsimp]
