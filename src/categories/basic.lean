@@ -114,6 +114,28 @@ calc g   = g ≫ 𝟙 a : by hsimp
      ... = (g ≫ i.hom) ≫ i.ih.inv : by hsimp
      ... = h ≫ i.ih.inv : by rwr pcl     
 
+@[hott, hsimp]
+def iso_inv_move_lr {C : Type u} [is_precat.{v} C] {a b c : C} (i : a ≅ b)
+  (g : b ⟶ c) (h : a ⟶ c) : i.ih.inv ≫ h = g -> h = i.hom ≫ g :=
+assume pcr,
+have i.hom ≫ i.ih.inv ≫ h = i.hom ≫ g, from 
+  ap (λ g : b ⟶ c, i.hom ≫ g) pcr,
+calc h   = 𝟙 a ≫ h : by hsimp
+     ... = (i.hom ≫ i.ih.inv) ≫ h : by rwr <- i.ih.l_inv
+     ... = i.hom ≫ (i.ih.inv ≫ h) : by hsimp
+     ... = i.hom ≫ g : by rwr pcr   
+
+@[hott, hsimp]
+def iso_inv_move_rl {C : Type u} [is_precat.{v} C] {a b c : C} (i : a ≅ b)
+  (g : c ⟶ a) (h : c ⟶ b) : h ≫ i.ih.inv = g -> h = g ≫ i.hom :=
+assume pcl,
+have (h ≫ i.ih.inv) ≫ i.hom = g ≫ i.hom, from 
+  ap (λ g : c ⟶ a, g ≫ i.hom) pcl,
+calc h   = h ≫ 𝟙 b : by hsimp
+     ... = h ≫ (i.ih.inv ≫ i.hom) : by rwr <-i.ih.r_inv
+     ... = (h ≫ i.ih.inv) ≫ i.hom : by hsimp
+     ... = g ≫ i.hom : by rwr pcl 
+
 /- Isomorphisms are uniquely determined by their underlying homomorphism:
    The inverse map by functorial equalities, and the functorial equalities 
    because the types of homomorphisms are sets. 
@@ -167,6 +189,11 @@ def idtoiso_refl_eq {C : Type u} [is_precat.{v} C] (a : C) : idtoiso (refl a) = 
 def id_inv_iso_inv {C : Type u} [is_precat.{v} C] {c₁ c₂ : C} (p : c₁ = c₂) :
   idtoiso p⁻¹ = inv_iso (idtoiso p) := 
 begin hinduction p, refl end 
+
+@[hott]
+def id_inv_iso_inv_hom {C : Type u} [is_precat.{v} C] {c₁ c₂ : C} (p : c₁ = c₂) :
+  (idtoiso p⁻¹).hom = (idtoiso p).ih.inv := 
+begin hinduction p, refl end
 
 @[hott]
 def idtoiso_comp_eq {C : Type u} [is_precat.{v} C] {c₁ c₂ c₃ : C} 
