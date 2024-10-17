@@ -324,7 +324,7 @@ def has_sym_pullback {C : Type u} [is_cat.{v} C] {a b c : C} (f : a ⟶ c) (g : 
   [pull_fg : has_pullback f g] : has_pullback g f :=
 begin
   apply has_pullback.mk, rwr sym_orthogonal_pair f g, 
-  exact @diag_iso_has_lim_to_has_lim.{v u 0 0 0 0} _ _ _ _ orthogonal_wedge_iso _
+  exact @diag_iso_has_lim_to_has_lim.{v u 0 0 0} _ _ _ _ orthogonal_wedge_iso _
         pull_fg.has_limit        
 end
 
@@ -333,10 +333,10 @@ def sym_pullback_eq {C : Type u} [is_cat.{v} C] {a b c : C} {f : a ⟶ c} {g : b
   [has_pullback.{u v} f g] [has_pullback.{u v} g f] : pullback f g = pullback g f :=
 begin
   change limit _ = limit _,
-  exact (diag_iso_lim_eq_lim.{v u 0 0 0 0} orthogonal_wedge_iso (orthogonal_pair f g))⁻¹ ⬝ 
+  exact (diag_iso_lim_eq_lim.{v u 0 0 0} orthogonal_wedge_iso (orthogonal_pair f g))⁻¹ ⬝ 
         (@diag_eq_lim_eq_lim Orthogonal_Wedge C _ _ (orthogonal_pair g f) 
           (eq.inverse (sym_orthogonal_pair f g)) 
-          (diag_iso_has_lim_to_has_lim.{v u 0 0 0 0} orthogonal_wedge_iso) _)
+          (diag_iso_has_lim_to_has_lim.{v u 0 0 0} orthogonal_wedge_iso) _)
 end
 
 @[hott]
