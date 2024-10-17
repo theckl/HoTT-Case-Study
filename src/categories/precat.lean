@@ -30,7 +30,7 @@ infixr ` ⟶ `:10 := has_hom.hom  -- type as \h
 
 /- A characterisation of equality of hom-structures. -/
 @[hott, reducible]
-def has_hom_eqv_hom {C : Type _} : (has_hom C) ≃ (C -> C -> Set) :=
+def has_hom_eqv_hom {C : Type u} : (has_hom C) ≃ (C -> C -> Set.{v}) :=
 begin
   fapply equiv.mk,
   { intro hh, exact @has_hom.hom _ hh },
@@ -41,26 +41,26 @@ begin
 end
 
 @[hott, reducible]
-def has_hom_eq_eqv_hom_eq {C : Type _} (hh₁ hh₂ : has_hom C) :
+def has_hom_eq_eqv_hom_eq {C : Type u} (hh₁ hh₂ : has_hom C) :
   (hh₁ = hh₂) ≃ ((@has_hom.hom _ hh₁) = (@has_hom.hom _ hh₂)) :=
 eq_equiv_fn_eq_of_equiv has_hom_eqv_hom hh₁ hh₂ 
 
 @[hott, reducible]
-def hom_eqv_hom_bij {C : Type _} (h₁ h₂ : C -> C -> Set) :
+def hom_eqv_hom_bij {C : Type u} (h₁ h₂ : C -> C -> Set.{v}) :
   (h₁ = h₂) ≃ (Π x y : C, bijection (h₁ x y) (h₂ x y)) :=
 begin
   fapply equiv.mk,
-  { intro h_eq, intros x y, exact set_eq_to_bij (ap100 h_eq x y) },
+  { intro h_eq, intros x y, exact set_eq_to_bij.{v v} (ap100 h_eq x y) },
   { fapply adjointify,
     { intro hom_bij, fapply eq_of_homotopy2, intros x y,
-      exact bij_to_set_eq (hom_bij x y) },
+      exact bij_to_set_eq.{v v} (hom_bij x y) },
     { intro hom_bij, apply eq_of_homotopy2, intros x y, hsimp,
       rwr ap100_eq_of_hty2_inv, hsimp, 
-      exact is_equiv.right_inv (set_eq_to_bij) (hom_bij x y) },
+      exact is_equiv.right_inv (set_eq_to_bij.{v v}) (hom_bij x y) },
     { intro h_eq, hsimp, 
       apply λ r, r ⬝ (hty2_of_ap100_eq_inv h_eq), 
       apply ap eq_of_homotopy2, apply eq_of_homotopy2, intros x y,
-      exact is_equiv.left_inv (set_eq_to_bij) (ap100 h_eq x y) } }
+      exact is_equiv.left_inv (set_eq_to_bij.{v v}) (ap100 h_eq x y) } }
 end
 
 @[hott]
@@ -176,13 +176,13 @@ def cat_str_sig_iso {C : Type _} (str₁ str₂ : cat_str_sig C) :=
                                           (λ x y, (bhm x y).map)
 
 @[hott, reducible]
-def cat_str_sig_eq_eqv_iso {C : Type _} (str₁ str₂ : cat_str_sig C) :
+def cat_str_sig_eq_eqv_iso {C : Type u} (str₁ str₂ : cat_str_sig.{u v} C) :
   (str₁ = str₂) ≃ (cat_str_sig_iso str₁ str₂) :=
 begin
   hinduction str₁ with hh₁ hh_ops₁,
   fapply struct_id_char_of_contr hh_ops₁ 
                         (cat_str_dep_ppred hh₁ hh_ops₁) _ _ str₂,
-  { exact is_contr_hom hh₁ },
+  { exact is_contr_hom.{u v v} hh₁ },
   { hsimp, fapply is_contr.mk,
     { exact ⟨hh_ops₁, cat_idmap_laws ⟨hh₁, hh_ops₁⟩⟩ },
     { intro cat_hom_map, hinduction cat_hom_map with hom_ops hom_laws,
@@ -490,7 +490,7 @@ def is_fully_faithful_functor' {C : Type u} [is_precat C] {D : Type u'}
 λ ff x y, bijection.mk (@functor.map C _ D _ F x y) (@ff x y) 
 
 @[hott]
-def id_functor_is_fully_faithful {C : Type u} [is_precat C] : 
+def id_functor_is_fully_faithful (C : Type u) [is_precat C] : 
   is_fully_faithful_functor (id_functor C) :=
   λ x y : C, (identity (x ⟶ y)).bij   
 
@@ -546,14 +546,18 @@ end
 
 /- Equalities of precategories can be characterized by 
    fully faithful functors that induce an equivalence on the types of 
-   the objects. We use the Structure Identity Principle twice, on
-   precategories and on category structures to deduce this 
+   the objects. This is actually [HoTT-Book, Lem.9.4.15], but we use the Structure 
+   Identity Principle twice, on precategories and on category structures to deduce this 
    characterisation from univalence of the underlying types. -/
 @[hott]
 structure precat_iso (C D : Type _) [is_precat C] [is_precat D] :=
   (functor : C ⥤ D) 
   (ff : is_fully_faithful_functor functor) 
   (equiv : is_equiv functor.obj)
+
+@[hott]
+def precat_iso_idp (C : Type _) [is_precat C] : precat_iso C C :=
+  precat_iso.mk (id_functor C) (@id_functor_is_fully_faithful C _) (is_equiv_id C)
 
 @[hott]
 def precat_iso_eq_of_funct_eq (C D : Type _) [is_precat C] [is_precat D] 
@@ -653,6 +657,11 @@ def precat_dep_ppred (C₀ : Type _) [pc : is_precat C₀] : dep_ppred C₀ pc :
        (id_functor C₀).map_comp (@id_functor_is_fully_faithful C₀ _)) 
 
 @[hott]
+def precat_iso_idp_of_obj_id (C : Type _) [is_precat C] : 
+  precat_iso_of_obj C C equiv.rfl :=
+(precat_dep_ppred C).dep_base
+
+@[hott]
 def precat_contr_ppred (C₀ : Precategory) :
   is_contr (Σ (C : Type _), (precat_dep_ppred C₀).ppred_fst.fam C) :=
 begin
@@ -710,7 +719,6 @@ begin
   exact ap sigma.fst r
 end
 
-@[hott]
 def precat_sig_equiv_obj_iso_idp_map (C₀ C : Precategory) : 
   (precat_sig_equiv_obj_iso C₀ C₀ idp).2.hom_map = 
                                           (id_functor C₀).map :=
@@ -729,11 +737,81 @@ begin
 end
 
 @[hott]
-def precat_id_equiv_iso (C : Precategory) (D : Precategory): 
+def Precat_id_equiv_iso (C D : Precategory.{u v}) : 
   (C = D) ≃ (precat_iso C D) :=
 eq_equiv_fn_eq_of_equiv Precat_str_equiv_sig C D ⬝e
 precat_sig_equiv_obj_iso C D ⬝e
 precat_iso_of_obj_equiv_iso C D
+
+@[hott]
+def precat_id_equiv_iso (C D : Type u) [pcC : is_precat.{v u} C] [pcD : is_precat.{v u} D] : 
+  ((Precategory.mk C pcC) = (Precategory.mk D pcD)) ≃ (precat_iso C D) :=
+Precat_id_equiv_iso (Precategory.mk C pcC) (Precategory.mk D pcD)
+
+@[hott]
+def Precat_idp_equiv_id_iso (C : Precategory) :
+  Precat_id_equiv_iso C C idp = precat_iso_idp C := idp
+
+@[hott]
+def precat_idp_equiv_id_iso (C : Type _) [is_precat C] :
+  precat_id_equiv_iso C C idp = precat_iso_idp C := idp
+
+/- The underlying functor of an isomorphism between two precategories as encoded by
+   `precat_iso` has an inverse, in the sense that its compositions with the functor
+   are naturally isomorphic to the respective identity functors. In the [Hott-Book], this 
+   is actually called an equivalence of precategories, and that it follows from 
+   `precat_iso` is a consequence of [Lem.9.4.15] (that is, `precat_id_equiv_iso`) and 
+   induction on identity. 
+   
+   From this, we deduce that the maps on the objects are the equivalence maps in 
+   `precat_iso`. -/
+@[hott]
+structure precat_equiv (C D : Type _) [is_precat C] [is_precat D] :=
+  (functor : C ⥤ D)
+  (inv_functor : D ⥤ C)
+  (right_inv : (inv_functor ⋙ functor) = id_functor D)
+  (left_inv : (functor ⋙ inv_functor) = id_functor C)
+
+@[hott]
+def precat_equiv_idp (C : Type _) [is_precat C] : precat_equiv C C :=
+  precat_equiv.mk (id_functor C) (id_functor C) (funct_id_comp _) (funct_id_comp _)
+
+@[hott]
+def Precat_id_to_equiv (C D : Precategory.{u v}) :
+  C = D -> precat_equiv C D :=
+begin intro p, hinduction p, exact precat_equiv_idp C end
+
+@[hott]
+def precat_id_to_equiv {C D : Type u} [pcC : is_precat.{v u} C] [pcD : is_precat.{v u} D] :
+  (Precategory.mk C pcC) = (Precategory.mk D pcD) -> precat_equiv C D :=
+λ p, Precat_id_to_equiv (Precategory.mk C pcC) (Precategory.mk D pcD) p
+
+@[hott]
+def precat_iso_to_equiv {C D : Type u} [is_precat.{v u} C] [is_precat.{v u} D] :
+  precat_iso C D -> precat_equiv C D :=
+λ pci, precat_id_to_equiv ((precat_id_equiv_iso C D)⁻¹ᶠ pci)
+
+@[hott]
+def precat_iso_idp_to_equiv_idp (C : Type _) [pcC : is_precat C] :
+  precat_iso_to_equiv (precat_iso_idp C) = precat_equiv_idp C :=
+begin 
+  rwr <- precat_idp_equiv_id_iso C, change precat_id_to_equiv _ = _, 
+  rwr is_equiv.left_inv (precat_id_equiv_iso C C) idp 
+end
+
+@[hott]
+def precat_iso_to_equiv_obj (C D : Precategory.{u v}) {pci : precat_iso C D} :
+  functor.obj (precat_equiv.inv_functor (precat_iso_to_equiv pci)) = 
+                                          @is_equiv.inv _ _ pci.functor.obj pci.equiv :=
+begin
+  hinduction (Precat_id_equiv_iso C D)⁻¹ᶠ pci with h,
+  have h' : pci = precat_iso_idp C, from 
+    begin 
+      apply λ p, p ⬝ (Precat_idp_equiv_id_iso C), 
+      exact @eq_of_inv_eq _ _ _ (Precat_id_equiv_iso C C).to_is_equiv _ _ h
+    end,
+  rwr h', rwr precat_iso_idp_to_equiv_idp
+end
 
 end precategories
 
