@@ -13,8 +13,8 @@ sets
   algebra   :   362         
   quotients :   205  3034   
 categories
-  precat    :   740          
-  basic     :   411         
+  precat    :   818          
+  basic     :   438         
   examples  :   564         
   subobj    :   574
   subcat    :   125         
@@ -27,13 +27,13 @@ categories
   inf_pb    :   252         
   boolean   :   368         
   sets      :   937  
-  concrete  :   931  8662
+  concrete  :  1050  8886
 algebra
   monoid    :   244    
   group     :    13   257
 
                     -----
-                    14740               
+                    14964               
 
 
 Planned changes in Files, from bottom to top: 
