@@ -336,12 +336,12 @@ def inv_bij_is_inv {A : Set} {B : Set} (f : bijection A B) :
 
 @[hott]
 def inv_bij_r_inv {A : Set} {B : Set} (f : bijection A B) :
-  Π b : B, f ((inv_bijection_of f) b) = b :=
+  Π b : B, f.map ((inv_bijection_of f).map b) = b :=
 assume b, @is_set_inverse_of.r_inv _ _ _ _ (inv_bij_is_inv f) b  
 
 @[hott]
 def inv_bij_l_inv {A : Set} {B : Set} (f : bijection A B) :
-  Π a : A, (inv_bijection_of f) (f a) = a :=
+  Π a : A, (inv_bijection_of f).map (f.map a) = a :=
 assume a, @is_set_inverse_of.l_inv _ _ _ _ (inv_bij_is_inv f) a  
 
 @[hott]
