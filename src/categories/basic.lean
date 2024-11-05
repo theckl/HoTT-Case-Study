@@ -297,6 +297,12 @@ def category.isotoid {C : Category} :
 assume a b iso,  
 @is_equiv.inv _ _ _ (is_cat.ideqviso a b) iso  
 
+@[hott]
+def is_cat.isotoid {C : Type _} [is_cat C] : 
+  Π {a b : C}, a ≅ b -> a = b :=
+assume a b iso,  
+@is_equiv.inv _ _ _ (is_cat.ideqviso a b) iso  
+
 @[hott, hsimp]
 def category.ideqviso {C : Category} : 
   Π {a b : C}, (a = b) ≃ (a ≅ b) :=
@@ -318,14 +324,24 @@ def category.idtoiso_rinv' {C : Category} {a b : C} :
 is_equiv.right_inv (@idtoiso _ _ a b) 
 
 @[hott, hsimp]
-def category.idtoiso_linv' {C : Category} {a b : C} :
-  ∀ p : a = b, category.isotoid (idtoiso p) = p :=
-is_equiv.left_inv (@idtoiso _ _ a b) 
+def is_cat.idtoiso_rinv' {C : Type _} [is_cat C] {a b : C} :
+  ∀ i : a ≅ b, idtoiso (is_cat.isotoid i) = i :=
+is_equiv.right_inv (@idtoiso _ _ a b) 
+
+@[hott, hsimp]
+def category.idtoiso_linv' {C : Type _} [is_cat C] {a b : C} :
+  ∀ p : a = b, is_cat.isotoid (idtoiso p) = p :=
+is_equiv.left_inv (@idtoiso _ _ a b)
 
 @[hott]
 def isotoid_id_refl {C : Category} :
   Π (a : C), category.isotoid (id_iso a) = refl a :=
-begin intro a, exact category.idtoiso_linv (refl a) end 
+begin intro a, exact category.idtoiso_linv' (refl a) end 
+
+@[hott]
+def isotoid_id_refl' {C : Type _} [is_cat C] :
+  Π (a : C), is_cat.isotoid (id_iso a) = refl a :=
+begin intro a, exact category.idtoiso_linv' (refl a) end
 
 @[hott]
 def iso_hom_tr_comp {C : Category} {c₁ c₂ d : C} (i : c₁ ≅ c₂)
@@ -419,19 +435,137 @@ begin
   rwr (@is_cat.ideqviso _ (Category.struct A) _ _).adj
 end 
 
-/- Isomorphic precategories both have a category structure, or none. -/
+/- The underlying functor of an isomorphism between two precategories as encoded by
+   `precat_iso` has an inverse, in the sense that its compositions with the functor
+   are naturally isomorphic to the respective identity functors. In the [Hott-Book], this 
+   is actually called an equivalence of precategories if an additional adjointness 
+   condition is satisfied that makes the notion unique. It follows from 
+   `precat_iso` by [Lem.9.4.15] (that is, `precat_id_equiv_iso` in [categories.precat]) 
+   and induction on identity. 
+   
+   However, the equivalence of isomorphisms with equalities of precategories requires them 
+   to be in the same universe. This is too restrictive in some cases, so we make the
+   definition of an equivalence of precategories more explicit by fixing the 
+   components of the natural transformations to applications of `idtoiso` and construct 
+   such equivalences of two precategories directly from their isomorphisms. This uses 
+   ideas from the proof of [Lem.9.4.5] in the [HoTT-Book].     -/
 @[hott]
-def is_precat_iso (C D : Type _) [HC : is_precat C] [HD : is_precat D] :=
-  precat_iso (Precategory.mk C HC) (Precategory.mk D HD)
+structure precat_equiv (C D : Type _) [is_precat C] [is_precat D] :=
+  (functor : C ⥤ D)
+  (inv_functor : D ⥤ C)
+  (rinv_obj : (inv_functor ⋙ functor).obj = (id_functor D).obj)
+  (rinv_map : Π {d₁ d₂ : D} (h : d₁ ⟶ d₂), (inv_functor ⋙ functor).map h = 
+            (idtoiso (ap10 rinv_obj d₁)).hom ≫ h ≫ (idtoiso (ap10 rinv_obj d₂)⁻¹).hom)
+  (linv_obj : (functor ⋙ inv_functor).obj = (id_functor C).obj)
+  (linv_map : Π {c₁ c₂ : C} (h : c₁ ⟶ c₂), (functor ⋙ inv_functor).map h = 
+            (idtoiso (ap10 linv_obj c₁)).hom ≫ h ≫ (idtoiso (ap10 linv_obj c₂)⁻¹).hom)
 
 @[hott]
-def precat_iso_cat_cat (C D : Type _) [HC : is_precat C] [HD : is_precat D] :
-  is_precat_iso C D -> is_cat C -> is_cat D :=
+def precat_equiv_idp (C : Type _) [is_precat C] : precat_equiv C C :=
 begin
-  intros is_precat_iso is_cat_C, 
-  have p : C = D, from precat_iso_to_obj_eq C D is_precat_iso,--(precat_id_equiv_iso _ _).to_fun⁻¹ᶠ is_precat_iso,
-  rwr p at is_cat_C, assumption
+  fapply precat_equiv.mk,
+    exact id_functor C, exact id_functor C, 
+    exact ap functor.obj (funct_id_comp _),
+    { intros c₁ c₂ h, 
+      change h = (idtoiso (ap10 (ap functor.obj (functor_eq (idpath 
+                                               (id_functor C).obj) _)) c₁)).hom ≫ _ ≫ 
+                 (idtoiso (ap10 (ap functor.obj (functor_eq (idpath 
+                                               (id_functor C).obj) _)) c₂)⁻¹).hom, 
+      rwr functor_eq_obj, change h = (idtoiso idp).hom ≫ _ ≫ (idtoiso idp).hom, 
+      rwr idtoiso_refl_eq, rwr idtoiso_refl_eq, change h = 𝟙 c₁ ≫ _ ≫ 𝟙 c₂, 
+      rwr is_precat.comp_id, rwr is_precat.id_comp }, 
+    exact ap functor.obj (funct_id_comp _),
+    { intros c₁ c₂ h, 
+      change h = (idtoiso (ap10 (ap functor.obj (functor_eq (idpath 
+                                               (id_functor C).obj) _)) c₁)).hom ≫ _ ≫ 
+                 (idtoiso (ap10 (ap functor.obj (functor_eq (idpath 
+                                               (id_functor C).obj) _)) c₂)⁻¹).hom, 
+      rwr functor_eq_obj, change h = (idtoiso idp).hom ≫ _ ≫ (idtoiso idp).hom, 
+      rwr idtoiso_refl_eq, rwr idtoiso_refl_eq, change h = 𝟙 c₁ ≫ _ ≫ 𝟙 c₂, 
+      rwr is_precat.comp_id, rwr is_precat.id_comp }
+end
+
+@[hott]
+def precat_iso_to_inv_functor {C D : Type _} [is_precat C] [is_precat D] :
+  precat_iso C D -> D ⥤ C :=
+begin
+  intro pci, fapply precategories.functor.mk,
+  { exact pci.equiv.inv },
+  { intros d₁ d₂ h, 
+    fapply (inv_bijection_of (bijection.mk _ (@precat_iso.ff _ _ _ _ pci _ _))).map,
+    exact (idtoiso (@is_equiv.right_inv _ _ _ pci.equiv d₁)).hom ≫ h ≫ 
+          (idtoiso (@is_equiv.right_inv _ _ _ pci.equiv d₂)⁻¹).hom },
+  { intro d, change (inv_bijection_of _).map (_ ≫ (𝟙 d) ≫ _) = _, rwr is_precat.id_comp,
+    rwr idtoiso_comp_eq, rwr con.right_inv, apply eq.inverse,
+    apply bijection_l_to_r, change pci.functor.map _ = _, rwr functor.map_id },
+  { intros x y z f g, change (inv_bijection_of _).map _ = (inv_bijection_of _).map _ ≫ 
+                                                          (inv_bijection_of _).map _, 
+    apply eq.inverse, apply bijection_l_to_r, change pci.functor.map _ = _,
+    rwr functor.map_comp pci.functor, 
+    change (bijection.mk _ (@precat_iso.ff _ _ _ _ pci _ _)).map _ ≫ 
+           (bijection.mk _ (@precat_iso.ff _ _ _ _ pci _ _)).map _ = _, 
+    rwr inv_bij_r_inv, rwr inv_bij_r_inv, rwr is_precat.assoc, rwr is_precat.assoc f, 
+    rwr <- is_precat.assoc _ _ (g ≫ _), rwr idtoiso_comp_eq, rwr con.left_inv,
+    rwr idtoiso_refl_eq, change _ ≫ _ ≫ 𝟙 _ ≫ _ ≫ _ = _, rwr is_precat.id_comp, 
+    rwr is_precat.assoc f g }
+end
+
+@[hott]
+def precat_iso_to_equiv {C D : Type _} [is_precat C] [is_precat D] :
+  precat_iso C D -> precat_equiv C D :=
+begin
+  intro pci, fapply precat_equiv.mk,
+  { exact pci.functor },
+  { exact precat_iso_to_inv_functor pci },
+  { apply eq_of_homotopy, intro d, 
+    exact @is_equiv.right_inv _ _ pci.functor.obj (precat_iso.equiv pci) d },
+  { intros d₁ d₂ h, rwr ap10_eq_of_homotopy, 
+    change (bijection.mk _ (@precat_iso.ff _ _ _ _ pci _ _)).map 
+                                            ((inv_bijection_of _).map _) = _, 
+    rwr inv_bij_r_inv },
+  { apply eq_of_homotopy, intro c, 
+    exact @is_equiv.left_inv _ _ pci.functor.obj (precat_iso.equiv pci) c },
+  { intros d₁ d₂ h, rwr ap10_eq_of_homotopy, 
+    change (inv_bijection_of _).map _ = _, apply eq.inverse, apply bijection_l_to_r,
+    change pci.functor.map _ = _, rwr pci.functor.map_comp, rwr pci.functor.map_comp,
+    rwr funct_idtoiso, rwr funct_idtoiso, rwr is_equiv.adj, rwr is_equiv.adj, rwr ap_inv }
+end
+
+@[hott]
+def precat_iso_to_equiv_obj (C : Type _) [pcC : is_precat C] (D : Type _) 
+  [pcD : is_precat D] {pci : precat_iso C D} :
+  functor.obj (precat_equiv.inv_functor (precat_iso_to_equiv pci)) = 
+                                          @is_equiv.inv _ _ pci.functor.obj pci.equiv :=
+idp
+
+/- Isomorphic precategories both have a category structure, or none. We prove a version 
+   that does not require the precategories to be in the same category, via the same 
+   statement assuming that the precategories are equivalent. -/
+@[hott]
+def precat_equiv_cat_cat {C D : Type _} [HC : is_cat C] [HD : is_precat D] :
+  precat_equiv C D -> is_cat D :=
+begin
+  intro pce, fapply is_cat.mk, intros d₁ d₂, fapply adjointify,
+  { intro i, 
+    apply λ p, (ap10 (precat_equiv.rinv_obj pce) d₁)⁻¹ ⬝ p ⬝ 
+               (ap10 (precat_equiv.rinv_obj pce) d₂),
+    apply ap pce.functor.obj, apply is_cat.isotoid, 
+    exact funct_iso_iso pce.inv_functor i },
+  { intro i, apply hom_eq_to_iso_eq, rwr <- idtoiso_comp_eq, rwr <- idtoiso_comp_eq,
+    rwr <- funct_idtoiso, rwr is_cat.idtoiso_rinv', apply eq.inverse,
+    apply iso_inv_move_rl, apply iso_inv_move_lr, 
+    rwr <- id_inv_iso_inv_hom, rwr hott.eq.inv_inv, rwr <- id_inv_iso_inv_hom, 
+    change _ = pce.functor.map (pce.inv_functor.map i.hom),
+    apply eq.inverse, apply pce.rinv_map },
+  { intro i, hinduction i, rwr idtoiso_refl_eq, rwr funct_id_iso_id_iso, 
+    rwr isotoid_id_refl', rwr ap_idp, change _ ⬝ _ ⬝ _ = _, rwr con_idp, 
+    rwr con.left_inv }
 end 
+
+@[hott]
+def precat_iso_cat_cat (C D : Type _) [HC : is_cat C] [HD : is_precat D] :
+  precat_iso C D -> is_cat D :=
+λ pci, precat_equiv_cat_cat (precat_iso_to_equiv pci)
 
 end categories
 
