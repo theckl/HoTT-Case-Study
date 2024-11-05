@@ -611,14 +611,20 @@ begin
   apply has_stable_images.mk,
   intros A B C f g, fapply subobj_antisymm,
   { rwr <- pb_subobj_set_eq, apply inc_so_inc, 
-    intros a inc₁, change ↥((bij_subobj_to_subset C) (subset_to_subobj _) (f a)), 
-    rwr inv_bij_r_inv, hinduction inc₁ with fa, apply tr, fapply fiber.mk,
+    intros a inc₁, 
+    change ↥((bij_subobj_to_subset C).map (subset_to_subobj 
+                                                   (λ (b : C.carrier), image g b)) _), 
+    have p : subset_to_subobj (λ (b : C.carrier), image g b) = (inv_bijection_of 
+               (bij_subobj_to_subset C)).map (λ (b : C.carrier), image g b), from idp,
+    rwr p, rwr inv_bij_r_inv, hinduction inc₁ with fa, apply tr, fapply fiber.mk,
     exact pullback_homo_t f g fa.point, 
     change (pullback_homo_t f g ≫ g) fa.point = _, rwr <- pullback_eq, 
     change f _ = _, rwr fa.point_eq },
   { rwr <- pb_subobj_set_eq, apply inc_so_inc, 
-    intros a inc₂, change ↥((bij_subobj_to_subset C) (subset_to_subobj _) (f a)) at inc₂, 
-    rwr inv_bij_r_inv at inc₂, hinduction inc₂ with gfa, apply tr, fapply fiber.mk,
+    intros a inc₂, change ↥((bij_subobj_to_subset C).map (subset_to_subobj _) (f a)) at inc₂, 
+    have p : subset_to_subobj (λ (b : C.carrier), image g b) = (inv_bijection_of 
+               (bij_subobj_to_subset C)).map (λ (b : C.carrier), image g b), from idp,
+    rwr p at inc₂, rwr inv_bij_r_inv at inc₂, hinduction inc₂ with gfa, apply tr, fapply fiber.mk,
     exact set_to_pullback _ _ ⟨(a,gfa.point), gfa.point_eq⁻¹⟩, 
     rwr set_pullback_homo_l_eq }
 end
@@ -711,8 +717,8 @@ def subset_to_class_map {A : Set_Category.{u+1}} (B : Subset A) :
 begin
   apply eq_of_homotopy, intro a,  
   apply ap prop_resize, 
-  change (bij_subobj_to_subset A) 
-                      ((inv_bijection_of (bij_subobj_to_subset A)) B) a = _,
+  change (bij_subobj_to_subset A).map 
+                      ((inv_bijection_of (bij_subobj_to_subset A)).map B) a = _,
   rwr inv_bij_r_inv (bij_subobj_to_subset A)
 end
 
@@ -725,8 +731,8 @@ begin
                              exact inc_so_inc _ _ (inter_sset_r B C) },
   { let D := (subset_to_subobj B) ∩ (subset_to_subobj C), change D ≼ _,
     rwr <- inv_bij_l_inv (bij_subobj_to_subset A) D, apply inc_so_inc,
-    have p : subset_to_subobj ((bij_subobj_to_subset A) D) =
-          inv_bijection_of (bij_subobj_to_subset A) ((bij_subobj_to_subset A) D), from rfl,
+    have p : subset_to_subobj ((bij_subobj_to_subset A).map D) =
+          (inv_bijection_of (bij_subobj_to_subset A)).map ((bij_subobj_to_subset A).map D), from rfl,
     fapply inc_inc_inter_inc, 
     all_goals { apply so_inc_inc, rwr p, rwr inv_bij_l_inv (bij_subobj_to_subset A) D }, 
     exact subobj_inter_linc _ _ , exact subobj_inter_rinc _ _ }
@@ -739,8 +745,8 @@ begin
   fapply subobj_antisymm,
   { let D := (subset_to_subobj B) ∪ (subset_to_subobj C), change _ ≼ D, 
     rwr <- inv_bij_l_inv (bij_subobj_to_subset A) D, apply inc_so_inc,
-    have p : subset_to_subobj ((bij_subobj_to_subset A) D) =
-          inv_bijection_of (bij_subobj_to_subset A) ((bij_subobj_to_subset A) D), from rfl,
+    have p : subset_to_subobj ((bij_subobj_to_subset A).map D) =
+          (inv_bijection_of (bij_subobj_to_subset A)).map ((bij_subobj_to_subset A).map D), from rfl,
     fapply inc_inc_union_inc, 
     all_goals { apply so_inc_inc, rwr p, rwr inv_bij_l_inv (bij_subobj_to_subset A) D }, 
     exact subobj_union_linc _ _ , exact subobj_union_rinc _ _ },
@@ -782,13 +788,14 @@ begin
   have p : f = λ j : J, subset_to_subobj (f' j), from 
     begin 
       apply eq_of_homotopy, intro j, hsimp, 
-      change _ = (inv_bijection_of (bij_subobj_to_subset A)) 
-                                                    ((bij_subobj_to_subset A) (f j)),
+      change _ = (inv_bijection_of (bij_subobj_to_subset A)).map 
+                                                    ((bij_subobj_to_subset A).map (f j)),
       rwr inv_bij_l_inv (bij_subobj_to_subset A) (f j) 
     end,
   rwr p, rwr <- ss_so_iunion f', apply ap subset_to_subobj, apply ap iUnion,
   hsimp, apply eq_of_homotopy, intro j, hsimp,
- 
+  change _ = (bij_subobj_to_subset A).map ((inv_bijection_of (bij_subobj_to_subset A)).map 
+                                                     (f' j)),
   rwr inv_bij_r_inv (bij_subobj_to_subset A) (f' j)
 end
 
@@ -830,10 +837,10 @@ def set_compl_of {A : Set_Category.{u}} [H : has_dec_elem A] (B : subobject A) :
   complement B :=
 begin
   fapply complement.mk,
-  { exact subset_to_subobj 𝒞(bij_subobj_to_subset A B) }, 
+  { exact subset_to_subobj 𝒞((bij_subobj_to_subset A).map B) }, 
   { rwr <- inv_bij_l_inv (bij_subobj_to_subset A) B,
     change subset_to_subobj _ ∪ _ = _, rwr <- ss_so_union, 
-    rwr compl_union_top ((bij_subobj_to_subset A) B), rwr ss_so_top }, 
+    rwr compl_union_top ((bij_subobj_to_subset A).map B), rwr ss_so_top }, 
   { rwr <- inv_bij_l_inv (bij_subobj_to_subset A) B,
     change subset_to_subobj _ ∩ _ = _, rwr <- ss_so_inter, 
     rwr compl_inter_bottom, rwr ss_so_bottom }
