@@ -139,8 +139,8 @@ begin
     change funct.map _ = _, rwr funct.map_comp,  
     let hxy := is_fully_faithful_functor' @ff (obj_inv x) (obj_inv y),
     let hyz := is_fully_faithful_functor' @ff (obj_inv y) (obj_inv z),
-    change (hxy ((inv_bijection_of hxy) _)) ≫ 
-               (hyz ((inv_bijection_of hyz) _)) = _,
+    change (hxy.map ((inv_bijection_of hxy).map _)) ≫ 
+               (hyz.map ((inv_bijection_of hyz).map _)) = _,
     rwr inv_bij_r_inv, rwr inv_bij_r_inv, 
     let as := @is_precat.assoc _ (strict_Cat.to_Precat D).struct,
     rwr <- as _ g _, 
@@ -165,10 +165,10 @@ begin
     change _ ≫ sc_iso.functor.map (sc_iso.inv.map g) ≫ _ = g, 
     hinduction sc_iso with funct ff equiv,
     let obj_inv := @is_equiv.inv _ _ _ equiv,
-    change _ ≫ ((is_fully_faithful_functor' @ff (obj_inv x)
-                      (obj_inv y))) ((inv_bijection_of 
+    change _ ≫ (is_fully_faithful_functor' @ff (obj_inv x)
+                      (obj_inv y)).map ((inv_bijection_of 
                   (is_fully_faithful_functor' @ff (obj_inv x)
-                    (obj_inv y))) (_ ≫ g ≫ _)) ≫ _ = _,
+                    (obj_inv y))).map (_ ≫ g ≫ _)) ≫ _ = _,
     rwr inv_bij_r_inv (is_fully_faithful_functor' @ff (obj_inv x)
                          (obj_inv y)),          
     rwr <- is_precat.assoc, rwr <- is_precat.assoc _ g _, 
@@ -213,9 +213,9 @@ begin
     end,  
     rwr <- p, rwr <- q, rwr <- functor.map_comp, rwr <- functor.map_comp,
     change _ ≫ (inv_bijection_of (is_fully_faithful_functor' @ff 
-                  (obj_inv (funct.obj x)) (obj_inv (funct.obj y)))) 
-      (is_fully_faithful_functor' @ff 
-       (obj_inv (funct.obj x)) (obj_inv (funct.obj y)) _) ≫ _ = _,
+                  (obj_inv (funct.obj x)) (obj_inv (funct.obj y)))).map 
+      ((is_fully_faithful_functor' @ff 
+       (obj_inv (funct.obj x)) (obj_inv (funct.obj y))).map _) ≫ _ = _,
     rwr inv_bij_l_inv, rwr <- is_precat.assoc, rwr <- is_precat.assoc,
     rwr id_inv_iso_inv, 
     change (((idtoiso (obj_linv x)).ih.inv ≫_) ≫ _ ≫ _) ≫_ = _,  
