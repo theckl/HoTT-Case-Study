@@ -548,7 +548,10 @@ end
    fully faithful functors that induce an equivalence on the types of 
    the objects. This is actually [HoTT-Book, Lem.9.4.15], but we use the Structure 
    Identity Principle twice, on precategories and on category structures to deduce this 
-   characterisation from univalence of the underlying types. -/
+   characterisation from univalence of the underlying types. 
+   
+   Note, however, that equal precategories must be in the same universe, whereas isomorphic 
+   precategories do not need to be. -/
 @[hott]
 structure precat_iso (C D : Type _) [is_precat C] [is_precat D] :=
   (functor : C ⥤ D) 
@@ -755,63 +758,6 @@ def Precat_idp_equiv_id_iso (C : Precategory) :
 @[hott]
 def precat_idp_equiv_id_iso (C : Type _) [is_precat C] :
   precat_id_equiv_iso C C idp = precat_iso_idp C := idp
-
-/- The underlying functor of an isomorphism between two precategories as encoded by
-   `precat_iso` has an inverse, in the sense that its compositions with the functor
-   are naturally isomorphic to the respective identity functors. In the [Hott-Book], this 
-   is actually called an equivalence of precategories, and that it follows from 
-   `precat_iso` is a consequence of [Lem.9.4.15] (that is, `precat_id_equiv_iso`) and 
-   induction on identity. 
-   
-   From this, we deduce that the maps on the objects are the equivalence maps in 
-   `precat_iso`. -/
-@[hott]
-structure precat_equiv (C D : Type _) [is_precat C] [is_precat D] :=
-  (functor : C ⥤ D)
-  (inv_functor : D ⥤ C)
-  (right_inv : (inv_functor ⋙ functor) = id_functor D)
-  (left_inv : (functor ⋙ inv_functor) = id_functor C)
-
-@[hott]
-def precat_equiv_idp (C : Type _) [is_precat C] : precat_equiv C C :=
-  precat_equiv.mk (id_functor C) (id_functor C) (funct_id_comp _) (funct_id_comp _)
-
-@[hott]
-def Precat_id_to_equiv (C D : Precategory.{u v}) :
-  C = D -> precat_equiv C D :=
-begin intro p, hinduction p, exact precat_equiv_idp C end
-
-@[hott]
-def precat_id_to_equiv {C D : Type u} [pcC : is_precat.{v u} C] [pcD : is_precat.{v u} D] :
-  (Precategory.mk C pcC) = (Precategory.mk D pcD) -> precat_equiv C D :=
-λ p, Precat_id_to_equiv (Precategory.mk C pcC) (Precategory.mk D pcD) p
-
-@[hott]
-def precat_iso_to_equiv {C D : Type u} [is_precat.{v u} C] [is_precat.{v u} D] :
-  precat_iso C D -> precat_equiv C D :=
-λ pci, precat_id_to_equiv ((precat_id_equiv_iso C D)⁻¹ᶠ pci)
-
-@[hott]
-def precat_iso_idp_to_equiv_idp (C : Type _) [pcC : is_precat C] :
-  precat_iso_to_equiv (precat_iso_idp C) = precat_equiv_idp C :=
-begin 
-  rwr <- precat_idp_equiv_id_iso C, change precat_id_to_equiv _ = _, 
-  rwr is_equiv.left_inv (precat_id_equiv_iso C C) idp 
-end
-
-@[hott]
-def precat_iso_to_equiv_obj (C D : Precategory.{u v}) {pci : precat_iso C D} :
-  functor.obj (precat_equiv.inv_functor (precat_iso_to_equiv pci)) = 
-                                          @is_equiv.inv _ _ pci.functor.obj pci.equiv :=
-begin
-  hinduction (Precat_id_equiv_iso C D)⁻¹ᶠ pci with h,
-  have h' : pci = precat_iso_idp C, from 
-    begin 
-      apply λ p, p ⬝ (Precat_idp_equiv_id_iso C), 
-      exact @eq_of_inv_eq _ _ _ (Precat_id_equiv_iso C C).to_is_equiv _ _ h
-    end,
-  rwr h', rwr precat_iso_idp_to_equiv_idp
-end
 
 end precategories
 
