@@ -440,8 +440,8 @@ begin
     { have q' : decB a = Two.one, from 
       begin 
         fapply fin_map_to_dec_sset_elem', fapply sigma.mk,
-          exact bij ⟨a, inc⟩,
-          change pred_Set_map B ((inv_bijection_of bij) _) = a, rwr inv_bij_l_inv
+          exact bij.map ⟨a, inc⟩,
+          change pred_Set_map B ((inv_bijection_of bij).map _) = a, rwr inv_bij_l_inv
       end,
       rwr q' at q, hinduction encode_Two _ _ q },
     { exact true.intro } }
