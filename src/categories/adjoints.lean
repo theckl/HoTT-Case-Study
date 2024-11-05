@@ -380,20 +380,24 @@ def adjoint_hom_to_adjoint {C : Type u} {D : Type u'} [is_precat C]
 begin 
   intro adj, 
   have nat_L' : Π {c : C} {d : D} (f : c ⟶ R.obj d),
-                    inv_bijection_of (adj.hom_bij c d) f = L.map f ≫ 
-                    inv_bijection_of (adj.hom_bij (R.obj d) d) (𝟙 (R.obj d)), from
+                    (inv_bijection_of (adj.hom_bij c d)).map f = L.map f ≫ 
+                    (inv_bijection_of (adj.hom_bij (R.obj d) d)).map (𝟙 (R.obj d)), from
     begin 
-      intros c d f, apply (adj.hom_bij c d).bij.inj, change (adj.hom_bij c d) _ = _, 
+      intros c d f, apply (adj.hom_bij c d).bij.inj, change (adj.hom_bij c d).map _ = _, 
       rwr inv_bij_r_inv (adj.hom_bij c d), change f = (adj.hom_bij c d) _, 
-      rwr adj.nat_L f, rwr inv_bij_r_inv, rwr is_precat.comp_id 
+      rwr adj.nat_L f, change f = f ≫ (adj.hom_bij (R.obj d) d).map _, 
+      rwr inv_bij_r_inv (adj.hom_bij (R.obj d) d), rwr is_precat.comp_id 
     end,               
   have nat_R' : Π {c : C} {d d' : D} (g : d ⟶ d') (f : c ⟶ R.obj d), 
                     inv_bijection_of (adj.hom_bij c d) f ≫ g = 
                     inv_bijection_of (adj.hom_bij c d') (f ≫ R.map g), from
     begin
       intros c d d' g f, apply (adj.hom_bij c d').bij.inj, 
-      change _ = (adj.hom_bij c d') _, rwr inv_bij_r_inv (adj.hom_bij c d'),
-      change (adj.hom_bij c d') _ = _, rwr adj.nat_R, rwr inv_bij_r_inv
+      change _ = (adj.hom_bij c d').map ((inv_bijection_of (adj.hom_bij c d')).map _) , 
+      rwr inv_bij_r_inv (adj.hom_bij c d'),
+      change (adj.hom_bij c d') _ = _, rwr adj.nat_R, 
+      change (adj.hom_bij c d).map ((inv_bijection_of (adj.hom_bij c d)).map f) ≫ _ = _, 
+      rwr inv_bij_r_inv
     end, 
   have hom_map : Π {c : C} {d : D} (g : L.obj c ⟶ d), adj.hom_bij c d g =
                    adj.hom_bij c (L.obj c) (𝟙 (L.obj c)) ≫ R.map g, from
@@ -413,13 +417,16 @@ begin
   { fapply nat_trans.mk,      --counit
     { intro d, exact inv_bijection_of (adj.hom_bij (R.obj d) d) (𝟙 (R.obj d)) },
     { intros d d' g, rwr nat_R', rwr is_precat.id_comp, 
-      change L.map (R.map g) ≫ _ = _, rwr <- nat_L' (R.map g) } },         
-  { intro c, change L.map (adj.hom_bij c (L.obj c) (𝟙 (L.obj c))) ≫    --zigzag_L
-        inv_bijection_of (adj.hom_bij (R.obj (L.obj c)) (L.obj c)) (𝟙 (R.obj _)) = _, 
+      change L.map (R.map g) ≫ (inv_bijection_of (adj.hom_bij (R.obj d') d')).map _ = _, 
+      rwr <- nat_L' (R.map g) } },         
+  { intro c, change L.map ((adj.hom_bij c (L.obj c)).map (𝟙 (L.obj c))) ≫    --zigzag_L
+        (inv_bijection_of (adj.hom_bij (R.obj (L.obj c)) (L.obj c))).map (𝟙 (R.obj _)) = _, 
     rwr <- nat_L', rwr inv_bij_l_inv }, 
   { intro d, change adj.hom_bij (R.obj d) (L.obj (R.obj d)) (𝟙 (L.obj (R.obj d))) ≫
                 R.map (inv_bijection_of (adj.hom_bij (R.obj d) d) (𝟙 (R.obj d))) = _, 
-    rwr <- hom_map, rwr inv_bij_r_inv }  --zigzag_R 
+    rwr <- hom_map, change (adj.hom_bij (R.obj d) d).map ((inv_bijection_of (adj.hom_bij 
+                                                                (R.obj d) d)).map _) = _, 
+    rwr inv_bij_r_inv }  --zigzag_R 
 end       
 
 /- `adjoint_functors_on_hom` is also a proposition if `C` and `D` are categories, so the 
