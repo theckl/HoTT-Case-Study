@@ -209,7 +209,7 @@ begin
   apply (sset_eq_iff_inclusion _ _).2, apply pair,
   { intros a el, apply prop_to_prop_resize, hinduction prop_resize_to_prop el, 
     apply tr, fapply sigma.mk, exact (inv_bijection_of h) a_1.1, 
-    change ↥(a ∈ f (h ((inv_bijection_of h) a_1.1))), rwr inv_bij_r_inv, exact a_1.2 },
+    change ↥(a ∈ f (h.map ((inv_bijection_of h).map a_1.1))), rwr inv_bij_r_inv, exact a_1.2 },
   { intros a el, apply prop_to_prop_resize, hinduction prop_resize_to_prop el, 
     apply tr, fapply sigma.mk, exact h a_1.1, exact a_1.2 }
 end
