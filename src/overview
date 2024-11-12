@@ -1,10 +1,10 @@
 Compiling files, in order of dependencies:
 ------------------------------------------
-init2       :   969
-nat2        :   174
-types2      :   865        
+init2       :   984
+nat2        :   359
+types2      :   893        
 prop_axioms :   556         
-prop_logic  :   223  2787
+prop_logic  :   223  3015
 sets
   basic     :   790         
   subset    :   819         
@@ -27,16 +27,17 @@ categories
   inf_pb    :   252         
   boolean   :   368         
   sets      :   944  
-  concrete  :   865  
-  rel_conc  :   196  8989
+  concrete  :   882  8776
 algebra
-  monoid    :   244    
-  group     :    13   257
+  monoid    :   232    
+  group     :    13   245
 
                     -----
-                    15067               
+                    15070               
 
 
 Planned changes in Files, from bottom to top: 
 ---------------------------------------------
-- [algebra.monoid] : Define category structures monoids using (relative) concrete categories
+
+ 
+
