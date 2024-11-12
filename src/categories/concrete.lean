@@ -119,6 +119,17 @@ begin
     { apply pathover_of_tr_eq, exact is_prop.elim _ _ } } 
 end
 
+@[hott, reducible]
+def concrete_fib_functor {C : Type u} {X : Category.{u' v}} (f : C -> X) 
+  [concrete_hom_system f] : Π (x : X), (fiber f x) ⥤ X :=
+begin
+  intro x, fapply precategories.functor.mk,
+  { intro c, exact f c.1 },
+  { intros c d g, exact g.1.1 },
+  { intro c, exact idp },
+  { intros c d e g h, exact idp }
+end
+
 /- Homomorphisms in `fiber f x` are uniquely determined by source and target, and they 
    are automatically isomorphisms. -/
 @[hott]
@@ -163,6 +174,12 @@ begin
   { apply concrete_fib_hom_is_unique },
   { apply concrete_fib_hom_is_unique }
 end
+
+@[hott]
+def concrete_fib_hom_to_iso {C : Type u} {X : Category.{u' v}} {f : C -> X} 
+  [concrete_hom_system f] : ∀ {x : X} {c d : fiber f x} (g : c ⟶ d), 
+  f c.1 ≅ f d.1 :=
+λ x c d g, funct_iso_iso (concrete_fib_functor f x) (iso.mk g (concrete_fib_hom_is_iso g))
 
 /- We deduce that the precategory `C` over the category `X` is a category if the fibers
    over `X` are a category. An instance of this property can be deduced from more basic 
@@ -402,7 +419,7 @@ end
    type, then the concrete type is a category. In that case, the concrete type is actually
    a full subcategory of the underlying category, as in [categories.subcat], but we also
    want to use it in the framework of concrete categories. -/
-@[hott, instance]
+@[hott, reducible, instance]
 def full_subcat_hom_sys {C : Type u} {X : Category.{u' v}} (f : C -> X) [is_injective f] : 
   concrete_hom_system f :=
 concrete_hom_system.mk (λ c d, total_Subset (f c ⟶ f d)) (λ c, true.intro) 
@@ -476,7 +493,7 @@ end
    there is an unavoidable core to the calculations: Since the objects of the underlying 
    category do not need to form a set (for example, if they are sets), equalities as 
    prescribed by the concrete equivalence are not uniquely determined. -/
-@[hott] 
+@[hott, reducible] 
 def concrete_full_hom_equiv {C₁ C₂ : Type _} {X : Category.{u' v}} {f₁ : C₁ -> X} 
   {f₂ : C₂ -> X} (c_eqv : concrete_equiv f₁ f₂) : Π {c₁ d₁ : C₁}, 
   bijection (f₁ c₁ ⟶ f₁ d₁) (f₂ (c_eqv.eqv c₁) ⟶ f₂ (c_eqv.eqv d₁)) :=
@@ -499,7 +516,7 @@ begin
       rwr is_precat.comp_id } }
 end
 
-@[hott]
+@[hott, reducible]
 def concrete_full_hom_equiv_id {C₁ C₂ : Type _} {X : Category.{u' v}} {f₁ : C₁ -> X} 
   {f₂ : C₂ -> X} (c_eqv : concrete_equiv f₁ f₂) : Π (c₁ : C₁),
   (concrete_full_hom_equiv c_eqv).map (𝟙 (f₁ c₁)) = 𝟙 (f₂ (c_eqv.eqv c₁)) :=
@@ -539,7 +556,7 @@ def concrete_full_hom_equiv_inv {C₁ C₂ : Type _} {X : Category.{u' v}} {f₁
                                   is_iso.inv (concrete_full_hom_equiv_iso c_eqv g.ih) :=
 λ c₁ d₁ g, idp
 
-@[hott]
+@[hott, reducible]
 def concrete_equiv_hom_sys {C₁ C₂ : Type _} {X : Category.{u' v}} {f₁ : C₁ -> X} 
   {f₂ : C₂ -> X} [H₁ : concrete_hom_system f₁] (c_eqv : concrete_equiv f₂ f₁) :
   concrete_hom_system f₂ :=
@@ -830,7 +847,7 @@ def concrete_map_obj_system {C : Type u} {X : Category.{u' v}} (f : C -> X) :
 concrete_obj_system.mk (concrete_equiv_inv (concrete_equiv.mk (concrete_eqv_sigma_fib f) 
                                                               (λ c, idp)))
 
-@[hott, instance]
+@[hott, reducible, instance]
 def concrete_sigma_hom_system {C : Type u} {X : Category.{u' v}} (f : C -> X)
   (fibs : X -> Type u'') [H_obj : concrete_obj_system f fibs] 
   [H_hom : concrete_hom_system f] : concrete_hom_system (@sigma.fst X fibs) :=
