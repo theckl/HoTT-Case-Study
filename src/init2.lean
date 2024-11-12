@@ -23,6 +23,11 @@ def id {A : Type _} (a : A) : A := a
 /- All these equalities of pathovers, concatenations and transports of 
    identities should be produced by tactics. -/
 @[hott]
+def tr_eq_tr_to_eq {A : Type _} {a₁ a₂ : A} (p : a₁ = a₂) {B : A -> Type _} {b₁ c₁ : B a₁}
+  (q : p ▸ b₁ = p ▸ c₁) : b₁ = c₁ :=
+begin hinduction p, exact q end
+
+@[hott]
 def square_diag_id {A : Type _} {a b c d : A} : a = b -> a = c -> b = d -> c = d :=
  assume p q r, q⁻¹ ⬝ p ⬝ r
 
@@ -960,6 +965,16 @@ def tr_tr_fn2_fn2_fn {A D E : Type _} {a₁ a₂ : A} (p : a₁ = a₂) {B : A -
   f a₂ b₂ = ((ap h p) ▸[λ e : E, C (g a₂ b₂) e] ((apd011 g p q) ▸[λ d : D, C d (h a₁)] 
             f a₁ b₁)) :=
 begin hinduction p, hinduction q, refl end
+
+@[hott]
+def tr_endo_eval_tr_tr {A : Type _} {a₁ a₂ : A} (p : a₁ = a₂) {B : A -> Type _} 
+  (f : B a₁ -> B a₁) (b₁ : B a₁) : p ▸ (f b₁) = (p ▸ f) (p ▸ b₁) :=
+begin hinduction p, exact idp end
+
+@[hott]
+def tr_endo_eval_tr_endo_tr {A : Type _} {a₁ a₂ : A} (p : a₁ = a₂) {B : A -> Type _} 
+  (f : B a₁ -> B a₁) (b₂ : B a₂) : (p ▸ f) b₂ = p ▸ (f (p⁻¹ ▸ b₂)) :=
+begin hinduction p, exact idp end
 
 @[hott]
 def equiv.idp_of_fn_idp_fn {A B : Type _} (f : A ≃ B) {x : A} :
