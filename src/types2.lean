@@ -152,6 +152,27 @@ class is_injective {A : Type u} {B : Type v} (f : B -> A) :=
   (eqv : forall b1 b2 : B, is_equiv (λ p : b1 = b2, ap f p))
 
 @[hott]
+def equiv_map_is_injective {A : Type u} {B₁ : Type v} {B₂ : Type w} (f₁ : B₁ -> A)
+  (f₂ : B₂ -> A) : Π (eqv : B₁ ≃ B₂), f₁ = f₂ ∘ eqv.to_fun -> is_injective f₂ ->
+  is_injective f₁ :=
+begin 
+  intros eqv f_eq f_inj₂, apply is_injective.mk, 
+  intros b₁ c₁, fapply adjointify,
+  { intro f₁_eq, apply eq_of_fn_eq_fn' eqv.to_fun, 
+    apply (@is_injective.eqv _ _ f₂ f_inj₂ _ _).inv,
+    exact (ap10 f_eq b₁)⁻¹ ⬝ f₁_eq ⬝ (ap10 f_eq c₁) },
+  { intro q, rwr ap_fn_eq f_eq, apply con_inv_eq_of_eq_con, apply con_eq_of_eq_inv_con,
+    rwr ap_compose f₂ eqv.to_fun, rwr ap_eq_of_fn_eq_fn', 
+    change (λ p, ap f₂ p) _ = _,
+    rwr (@is_injective.eqv _ _ f₂ f_inj₂ _ _).right_inv, rwr con.assoc },
+  { intro p, hinduction p, rwr ap_idp, rwr con_idp, rwr con.left_inv, 
+    have q : @is_equiv.inv _ _ _ (@is_injective.eqv _ _ f₂ f_inj₂ _ _) idp = 
+                                                            @idp _ (eqv.to_fun b₁), from 
+      begin apply inv_eq_of_eq, rwr ap_idp end,
+    rwr q, change _ ⬝ _ ⬝ _ = _, rwr ap_idp, rwr con_idp, rwr con.left_inv }
+end
+
+@[hott]
 def prop_fiber_is_inj {A : Type u} {B : Type v} (f : B -> A) : 
   (Π (a : A), is_prop (fiber f a)) -> is_injective f :=
 begin
