@@ -291,7 +291,7 @@ def Cat.to_Precat : Category -> Precategory :=
 
 attribute [instance] Category.struct
 
-@[hott, hsimp]
+@[hott, reducible, hsimp]
 def category.isotoid {C : Category} : 
   Π {a b : C}, a ≅ b -> a = b :=
 assume a b iso,  
