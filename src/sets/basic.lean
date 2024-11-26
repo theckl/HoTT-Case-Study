@@ -616,7 +616,7 @@ end set
 namespace set
 
 /- The Cartesian product of two sets is a set. -/
-@[hott]
+@[hott]  --[GEVE]
 def prod_of_Sets_is_set (A : Set) (B : Set) : is_set (A × B) :=
   have pr_eq : ∀ (p₁ p₂ : A × B) (q r : p₁ = p₂), q = r, from
     assume p₁ p₂ q r, 
@@ -632,6 +632,12 @@ def Prod_Set (A : Set) (B : Set) : Set :=
   Set.mk (A × B) (prod_of_Sets_is_set A B)  
 
 notation A ` × `:100 B := Prod_Set A B   
+
+@[hott]
+def Prod_set.fst (A : Set) (B : Set) : Prod_Set A B -> A := prod.fst 
+
+@[hott]
+def Prod_set.snd (A : Set) (B : Set) : Prod_Set A B -> B := prod.snd
 
 /- Pathover equalities of set elements are equal. -/
 @[hott]
