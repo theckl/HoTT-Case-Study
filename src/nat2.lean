@@ -4,7 +4,7 @@ universes u v w
 hott_theory
 
 namespace hott
-open hott.is_equiv hott.is_trunc hott.trunc hott.nat
+open hott.is_equiv hott.is_trunc hott.trunc hott.nat unit
 
 /- Facts about natural numbers not found in the [HoTT3]-library (or only as theorems). -/
 open nat
@@ -179,7 +179,7 @@ def nat.eq_zero_of_le_zero' {n : ℕ} (H : n ≤ 0) : n = 0 :=
    representations, thus minimizing the necessary efforts. We exemplify this strategy on
    a calculation on powers of 2.
    
-   First, we define binary natural numbers. We need to distinguish zero nad positive 
+   First, we define binary natural numbers. We need to distinguish zero and positive 
    binary numbers. -/
 @[hott]
 inductive posbinℕ 
@@ -268,7 +268,7 @@ begin
     rwr succ_ℕ_binℕ, rwr succ_ℕ_binℕ, rwr succ_ℕ_binℕ, rwr ih, rwr double_succ_binℕ }
 end 
 
-/- Now we can prove that the the conversion functions are inverse to each other. -/
+/- Now we can prove that the conversion functions are inverse to each other. -/
 @[hott]
 def nat_binℕ.right_inv (n : binℕ) : nat_to_binℕ (binℕ_to_nat n) = n := 
 begin 
@@ -345,7 +345,7 @@ end
    Note: The transport over the equality `ℕ = binℕ` does not compute, neither on natural
    numbers nor on functions of natural numbers, so we have to perform the transports 
    manually.  -/
-@[hott]
+@[hott]  --[GEVE]
 def power_of_2_eq : doubles_ℕ 20 1024 = doubles_ℕ 5 (doubles_ℕ 15 1024) :=
 begin
   fapply @tr_eq_tr_to_eq _ _ _ ℕ_eq_binℕ (λ B, B), 
