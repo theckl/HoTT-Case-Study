@@ -151,6 +151,14 @@ def ap0111' {A B C : Type _} {D : Type _} (f : A -> B -> C -> D)
 begin hinduction p₁, hinduction p₂, hinduction p₃, refl end
 
 @[hott]
+def ap0111'' {A : Type u} {B : Type v} {C : A -> Type _} {D : A -> B -> Type _} 
+  {E : Type _} (f : Π (a : A) (b : B), C a -> D a b -> E)
+  {a₁ a₂ : A} {b₁ b₂ : B} {c₁ : C a₁} {c₂ : C a₂} {d₁ : D a₁ b₁} {d₂ : D a₂ b₂}
+  (p₁ : a₁ = a₂) (p₂ : b₁ = b₂) (p₃ : c₁ =[ap C p₁; id] c₂) 
+  (p₄ : d₁ =[ap011 D p₁ p₂; id] d₂) : f a₁ b₁ c₁ d₁ = f a₂ b₂ c₂ d₂ := 
+begin hinduction p₁, hinduction p₂, hinduction p₃, hinduction p₄, refl end 
+
+@[hott]
 def apd011_idp_idpo {A : Type _} {B : A -> Type _} {C : Type _} 
   (f : Π (a : A), B a -> C) {a : A} {b : B a} :
   apd011 f (@idp _ a) (@idpo _ _ a b) = idp :=
@@ -406,7 +414,16 @@ def apd000011 {A B C F : Type _} {D : B -> A -> Type _} {E : C -> A -> Type _}
   {d₁ : D b₁ a₁} {d₂ : D b₂ a₂} {e₁ : E c₁ a₁} {e₂ : E c₂ a₂} (pa : a₁ = a₂) (pb : b₁ = b₂)
   (pc : c₁ = c₂) (pd : d₁ =[ap011 D pb pa; id] d₂) (pe : e₁ =[ap011 E pc pa; id] e₂) : 
   f a₁ b₁ c₁ d₁ e₁ = f a₂ b₂ c₂ d₂ e₂ :=
-begin hinduction pa, hinduction pb, hinduction pc, hinduction pd, hinduction pe, refl end  
+begin hinduction pa, hinduction pb, hinduction pc, hinduction pd, hinduction pe, refl end
+
+@[hott]
+def apd011111 {A B C F : Type _} {D E : A -> B -> C -> Type _}  
+  (f : Π (a : A) (b : B) (c : C), D a b c-> E a b c -> F) {a₁ a₂ : A} {b₁ b₂ : B} 
+  {c₁ c₂ : C} {d₁ : D a₁ b₁ c₁} {d₂ : D a₂ b₂ c₂} {e₁ : E a₁ b₁ c₁} {e₂ : E a₂ b₂ c₂} 
+  (pa : a₁ = a₂) (pb : b₁ = b₂) (pc : c₁ = c₂) 
+  (pd : d₁ =[ap0111' D pa pb pc; id] d₂) (pe : e₁ =[ap0111' E pa pb pc; id] e₂) : 
+  f a₁ b₁ c₁ d₁ e₁ = f a₂ b₂ c₂ d₂ e₂ :=
+begin hinduction pa, hinduction pb, hinduction pc, hinduction pd, hinduction pe, refl end
 
 @[hott]
 def apd01d6 {A H : Type _} {B : A -> Type _} {C D: Π (a : A), B a -> Type _}
@@ -980,5 +997,21 @@ begin hinduction p, exact idp end
 def equiv.idp_of_fn_idp_fn {A B : Type _} (f : A ≃ B) {x : A} :
   equiv.eq_of_fn_eq_fn f (@idp B (f x)) = idp :=
 con.left_inv _ 
+
+@[hott]
+def fn_pathover_equiv_of_eq {A B C : Type _} (f : A -> C) (g : B -> C) (p : A = B) :
+  f = g ∘ equiv.equiv_of_eq p -> f =[p; λ A : Type _, A -> C] g :=
+begin 
+  hinduction p, hsimp, intro q, apply pathover_idp_of_eq, 
+  apply eq_of_homotopy, intro a, exact ap10 q a 
+end  
+
+@[hott]
+def fn_pathover_equiv_of_eq' {A B C : Type _} (f : A -> B) (g : A -> C) (p : B = C) :
+  g = equiv.equiv_of_eq p ∘ f -> f =[p; λ B : Type _, A -> B] g :=
+begin 
+  hinduction p, hsimp, intro q, apply pathover_idp_of_eq, 
+  apply eq_of_homotopy, intro a, exact (ap10 q a)⁻¹ 
+end  
 
 end hott
