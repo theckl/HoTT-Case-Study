@@ -1,17 +1,18 @@
 Compiling files, in order of dependencies:
 ------------------------------------------
-init2       :   984
+init2       :  1009
 nat2        :   359
 types2      :   893        
 prop_axioms :   556         
-prop_logic  :   223  3015
+prop_logic  :   223  3040
 sets
-  basic     :   790         
+  basic     :   796         
   subset    :   819         
   finite    :   503         
   axioms    :   355         
   algebra   :   362         
-  quotients :   205  3034   
+  quotients :   205  
+  product   :   497  3537   
 categories
   precat    :   764          
   basic     :   572         
@@ -33,7 +34,7 @@ algebra
   group     :    13   245
 
                     -----
-                    15070               
+                    15598               
 
 
 Planned changes in Files, from bottom to top: 
