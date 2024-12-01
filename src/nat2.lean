@@ -356,4 +356,19 @@ begin
   rwr doubles_ℕ_to_binℕ, rwr doubles_ℕ_to_binℕ, rwr doubles_ℕ_to_binℕ
 end
 
+/- Facts on iterations of functions -/
+@[hott]
+def fn_eq_iterate {N M : Type _} {f : N -> M} (hN : N -> N) {g : M -> N} 
+  (rinv : Π (m : M), f (g m) = m) (linv : Π (n : N), g (f n) = n) (s : ℕ) : 
+  Π (m : M), (f ∘ hN ∘ g)^[s] m = f (hN^[s] (g m)) :=
+begin 
+  intro m, hinduction s,
+  { exact (rinv m)⁻¹ },
+  { change f (hN (g _)) = f (hN _), rwr ih, rwr linv } 
+end
+
+@[hott]
+def nth_iter_eq_n : Π (n : ℕ), succ^[n] 0 = n :=
+begin intro n, hinduction n, exact idp, apply ap nat.succ, assumption end 
+
 end hott
