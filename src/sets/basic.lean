@@ -51,6 +51,9 @@ def empty_Set : Set :=
 def empty_map (C : Type _) : empty_Set -> C :=
 begin intro f, hinduction f end    
 
+@[hott]
+def is_non_empty_Set (A : Set) := trunc -1 A
+
 @[hott, hsimp, reducible]
 def id_map (A : Set) : A -> A := @id A  
 
@@ -698,6 +701,15 @@ end
 
 @[hott]
 def Prop_Set : Set := Set.mk (trunctype.{u} -1) Prop_is_set
+
+/- The (total) image of a map between sets is a set. -/
+@[hott, instance]
+def image_is_set {A B : Set} (f : A -> B) : is_set (total_image f) :=
+  dprod_of_Sets_is_set B (λ b, Prop_to_Set (image f b))
+
+@[hott]
+def image_Set {A B : Set} (f : A -> B) : Set :=
+  Set.mk (total_image f) (image_is_set f)  
 
 /- Natural numnbers form a set. We need the encode-decode method. -/
 @[hott]
