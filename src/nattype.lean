@@ -11,7 +11,7 @@ open nat
 
 /- We introduce several characterisation of a "natural system" natural types, using the 
    constructors of ℕ, and show that they imply each other.  -/
-@[hott]
+@[hott]  --[GEVE]
 structure is_cons_nat_type (N : Type _) :=
   (zero : N)
   (succ : N -> N)
@@ -36,14 +36,13 @@ begin
   rwr p
 end
 
-@[hott]
+@[hott]   --[GEVE]
 def ℕ_is_cons_nat_type : is_cons_nat_type ℕ :=
 begin 
   fapply is_cons_nat_type.mk,
   { exact 0 },
   { exact nat.succ },
-  { intro n, apply dpair n,
-    hinduction n, exact idp, apply ap nat.succ, assumption },
+  { intro n, apply dpair n, exact nth_iter_eq_n n },
   { intro i, hinduction i, 
     { intro i', hinduction i', 
       { intro p, exact idp }, 
@@ -58,7 +57,7 @@ structure cons_nat_type :=
   (carrier : Type _)
   (is_nat : is_cons_nat_type carrier)
 
-@[hott]
+@[hott]  --[GEVE]
 structure is_ind_nat_type (N : Type _) :=
   (zero : N)
   (succ : N -> N)
@@ -68,7 +67,7 @@ structure is_ind_nat_type (N : Type _) :=
                             (Π (n : N), f (succ n) = s (f n)) ->
                                             (Π (n : N), f' (succ n) = s (f' n)) -> f = f')
 
-@[hott]
+@[hott]  --[GEVE]
 def nat_cons_to_ind_type {N : Type _} : is_cons_nat_type N -> is_ind_nat_type N :=
 begin
   intro is_nat, fapply is_ind_nat_type.mk,
@@ -88,7 +87,7 @@ begin
       rwr f'_s_eq ((is_nat.succ^[n] is_nat.zero)), exact ap s ih } }
 end
 
-@[hott]
+@[hott]  --[GEVE]
 def nat_ind_to_cons_type {N : Type _} : is_ind_nat_type N -> is_cons_nat_type N :=
 begin  
   intro is_nat, fapply is_cons_nat_type.mk, 
@@ -116,11 +115,21 @@ end
    
    We also prove that this characterisation is equivalent to the characterisation by 
    constructors. -/
-@[hott]
+@[hott]  --[GEVE]
 structure is_ext_nat_type (N : Type _) :=
   (iter : N → ℕ)
   (exist : Π (i : ℕ), Σ (n : N), iter n = i)
   (unique : Π (n n' : N), iter n = iter n' -> n = n')
+
+@[hott]  --[GEVE]
+def ext_nat_type_linv {N : Type _} (is_nat : is_ext_nat_type N) : 
+  Π (n : N), (is_nat.exist (is_nat.iter n)).fst = n :=
+λ n, is_nat.unique _ _ (is_nat.exist (is_nat.iter n)).2
+
+@[hott]   --[GEVE]
+def ext_nat_type_rinv {N : Type _} (is_nat : is_ext_nat_type N) : 
+  Π (n : ℕ), is_nat.iter (is_nat.exist n).fst = n :=
+λ n, (is_nat.exist n).2 
 
 @[hott, reducible]
 def ext_nat_type_equiv_nat {N : Type _} : is_ext_nat_type N -> N ≃ ℕ :=
@@ -129,8 +138,8 @@ begin
   { exact is_nat.iter },
   { fapply adjointify,
     { intro i, exact (is_nat.exist i).1 },
-    { intro i, exact (is_nat.exist i).2 },
-    { intro n, exact is_nat.unique _ _ (is_nat.exist (is_nat.iter n)).2 } }
+    { intro i, exact ext_nat_type_rinv is_nat i },
+    { intro n, exact ext_nat_type_linv is_nat n } }
 end
 
 @[hott]
@@ -142,7 +151,7 @@ begin
   { intros n n' iter_eq, exact iter_eq }   
 end
 
-@[hott]
+@[hott]  --[GEVE]
 def binℕ_is_ext_nat_type : is_ext_nat_type binℕ :=
 begin 
   fapply is_ext_nat_type.mk,
@@ -152,7 +161,7 @@ begin
     exact ap nat_to_binℕ p }   
 end
 
-@[hott, instance]
+@[hott, instance]  --[GEVE]
 def ext_nat_type_is_set {N : Type _} : is_ext_nat_type N -> is_set N :=
 begin  
   intro is_nat, apply is_trunc_equiv_closed_rev 0 (ext_nat_type_equiv_nat is_nat),
@@ -231,7 +240,7 @@ begin
       exact is_equiv.right_inv (ext_nat_type_equiv_nat nat_type_Sigma.snd).to_fun n } }
 end
 
-@[hott]
+@[hott] --[GEVE]
 def ext_nat_types_are_canonically_equal : is_contr ext_nat_type :=
 begin
   apply is_trunc_equiv_closed_rev -2 nat_type_equiv_Sigma,
@@ -242,7 +251,7 @@ begin
             nat_type_eq_contr nat_type)⁻¹ᶠ (nat_type_eq_ℕ nat_type) }     
 end
 
-@[hott]
+@[hott]  --[GEVE]
 def cons_to_ext_nat_type {N : Type _} : is_cons_nat_type N -> is_ext_nat_type N :=
 begin
   intro is_nat, fapply is_ext_nat_type.mk,
@@ -254,7 +263,7 @@ begin
     exact ap (λ i, hott.iterate is_nat.succ i is_nat.zero) iter_eq }
 end
 
-@[hott]
+@[hott]  --[GEVE]
 def ext_to_cons_nat_type {N : Type _} : is_ext_nat_type N -> is_cons_nat_type N :=
 begin
   intro is_nat, fapply is_cons_nat_type.mk,
@@ -262,28 +271,30 @@ begin
     { exact λ c, (is_nat.exist (nat.succ (is_nat.iter c))).1 },
     { intro c, fapply dpair, 
       { exact is_nat.iter c },
-      { sorry } },
-    { sorry } 
+      { rwr @fn_eq_iterate _ _ (λ n, (is_nat.exist n).1) nat.succ is_nat.iter
+                           (ext_nat_type_linv is_nat) (ext_nat_type_rinv is_nat) _
+                               (is_nat.exist 0).fst,
+        { rwr ext_nat_type_rinv is_nat 0, rwr nth_iter_eq_n, 
+          change (is_nat.exist _).1 = _, rwr ext_nat_type_linv is_nat c } } },
+    { intros i i', 
+      rwr @fn_eq_iterate _ _ (λ n, (is_nat.exist n).1) nat.succ is_nat.iter 
+                         (ext_nat_type_linv is_nat) (ext_nat_type_rinv is_nat) _ 
+                               (is_nat.exist 0).fst,
+      rwr @fn_eq_iterate _ _ (λ n, (is_nat.exist n).1) nat.succ is_nat.iter 
+                         (ext_nat_type_linv is_nat) (ext_nat_type_rinv is_nat) _ 
+                               (is_nat.exist 0).fst,
+      rwr ext_nat_type_rinv is_nat 0, rwr nth_iter_eq_n, rwr nth_iter_eq_n,
+      intro p, rwr <- ext_nat_type_rinv is_nat i, rwr <- ext_nat_type_rinv is_nat i',
+      exact ap is_nat.iter p } 
 end
 
-@[hott]
-def cons_ext_nat_type_equiv {N : Type _} : is_cons_nat_type N ≃ is_ext_nat_type N :=
-begin
-  fapply equiv.mk,
-  { exact cons_to_ext_nat_type },
-  { fapply adjointify,
-    { exact ext_to_cons_nat_type },
-    { sorry },
-    { sorry } }
-end
-
-@[hott]
+@[hott]  --[GEVE]
 structure is_term_nat_type (N : Type _) :=
   (iter : N -> ℕ)
   (map : Π {A : Type _} (j : A -> ℕ), Σ (f : A -> N), j = iter ∘ f)
   (unique : Π {A : Type _} (f f' : A -> N), iter ∘ f = iter ∘ f' -> f = f')
 
-@[hott]
+@[hott]   --[GEVE]
 def ext_to_term_nat_type {N : Type _} : is_ext_nat_type N -> is_term_nat_type N :=
 begin
   intro is_nat, fapply is_term_nat_type.mk, 
@@ -295,7 +306,7 @@ begin
     exact is_nat.unique _ _ (ap10 iter_eq a) }
 end
 
-@[hott]
+@[hott]  --[GEVE]
 def term_to_ext_nat_type {N : Type _} : is_term_nat_type N -> is_ext_nat_type N :=
 begin
   intro is_nat, fapply is_ext_nat_type.mk, 
