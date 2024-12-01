@@ -10,7 +10,7 @@ open is_trunc trunc equiv is_equiv hott.prod hott.quotient hott.sigma hott.relat
 namespace set
 
 /- The quotient of a set by a mere relation is made into a set by truncation. -/
-@[hott]
+@[hott]  --[GEVE]
 def set_quotient {A : Set} (R : A -> A -> Prop) : Set :=
   to_Set (trunc 0 (quotient (λ a b : A, R a b)))
 
@@ -23,7 +23,7 @@ def eq_of_setrel {A : Set} (R : A → A → Prop) ⦃a a' : A⦄ (H : R a a') :
   set_class_of R a = set_class_of R a' :=
 ap tr (eq_of_rel (λ a b : A, R a b) H)  
 
-@[hott]
+@[hott]  --[GEVE]
 def set_quotient.rec {A : Set} (R : A → A → Prop) {P : set_quotient R -> Type _} 
   [∀ x : set_quotient R, is_set (P x)] (Pc : Π a : A, P (set_class_of R a))
   (Pp : Π ⦃ a a' : A ⦄ (H : R a a'), Pc a =[eq_of_setrel R H; λ x, P x] Pc a') 
@@ -198,7 +198,189 @@ begin
   intros x y, apply prop_iff_equiv, apply iff.intro,
     { intro p, rwr p, exact Rq_symm y },
     { exact quot_rel_to_setquot_eq R x y }  
-end  
+end
+
+@[hott]
+def class_eq_eqv_rel {A : Set} (R : A → A → Prop) [is_equivalence (λ a b : A, R a b)] : 
+  Π a b : A, set_class_of R a = set_class_of R b ≃ R a b :=
+begin
+  intros a b, fapply prop_iff_equiv, fapply prod.mk,
+  { intro p, 
+    exact (quot_eq_eqv_quot_rel R (set_class_of R a) (set_class_of R b)).to_fun p },
+  { intro H, exact eq_of_setrel R H }
+end
+
+/- We characterize set quotient using the (higher) constructors and the induction principle. -/
+@[hott]  --[GEVE]
+structure is_cons_quotient {A : Set} (R : A → A → Prop) 
+  [is_equivalence (λ a b : A, R a b)] (Q : Set) :=
+(proj : A -> Q)
+(gen : Π (q : Q), trunc -1 (Σ (a : A), proj a = q))
+(eq : Π (a₁ a₂ : A), proj a₁ = proj a₂ <-> R a₁ a₂)
+
+@[hott]
+structure cons_set_quotient {A : Set} (R : A → A → Prop) [is_equivalence (λ a b : A, R a b)] :=
+  (carrier : Set)
+  (is_quot : is_cons_quotient R carrier)
+
+/- Some examples where the criterion is easy to check:
+
+   Relations induced by equality -/
+@[hott]  
+def eq_rel (A : Set) : A -> A -> Prop :=
+  λ a b, trunctype.mk (a = b) (is_trunc_eq -1 a b) 
+
+@[hott, instance]
+def eq_is_equiv_rel {A : Set} : is_equivalence (λ a b, eq_rel A a b) :=
+  is_equivalence.mk (λ a, @idp _ a) (λ a b p, p⁻¹) (λ a b c p q, p ⬝ q)
+
+@[hott] --[GEVE]
+def id_is_cons_quotient_eq (A : Set) : is_cons_quotient (eq_rel A) A :=
+  is_cons_quotient.mk id (λ a, tr ⟨a,idp⟩) (λ a₁ a₂, prod.mk id id)
+
+/- Relations induced by maps -/
+@[hott]
+def map_rel {A B : Set} (q : A -> B) : A -> A -> Prop :=
+  λ a b, trunctype.mk (q a = q b) (is_trunc_eq -1 (q a) (q b))
+
+@[hott, instance]
+def map_rel_is_equiv_rel {A B : Set} (q : A -> B) : is_equivalence (λ a b, map_rel q a b) := 
+  is_equivalence.mk (λ a, @idp _ (q a)) (λ a b p, p⁻¹) (λ a b c p q, p ⬝ q)
+
+@[hott]  --[GEVE]
+def image_is_cons_quotient_map_rel {A B : Set} (q : A -> B) : 
+  is_cons_quotient (map_rel q) (image_Set q) :=
+begin
+  fapply is_cons_quotient.mk, 
+  { exact λ a, ⟨(q a), tr ⟨a, idp⟩⟩ },
+  { intro b, hinduction b with b im, hinduction im with fib, hinduction fib with a eq,
+    fapply tr, fapply dpair, exact a, fapply sigma.sigma_eq, exact eq,
+    apply pathover_of_tr_eq, exact is_prop.elim _ _ },
+  { intros a₁ a₂, fapply prod.mk,
+    { intro eq, exact eq..1 },
+    { intro eq, fapply sigma.sigma_eq, exact eq, 
+      apply pathover_of_tr_eq, exact is_prop.elim _ _ } }
+end
+
+/- The total relation -/
+@[hott]  
+def total_rel (A : Set) : A -> A -> Prop :=
+  λ a b, trunctype.mk One One_is_prop 
+
+@[hott, instance]
+def total_rel_is_equiv_rel {A : Set} : is_equivalence (λ a b, total_rel A a b) := 
+  is_equivalence.mk (λ a, One.star) (λ a b s, s) (λ a b c s t, s)
+
+@[hott]  --[GEVE]
+def One_is_cons_quotient_total_rel (A : Set) (H : is_non_empty_Set A) : 
+  is_cons_quotient (total_rel A) One_Set :=
+begin
+  fapply is_cons_quotient.mk, 
+  { intro a, exact One.star },
+  { intro q, hinduction H with a, apply tr, fapply dpair, exact a, 
+    exact @is_prop.elim _ One_is_prop _ _ },
+  { intros a₁ a₂, fapply prod.mk, intro p, exact One.star, intro s, exact idp }
+end
+
+/- The general construction of the set quotient of an equivalence relation can be 
+   characterized by constructors. -/
+@[hott]  --[GEVE]
+def set_quotient_is_cons_quotient {A : Set} (R : A -> A -> Prop) 
+  [is_equivalence (λ a b : A, R a b)] : is_cons_quotient R (set_quotient R) :=
+begin
+  fapply is_cons_quotient.mk,
+  { intro a, exact set_class_of R a },
+  { intro q, apply @set_quotient.rec _ R (λ q, trunc -1 (Σ (a : ↥A), set_class_of R a = q)) 
+                                      _ (λ a, tr ⟨a, idp⟩), 
+    intros a a' H, apply pathover_of_tr_eq, exact is_prop.elim _ _ },
+  { intros a₁ a₂, fapply prod.mk,
+    { intro p, exact class_eq_eqv_rel R a₁ a₂ p },
+    { intro H, exact (class_eq_eqv_rel R a₁ a₂)⁻¹ᶠ H } }
+end
+
+/- The inductive characterisation of set quotients, making them into initial objects -/
+@[hott] 
+structure is_ind_quotient {A : Set} (R : A → A → Prop) [is_equivalence (λ a b : A, R a b)] 
+  (Q : Set) :=
+(proj : A -> Q)
+(rel_eq : Π (a b : A), R a b -> proj a = proj b)
+(map : Π (P : Set) (f : A -> P), (Π (a b : A), R a b -> f a = f b) -> 
+                                                          Σ (g : Q -> P), f = g ∘ proj)
+(unique :  Π (P : Set) (f : A -> P) (H : Π (a b : A), R a b -> f a = f b) (g₁ g₂ : Q -> P),
+              g₁ ∘ proj = g₂ ∘ proj -> g₁ = g₂)
+
+@[hott, instance] 
+def well_defined_element {A : Set} {R : A → A → Prop} [is_equivalence (λ a b : A, R a b)] 
+  {Q : Set} (is_quot : is_cons_quotient R Q) {P : Set} (f : A -> P) 
+  (rel_eq : Π (a b : A), R a b -> f a = f b) : Π q : Q, is_prop (Σ p : P, 
+  trunc -1 (Σ (fib : Σ (a : A), is_quot.proj a = q), (f fib.1 = p))) :=
+begin
+  intro q, fapply is_prop.mk, intros fib_P₁ fib_P₂, fapply sigma.sigma_eq,
+  { hinduction fib_P₁.2 with sec₁ fib₁, hinduction fib_P₂.2 with sec₂ fib₂,
+    rwr <- fib₁.2, rwr <- fib₂.2, apply rel_eq, apply (is_quot.eq _ _).1,
+    exact fib₁.1.2 ⬝ fib₂.1.2⁻¹ },
+  { apply pathover_of_tr_eq, exact is_prop.elim _ _ }
+end 
+
+@[hott] 
+def well_defined_map_from_quotient {A : Set} {R : A → A → Prop} 
+  [is_equivalence (λ a b : A, R a b)] {Q : Set} (is_quot : is_cons_quotient R Q)
+  {P : Set} (f : A -> P) (rel_eq : Π (a b : A), R a b -> f a = f b) : Π q : Q, 
+  Σ p : P, trunc -1 (Σ (fib : Σ (a : A), is_quot.proj a = q), (f fib.1 = p)) :=
+begin
+  intro q, fapply λ H, trunc.elim H (is_quot.gen q),
+  { intro fib, fapply dpair, exact f fib.1, exact tr ⟨fib, idp⟩ },
+  { exact well_defined_element is_quot f rel_eq q }
+end
+
+@[hott]  --[GEVE]
+def cons_to_ind_quotient {A : Set} (R : A → A → Prop) [is_equivalence (λ a b : A, R a b)] 
+  (Q : Set) : is_cons_quotient R Q -> is_ind_quotient R Q :=
+begin
+  intro is_quot, fapply is_ind_quotient.mk,
+  { exact is_quot.proj },
+  { exact λ a b, (is_quot.eq a b).2},
+  { intros P f rel_eq, fapply dpair,
+    { intro q, exact (well_defined_map_from_quotient is_quot f rel_eq q).1 },
+    { apply eq_of_homotopy, intro a,
+      hinduction (well_defined_map_from_quotient is_quot f rel_eq (is_quot.proj a)).2
+                 with sec fib,
+      change _ = (well_defined_map_from_quotient is_quot f rel_eq _).1, rwr <- fib.2,
+      apply rel_eq, apply (is_quot.eq _ _).1, exact fib.1.2⁻¹ } },
+  { intros P f rel_eq g₁ g₂ g_eq, apply eq_of_homotopy, intro q, 
+    hinduction is_quot.gen q with sec fib, rwr <- fib.2, 
+    change (g₁ ∘ is_quot.proj) _ = (g₂ ∘ is_quot.proj) _, exact ap10 g_eq fib.1 }
+end
+
+@[hott]  --[GEVE]
+def ind_to_cons_quotient {A : Set} (R : A → A → Prop) [is_equivalence (λ a b : A, R a b)] 
+  (Q : Set) : is_ind_quotient R Q -> is_cons_quotient R Q :=
+begin 
+  intro is_quot, 
+  have map_Q : Σ (g : Q -> set_quotient R), 
+                    (set_quotient_is_cons_quotient R).proj = g ∘ is_quot.proj, from 
+    sorry,
+  have map : Σ (h : set_quotient R -> Q), 
+                    is_quot.proj = h ∘ (set_quotient_is_cons_quotient R).proj, from 
+    sorry, 
+  have map_id_Q : map.1 ∘ map_Q.1 = id, from sorry, 
+  have map_id : map_Q.1 ∘ map.1 = id, from sorry,
+  fapply is_cons_quotient.mk,
+  { exact is_quot.proj },
+  { intro q, hinduction (set_quotient_is_cons_quotient R).gen (map_Q.1 q) with sec fib,
+    apply tr, fapply dpair, exact fib.1, rwr ap10 map.2 fib.1, 
+    have p : (set_quotient_is_cons_quotient R).proj fib.1 = map_Q.fst q, from fib.2,
+    change map.1 _ = _, rwr p, exact ap10 map_id_Q q },
+  { intros a₁ a₂, fapply prod.mk, 
+    { intro p, fapply ((set_quotient_is_cons_quotient R).eq a₁ a₂).1, 
+      have q : (set_quotient_is_cons_quotient R).proj = map_Q.1 ∘ is_quot.proj, from map_Q.2,
+      rwr q, exact ap map_Q.1 p }, 
+    { intro rel, 
+      have q : is_quot.proj = map.1 ∘ (set_quotient_is_cons_quotient R).proj, from map.2,
+      rwr q, exact ap map.1 (((set_quotient_is_cons_quotient R).eq a₁ a₂).2 rel) } }
+end
+
+/- Constructively characterized set quotient are uniquely equal. -/
 
 end set
 
