@@ -1,5 +1,5 @@
 import hott.init hott.types.trunc prop_logic hott.types.prod hott.hit.quotient 
-       hott.algebra.relation sets.basic
+       hott.algebra.relation sets.axioms
 
 universes u u' v w
 hott_theory
@@ -215,7 +215,7 @@ end
 structure is_cons_quotient {A : Set} (R : A → A → Prop) 
   [is_equivalence (λ a b : A, R a b)] (Q : Set) :=
 (proj : A -> Q)
-(gen : Π (q : Q), trunc -1 (Σ (a : A), proj a = q))
+(gen : Π (q : Q), ∥ (Σ (a : A), proj a = q) ∥)
 (eq : Π (a₁ a₂ : A), proj a₁ = proj a₂ <-> R a₁ a₂)
 
 @[hott]
@@ -303,17 +303,17 @@ end
 structure is_ind_quotient {A : Set} (R : A → A → Prop) [is_equivalence (λ a b : A, R a b)] 
   (Q : Set) :=
 (proj : A -> Q)
-(rel_eq : Π (a b : A), R a b -> proj a = proj b)
-(map : Π (P : Set) (f : A -> P), (Π (a b : A), R a b -> f a = f b) -> 
+(rel_eq : Π {a b : A}, R a b -> proj a = proj b)
+(map : Π {P : Set} (f : A -> P), (Π {a b : A}, R a b -> f a = f b) -> 
                                                           Σ (g : Q -> P), f = g ∘ proj)
-(unique :  Π (P : Set) (f : A -> P) (H : Π (a b : A), R a b -> f a = f b) (g₁ g₂ : Q -> P),
+(unique :  Π {P : Set} (f : A -> P) (H : Π {a b : A}, R a b -> f a = f b) (g₁ g₂ : Q -> P),
               g₁ ∘ proj = g₂ ∘ proj -> g₁ = g₂)
 
 @[hott, instance] 
 def well_defined_element {A : Set} {R : A → A → Prop} [is_equivalence (λ a b : A, R a b)] 
   {Q : Set} (is_quot : is_cons_quotient R Q) {P : Set} (f : A -> P) 
-  (rel_eq : Π (a b : A), R a b -> f a = f b) : Π q : Q, is_prop (Σ p : P, 
-  trunc -1 (Σ (fib : Σ (a : A), is_quot.proj a = q), (f fib.1 = p))) :=
+  (rel_eq : Π {a b : A}, R a b -> f a = f b) : Π q : Q, is_prop (Σ p : P, 
+  ∥ Σ (fib : Σ (a : A), is_quot.proj a = q), (f fib.1 = p) ∥) :=
 begin
   intro q, fapply is_prop.mk, intros fib_P₁ fib_P₂, fapply sigma.sigma_eq,
   { hinduction fib_P₁.2 with sec₁ fib₁, hinduction fib_P₂.2 with sec₂ fib₂,
@@ -325,12 +325,12 @@ end
 @[hott] 
 def well_defined_map_from_quotient {A : Set} {R : A → A → Prop} 
   [is_equivalence (λ a b : A, R a b)] {Q : Set} (is_quot : is_cons_quotient R Q)
-  {P : Set} (f : A -> P) (rel_eq : Π (a b : A), R a b -> f a = f b) : Π q : Q, 
-  Σ p : P, trunc -1 (Σ (fib : Σ (a : A), is_quot.proj a = q), (f fib.1 = p)) :=
+  {P : Set} (f : A -> P) (rel_eq : Π {a b : A}, R a b -> f a = f b) : Π q : Q, 
+  Σ p : P, ∥ Σ (fib : Σ (a : A), is_quot.proj a = q), (f fib.1 = p) ∥ :=
 begin
   intro q, fapply λ H, trunc.elim H (is_quot.gen q),
   { intro fib, fapply dpair, exact f fib.1, exact tr ⟨fib, idp⟩ },
-  { exact well_defined_element is_quot f rel_eq q }
+  { exact well_defined_element is_quot f @rel_eq q }
 end
 
 @[hott]  --[GEVE]
@@ -341,15 +341,60 @@ begin
   { exact is_quot.proj },
   { exact λ a b, (is_quot.eq a b).2},
   { intros P f rel_eq, fapply dpair,
-    { intro q, exact (well_defined_map_from_quotient is_quot f rel_eq q).1 },
+    { intro q, exact (well_defined_map_from_quotient is_quot f @rel_eq q).1 },
     { apply eq_of_homotopy, intro a,
-      hinduction (well_defined_map_from_quotient is_quot f rel_eq (is_quot.proj a)).2
+      hinduction (well_defined_map_from_quotient is_quot f @rel_eq (is_quot.proj a)).2
                  with sec fib,
-      change _ = (well_defined_map_from_quotient is_quot f rel_eq _).1, rwr <- fib.2,
+      change _ = (well_defined_map_from_quotient is_quot f @rel_eq _).1, rwr <- fib.2,
       apply rel_eq, apply (is_quot.eq _ _).1, exact fib.1.2⁻¹ } },
   { intros P f rel_eq g₁ g₂ g_eq, apply eq_of_homotopy, intro q, 
     hinduction is_quot.gen q with sec fib, rwr <- fib.2, 
     change (g₁ ∘ is_quot.proj) _ = (g₂ ∘ is_quot.proj) _, exact ap10 g_eq fib.1 }
+end
+
+@[hott]
+def ind_quot_to_quot_equiv {A : Set} {R : A → A → Prop} [is_equivalence (λ a b : A, R a b)] 
+  {Q : Set} (is_quot : is_ind_quotient R Q) : Σ (eqv : set_quotient R ≃ Q), 
+                    eqv.to_fun ∘ (set_quotient_is_cons_quotient R).proj = is_quot.proj :=
+begin
+  fapply dpair,
+  { fapply equiv.mk,
+    { exact ((cons_to_ind_quotient R _ (set_quotient_is_cons_quotient R)).map 
+                          is_quot.proj is_quot.rel_eq).1 },
+    { fapply is_equiv.adjointify, 
+      { exact (is_quot.map (set_quotient_is_cons_quotient R).proj
+                  (cons_to_ind_quotient R _ (set_quotient_is_cons_quotient R)).rel_eq).1 },
+      { intro q, change _ = id q, apply λ p, ap10 p q, 
+        fapply is_quot.unique is_quot.proj is_quot.rel_eq,
+        apply eq_of_homotopy, intro a, 
+        change ((cons_to_ind_quotient _ _ _).map _ _).fst 
+                               ((is_quot.map _ _).fst (is_quot.proj a)) = is_quot.proj a,
+        have p : (is_quot.map (set_quotient_is_cons_quotient R).proj 
+                   (cons_to_ind_quotient R _ (set_quotient_is_cons_quotient R)).rel_eq).fst 
+                       (is_quot.proj a) = (set_quotient_is_cons_quotient R).proj a, from
+          (ap10 (is_quot.map (set_quotient_is_cons_quotient R).proj 
+              (cons_to_ind_quotient R _ (set_quotient_is_cons_quotient R)).rel_eq).2 a)⁻¹,
+        rwr p },
+      { intro q, change _ = id q, apply λ p, ap10 p q, 
+        fapply (cons_to_ind_quotient R _ (set_quotient_is_cons_quotient R)).unique 
+                      (cons_to_ind_quotient R _ (set_quotient_is_cons_quotient R)).proj 
+                      (cons_to_ind_quotient R _ (set_quotient_is_cons_quotient R)).rel_eq,
+        apply eq_of_homotopy, intro a, 
+        change (is_quot.map _ _).fst 
+                 (((cons_to_ind_quotient R _ (set_quotient_is_cons_quotient R)).map _ _).fst 
+                  ((cons_to_ind_quotient R _ (set_quotient_is_cons_quotient R)).proj a)) = 
+                  (cons_to_ind_quotient R _ (set_quotient_is_cons_quotient R)).proj a,
+        have p : ((cons_to_ind_quotient R _ (set_quotient_is_cons_quotient R)).map 
+                                                       is_quot.proj is_quot.rel_eq).fst 
+                  ((cons_to_ind_quotient R _ (set_quotient_is_cons_quotient R)).proj a) = 
+                                                                      is_quot.proj a, from
+          (ap10 ((cons_to_ind_quotient R _ (set_quotient_is_cons_quotient R)).map 
+                   is_quot.proj is_quot.rel_eq).2 a)⁻¹,
+        rwr p, apply ap10 (is_quot.map (set_quotient_is_cons_quotient R).proj
+                               (cons_to_ind_quotient R (set_quotient R) 
+                                      (set_quotient_is_cons_quotient R)).rel_eq).2⁻¹ a } } },
+  { exact ((cons_to_ind_quotient R _ (set_quotient_is_cons_quotient R)).map 
+                          is_quot.proj is_quot.rel_eq).2 }
 end
 
 @[hott]  --[GEVE]
@@ -359,12 +404,27 @@ begin
   intro is_quot, 
   have map_Q : Σ (g : Q -> set_quotient R), 
                     (set_quotient_is_cons_quotient R).proj = g ∘ is_quot.proj, from 
-    sorry,
+    is_quot.map _ (λ a b, ((set_quotient_is_cons_quotient R).eq a b).2),
+  have eq : (set_quotient_is_cons_quotient R).proj = map_Q.1 ∘ is_quot.proj, from map_Q.2,
   have map : Σ (h : set_quotient R -> Q), 
                     is_quot.proj = h ∘ (set_quotient_is_cons_quotient R).proj, from 
-    sorry, 
-  have map_id_Q : map.1 ∘ map_Q.1 = id, from sorry, 
-  have map_id : map_Q.1 ∘ map.1 = id, from sorry,
+    (cons_to_ind_quotient R _ (set_quotient_is_cons_quotient R)).map _ is_quot.rel_eq, 
+  have eq' : is_quot.proj = map.1 ∘ (set_quotient_is_cons_quotient R).proj, from map.2,  
+  have map_id_Q : map.1 ∘ map_Q.1 = id, from 
+  begin
+    apply is_quot.unique is_quot.proj is_quot.rel_eq, apply eq_of_homotopy, intro q,
+    change map.1 ((map_Q.fst ∘ is_quot.proj) q) = is_quot.proj _, rwr <- ap10 eq q,
+    rwr ap10 eq' q
+  end, 
+  have map_id : map_Q.1 ∘ map.1 = id, from
+  begin
+    fapply (cons_to_ind_quotient R _ (set_quotient_is_cons_quotient R)).unique, 
+    exact (set_quotient_is_cons_quotient R).proj,
+    exact λ a b, ((set_quotient_is_cons_quotient R).eq a b).2, 
+    apply eq_of_homotopy, intro a,
+    change map_Q.1 ((map.fst ∘ (set_quotient_is_cons_quotient R).proj) a) = 
+             (set_quotient_is_cons_quotient R).proj _, rwr <- ap10 eq' a, rwr ap10 eq a
+  end,
   fapply is_cons_quotient.mk,
   { exact is_quot.proj },
   { intro q, hinduction (set_quotient_is_cons_quotient R).gen (map_Q.1 q) with sec fib,
@@ -372,15 +432,197 @@ begin
     have p : (set_quotient_is_cons_quotient R).proj fib.1 = map_Q.fst q, from fib.2,
     change map.1 _ = _, rwr p, exact ap10 map_id_Q q },
   { intros a₁ a₂, fapply prod.mk, 
-    { intro p, fapply ((set_quotient_is_cons_quotient R).eq a₁ a₂).1, 
-      have q : (set_quotient_is_cons_quotient R).proj = map_Q.1 ∘ is_quot.proj, from map_Q.2,
-      rwr q, exact ap map_Q.1 p }, 
-    { intro rel, 
-      have q : is_quot.proj = map.1 ∘ (set_quotient_is_cons_quotient R).proj, from map.2,
-      rwr q, exact ap map.1 (((set_quotient_is_cons_quotient R).eq a₁ a₂).2 rel) } }
+    { intro p, fapply ((set_quotient_is_cons_quotient R).eq a₁ a₂).1, rwr eq, 
+      exact ap map_Q.1 p }, 
+    { intro rel, rwr eq', 
+      exact ap map.1 (((set_quotient_is_cons_quotient R).eq a₁ a₂).2 rel) } }
 end
 
 /- Constructively characterized set quotient are uniquely equal. -/
+@[hott]
+def cons_quotient_Sigma {A : Set} (R : A → A → Prop) [is_equivalence (λ a b : A, R a b)] :=
+  Σ (carrier : Set), is_cons_quotient R carrier
+
+@[hott]
+def cons_quotient_equiv_Sigma {A : Set} (R : A → A → Prop) 
+  [is_equivalence (λ a b : A, R a b)] : cons_set_quotient R ≃ cons_quotient_Sigma R :=
+begin 
+  fapply equiv.mk,
+  { intro is_quot, hinduction is_quot, exact dpair carrier is_quot },
+  { fapply is_equiv.adjointify,
+    { intro is_quot, exact cons_set_quotient.mk is_quot.1 is_quot.2 },
+    { intro quot, hinduction quot, exact idp },
+    { intro quot, hinduction quot, exact idp } }
+end
+
+@[hott]  --[GEVE]
+def cons_quotient_dep_id_sys {A : Set} (R : A → A → Prop) 
+  [is_equivalence (λ a b : A, R a b)] : 
+  dep_ppred (set_quotient R) (set_quotient_is_cons_quotient R) :=
+begin
+  fapply dep_ppred.mk,
+  { exact id_ppred (set_quotient R) },
+  { intros Q is_quot p, 
+    exact (set_quotient_is_cons_quotient R).proj =[p; λ Q : Set, A -> Q] is_quot.proj },
+  { exact idpo }
+end
+
+@[hott, instance]
+def quot_dep_id_sys_is_prop {A : Set} (R : A → A → Prop) 
+  [is_equivalence (λ a b : A, R a b)] (is_quot : is_cons_quotient R (set_quotient R)) :
+  is_prop ((cons_quotient_dep_id_sys R).dep_fam (set_quotient R) is_quot 
+           (cons_quotient_dep_id_sys R).ppred_fst.base) :=
+begin change is_prop (_ =[idp] _), apply_instance end
+
+@[hott,instance]
+def cons_quotient_eq_contr {A : Set} (R : A → A → Prop) 
+  [is_equivalence (λ a b : A, R a b)] : 
+  is_contr (Σ (is_quot : is_cons_quotient R (set_quotient R)), 
+              ((cons_quotient_dep_id_sys R).dep_fam (set_quotient R) is_quot 
+                                      (cons_quotient_dep_id_sys R).ppred_fst.base)) :=
+begin
+  fapply is_contr.mk,
+  { exact dpair (set_quotient_is_cons_quotient R) idpo },
+  { intro is_quot, hinduction is_quot with is_quot is_quot_eq, fapply sigma.sigma_eq,
+    { hinduction is_quot, fapply apd0111' is_cons_quotient.mk,
+      { apply @eq_of_pathover_idp _ (λ Q : Set, A -> Q), exact is_quot_eq },
+      { apply pathover_of_tr_eq, exact is_prop.elim _ _ },
+      { apply pathover_of_tr_eq, exact is_prop.elim _ _ } },
+    { apply pathover_of_tr_eq, exact is_prop.elim _ _ } }
+end
+
+@[hott]
+def cons_quotient_eq_set_quotient {A : Set} {R : A → A → Prop} 
+  [is_equivalence (λ a b : A, R a b)] (cons_quot_Sigma : Σ (Q : Set), is_cons_quotient R Q) : 
+  Σ (p : set_quotient R = cons_quot_Sigma.1), (cons_quotient_dep_id_sys R).dep_fam 
+                                                 cons_quot_Sigma.1 cons_quot_Sigma.2 p :=
+begin
+  fapply dpair,
+  { apply car_eq_to_set_eq, apply ua, 
+    exact (ind_quot_to_quot_equiv (cons_to_ind_quotient R _ cons_quot_Sigma.2)).1 },
+  { change _ =[car_eq_to_set_eq _] _, apply pathover_of_pathover_ap (λ Q : Type _, A -> Q),
+    change _ =[set_eq_equiv_car_eq.to_fun (set_eq_equiv_car_eq.to_fun⁻¹ᶠ _)] _,
+    rwr set_eq_equiv_car_eq.to_is_equiv.right_inv, 
+    apply fn_pathover_equiv_of_eq', rwr equiv_of_eq_ua }
+end
+
+@[hott, instance] --[GEVE]
+def cons_quotients_sigma_are_canonically_equal {A : Set} (R : A → A → Prop) 
+  [is_equivalence (λ a b : A, R a b)]  : is_contr (cons_quotient_Sigma R) :=
+begin 
+  fapply is_contr.mk,
+  { exact dpair (set_quotient R) (set_quotient_is_cons_quotient R) },
+  { intro cons_quot_Sigma, 
+    exact (struct_id_char_of_contr _ (cons_quotient_dep_id_sys R) (is_contr_tot_peq _) 
+            (cons_quotient_eq_contr R) cons_quot_Sigma)⁻¹ᶠ 
+            (cons_quotient_eq_set_quotient cons_quot_Sigma) }
+end
+
+@[hott, instance] 
+def cons_quotients_are_canonically_equal {A : Set} (R : A → A → Prop)  
+  [is_equivalence (λ a b : A, R a b)]  : is_contr (cons_set_quotient R) :=
+is_trunc_equiv_closed_rev -2 (cons_quotient_equiv_Sigma R)
+                             (cons_quotients_sigma_are_canonically_equal R)
+
+@[hott, instance] 
+def cons_quotients_are_canonically_equal' {A : Set} (R : A → A → Prop) 
+  [is_equivalence (λ a b : A, R a b)]  : is_prop (cons_set_quotient R) :=
+@is_trunc_succ (cons_set_quotient R) -2 (cons_quotients_are_canonically_equal R)
+
+/- We also can characterize quotients by a relation `R` by extracting the generators from
+   the quotient set, that is, by asserting the (mere) existence of a section. The 
+   corresponding universal property makes the quotient into a terminal object. 
+   
+   However, the statement that the constructive characterisation implies the mere existence of 
+   a section is equivalent to the Axiom of Choice. The converse implication only needs 
+   induction over truncation if we can use the uniqueness of a constructively characterised 
+   set-quotient. -/
+@[hott]
+structure section_of_quot {A : Set} (R : A → A → Prop) [is_equivalence (λ a b : A, R a b)] 
+  (Q : Set) :=
+(sec : Q -> A)
+(proj : Π (a : A), Σ (q : Q), R a (sec q))
+(unique : Π (q₁ q₂ : Q), R (sec q₁) (sec q₂) -> q₁ = q₂)
+
+@[hott]
+def is_sec_quotient {A : Set} (R : A → A → Prop) [is_equivalence (λ a b : A, R a b)] 
+  (Q : Set) := ∥ section_of_quot R Q ∥
+
+@[hott]
+def cons_to_sec_quotient {A : Set} (R : A → A → Prop) [is_equivalence (λ a b : A, R a b)] 
+  (Q : Set) : is_cons_quotient R Q -> is_sec_quotient R Q :=
+begin
+  intro is_quot, 
+  hinduction AC_nonempty Q (λ q, to_Set (Σ (a : A), is_quot.proj a = q)) is_quot.gen 
+                                                                           with AC_eq fib, 
+  apply tr, fapply section_of_quot.mk,
+  { intro q, exact (fib q).1 },
+  { intro a, fapply dpair, exact is_quot.proj a, apply (is_quot.eq _ _).1, 
+    exact (fib (is_quot.proj a)).2⁻¹ },
+  { intros q₁ q₂ rel_eq, exact (fib q₁).2⁻¹ ⬝ (is_quot.eq _ _).2 rel_eq ⬝ (fib q₂).2 }
+end
+
+@[hott, reducible]
+def sec_to_cons_quotient {A : Set} (R : A → A → Prop) [is_equivalence (λ a b : A, R a b)] 
+  (Q : Set) : is_sec_quotient R Q -> cons_set_quotient R :=
+begin
+  fapply @trunc.elim' -1 (section_of_quot R Q) _ (cons_quotients_are_canonically_equal' R),
+  intro sec_quot, fapply cons_set_quotient.mk,
+  { exact Q }, 
+  { fapply is_cons_quotient.mk,
+    { intro a, exact (sec_quot.proj a).1 },
+    { intro q, apply tr, fapply dpair, exact sec_quot.sec q, 
+      apply eq.inverse, apply sec_quot.unique, exact (sec_quot.proj (sec_quot.sec q)).2 },
+    { intros a₁ a₂, fapply prod.mk,
+      { intro p, fapply @rel_trans _ (λ a b, R a b) _ _ (sec_quot.sec (sec_quot.proj a₁).1) _,
+        { exact (sec_quot.proj a₁).2 },
+        { rwr p, apply rel_symm (λ a b, R a b), exact (sec_quot.proj a₂).2 } },
+      { intro rel, apply sec_quot.unique, 
+        fapply @rel_trans _ (λ a b, R a b) _ _ a₁ _,
+        apply rel_symm (λ a b, R a b), exact (sec_quot.proj a₁).2,
+        fapply @rel_trans _ (λ a b, R a b) _ _ a₂ _, exact rel, 
+        exact (sec_quot.proj a₂).2 } } }
+end
+
+@[hott]
+structure term_quot {A : Set} (R : A → A → Prop) [is_equivalence (λ a b : A, R a b)] 
+  (Q : Set) :=
+(sec : Q -> A)
+(map : Π {P : Set} (sP : P -> A), Σ (f : P -> Q), Π (p : P), R (sP p) (sec (f p)))
+(unique : Π {P : Set} (f₁ f₂ : P -> Q), (Π (p : P), R (sec (f₁ p)) (sec (f₂ p))) -> f₁ = f₂) 
+
+@[hott]
+def is_term_quotient {A : Set} (R : A → A → Prop) [is_equivalence (λ a b : A, R a b)] 
+  (Q : Set) := ∥ term_quot R Q ∥
+
+@[hott]
+def sec_to_term_quotient {A : Set} (R : A → A → Prop) [is_equivalence (λ a b : A, R a b)] 
+  (Q : Set) : is_sec_quotient R Q -> is_term_quotient R Q :=
+begin
+  intro is_quot, hinduction is_quot with sec_quot, apply tr, fapply term_quot.mk,
+  { exact sec_quot.sec },
+  { intros P sP, fapply dpair, 
+    { intro p, exact (sec_quot.proj (sP p)).1 },
+    { intro p, exact (sec_quot.proj (sP p)).2 } },
+  { intros P f₁ f₂ rel, apply eq_of_homotopy, intro p, 
+    exact sec_quot.unique _ _ (rel p) }
+end
+
+@[hott]
+def term_to_sec_quotient {A : Set} (R : A → A → Prop) [is_equivalence (λ a b : A, R a b)] 
+  (Q : Set) : is_term_quotient R Q -> is_sec_quotient R Q :=
+begin
+  intro is_quot, hinduction is_quot with term_quot, apply tr, fapply section_of_quot.mk,
+  { exact term_quot.sec },
+  { intro a, let sa : One_Set -> A := @One.rec (λ o, A) a, fapply dpair,
+    { exact (term_quot.map sa).1 One.star },
+    { exact (term_quot.map sa).2 One.star } },
+  { intros q₁ q₂ rel, 
+    let f₁ : One_Set -> Q := @One.rec (λ o, Q) q₁, 
+    let f₂ : One_Set -> Q := @One.rec (λ o, Q) q₂, 
+    change f₁ One.star = f₂ One.star, apply λ p, ap10 p One.star, apply term_quot.unique,
+    apply One.rec, exact rel }
+end
 
 end set
 
