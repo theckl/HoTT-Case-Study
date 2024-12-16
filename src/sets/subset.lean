@@ -47,7 +47,7 @@ namespace subset
    The predicate maps `A` to `Prop` in the same universe as `A`, hence the predicate is 
    in the same universe as `A`. `Prop` can be mapped into other universes using `ulift` 
    and `prop_resize`, if we assume the resizing axiom. -/
-@[hott]
+@[hott]  --[GEVE]
 def Subset (A : Set.{u}) := A -> trunctype.{u} -1
    
 @[hott]
@@ -142,7 +142,7 @@ end
    Note also that replacing `Prop` by `Two` in the subobject classifier only leads to
    equivalent notions of subsets if `LEM` is assumed. Otherwise, only constructible 
    subsets defined by decidable predicates are considered. -/
-@[hott]
+@[hott]  --[GEVE]
 structure inj_Subset (A : Set.{u}) :=
    (carrier : Set.{u}) (map : carrier -> A)  (inj : is_set_injective map) 
 
@@ -309,7 +309,7 @@ begin
   { intro p, apply tr, exact ⟨⟨a,p⟩, idp⟩ }
 end  
 
-@[hott]
+@[hott]  --[GEVE]
 def pred_eqv_inj_sset {A : Set.{u}} : (Subset A) ≃ (inj_Subset A) :=
   equiv.mk pred_to_inj_sset (adjointify pred_to_inj_sset inj_to_pred_sset
                                         pred_sset_linv pred_sset_rinv) 
