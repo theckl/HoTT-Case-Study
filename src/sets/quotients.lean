@@ -6,6 +6,7 @@ hott_theory
 
 namespace hott
 open is_trunc trunc equiv is_equiv hott.prod hott.quotient hott.sigma hott.relation
+     subset
 
 namespace set
 
@@ -622,6 +623,155 @@ begin
     let f₂ : One_Set -> Q := @One.rec (λ o, Q) q₂, 
     change f₁ One.star = f₂ One.star, apply λ p, ap10 p One.star, apply term_quot.unique,
     apply One.rec, exact rel }
+end
+
+/- We define the closure of an arbitrary relation to an equivalence relation, by 
+   truncating the inductive family of sequences of relations on which transitivity can be 
+   applied. -/
+@[hott]
+inductive trans_sequence {A : Type u} (R : A -> A -> trunctype.{u} -1) : 
+  A -> A -> Type u
+| rel {a b : A} (r : R a b) : trans_sequence a b
+| refl (a : A) : trans_sequence a a
+| symm {a b : A} (r : trans_sequence a b) : trans_sequence b a
+| trans {a b c : A} (r : trans_sequence a b) (r' : trans_sequence b c) : 
+                                                                    trans_sequence a c
+
+@[hott]  --[GEVE]
+def rel_to_equiv_rel {A : Type u} (R : A -> A -> trunctype.{u} -1) : A -> A -> Prop :=
+  λ a b, ∥ trans_sequence R a b ∥
+
+@[hott, instance]
+def clos_rel_is_equiv_rel {A : Type u} (R : A -> A -> trunctype.{u} -1) : 
+  is_equivalence (λ a b, rel_to_equiv_rel R a b) :=
+begin
+  fapply is_equivalence.mk,
+  { intro a, exact tr (trans_sequence.refl R a) },
+  { intros a b tr_seq, hinduction tr_seq with seq, exact tr (trans_sequence.symm seq) },
+  { intros a b c tr_seq₁ tr_seq₂, 
+    hinduction tr_seq₁ with seq₁, hinduction tr_seq₂ with seq₂,
+    exact tr (trans_sequence.trans seq₁ seq₂) }
+end 
+
+/- The set-quotient to a general relation is a (constructively characterized) set-quotient 
+   by the closure of the relation. To characterize the equality of quotient elements, we 
+   descend the relation to the quotient, as above. -/
+@[hott, reducible]
+def rel_to_set_quotient_rel {A : Set} (R : A → A → Prop) : 
+  (set_quotient R) -> (set_quotient R) -> Prop :=
+begin
+  let R' := λ a b : A, (rel_to_equiv_rel R a b).carrier,
+  fapply @set_quotient.rec2 A R, 
+  { exact rel_to_equiv_rel R },
+  { intros a a' b H, apply pathover_of_eq, apply prop_iff_eq, 
+    { intro H', exact rel_trans R' (rel_symm R' (tr (trans_sequence.rel H))) H' },
+    { intro H', exact rel_trans R' (tr (trans_sequence.rel H)) H' } },
+  { intros a a' b H, apply pathover_of_eq, apply prop_iff_eq, 
+    { intro H', exact rel_trans R' H' (tr (trans_sequence.rel H)) },
+    { intro H', exact rel_trans R' H' (rel_symm R' (tr (trans_sequence.rel H))) } } 
+end
+
+@[hott, reducible]
+def rel_quot_rel_to_setquot_eq {A : Set} (R : A → A → Prop) : Π x y : set_quotient R,
+  (rel_to_set_quotient_rel R x y) -> (x = y) :=
+begin
+  let R' := λ a b : A, (rel_to_equiv_rel R a b).carrier,
+  let HP := λ (a b : A), @is_prop_map 
+            (rel_to_set_quotient_rel R (set_class_of R a) (set_class_of R b)) 
+            ((set_class_of R a) = (set_class_of R b)) _,
+  intros x y,  
+  fapply @set_quotient.rec2 A R 
+         (λ x y : set_quotient R, (rel_to_set_quotient_rel R x y) -> (x = y)), 
+  { intros a b H, hinduction H with tr_rel, hinduction tr_rel, 
+    { exact eq_of_setrel R r },
+    { exact idp },
+    { exact ih⁻¹ },
+    { exact ih_r ⬝ ih_r' }},
+  { intros a a' b Ha, apply pathover_of_tr_eq, exact is_prop.elim _ _ },
+  { intros a b b' Hb, apply pathover_of_tr_eq, exact is_prop.elim _ _  },
+  { apply is_prop.mk, intros p q, exact is_set.elim _ _ }
+end  
+
+@[hott, reducible]
+def rel_quot_eq_eqv_rel_quot_rel {A : Set} (R : A → A → Prop) : Π x y : set_quotient R,
+  (x = y) ≃ (rel_to_set_quotient_rel R x y) :=
+begin
+  let R' := λ a b : A, (rel_to_equiv_rel R a b).carrier,
+  let Rq := rel_to_set_quotient_rel R,
+  have Rq_symm : Π x : set_quotient R, Rq x x, from 
+    begin 
+      intro x, hinduction x with q, hinduction q, 
+      { change R' a a, exact rel_refl R' a },
+      { apply pathover_of_tr_eq, exact is_prop.elim _ _ }
+    end,
+  intros x y, apply prop_iff_equiv, apply iff.intro,
+    { intro p, rwr p, exact Rq_symm y },
+    { exact rel_quot_rel_to_setquot_eq R x y }  
+end
+
+@[hott]
+def class_eq_clos_rel {A : Set} (R : A → A → Prop) : 
+  Π a b : A, set_class_of R a = set_class_of R b ≃ (rel_to_equiv_rel R) a b :=
+begin
+  intros a b, fapply prop_iff_equiv, fapply prod.mk,
+  { intro p, 
+    exact (rel_quot_eq_eqv_rel_quot_rel R (set_class_of R a) (set_class_of R b)).to_fun p },
+  { intro rel, hinduction rel with tr_rel, hinduction tr_rel,
+    { exact eq_of_setrel R r },
+    { exact idp },
+    { exact ih⁻¹ },
+    { exact ih_r ⬝ ih_r' } }
+end
+
+@[hott]  --[GEVE]
+def rel_set_quotient_is_cons_quotient {A : Set} (R : A -> A -> Prop) : 
+  is_cons_quotient (rel_to_equiv_rel R) (set_quotient R) :=
+begin
+  fapply is_cons_quotient.mk, 
+  { exact set_class_of R },
+  { intro q, hinduction q with q, hinduction q, exact tr ⟨a, idp⟩, 
+    apply pathover_of_tr_eq, exact is_prop.elim _ _ },
+  { intros a b, fapply prod.mk,
+    { intro class_eq, exact class_eq_clos_rel R a b class_eq },
+    { intro rel, exact (class_eq_clos_rel R a b)⁻¹ᶠ rel } }
+end  
+
+/- We can define a quotient by an equivalence relation as the set of equivalence classes,
+   given as a subset, that is a predicate `A -> Prop`. This quotient is a constructively 
+   characterised quotient if we use propositional resizing (see [HoTT-Book,Thm.6.10.6]). -/
+@[hott]
+def is_equiv_class {A : Set} (R : A → A → Prop) [is_equivalence (λ a b : A, R a b)]
+  (P : A -> Prop) : Prop :=
+∥ Σ (a : A), Π (b : A), R a b <-> P b ∥
+
+@[hott]
+def class_quotient {A : Set} (R : A → A → Prop) [is_equivalence (λ a b : A, R a b)] : 
+  Set :=
+Set.mk (Σ (P : A -> Prop), is_equiv_class R P) 
+       (sigma.is_trunc_subtype (is_equiv_class R) -1) 
+
+@[hott]  --[GEVE]
+def class_is_cons_quotient {A : Set} (R : A → A → Prop) [is_equivalence (λ a b : A, R a b)] :
+  is_cons_quotient R (class_quotient R) :=
+begin
+  fapply is_cons_quotient.mk,
+  { intro a, fapply dpair,
+    { exact λ b, R a b },
+    { exact tr ⟨a, λ b, prod.mk id id⟩ } },
+  { intro q, hinduction q with P is_class, hinduction is_class with rep, 
+    hinduction rep with a eqv, apply tr, fapply dpair a,
+    fapply sigma.sigma_eq,
+    { apply eq_of_homotopy, intro b, exact iff_eq (eqv b) },
+    { apply pathover_of_tr_eq, exact is_prop.elim _ _ } },
+  { intros a₁ a₂, fapply prod.mk, 
+    { intro p, have q : R a₁ = R a₂, from ap sigma.fst p,
+      rwr q, exact rel_refl (λ a b : A, R a b) a₂ },
+    { intro rel, fapply sigma.sigma_eq,
+      { apply eq_of_homotopy, intro b, hsimp, 
+        apply iff_eq, fapply prod.mk,
+        { exact λ rel₁, rel_trans (λ a b : A, R a b) (rel_symm (λ a b : A, R a b) rel) rel₁ },
+        { exact λ rel₂, rel_trans (λ a b : A, R a b) rel rel₂ } },
+      { apply pathover_of_tr_eq, exact is_prop.elim _ _ } } }
 end
 
 end set
