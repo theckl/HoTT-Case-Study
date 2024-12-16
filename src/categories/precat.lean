@@ -542,6 +542,14 @@ begin
     rwr eq_of_homotopy_idp }
 end  
 
+@[hott]
+def faithful_is_trans {C : Type u} [is_precat C] {D : Type u'} 
+  [is_precat D] {E : Type u''} [is_precat E] (F : C ⥤ D) (G : D ⥤ E) :
+  is_faithful_functor F -> is_faithful_functor G -> is_faithful_functor (F ⋙ G) :=
+begin 
+  intros fF fG x y f₁ f₂ comp_eq, apply fF f₁ f₂, apply fG _ _, exact comp_eq 
+end
+
 end
 
 /- Equalities of precategories can be characterized by 
