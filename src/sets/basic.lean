@@ -1,5 +1,5 @@
 import hott.init init2 hott.types.trunc prop_logic hott.types.prod hott.hit.quotient 
-       hott.algebra.relation types2 hott.types.nat.order
+       hott.algebra.relation types2 hott.types.nat.order hott.function
 
 universes u u' v w
 hott_theory
@@ -138,7 +138,8 @@ have eq_b2 : forall b1 : B, is_prop (forall b2 : B, f b1 = f b2 -> b1 = b2), fro
 let P := assume b1, forall b2 : B, f b1 = f b2 -> b1 = b2 in 
 @is_prop_dprod B P eq_b2   
 
-/- fibers of injective maps only contain one element. -/
+/- fibers of injective maps only contain one element, which can be extracted 
+   from images. -/
 @[hott]
 def set_inj_implies_unique_fib {A : Set} {B : Set} (f : B -> A) : 
   is_set_injective f -> forall a : A, is_prop (fiber f a) :=
@@ -151,6 +152,14 @@ have H : forall fb1 fb2 : fiber f a, fb1 = fb2, from
     apd011 fiber.mk eqb eqbeq 
   end,  
 is_prop.mk H 
+
+@[hott]
+def set_inj_image_to_fiber {A : Set} {B : Set} (f : B -> A) 
+  (H : is_set_injective f) : Π (a : A), image f a -> fiber f a :=
+begin 
+  intros a im, 
+  exact @untrunc_of_is_trunc _ -1 (set_inj_implies_unique_fib f H a) im 
+end 
 
 /- This is the universal property of injective maps. -/
 @[hott]
@@ -711,56 +720,75 @@ def image_is_set {A B : Set} (f : A -> B) : is_set (total_image f) :=
 def image_Set {A B : Set} (f : A -> B) : Set :=
   Set.mk (total_image f) (image_is_set f)  
 
-/- Natural numnbers form a set. We need the encode-decode method. -/
+/- We prove the version of the decode-encode-method to show that types are sets, as 
+   presented in [Rijke,Thm.12.3.4]. -/
 @[hott]
-def nat_code : ℕ -> ℕ -> Type _ :=
+def decode_eq_equiv {A : Type _} {code : A -> A -> Type _} 
+  (refl_code : Π (a : A), code a a) [Π (a b : A), is_prop (code a b)] 
+  (decode : Π (a b : A), code a b -> a = b) :  Π (a b : A), (a = b) ≃ (code a b) :=
 begin
-  intros m, hinduction m with m ihm, 
-    intro n, hinduction n with n ihn, exact One, exact Zero, 
-    intro n, hinduction n with n ihn, exact Zero, exact ihm n 
+  intros c d, 
+  let encode : Π (b : A), (c = b) -> (code c b) := 
+                        begin intros b p, hinduction p, exact refl_code c end,
+  let r : (Σ (b : A), c = b) -> (Σ (b : A), code c b) := 
+                                        λ b_eq, ⟨b_eq.1, encode b_eq.1 b_eq.2⟩,
+  have H : is_retraction r, from 
+  begin  
+    fapply is_retraction.mk, 
+    { intro b_code, exact ⟨b_code.1, decode c b_code.1 b_code.2⟩ },
+    { intro b_code, hinduction b_code with b cb, fapply sigma.sigma_eq,
+      exact idp, apply pathover_of_tr_eq, exact is_prop.elim _ _ } 
+  end,                   
+  let R := ppred.mk (λ b : A, code c b) (refl_code c),
+  let f := @ppmap.mk _ _ (id_ppred c) R (λ b : A, encode b) idp,
+  fapply equiv.mk, exact encode d, apply tot_space_contr_ppmap_id_eqv R f,
+  apply @function.is_contr_retract _ _ r H, exact is_contr_tot_peq c
 end
 
-@[hott, instance]
-def nat_code_is_prop : Π (n m : ℕ), is_prop (nat_code n m) :=
-begin
-  intros m, hinduction m with m ihm, 
-    intro n, hinduction n with n ihn,
-      change is_prop One, apply_instance,
-      change is_prop Zero, apply_instance,
-    intro n, hinduction n with n ihn,  
-      change is_prop Zero, apply_instance,
-      change is_prop (nat_code m n), exact ihm n 
-end 
+@[hott]
+def encode_decode_set {A : Type _} {code : A -> A -> Type _} 
+  (refl_code : Π (a : A), code a a) [H : Π (a b : A), is_prop (code a b)] 
+  (decode : Π (a b : A), code a b -> a = b) : is_set A :=
+begin 
+  fapply is_trunc_succ_intro, intros c d, 
+  fapply @is_trunc_equiv_closed_rev (c = d) (code c d) -1 
+                                      (decode_eq_equiv refl_code decode c d) (H c d)
+end
 
+#check encode_decode_set
+
+/- Natural numnbers form a set. We need the encode-decode method. -/
+@[hott]
+def nat_code : ℕ -> ℕ -> Type _
+| 0     0     := One 
+| (n+1) 0     := Zero
+| 0     (m+1) := Zero
+| (n+1) (m+1) := nat_code n m
+
+@[hott, instance]
+def nat_code_is_prop : Π (n m : ℕ), is_prop (nat_code n m)
+| 0     0     := by change is_prop One; apply_instance 
+| (n+1) 0     := by change is_prop Zero; apply_instance
+| 0     (m+1) := by change is_prop Zero; apply_instance
+| (n+1) (m+1) := by change is_prop (nat_code n m); exact nat_code_is_prop n m
+ 
 @[hott]
 def nat_refl : Π (n : ℕ), nat_code n n :=
   begin intro n, hinduction n, exact One.star, exact ih end 
 
-@[hott, hsimp]
-def nat_encode : Π (m n : ℕ), m = n -> nat_code m n :=
-  begin intros m n p, hinduction p, exact nat_refl m end
-
 @[hott]
-def nat_eq_equiv_code : Π (m n : ℕ), m = n ≃ nat_code m n :=
-begin
-  intros m n,
-  let R := ppred.mk (λ n : ℕ, nat_code m n) (nat_refl m),
-  let f := @ppmap.mk _ _ (id_ppred m) R 
-                    (λ n : ℕ, nat_encode m n) idp,
-  fapply equiv.mk, exact nat_encode m n,
-  apply tot_space_contr_ppmap_id_eqv R f, fapply is_contr.mk,
-  exact ⟨m, nat_refl m⟩, intro np, hinduction np with n cn,
-  revert n, clear n, hinduction m with m ihm, 
-    intros n cn, hinduction n with n ihn, hinduction cn; refl, exact Zero.rec _ cn,  
-    intros n cn, hinduction n with n ihn, exact Zero.rec _ cn, 
-      fapply sigma_eq, exact ap succ (ihm n cn)..1,
-                       apply pathover_of_tr_eq, exact is_prop.elim _ _                    
-end
+def nat_decode : Π (m n : ℕ), nat_code n m -> n = m
+| 0     0     := λ cd, idp  
+| (n+1) 0     := λ cd, by hinduction cd
+| 0     (m+1) := λ cd, by hinduction cd
+| (n+1) (m+1) := λ cd, ap nat.succ (nat_decode n m cd)
 
 @[hott, instance]  --[GEVE]
 def nat_is_set : is_set ℕ :=
-  is_trunc_succ_intro (λ n m : ℕ, is_trunc_equiv_closed_rev 
-          -1 (nat_eq_equiv_code n m) (nat_code_is_prop n m))
+begin 
+  fapply @encode_decode_set _ nat_code nat_refl nat_code_is_prop, 
+  intros a b cd, exact nat_decode _ _ cd 
+end
 
 @[hott]
 def nat_Set : Set :=
@@ -780,6 +808,45 @@ begin
         exact sum.inl (ap succ val),
         apply sum.inr, intro p, exact val (hott.nat.succ.inj p)
 end   
+
+/- Lists of elements in a set form a set. -/
+@[hott]
+def list_code {A : Set} : list A -> list A -> Type _
+| []     []      := One
+| []     (a::l)  := Zero
+| (a::l) []      := Zero
+| (a::l) (b::l') := (a = b) × (list_code l l') 
+
+@[hott, instance]
+def list_code_is_prop {A : Set} : Π (l₁ l₂ : list A), is_prop (list_code l₁ l₂)
+| []     []      := by change is_prop One; apply_instance
+| []     (a::l)  := by change is_prop Zero; apply_instance
+| (a::l) []      := by change is_prop Zero; apply_instance
+| (a::l) (b::l') := @prod.is_trunc_prod (a = b) (list_code l l') -1 _ 
+                                        (list_code_is_prop l l')
+
+@[hott]
+def list_refl {A : Set} : Π (l : list A), list_code l l
+| []     := One.star
+| (a::l) := ⟨idp, list_refl l⟩
+
+@[hott]
+def list_decode {A : Set} : Π (l₁ l₂ : list A), list_code l₁ l₂ -> l₁ = l₂
+| []     []      := λ lc, idp 
+| []     (a::l)  := λ lc, by hinduction lc
+| (a::l) []      := λ lc, by hinduction lc
+| (a::l) (b::l') := begin 
+                      intro lc, hinduction lc, 
+                      exact eq.concat (ap (λ a : A, list.cons a l) fst) 
+                               (ap (λ l : list A, list.cons b l) (list_decode l l' snd)) 
+                    end
+
+@[hott, instance]
+def lists_are_set (A : Set) : is_set (list A) :=
+begin 
+  fapply @encode_decode_set _ list_code list_refl list_code_is_prop, 
+  intros a b cd, exact list_decode _ _ cd 
+end
 
 /- For some sets, we want decidable equality. -/
 @[hott]
