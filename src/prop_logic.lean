@@ -8,6 +8,14 @@ open is_trunc trunc equiv hott.is_equiv hott.prod
 
 set_option pp.universes true
 
+/- Propositions are equal if their carrier types are equal. -/
+@[hott]
+def car_eq_to_prop_eq {P Q : Prop} : P.carrier = Q.carrier -> P = Q :=
+begin
+  intro car_eq, hinduction P with car₁ struct₁, hinduction Q with car₂ struct₂,
+  fapply apd011 trunctype.mk car_eq, apply pathover_of_tr_eq, exact is_prop.elim _ _
+end
+
 /- [and], [or] and [iff] produce propositions from propositions. -/
 @[hott]  --[GEVE]
 protected def and (P Q : Prop) : Prop :=
@@ -113,6 +121,16 @@ begin
     { exact nPnQ.1 p },
     { exact nPnQ.2 q } }
 end  
+
+/- Equivalence and equality of propositions -/
+@[hott]
+def iff_eq {P Q : Prop} : (P <-> Q) -> (P = Q) :=
+begin
+  intro iff, apply car_eq_to_prop_eq, apply ua,
+  fapply equiv.mk iff.1, fapply adjointify, exact iff.2, 
+  { intro q, exact is_prop.elim _ _ },
+  { intro p, exact is_prop.elim _ _ }
+end
 
 /- Contraposition -/
 @[hott]
