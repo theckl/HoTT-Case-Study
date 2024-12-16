@@ -287,6 +287,20 @@ begin
     rwr apd011' (list_nth_le (hd :: (tl ++ l₂))) q, hsimp, rwr list_nth_le_eq
 end 
 
+/- Concatenating lists is associative. -/
+@[hott]
+def list_append_nil {A : Type _} : Π (l : list A), list.append l [] = l :=
+  begin intro l, hinduction l, exact idp, exact ap (list.cons hd) ih end
+
+@[hott]
+def list_append_is_assoc { A : Type _}: Π (l₁ l₂ l₃ : list A), 
+  list.append (list.append l₁ l₂) l₃ = list.append l₁ (list.append l₂ l₃)
+| []       _  _  := idp
+| _        [] _  := by rwr list_append_nil
+| _        _  [] := by rwr list_append_nil; rwr list_append_nil
+| (a₁::l₁) l₂ l₃  := begin change a₁::(list.append _ _) = a₁::(list.append _ _), 
+                           rwr list_append_is_assoc end
+
 /- Facts on fibers -/
 @[hott]
 def fiber_base_eq {A B : Type _} {f : A -> B} {b₁ b₂ : B} :
