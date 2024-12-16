@@ -68,6 +68,15 @@ begin
   { intros c d e g h, exact idp }
 end
 
+@[hott]
+def concrete_forget_functor_is_faithful {C : Type u} {X : Category.{u' v}} (f : C -> X) 
+  [concrete_hom_system f] : is_faithful_functor (concrete_forget_functor f) :=
+begin
+  intros x y g₁ g₂, intro g_eq, fapply sigma.sigma_eq, 
+  { exact g_eq },
+  { apply pathover_of_tr_eq, exact is_prop.elim _ _ }
+end
+
 /- Fibers of the map from a concrete type to the underlying category inherit a 
    precategory structure. -/
 @[hott, instance]
