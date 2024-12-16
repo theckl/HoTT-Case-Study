@@ -182,11 +182,11 @@ begin
       { intro p, exact ap10 (product_map.left_inv is_prod_P is_prod_Q) p } }
 end 
 
-/- These (quasi-)inverse can be used to construct an equivalence and hence by univalence 
+/- These (quasi-)inverses can be used to construct an equivalence and hence by univalence 
    equality between two products. To make such an equality unique ("canonical") we need
    to restrict the factors of the product to sets. Using the Structure Identity Principle
    we can even show that the whole structure of a set product can be contracted to the
-   inductuve construction of a (set) product. -/
+   inductive construction of a (set) product. -/
 @[hott]
 structure Set_product (A B : Set) :=
   (carrier : Set)
