@@ -11,7 +11,7 @@ open hott.eq hott.sigma hott.set hott.subset hott.is_trunc
    such subobjects are equal if and only if there is an isomorphism between the sources of the 
    monomorphisms factorizing the monomorphisms. Therefore in HoTT categories, it is not necessary 
    to define subobjects as isomorphism classes. -/
-@[hott]
+@[hott]  --[GEVE]
 def is_mono {C : Category} {c₁ c₂ : C} (f : c₁ ⟶ c₂) :=
   Π (d : C) (g₁ g₂ : d ⟶ c₁), g₁ ≫ f = g₂ ≫ f -> g₁ = g₂
 
@@ -112,7 +112,15 @@ def is_prop_iso_of_monos {C : Category} {c d₁ d₂: C} {f : d₁ ⟶ c} (Hf : 
   {g : d₂ ⟶ c} (Hg : is_mono g) : is_prop (iso_of_monos Hf Hg) :=
 begin apply is_trunc_equiv_closed -1 (homs_eqv_iso_of_monos Hf Hg), apply_instance end
 
-@[hott]
+@[hott]  --[GEVE]
+def mono_is_faithful {C D : Category} {F : C ⥤ D} [H : is_faithful_functor F] {c₁ c₂: C} :
+  Π (f : c₁ ⟶ c₂), is_mono (F.map f) -> is_mono f :=
+begin 
+  intros f mono_F, intros d g₁ g₂ p, apply H, apply mono_F,
+  rwr <- F.map_comp, rwr <- F.map_comp, exact ap (precategories.functor.map F) p 
+end 
+
+@[hott]  --[GEVE]
 structure subobject {C : Category} (c : C) :=
   (obj : C)
   (hom : obj ⟶ c)
