@@ -293,13 +293,25 @@ def list_append_nil {A : Type _} : Π (l : list A), list.append l [] = l :=
   begin intro l, hinduction l, exact idp, exact ap (list.cons hd) ih end
 
 @[hott]
-def list_append_is_assoc { A : Type _}: Π (l₁ l₂ l₃ : list A), 
+def list_append_is_assoc {A : Type _} : Π (l₁ l₂ l₃ : list A), 
   list.append (list.append l₁ l₂) l₃ = list.append l₁ (list.append l₂ l₃)
 | []       _  _  := idp
 | _        [] _  := by rwr list_append_nil
 | _        _  [] := by rwr list_append_nil; rwr list_append_nil
 | (a₁::l₁) l₂ l₃  := begin change a₁::(list.append _ _) = a₁::(list.append _ _), 
                            rwr list_append_is_assoc end
+
+/- Properties of reversing lists -/
+@[hott]
+def list_reverse_append {A : Type _} : Π (l₁ l₂ : list A),
+  list.reverse_core l₁ l₂ = list.append (list.reverse l₁) l₂ :=
+begin
+  intro l₁, hinduction l₁, 
+  { intro l₂, exact idp },
+  { intro l₂, change list.reverse_core tl (hd :: l₂) = _, rwr ih (hd :: l₂), 
+    change _ = list.append (list.reverse_core tl [hd]) _, rwr ih [hd],
+    rwr list_append_is_assoc } 
+end
 
 /- Facts on fibers -/
 @[hott]
