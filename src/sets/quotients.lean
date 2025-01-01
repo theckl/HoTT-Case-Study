@@ -307,7 +307,7 @@ structure is_ind_quotient {A : Set} (R : A → A → Prop) [is_equivalence (λ a
 (rel_eq : Π {a b : A}, R a b -> proj a = proj b)
 (map : Π {P : Set} (f : A -> P), (Π {a b : A}, R a b -> f a = f b) -> 
                                                           Σ (g : Q -> P), f = g ∘ proj)
-(unique :  Π {P : Set} (f : A -> P) (H : Π {a b : A}, R a b -> f a = f b) (g₁ g₂ : Q -> P),
+(unique :  Π {P : Set} (g₁ g₂ : Q -> P),
               g₁ ∘ proj = g₂ ∘ proj -> g₁ = g₂)
 
 @[hott, instance] 
@@ -348,7 +348,7 @@ begin
                  with sec fib,
       change _ = (well_defined_map_from_quotient is_quot f @rel_eq _).1, rwr <- fib.2,
       apply rel_eq, apply (is_quot.eq _ _).1, exact fib.1.2⁻¹ } },
-  { intros P f rel_eq g₁ g₂ g_eq, apply eq_of_homotopy, intro q, 
+  { intros P g₁ g₂ g_eq, apply eq_of_homotopy, intro q, 
     hinduction is_quot.gen q with sec fib, rwr <- fib.2, 
     change (g₁ ∘ is_quot.proj) _ = (g₂ ∘ is_quot.proj) _, exact ap10 g_eq fib.1 }
 end
@@ -366,7 +366,7 @@ begin
       { exact (is_quot.map (set_quotient_is_cons_quotient R).proj
                   (cons_to_ind_quotient R _ (set_quotient_is_cons_quotient R)).rel_eq).1 },
       { intro q, change _ = id q, apply λ p, ap10 p q, 
-        fapply is_quot.unique is_quot.proj is_quot.rel_eq,
+        fapply is_quot.unique,
         apply eq_of_homotopy, intro a, 
         change ((cons_to_ind_quotient _ _ _).map _ _).fst 
                                ((is_quot.map _ _).fst (is_quot.proj a)) = is_quot.proj a,
@@ -377,9 +377,7 @@ begin
               (cons_to_ind_quotient R _ (set_quotient_is_cons_quotient R)).rel_eq).2 a)⁻¹,
         rwr p },
       { intro q, change _ = id q, apply λ p, ap10 p q, 
-        fapply (cons_to_ind_quotient R _ (set_quotient_is_cons_quotient R)).unique 
-                      (cons_to_ind_quotient R _ (set_quotient_is_cons_quotient R)).proj 
-                      (cons_to_ind_quotient R _ (set_quotient_is_cons_quotient R)).rel_eq,
+        fapply (cons_to_ind_quotient R _ (set_quotient_is_cons_quotient R)).unique,
         apply eq_of_homotopy, intro a, 
         change (is_quot.map _ _).fst 
                  (((cons_to_ind_quotient R _ (set_quotient_is_cons_quotient R)).map _ _).fst 
@@ -413,15 +411,13 @@ begin
   have eq' : is_quot.proj = map.1 ∘ (set_quotient_is_cons_quotient R).proj, from map.2,  
   have map_id_Q : map.1 ∘ map_Q.1 = id, from 
   begin
-    apply is_quot.unique is_quot.proj is_quot.rel_eq, apply eq_of_homotopy, intro q,
+    apply is_quot.unique, apply eq_of_homotopy, intro q,
     change map.1 ((map_Q.fst ∘ is_quot.proj) q) = is_quot.proj _, rwr <- ap10 eq q,
     rwr ap10 eq' q
   end, 
   have map_id : map_Q.1 ∘ map.1 = id, from
   begin
     fapply (cons_to_ind_quotient R _ (set_quotient_is_cons_quotient R)).unique, 
-    exact (set_quotient_is_cons_quotient R).proj,
-    exact λ a b, ((set_quotient_is_cons_quotient R).eq a b).2, 
     apply eq_of_homotopy, intro a,
     change map_Q.1 ((map.fst ∘ (set_quotient_is_cons_quotient R).proj) a) = 
              (set_quotient_is_cons_quotient R).proj _, rwr <- ap10 eq' a, rwr ap10 eq a
