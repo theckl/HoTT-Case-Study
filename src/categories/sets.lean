@@ -17,6 +17,10 @@ namespace categories.sets
 def set_has_hom : has_hom Set.{u} :=
   has_hom.mk (λ A B : Set.{u}, Set.mk (A -> B) (@is_set_map A B))
 
+@[hott]
+def to_hom_set {A B : Set.{u}} : (A -> B) -> (A ⟶ B) :=
+  λ f, f 
+
 @[hott, instance]
 def set_cat_struct : category_struct Set.{u} :=
   category_struct.mk (λ A : Set.{u}, id_map A)
