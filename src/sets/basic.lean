@@ -755,8 +755,6 @@ begin
                                       (decode_eq_equiv refl_code decode c d) (H c d)
 end
 
-#check encode_decode_set
-
 /- Natural numnbers form a set. We need the encode-decode method. -/
 @[hott]
 def nat_code : ℕ -> ℕ -> Type _
