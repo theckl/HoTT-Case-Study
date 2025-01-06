@@ -161,7 +161,7 @@ assume p₁ p₂, concato_eq (pathover_tr e p₁) (is_prop.elim (e ▸ p₁) p�
 /- Logically equivalent mere propositions are equivalent. -/
 @[hott]
 def prop_iff_equiv : 
-  Π {A B : Type u} [is_prop A] [is_prop B], (A ↔ B) -> (A ≃ B) :=
+  Π {A B : Type _} [is_prop A] [is_prop B], (A ↔ B) -> (A ≃ B) :=
 assume A B pA pB AiffB,
 let AB := AiffB.1, BA := AiffB.2 in
 have rinv : Π b : B, AB (BA b) = b, from assume b, @is_prop.elim B pB _ _,
