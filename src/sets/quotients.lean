@@ -202,8 +202,8 @@ begin
 end
 
 @[hott]
-def class_eq_eqv_rel {A : Set} (R : A → A → Prop) [is_equivalence (λ a b : A, R a b)] : 
-  Π a b : A, set_class_of R a = set_class_of R b ≃ R a b :=
+def class_eq_eqv_rel {A : Set.{u}} (R : A → A → trunctype.{v} -1) [is_equivalence (λ a b : A, R a b)] : 
+  Π a b : A, (set_class_of R a = set_class_of R b) ≃ R a b :=
 begin
   intros a b, fapply prop_iff_equiv, fapply prod.mk,
   { intro p, 
@@ -213,16 +213,17 @@ end
 
 /- We characterize set quotient using the (higher) constructors and the induction principle. -/
 @[hott]  --[GEVE]
-structure is_cons_quotient {A : Set} (R : A → A → Prop) 
-  [is_equivalence (λ a b : A, R a b)] (Q : Set) :=
+structure is_cons_quotient {A : Set.{u}} (R : A → A → trunctype.{v} -1) 
+  [is_equivalence (λ a b : A, R a b)] (Q : Set.{max u v}) :=
 (proj : A -> Q)
 (gen : Π (q : Q), ∥ (Σ (a : A), proj a = q) ∥)
 (eq : Π (a₁ a₂ : A), proj a₁ = proj a₂ <-> R a₁ a₂)
 
 @[hott]
-structure cons_set_quotient {A : Set} (R : A → A → Prop) [is_equivalence (λ a b : A, R a b)] :=
-  (carrier : Set)
-  (is_quot : is_cons_quotient R carrier)
+structure cons_set_quotient {A : Set.{u}} (R : A → A → trunctype.{v} -1) 
+  [is_equivalence (λ a b : A, R a b)] :=
+(carrier : Set.{max u v})
+(is_quot : is_cons_quotient R carrier)
 
 /- Some examples where the criterion is easy to check:
 
@@ -286,7 +287,7 @@ end
 /- The general construction of the set quotient of an equivalence relation can be 
    characterized by constructors. -/
 @[hott]  --[GEVE]
-def set_quotient_is_cons_quotient {A : Set} (R : A -> A -> Prop) 
+def set_quotient_is_cons_quotient {A : Set.{u}} (R : A -> A -> trunctype.{v} -1) 
   [is_equivalence (λ a b : A, R a b)] : is_cons_quotient R (set_quotient R) :=
 begin
   fapply is_cons_quotient.mk,
@@ -301,20 +302,19 @@ end
 
 /- The inductive characterisation of set quotients, making them into initial objects -/
 @[hott] 
-structure is_ind_quotient {A : Set} (R : A → A → Prop) [is_equivalence (λ a b : A, R a b)] 
-  (Q : Set) :=
+structure is_ind_quotient {A : Set.{u}} (R : A → A → trunctype.{v} -1) 
+  [is_equivalence (λ a b : A, R a b)] (Q : Set.{max u v}) :=
 (proj : A -> Q)
 (rel_eq : Π {a b : A}, R a b -> proj a = proj b)
-(map : Π {P : Set} (f : A -> P), (Π {a b : A}, R a b -> f a = f b) -> 
+(map : Π {P : Set.{max u v}} (f : A -> P), (Π {a b : A}, R a b -> f a = f b) -> 
                                                           Σ (g : Q -> P), f = g ∘ proj)
-(unique :  Π {P : Set} (g₁ g₂ : Q -> P),
-              g₁ ∘ proj = g₂ ∘ proj -> g₁ = g₂)
+(unique :  Π {P : Set.{max u v}} (g₁ g₂ : Q -> P), g₁ ∘ proj = g₂ ∘ proj -> g₁ = g₂)
 
 @[hott, instance] 
-def well_defined_element {A : Set} {R : A → A → Prop} [is_equivalence (λ a b : A, R a b)] 
-  {Q : Set} (is_quot : is_cons_quotient R Q) {P : Set} (f : A -> P) 
-  (rel_eq : Π {a b : A}, R a b -> f a = f b) : Π q : Q, is_prop (Σ p : P, 
-  ∥ Σ (fib : Σ (a : A), is_quot.proj a = q), (f fib.1 = p) ∥) :=
+def well_defined_element {A : Set.{u}} {R : A → A → trunctype.{v} -1} 
+  [is_equivalence (λ a b : A, R a b)] {Q : Set.{max u v}} (is_quot : is_cons_quotient R Q) 
+  {P : Set.{max u v}} (f : A -> P) (rel_eq : Π {a b : A}, R a b -> f a = f b) : 
+  Π q : Q, is_prop (Σ p : P, ∥ Σ (fib : Σ (a : A), is_quot.proj a = q), (f fib.1 = p) ∥) :=
 begin
   intro q, fapply is_prop.mk, intros fib_P₁ fib_P₂, fapply sigma.sigma_eq,
   { hinduction fib_P₁.2 with sec₁ fib₁, hinduction fib_P₂.2 with sec₂ fib₂,
@@ -324,10 +324,10 @@ begin
 end 
 
 @[hott] 
-def well_defined_map_from_quotient {A : Set} {R : A → A → Prop} 
-  [is_equivalence (λ a b : A, R a b)] {Q : Set} (is_quot : is_cons_quotient R Q)
-  {P : Set} (f : A -> P) (rel_eq : Π {a b : A}, R a b -> f a = f b) : Π q : Q, 
-  Σ p : P, ∥ Σ (fib : Σ (a : A), is_quot.proj a = q), (f fib.1 = p) ∥ :=
+def well_defined_map_from_quotient {A : Set.{u}} {R : A → A → trunctype.{v} -1} 
+  [is_equivalence (λ a b : A, R a b)] {Q : Set.{max u v}} (is_quot : is_cons_quotient R Q)
+  {P : Set.{max u v}} (f : A -> P) (rel_eq : Π {a b : A}, R a b -> f a = f b) : 
+  Π q : Q, Σ p : P, ∥ Σ (fib : Σ (a : A), is_quot.proj a = q), (f fib.1 = p) ∥ :=
 begin
   intro q, fapply λ H, trunc.elim H (is_quot.gen q),
   { intro fib, fapply dpair, exact f fib.1, exact tr ⟨fib, idp⟩ },
@@ -335,8 +335,9 @@ begin
 end
 
 @[hott]  --[GEVE]
-def cons_to_ind_quotient {A : Set} (R : A → A → Prop) [is_equivalence (λ a b : A, R a b)] 
-  (Q : Set) : is_cons_quotient R Q -> is_ind_quotient R Q :=
+def cons_to_ind_quotient {A : Set.{u}} (R : A → A → trunctype.{v} -1) 
+  [is_equivalence (λ a b : A, R a b)] (Q : Set.{max u v}) : 
+  is_cons_quotient R Q -> is_ind_quotient R Q :=
 begin
   intro is_quot, fapply is_ind_quotient.mk,
   { exact is_quot.proj },
@@ -354,8 +355,9 @@ begin
 end
 
 @[hott]
-def ind_quot_to_quot_equiv {A : Set} {R : A → A → Prop} [is_equivalence (λ a b : A, R a b)] 
-  {Q : Set} (is_quot : is_ind_quotient R Q) : Σ (eqv : set_quotient R ≃ Q), 
+def ind_quot_to_quot_equiv {A : Set.{u}} {R : A → A → trunctype.{v} -1} 
+  [is_equivalence (λ a b : A, R a b)] {Q : Set.{max u v}} (is_quot : is_ind_quotient R Q) : 
+  Σ (eqv : set_quotient R ≃ Q), 
                     eqv.to_fun ∘ (set_quotient_is_cons_quotient R).proj = is_quot.proj :=
 begin
   fapply dpair,
@@ -397,8 +399,9 @@ begin
 end
 
 @[hott]  --[GEVE]
-def ind_to_cons_quotient {A : Set} (R : A → A → Prop) [is_equivalence (λ a b : A, R a b)] 
-  (Q : Set) : is_ind_quotient R Q -> is_cons_quotient R Q :=
+def ind_to_cons_quotient {A : Set.{u}} (R : A → A → trunctype.{v} -1) 
+  [is_equivalence (λ a b : A, R a b)] (Q : Set.{max u v}) : 
+  is_ind_quotient R Q -> is_cons_quotient R Q :=
 begin 
   intro is_quot, 
   have map_Q : Σ (g : Q -> set_quotient R), 
@@ -535,8 +538,8 @@ def cons_quotients_are_canonically_equal' {A : Set} (R : A → A → Prop)
    induction over truncation if we can use the uniqueness of a constructively characterised 
    set-quotient. -/
 @[hott]
-structure section_of_quot {A : Set} (R : A → A → Prop) [is_equivalence (λ a b : A, R a b)] 
-  (Q : Set) :=
+structure section_of_quot {A : Set.{u}} (R : A → A → trunctype.{v} -1) 
+  [is_equivalence (λ a b : A, R a b)] (Q : Set.{max u v}) :=
 (sec : Q -> A)
 (proj : Π (a : A), Σ (q : Q), R a (sec q))
 (unique : Π (q₁ q₂ : Q), R (sec q₁) (sec q₂) -> q₁ = q₂)
@@ -582,11 +585,12 @@ begin
 end
 
 @[hott]
-structure term_quot {A : Set} (R : A → A → Prop) [is_equivalence (λ a b : A, R a b)] 
-  (Q : Set) :=
+structure term_quot {A : Set.{u}} (R : A → A → trunctype.{v} -1) 
+  [is_equivalence (λ a b : A, R a b)] (Q : Set.{max u v}) :=
 (sec : Q -> A)
-(map : Π {P : Set} (sP : P -> A), Σ (f : P -> Q), Π (p : P), R (sP p) (sec (f p)))
-(unique : Π {P : Set} (f₁ f₂ : P -> Q), (Π (p : P), R (sec (f₁ p)) (sec (f₂ p))) -> f₁ = f₂) 
+(map : Π {P : Set.{max u v}} (sP : P -> A), Σ (f : P -> Q), Π (p : P), R (sP p) (sec (f p)))
+(unique : Π {P : Set.{max u v}} (f₁ f₂ : P -> Q), (Π (p : P), R (sec (f₁ p)) (sec (f₂ p))) -> 
+                                                                                      f₁ = f₂) 
 
 @[hott]
 def is_term_quotient {A : Set} (R : A → A → Prop) [is_equivalence (λ a b : A, R a b)] 
@@ -625,8 +629,8 @@ end
    truncating the inductive family of sequences of relations on which transitivity can be 
    applied. -/
 @[hott]
-inductive trans_sequence {A : Type u} (R : A -> A -> trunctype.{u} -1) : 
-  A -> A -> Type u
+inductive trans_sequence {A : Type u} (R : A -> A -> trunctype.{v} -1) : 
+  A -> A -> Type (max u v)
 | rel {a b : A} (r : R a b) : trans_sequence a b
 | refl (a : A) : trans_sequence a a
 | symm {a b : A} (r : trans_sequence a b) : trans_sequence b a
@@ -634,11 +638,11 @@ inductive trans_sequence {A : Type u} (R : A -> A -> trunctype.{u} -1) :
                                                                     trans_sequence a c
 
 @[hott]  --[GEVE]
-def rel_to_equiv_rel {A : Type u} (R : A -> A -> trunctype.{u} -1) : A -> A -> Prop :=
+def rel_to_equiv_rel {A : Type u} (R : A -> A -> trunctype.{v} -1) : A -> A -> Prop :=
   λ a b, ∥ trans_sequence R a b ∥
 
 @[hott, instance]
-def clos_rel_is_equiv_rel {A : Type u} (R : A -> A -> trunctype.{u} -1) : 
+def clos_rel_is_equiv_rel {A : Type u} (R : A -> A -> trunctype.{v} -1) : 
   is_equivalence (λ a b, rel_to_equiv_rel R a b) :=
 begin
   fapply is_equivalence.mk,
@@ -736,37 +740,57 @@ end
    given as a subset, that is a predicate `A -> Prop`. This quotient is a constructively 
    characterised quotient if we use propositional resizing (see [HoTT-Book,Thm.6.10.6]). -/
 @[hott]
-def is_equiv_class {A : Set} (R : A → A → Prop) [is_equivalence (λ a b : A, R a b)]
-  (P : A -> Prop) : Prop :=
+def is_equiv_class {A : Set.{u}} (R : A → A → trunctype.{v+1} -1) 
+  [is_equivalence (λ a b : A, R a b)] (P : A -> trunctype.{v} -1) : trunctype -1 :=
 ∥ Σ (a : A), Π (b : A), R a b <-> P b ∥
 
 @[hott]
-def class_quotient {A : Set} (R : A → A → Prop) [is_equivalence (λ a b : A, R a b)] : 
-  Set :=
-Set.mk (Σ (P : A -> Prop), is_equiv_class R P) 
-       (sigma.is_trunc_subtype (is_equiv_class R) -1) 
+def class_quotient {A : Set.{u}} (R : A → A → trunctype.{v+1} -1) 
+  [is_equivalence (λ a b : A, R a b)] : Set :=
+Set.mk (Σ (P : A -> trunctype.{v} -1), is_equiv_class R P)
+       (sigma.is_trunc_subtype (is_equiv_class R) -1)
 
 @[hott]  --[GEVE]
-def class_is_cons_quotient {A : Set} (R : A → A → Prop) [is_equivalence (λ a b : A, R a b)] :
-  is_cons_quotient R (class_quotient R) :=
+def class_is_cons_quotient {A : Set.{u}} (R : A → A → trunctype.{v+1} -1) 
+  [is_equivalence (λ a b : A, R a b)] : is_cons_quotient R (class_quotient R) :=
 begin
   fapply is_cons_quotient.mk,
   { intro a, fapply dpair,
-    { exact λ b, R a b },
-    { exact tr ⟨a, λ b, prod.mk id id⟩ } },
+    { exact λ b, prop_resize.{v v+1} (R a b) },
+    { apply tr, fapply dpair a, intro b, fapply prod.mk, 
+      { intro rel, exact prop_to_prop_resize rel }, 
+      { intro rel, exact prop_resize_to_prop rel } } },
   { intro q, hinduction q with P is_class, hinduction is_class with rep, 
     hinduction rep with a eqv, apply tr, fapply dpair a,
     fapply sigma.sigma_eq,
-    { apply eq_of_homotopy, intro b, exact iff_eq (eqv b) },
+    { apply eq_of_homotopy, intro b, apply iff_eq, fapply prod.mk,
+      { intro rel, exact (eqv b).1 (prop_resize_to_prop rel) },
+      { intro rel, exact prop_to_prop_resize.{v v+1} ((eqv b).2 rel) } },
     { apply pathover_of_tr_eq, exact is_prop.elim _ _ } },
   { intros a₁ a₂, fapply prod.mk, 
-    { intro p, have q : R a₁ = R a₂, from ap sigma.fst p,
+    { intro p, 
+      have p_rel : (λ (b : A), prop_resize.{v v+1} (R a₁ b)) =
+                   (λ (b : A), prop_resize.{v v+1} (R a₂ b)), from ap sigma.fst p,
+      have p_rel' : Π (b : A), prop_resize.{v v+1} (R a₁ b) = prop_resize.{v v+1} (R a₂ b), from 
+        λ b, ap10 p_rel b,
+      have q : R a₁ = R a₂, from 
+      begin 
+        apply eq_of_homotopy, intro b, apply iff_eq, fapply prod.mk,
+        { intro rel, apply prop_resize_to_prop.{v v+1}, rwr <- p_rel' b,
+          exact prop_to_prop_resize.{v v+1} rel },
+        { intro rel, apply prop_resize_to_prop.{v v+1}, rwr p_rel' b,
+          exact prop_to_prop_resize.{v v+1} rel } 
+      end, 
       rwr q, exact rel_refl (λ a b : A, R a b) a₂ },
     { intro rel, fapply sigma.sigma_eq,
-      { apply eq_of_homotopy, intro b, hsimp, 
+      { apply eq_of_homotopy, intro b, 
+        change prop_resize.{v v+1} _ = prop_resize.{v v+1} _, 
         apply iff_eq, fapply prod.mk,
-        { exact λ rel₁, rel_trans (λ a b : A, R a b) (rel_symm (λ a b : A, R a b) rel) rel₁ },
-        { exact λ rel₂, rel_trans (λ a b : A, R a b) rel rel₂ } },
+        { intro rel', apply prop_to_prop_resize.{v v+1}, 
+          exact rel_trans (λ a b : A, R a b) (rel_symm (λ a b : A, R a b) 
+                      rel) (prop_resize_to_prop.{v v+1} rel') },
+        { intro rel', apply prop_to_prop_resize.{v v+1}, 
+          exact rel_trans (λ a b : A, R a b) rel (prop_resize_to_prop.{v v+1} rel') } },
       { apply pathover_of_tr_eq, exact is_prop.elim _ _ } } }
 end
 
