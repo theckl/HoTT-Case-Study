@@ -324,7 +324,7 @@ def subset_of_submonoid {M : Monoid} (N : Submonoid M) :
 λ m, image (Monoid_to_Set_functor.map N.hom) m 
 
 @[hott]
-def submonoid_hom_of_subset {M : Monoid} (N₁ N₂ : Submonoid M) :
+def submonoid_hom_of_subset {M : Monoid.{u}} (N₁ N₂ : Submonoid.{u} M) :
   (subset_of_submonoid N₁ ⊆ subset_of_submonoid N₂) -> (N₁ ⟶ N₂) :=
 begin
   intro sset, 
@@ -335,10 +335,10 @@ begin
   { fapply monoid_hom.mk,  
     { intro n₁, exact (fib_n n₁).1 },
     { fapply monoid_hom_str.mk,
-      { intros n₁ n₁', apply (monoid_mon_is_inj _).1 N₂.is_mono, rwr (fib_n _).2, 
+      { intros n₁ n₁', apply (monoid_mon_is_inj.{u} _).1 N₂.is_mono, rwr (fib_n _).2, 
         rwr (monoid_hom_laws _).mul_comp, rwr (monoid_hom_laws _).mul_comp,
         rwr (fib_n _).2, rwr (fib_n _).2 },
-      { apply (monoid_mon_is_inj _).1 N₂.is_mono, rwr (fib_n _).2,
+      { apply (monoid_mon_is_inj.{u} _).1 N₂.is_mono, rwr (fib_n _).2,
         rwr (monoid_hom_laws _).one_comp, rwr (monoid_hom_laws _).one_comp } } },
   { apply Monoid_to_Set_functor_is_faithful, rwr Monoid_to_Set_functor.map_comp,
     apply eq_of_homotopy, intro n, 
@@ -349,11 +349,11 @@ end
 
 /- Monoid homomorphisms have images. -/
 @[hott, instance]  --[GEVE]
-def monoid_hom_has_image {M N : Monoid} (f : M ⟶ N) : 
-  @has_image Monoid_Category _ _ f :=
+def monoid_hom_has_image {M N : Monoid.{u}} (f : M ⟶ N) : 
+  @has_image Monoid_Category.{u} _ _ f :=
 begin  
   fapply has_image.mk, apply tr, fapply cat_image.mk,
-  { fapply Submonoid_of_Subset,
+  { fapply Submonoid_of_Subset.{u},
     { exact (λ b : N.carrier, image (Monoid_to_Set_functor.map f) b) },
     { apply tr, apply fiber.mk M.struct.one, exact (monoid_hom_laws f).one_comp },
     { intros n₁ n₂, hinduction n₁ with n₁ im₁, hinduction n₂ with n₂ im₂,
@@ -368,7 +368,7 @@ begin
         { intros m₁ m₂, apply pred_Set_eq, exact (monoid_hom_laws f).mul_comp _ _ },
         { apply pred_Set_eq, exact (monoid_hom_laws f).one_comp } } },
     { apply Monoid_to_Set_functor_is_faithful, exact idp } },
-  { intros N' fac, fapply submonoid_hom_of_subset, 
+  { intros N' fac, fapply submonoid_hom_of_subset.{u},
     intros n el_im, change ↥(image _ _), change ↥(image _ _) at el_im,
     hinduction el_im with fib, change fiber (pred_Set_map _) n at fib,
     let p : fib.1.1 = n := fib.2,
@@ -430,9 +430,8 @@ class is_congruence {M : Type _} [has_mul M] (R : M -> M -> Prop)
 (mul_comp : Π (m m' n n' : M), R m m' -> R n n' -> R (m * n) (m' * n'))
 
 @[hott]
-def kernel_pair_to_rel {M N : Monoid} (f : M ⟶ N) : 
-  Monoid_to_Set_functor.obj M -> Monoid_to_Set_functor.obj M -> Prop :=
-λ m₁ m₂, to_Prop (Monoid_to_Set_functor.map f m₁ = Monoid_to_Set_functor.map f m₂)
+def kernel_pair_to_rel {M N : Monoid} (f : M ⟶ N) : M -> M -> Prop :=
+  λ m₁ m₂, to_Prop (Monoid_to_Set_functor.map f m₁ = Monoid_to_Set_functor.map f m₂)
 
 @[hott]
 def kernel_pair_to_cong {M N : Monoid} (f : M ⟶ N) : 
@@ -450,32 +449,29 @@ begin
 end
 
 @[hott]  --[GEVE]
-structure is_monoid_quotient {M : Monoid} 
-  (R : Monoid_to_Set_functor.obj M -> Monoid_to_Set_functor.obj M -> Prop)
-  [H : is_equivalence (λ m n, R m n)] (Q : Monoid) :=
+structure is_monoid_quotient {M : Monoid.{u}} (R : M -> M -> trunctype.{u} -1)
+  [H : is_equivalence (λ m n, R m n)] (Q : Monoid.{u}) :=
 (proj : M ⟶ Q)
-(is_set_quot : set.is_cons_quotient R (Monoid_to_Set_functor.obj Q))
+(is_set_quot : @set.is_cons_quotient (set.to_Set M) R H (set.to_Set Q))
 (proj_eq : Monoid_to_Set_functor.map proj = is_set_quot.proj)
 
 @[hott]
-structure Monoid_quotient {M : Monoid.{u}} 
-  (R : Monoid_to_Set_functor.obj M -> Monoid_to_Set_functor.obj M -> Prop)
+structure Monoid_quotient {M : Monoid.{u}} (R : M -> M -> Prop)
   [H : is_equivalence (λ m n, R m n)] :=
-(carrier : Monoid)
+(carrier : Monoid.{u})
 (is_mon_quot : is_monoid_quotient R carrier)
 
 @[hott]  --[GEVE]
-def Monoid_cong_quotient {M : Monoid.{u}} 
-  (R : Monoid_to_Set_functor.obj M -> Monoid_to_Set_functor.obj M -> trunctype.{u} -1)
+def Monoid_cong_quotient {M : Monoid.{u}} (R : M -> M -> trunctype.{u} -1)
   [H : is_congruence R] : Monoid_quotient R :=
 begin
   fapply Monoid_quotient.mk,
   { fapply Monoid.mk,
-    { exact set.set_quotient R },
-    { fapply monoid.mk,
+    { exact @set.set_quotient (Monoid_to_Set_functor.obj M) R },
+    { fapply @monoid.mk,
       { apply_instance },
       { fapply set.set_quotient.rec2, 
-        { intros m₁ m₂, exact set.set_class_of R (m₁*m₂) },
+        { intros m₁ m₂, exact set.set_class_of R (m₁ * m₂) },
         { intros m m' n rel, apply pathover_of_eq, apply set.eq_of_setrel, 
           fapply H.mul_comp, exact rel, exact is_equivalence.refl (λ m n, R m n) n },
         { intros m n n' rel, apply pathover_of_eq, apply set.eq_of_setrel, 
@@ -491,7 +487,8 @@ begin
         have mul_one : m * (monoid.one M.carrier) = m, from monoid.mul_one m,
         rwr mul_one, exact is_equivalence.refl (λ m n, R m n) _ } } },
   { fapply is_monoid_quotient.mk,
-    { fapply monoid_hom.mk, exact set.set_class_of R, fapply monoid_hom_str.mk, 
+    { fapply monoid_hom.mk, exact @set.set_class_of (Monoid_to_Set_functor.obj M) R, 
+      fapply monoid_hom_str.mk, 
       { intros m₁ m₂, exact idp },
       { exact idp } },
     { exact set.set_quotient_is_cons_quotient.{u u} R },
@@ -500,8 +497,7 @@ begin
 end
 
 @[hott]   --[GEVE]
-def monoid_quotient_to_cong {M Q : Monoid} 
-  (R : Monoid_to_Set_functor.obj M -> Monoid_to_Set_functor.obj M -> Prop) 
+def monoid_quotient_to_cong {M Q : Monoid} (R : M -> M -> Prop) 
   [H : is_equivalence (λ m n, R m n)] :
   is_monoid_quotient R Q -> (is_congruence R) :=
 begin
@@ -514,20 +510,19 @@ begin
 end
 
 @[hott]  --[GEVE]
-structure is_univ_monoid_quotient {M : Monoid} 
-  (R : Monoid_to_Set_functor.obj M -> Monoid_to_Set_functor.obj M -> Prop)
+structure is_univ_monoid_quotient {M : Monoid} (R : M -> M -> Prop)
   [H : is_equivalence (λ m n, R m n)] (Q : Monoid) :=
 (proj : M ⟶ Q)
-(rel_eq : Π (m₁ m₂ : Monoid_to_Set_functor.obj M), R m₁ m₂ <-> 
+(rel_eq : Π (m₁ m₂ : M), R m₁ m₂ <-> 
                   Monoid_to_Set_functor.map proj m₁ = Monoid_to_Set_functor.map proj m₂)
-(factors : Π {L : Monoid} (f : M ⟶ L), (Π (m₁ m₂ : Monoid_to_Set_functor.obj M), 
-   R m₁ m₂ -> Monoid_to_Set_functor.map f m₁ = Monoid_to_Set_functor.map f m₂) -> 
-   Σ (g : Q ⟶ L), f = proj ≫ g)
+(factors : Π {L : Monoid} (f : M ⟶ L), (Π (m₁ m₂ : M), R m₁ m₂ -> 
+                     Monoid_to_Set_functor.map f m₁ = Monoid_to_Set_functor.map f m₂) -> 
+                         Σ (g : Q ⟶ L), f = proj ≫ g)
 (unique : Π {L : Monoid} (g₁ g₂ : Q ⟶ L), proj ≫ g₁ = proj ≫ g₂ -> g₁ = g₂)
 
 @[hott] 
 def univ_monoid_quotient_to_cong {M Q : Monoid} 
-  (R : Monoid_to_Set_functor.obj M -> Monoid_to_Set_functor.obj M -> Prop) 
+  (R : M -> M -> Prop) 
   [H : is_equivalence (λ m n, R m n)] :
   is_univ_monoid_quotient R Q -> (is_congruence R) :=
 begin
@@ -538,8 +533,7 @@ begin
 end
 
 @[hott]
-def monoid_to_univ_quotient_map {M : Monoid.{u}} 
-  (R : Monoid_to_Set_functor.obj M -> Monoid_to_Set_functor.obj M -> Prop)
+def monoid_to_univ_quotient_map {M : Monoid.{u}} (R : M -> M -> Prop)
   [H : is_equivalence (λ m n, R m n)] (Q : Monoid) :
   is_monoid_quotient R Q -> Π {L : Monoid} (f : M ⟶ L) 
     (rel_eq : Π (m₁ m₂ : Monoid_to_Set_functor.obj M), R m₁ m₂ -> 
@@ -547,8 +541,8 @@ def monoid_to_univ_quotient_map {M : Monoid.{u}}
 begin
 intros is_mon_quot L f rel_eq,
     { fapply monoid_hom.mk,
-      { exact ((set.cons_to_ind_quotient R _ is_mon_quot.is_set_quot).map 
-                                            (Monoid_to_Set_functor.map f) rel_eq).1 },
+      { exact ((@set.cons_to_ind_quotient (Monoid_to_Set_functor.obj M) R _ _ 
+               is_mon_quot.is_set_quot).map (Monoid_to_Set_functor.map f) rel_eq).1 },
       { fapply monoid_hom_str.mk,
         { intros q₁ q₂, hinduction is_mon_quot.is_set_quot.gen q₁ with p₁ fib₁, 
           hinduction is_mon_quot.is_set_quot.gen q₂ with p₂ fib₂,
@@ -563,24 +557,23 @@ intros is_mon_quot L f rel_eq,
                                           (set.cons_to_ind_quotient _ _ _).proj) _ * 
                  (((set.cons_to_ind_quotient _ _ _).map _ _).1 ∘ 
                                           (set.cons_to_ind_quotient _ _ _).proj) _, 
-          rwr <- ap10 ((set.cons_to_ind_quotient R _ is_mon_quot.is_set_quot).map 
-                                            (Monoid_to_Set_functor.map f) rel_eq).2,
-          rwr <- ap10 ((set.cons_to_ind_quotient R _ is_mon_quot.is_set_quot).map 
-                                            (Monoid_to_Set_functor.map f) rel_eq).2,
-          rwr <- ap10 ((set.cons_to_ind_quotient R _ is_mon_quot.is_set_quot).map 
-                                            (Monoid_to_Set_functor.map f) rel_eq).2,
+          rwr <- ap10 ((@set.cons_to_ind_quotient (Monoid_to_Set_functor.obj M) R _ _ 
+                   is_mon_quot.is_set_quot).map (Monoid_to_Set_functor.map f) rel_eq).2,
+          rwr <- ap10 ((@set.cons_to_ind_quotient (Monoid_to_Set_functor.obj M) R _ _ 
+                   is_mon_quot.is_set_quot).map (Monoid_to_Set_functor.map f) rel_eq).2,
+          rwr <- ap10 ((@set.cons_to_ind_quotient (Monoid_to_Set_functor.obj M) R _ _ 
+                  is_mon_quot.is_set_quot).map (Monoid_to_Set_functor.map f) rel_eq).2,
           rwr (monoid_hom_laws _).mul_comp },
     { rwr <- (monoid_hom_laws is_mon_quot.proj).one_comp, rwr ap10 is_mon_quot.proj_eq,
           change (((set.cons_to_ind_quotient _ _ _).map _ _).1 ∘ 
                                           (set.cons_to_ind_quotient _ _ _).proj) _ = _,
-          rwr <- ap10 ((set.cons_to_ind_quotient R _ is_mon_quot.is_set_quot).map 
-                                            (Monoid_to_Set_functor.map f) rel_eq).2,
+          rwr <- ap10 ((@set.cons_to_ind_quotient (Monoid_to_Set_functor.obj M) R _ _ 
+                  is_mon_quot.is_set_quot).map (Monoid_to_Set_functor.map f) rel_eq).2,
           rwr (monoid_hom_laws _).one_comp } } }
 end
 
 @[hott]
-def monoid_to_univ_quotient {M : Monoid.{u}} 
-  (R : Monoid_to_Set_functor.obj M -> Monoid_to_Set_functor.obj M -> Prop)
+def monoid_to_univ_quotient {M : Monoid.{u}} (R : M -> M -> Prop)
   [H : is_equivalence (λ m n, R m n)] (Q : Monoid.{u}) :
   is_monoid_quotient R Q -> is_univ_monoid_quotient R Q :=
 begin
@@ -595,10 +588,11 @@ begin
     { exact monoid_to_univ_quotient_map R Q is_mon_quot f rel_eq },
     { apply Monoid_to_Set_functor_is_faithful, rwr Monoid_to_Set_functor.map_comp,
       change _ = _ ≫ _, rwr is_mon_quot.proj_eq,
-      exact ((set.cons_to_ind_quotient R _ is_mon_quot.is_set_quot).map 
-                                            (Monoid_to_Set_functor.map f) rel_eq).2 } },
+      exact ((@set.cons_to_ind_quotient (Monoid_to_Set_functor.obj M) R _ _ 
+               is_mon_quot.is_set_quot).map (Monoid_to_Set_functor.map f) rel_eq).2 } },
   { intros L g₁ g₂ fac_eq, apply Monoid_to_Set_functor_is_faithful,
-    fapply (set.cons_to_ind_quotient R _ is_mon_quot.is_set_quot).unique,
+    fapply (@set.cons_to_ind_quotient (Monoid_to_Set_functor.obj M) R _ _ 
+                                                         is_mon_quot.is_set_quot).unique,
     change to_hom_set is_mon_quot.is_set_quot.proj ≫ Monoid_to_Set_functor.map _ =
            to_hom_set is_mon_quot.is_set_quot.proj ≫ Monoid_to_Set_functor.map _,
     rwr <- is_mon_quot.proj_eq,
@@ -607,8 +601,7 @@ begin
 end
 
 @[hott]
-def univ_iso_monoid_quotient {M : Monoid} 
-  (R : Monoid_to_Set_functor.obj M -> Monoid_to_Set_functor.obj M -> Prop)
+def univ_iso_monoid_quotient {M : Monoid} (R : M -> M -> Prop)
   [H : is_congruence R] (Q : Monoid) (is_mon_quot : is_univ_monoid_quotient R Q) : 
   Σ (iso : (Monoid_cong_quotient R).carrier ≅ Q), is_mon_quot.proj =
       (Monoid_cong_quotient R).is_mon_quot.proj ≫ iso.hom :=
@@ -641,8 +634,7 @@ begin
 end
 
 @[hott]  --[GEVE]
-def univ_to_monoid_quotient {M : Monoid} 
-  (R : Monoid_to_Set_functor.obj M -> Monoid_to_Set_functor.obj M -> Prop)
+def univ_to_monoid_quotient {M : Monoid} (R : M -> M -> Prop)
   [H : is_equivalence (λ m n, R m n)] (Q : Monoid) :
   is_univ_monoid_quotient R Q -> is_monoid_quotient R Q :=
 begin
@@ -673,26 +665,23 @@ end
 
 /- A congruence can be generated by arbitrary relations. -/
 @[hott] 
-inductive cong_sequence {M : Monoid.{u}} 
-  (R : Monoid_to_Set_functor.obj M -> Monoid_to_Set_functor.obj M -> trunctype.{u} -1) : 
-  Monoid_to_Set_functor.obj M -> Monoid_to_Set_functor.obj M -> Type u
-| rel {a b : Monoid_to_Set_functor.obj M} (r : R a b) : cong_sequence a b
-| refl (a : Monoid_to_Set_functor.obj M) : cong_sequence a a
-| symm {a b : Monoid_to_Set_functor.obj M} (r : cong_sequence a b) : cong_sequence b a
-| trans {a b c : Monoid_to_Set_functor.obj M} (r : cong_sequence a b) 
-             (r' : cong_sequence b c) : cong_sequence a c
-| mul {a a' b b' : Monoid_to_Set_functor.obj M} (r : cong_sequence a a') 
-                              (s : cong_sequence b b') : cong_sequence (a * b) (a' * b')
+inductive cong_sequence {M : Monoid.{u}} (R : M -> M -> trunctype.{u} -1) : 
+  M -> M -> Type u
+| rel {a b : M} (r : R a b) : cong_sequence a b
+| refl (a : M) : cong_sequence a a
+| symm {a b : M} (r : cong_sequence a b) : cong_sequence b a
+| trans {a b c : M} (r : cong_sequence a b)  (r' : cong_sequence b c) : 
+                                                                    cong_sequence a c
+| mul {a a' b b' : M} (r : cong_sequence a a') (s : cong_sequence b b') : 
+                                                        cong_sequence (a * b) (a' * b')
 
 @[hott]  --[GEVE]
-def rel_to_cong_rel {M : Monoid.{u}} 
-  (R : Monoid_to_Set_functor.obj M -> Monoid_to_Set_functor.obj M -> trunctype.{u} -1) : 
-  Monoid_to_Set_functor.obj M -> Monoid_to_Set_functor.obj M -> Prop :=
+def rel_to_cong_rel {M : Monoid.{u}} (R : M -> M -> trunctype.{u} -1) : 
+  M -> M -> Prop :=
   λ a b, ∥ cong_sequence R a b ∥
 
 @[hott, instance]
-def cong_clos_rel_is_equiv_rel {M : Monoid.{u}} 
-  (R : Monoid_to_Set_functor.obj M -> Monoid_to_Set_functor.obj M -> trunctype.{u} -1) : 
+def cong_clos_rel_is_equiv_rel {M : Monoid.{u}} (R : M -> M -> trunctype.{u} -1) : 
   is_equivalence (λ a b, rel_to_cong_rel R a b) :=
 begin
   fapply is_equivalence.mk,
@@ -704,8 +693,7 @@ begin
 end
 
 @[hott, instance]  --[GEVE]
-def cong_clos_rel_is_cong_rel {M : Monoid.{u}} 
-  (R : Monoid_to_Set_functor.obj M -> Monoid_to_Set_functor.obj M -> trunctype.{u} -1) : 
+def cong_clos_rel_is_cong_rel {M : Monoid.{u}} (R : M -> M -> trunctype.{u} -1) : 
   is_congruence (λ a b, rel_to_cong_rel R a b) :=
 begin
   fapply is_congruence.mk,
