@@ -10,14 +10,30 @@ open trunc is_trunc hott.algebra hott.relation hott.is_equiv subset precategorie
 
 namespace algebra
 
-@[hott]  --[GEVE]
-def quotient_Group_by_monoid_cong_rel (G : Group) 
-  (R : Monoid_to_Set_functor.obj (Group.to_Monoid G) -> 
-       Monoid_to_Set_functor.obj (Group.to_Monoid G) -> Prop)
-  [C : is_congruence R] : Group :=
+/- The monoid quotient of the underlying monoid of a group by a congruence relation 
+   inherits the group structure and can thus be considered as a group quotient. -/
+@[hott]
+def group_to_monoid_rel {G : Group} (R : G -> G -> Prop) :
+  (Group.to_Monoid G).carrier -> (Group.to_Monoid G).carrier -> Prop :=
+λ g h, R g h
+
+@[hott, instance]
+def group_to_monoid_cong {G : Group} (R : G -> G -> Prop) [H : is_congruence R] :
+  is_congruence (group_to_monoid_rel R) :=
 begin
+  fapply λ is_equiv, @is_congruence.mk _ _ (group_to_monoid_rel R) is_equiv, 
+  { exact H.to_is_equivalence },
+  { exact H.mul_comp }
+end
+
+@[hott]  --[GEVE]
+def quotient_Group_by_monoid_cong_rel (G : Group.{u}) 
+  (R : G -> G -> trunctype.{u} -1) [C : is_congruence (group_to_monoid_rel R)] : 
+  Group :=
+begin
+  let R' := group_to_monoid_rel R,
   fapply Group_eqv_Monoid_inv_law⁻¹ᶠ, fapply dpair,
-  { exact (Monoid_cong_quotient R).carrier },
+  { exact (@Monoid_cong_quotient (Group.to_Monoid G) (group_to_monoid_rel R) C).carrier },
   { fapply dpair,
     { fapply set.set_quotient.rec, 
       { intro g, apply set.set_class_of R, change ↥(Group_to_Set_functor.obj G), exact g⁻¹ },
@@ -26,21 +42,17 @@ begin
         have rel : ↥(R (g_inv * g) (g'_inv * g)), from 
         begin 
           rwr (group_laws _).mul_left_inv g, rwr <- (group_laws _).mul_left_inv g', 
-          fapply C.mul_comp, apply (is_congruence.to_is_equivalence R).refl,  
-          apply (is_congruence.to_is_equivalence R).symm, exact H
+          fapply C.mul_comp, apply (is_congruence.to_is_equivalence R').refl,  
+          apply (is_congruence.to_is_equivalence R').symm, exact H
         end,
         rwr <- (group_laws _).mul_one g⁻¹, rwr <- (group_laws _).mul_one g'⁻¹,
         rwr <- Group_left_inv_is_right_inv g, rwr <- (group_laws _).mul_assoc, 
         rwr <- (group_laws _).mul_assoc, fapply C.mul_comp, exact rel, 
-        apply (is_congruence.to_is_equivalence R).refl } },
+        apply (is_congruence.to_is_equivalence R').refl } },
     { fapply set.set_quotient.prec, 
       intro g, change ↥G at g, let g_inv := g⁻¹,
-      change @monoid.mul (Monoid_cong_quotient R).carrier _ 
-               (Monoid_to_Set_functor.map (Monoid_cong_quotient R).is_mon_quot.proj g_inv)
-               (Monoid_to_Set_functor.map (Monoid_cong_quotient R).is_mon_quot.proj g) =
-               Monoid_to_Set_functor.map (Monoid_cong_quotient R).is_mon_quot.proj _,
-      apply λ p, eq.inverse ((monoid_hom_laws 
-                             (Monoid_cong_quotient R).is_mon_quot.proj).mul_comp _ _) ⬝ p, 
+      apply λ p, eq.inverse ((monoid_hom_laws (@Monoid_cong_quotient (Group.to_Monoid G) 
+                           (group_to_monoid_rel R) C).is_mon_quot.proj).mul_comp _ _) ⬝ p, 
       rwr (group_laws _).mul_left_inv  } }
 end
 
@@ -70,8 +82,8 @@ begin
 end
 
 @[hott]
-def is_normal {G : Group} (H : Subgroup G) :=
-  Π (g : G), conjugate H g = H
+class is_normal {G : Group} (H : Subgroup G) :=
+  (conj_eq : Π (g : G), conjugate H g = H)
 
 @[hott]
 def normal_conj_el {G : Group} {H : Subgroup G} (norm_H : is_normal H) :
@@ -79,7 +91,7 @@ def normal_conj_el {G : Group} {H : Subgroup G} (norm_H : is_normal H) :
 begin
   intros h g h_el, 
   have sset : ↥(subset_of_subgroup (conjugate H g) ⊆ subset_of_subgroup H), from 
-    begin rwr norm_H g, intros h h_el, exact h_el end,
+    begin rwr is_normal.conj_eq H g, intros h h_el, exact h_el end,
   change Π h, _ at sset, apply sset, apply tr, fapply fiber.mk,
   { fapply dpair, exact g * h * g⁻¹, apply tr, fapply dpair, exact h, 
     fapply prod.mk, exact h_el, exact idp },
@@ -91,7 +103,7 @@ def conj_el_to_normal {G : Group} {H : Subgroup G} :
   (Π (h g : G), h ∈ subset_of_subgroup H -> g * h * g⁻¹ ∈ subset_of_subgroup H) ->
   is_normal H :=
 begin
-  intros conj_el g, fapply subobj_antisymm, 
+  intro conj_el,  fapply is_normal.mk, intro g, fapply subobj_antisymm, 
   { apply subgroup_hom_of_subset, intros h' h'_el, hinduction h'_el with fib,
     hinduction fib.1.2 with h_tr h_el_conj, hinduction h_el_conj with h el_conj,
     hinduction el_conj with h_el h_conj, let h'_eq := fib.2, let p := h_conj ⬝ h'_eq,
@@ -109,11 +121,31 @@ begin
     { exact idp } }
 end
 
+@[hott, instance]  --[GEVE]
+def kernel_is_normal {G H : Group} (f : G ⟶ H) : is_normal (kernel_subgroup f) :=
+begin
+  fapply conj_el_to_normal, intros h g h_el, hinduction h_el with fib,
+  hinduction fib, hinduction point with h' h'_eq,
+  change Group_to_Set_functor.map f h' = 1 at h'_eq, change h' = h at point_eq,
+  rwr <- point_eq,
+  apply tr, fapply fiber.mk,
+  { fapply dpair, exact g * h' * g⁻¹, change Group_to_Set_functor.map f _ = 1,
+    rwr (group_hom_laws _).mul_comp, rwr (group_hom_laws _).mul_comp,
+    rwr h'_eq, 
+    have p : Group_to_Set_functor.map f g * 1 = Group_to_Set_functor.map f g, from
+                (group_laws H).mul_one _, 
+    rwr p, rwr <- (group_hom_laws _).mul_comp, rwr Group_left_inv_is_right_inv,
+    exact (group_hom_laws _).one_comp },
+  { exact idp }
+end
+
+/- The extra structure on groups compared to monoids associates equivalence relations 
+   and congruences to subgroups and normal subgroups. -/
 @[hott]
 def subgroup_to_rel {G : Group} (H : Subgroup G) : G -> G -> Prop := 
   λ g h : G, to_Prop (g⁻¹ * h ∈ subset_of_subgroup H)
 
-@[hott, instance]
+@[hott, instance]  --[GEVE]
 def subgroup_rel_is_equiv {G : Group} (H : Subgroup G) : 
   is_equivalence (λ g h, subgroup_to_rel H g h) :=
 begin 
@@ -129,11 +161,11 @@ begin
     apply (subgroup_laws _).mul, exact rel₁, exact rel₂ }  
 end
 
-@[hott]
+@[hott]  --[GEVE]
 def subgroup_rel_cong_to_normal {G : Group} (H : Subgroup G) :
   is_congruence (λ g h : G, subgroup_to_rel H g h) -> is_normal H :=
 begin 
-  intros is_cong, intro g, fapply subobj_antisymm, 
+  intro is_cong, fapply is_normal.mk, intro g, fapply subobj_antisymm, 
   { apply subgroup_hom_of_subset, intros h' h'_el, hinduction h'_el with fib,
     hinduction fib.1.2 with h_tr h_el_conj, hinduction h_el_conj with h el_conj,
     hinduction el_conj with h_el h_conj, let h'_eq := fib.2, let p := h_conj ⬝ h'_eq,
@@ -163,11 +195,10 @@ begin
     { exact idp } }
 end
 
-@[hott, instance]
-def normal_subgroup_to_cong_rel {G : Group} (H : Subgroup G) :
-    is_normal H -> is_congruence (λ g h : G, subgroup_to_rel H g h) :=
+@[hott, instance]  --[GEVE]
+def normal_subgroup_to_cong_rel {G : Group} (H : Subgroup G) [norm_H : is_normal H] : 
+  is_congruence (λ g h : G, subgroup_to_rel H g h) :=
 begin
-  intro norm_H, 
   fapply λ is_equiv, @is_congruence.mk _ _
             (λ g h : Monoid_to_Set_functor.obj (Group.to_Monoid G), subgroup_to_rel H g h)
             is_equiv,
@@ -185,7 +216,7 @@ begin
     { exact rel₂ } }
 end
 
-@[hott]
+@[hott]  --[GEVE]
 def cong_rel_to_normal_subgroup {G : Group} {R : G -> G -> Prop} :
   is_congruence (λ g h, R g h) -> Σ (H : Subgroup G), is_normal H :=
 begin
@@ -214,6 +245,105 @@ begin
           have p : fib.1.1 = h, from fib.2, rwr <- p, exact fib.1.2 } },
       { exact @is_equivalence.refl _ (λ g h, R g h) equiv g⁻¹ } },
     { exact idp } } 
+end 
+
+@[hott]  --[GEVE]
+structure is_group_quotient {G : Group} (H : Subgroup G) [is_normal H] 
+  (Q : Group) :=
+(proj : G ⟶ Q)
+(surj : is_surjective (Group_to_Set_functor.map proj))
+(ker : kernel_subgroup proj = H)
+
+@[hott]  --[GEVE]
+def monoid_quot_is_group_quot {G : Group} {H : Subgroup G} [norm_H : is_normal H] :
+  is_group_quotient H (quotient_Group_by_monoid_cong_rel G (subgroup_to_rel H)) :=
+begin
+  have equiv : is_equivalence (λ g h, subgroup_to_rel H g h), from 
+    (normal_subgroup_to_cong_rel H).to_is_equivalence, 
+  fapply is_group_quotient.mk,
+  { apply group_of_monoid_hom, 
+    exact (@Monoid_cong_quotient (Group.to_Monoid G) (group_to_monoid_rel 
+                                        (subgroup_to_rel H)) _).is_mon_quot.proj },
+  { rwr Group_to_Monoid_to_Set_functor', 
+    rwr (@Monoid_cong_quotient (Group.to_Monoid G) (group_to_monoid_rel 
+                                        (subgroup_to_rel H)) _).is_mon_quot.proj_eq, 
+    intro q, hinduction (@Monoid_cong_quotient (Group.to_Monoid G) (group_to_monoid_rel 
+                   (subgroup_to_rel H)) _).is_mon_quot.is_set_quot.gen q with fib_eq fib, 
+    apply tr, exact fiber.mk fib.1 fib.2 },
+  { fapply subobj_antisymm, 
+    { apply subgroup_hom_of_subset, intros h h_el, hinduction h_el with fib,
+      hinduction fib, hinduction point with h' h_eq, 
+      change h' = h at point_eq, rwr <- point_eq,
+      rwr <- (group_laws _).one_mul h', rwr group_one_inv_one, 
+      change ↥(subgroup_to_rel H 1 h'), 
+      apply @is_equivalence.symm _ (λ g h, subgroup_to_rel H g h) equiv,
+      change ↥(group_to_monoid_rel (subgroup_to_rel H) _ _),
+      apply ((@Monoid_cong_quotient (Group.to_Monoid G) (group_to_monoid_rel 
+                            (subgroup_to_rel H)) _).is_mon_quot.is_set_quot.eq _ _).1,
+      rwr <- (@Monoid_cong_quotient (Group.to_Monoid G) (group_to_monoid_rel 
+                                    (subgroup_to_rel H)) _).is_mon_quot.proj_eq,
+      change Group_to_Set_functor.map _ _ = _ at h_eq,
+      rwr Group_to_Monoid_to_Set_functor at h_eq, rwr h_eq },
+    { apply subgroup_hom_of_subset, intros h h_el, apply tr, fapply fiber.mk,
+      { fapply dpair, exact h, change Group_to_Set_functor.map _ _ = _, 
+        rwr Group_to_Monoid_to_Set_functor, 
+        rwr <- (group_laws _).one_mul h at h_el, rwr group_one_inv_one at h_el, 
+        change ↥(subgroup_to_rel H 1 h) at h_el, 
+        change ↥(group_to_monoid_rel (subgroup_to_rel H) _ _) at h_el,
+        rwr (@Monoid_cong_quotient (Group.to_Monoid G) (group_to_monoid_rel 
+                                    (subgroup_to_rel H)) _).is_mon_quot.proj_eq,
+        rwr <- ((@Monoid_cong_quotient (Group.to_Monoid G) (group_to_monoid_rel 
+                      (subgroup_to_rel H)) _).is_mon_quot.is_set_quot.eq _ _).2 h_el }, 
+      { exact idp } } }
+end
+
+@[hott]
+def group_image_is_quot {G H : Group} (f : G ⟶ H) : 
+  is_group_quotient (@kernel_subgroup G H f) (@hom.image Group_Category _ _ f _).obj :=
+begin
+  fapply is_group_quotient.mk,
+  { exact @hom_to_image Group_Category _ _ f _ },
+  { intro h, hinduction h with h im_h, hinduction im_h with fib, 
+    apply tr, fapply fiber.mk fib.1, fapply sigma.sigma_eq, 
+    { change (Group_to_Set_functor.map (@hom_to_image Group_Category _ _ f _) ≫
+              Group_to_Set_functor.map (@hom.image Group_Category _ _ f _).hom) 
+                                                                    fib.point = h,
+      rwr <- Group_to_Set_functor.map_comp, 
+      rwr @hom_to_image_eq Group_Category _ _ f _, exact fib.2 },
+    { apply pathover_of_tr_eq, exact is_prop.elim _ _ } },
+  { fapply subobj_antisymm,
+    { apply subgroup_hom_of_subset, intros h h_el, hinduction h_el with fib,
+      hinduction fib, hinduction point with h' h_eq, 
+      change h' = h at point_eq, rwr <- point_eq, 
+      change Group_to_Set_functor.map _ _ = _ at h_eq,
+      apply tr, fapply fiber.mk,
+      { fapply dpair, exact h', change Group_to_Set_functor.map _ _ = _,
+        rwr <- @hom_to_image_eq Group_Category _ _ f _,
+        rwr Group_to_Set_functor.map_comp,
+        change Group_to_Set_functor.map (@hom.image Group_Category _ _ f _).hom
+               (Group_to_Set_functor.map (@hom_to_image Group_Category _ _ f _) h') = 1,
+        rwr h_eq },
+      { exact idp } },
+    { apply subgroup_hom_of_subset, intros h h_el, hinduction h_el with fib,
+      hinduction fib, hinduction point with h' h_eq, 
+      change h' = h at point_eq, rwr <- point_eq,
+      change Group_to_Set_functor.map _ _ = _ at h_eq,
+      apply tr, fapply fiber.mk,
+      { fapply dpair, exact h', change Group_to_Set_functor.map _ _ = _,
+        rwr <- @hom_to_image_eq Group_Category _ _ f _ at h_eq,
+        rwr Group_to_Set_functor.map_comp at h_eq,
+        change Group_to_Set_functor.map (@hom.image Group_Category _ _ f _).hom
+          (Group_to_Set_functor.map (@hom_to_image Group_Category _ _ f _) h') 
+                                                                        = 1 at h_eq,
+        have inj : set.is_set_injective (Group_to_Set_functor.map 
+                                    (@hom.image Group_Category _ _ f _).hom), from
+          sorry,
+        apply inj, 
+        have p : Group_to_Set_functor.map 
+                               (@hom.image Group_Category _ _ f _).hom 1 = 1, from
+          (group_hom_laws _).one_comp, 
+        rwr p, exact h_eq },
+      { exact idp } } }
 end 
 
 end algebra
