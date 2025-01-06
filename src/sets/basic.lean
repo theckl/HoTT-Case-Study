@@ -809,7 +809,7 @@ end
 
 /- Lists of elements in a set form a set. -/
 @[hott]
-def list_code {A : Set} : list A -> list A -> Type _
+def list_code {A : Set.{u}} : list A -> list A -> Type u
 | []     []      := One
 | []     (a::l)  := Zero
 | (a::l) []      := Zero
