@@ -12,8 +12,8 @@ sets
   finite    :   503         
   axioms    :   355         
   algebra   :   362         
-  quotients :   775  
-  product   :   497  4184   
+  quotients :   799  
+  product   :   497  4208   
 categories
   precat    :   772          
   basic     :   572         
@@ -33,12 +33,12 @@ categories
 algebra
   monoid
    basic    :   373
-   quotient :   719    
+   quotient :   707    
   group     :   
-   basic    :   876  1968
+   basic    :   878  1958
 
                     -----
-                    18427               
+                    18441               
 
 
 Planned changes in Files, from bottom to top: 
