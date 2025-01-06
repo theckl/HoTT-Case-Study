@@ -168,6 +168,12 @@ def Group_to_Monoid_to_Set_functor {G H : Group} :
      Group_to_Set_functor.map (group_of_monoid_hom f) g = Monoid_to_Set_functor.map f g :=
 λ f g, idp
 
+@[hott]
+def Group_to_Monoid_to_Set_functor' {G H : Group} : 
+  Π (f : Group.to_Monoid G ⟶ Group.to_Monoid H), 
+     Group_to_Set_functor.map (group_of_monoid_hom f) = Monoid_to_Set_functor.map f :=
+λ f, eq_of_homotopy (Group_to_Monoid_to_Set_functor f)
+
 @[hott, instance]
 def Group_Set_has_mul (G : Group) : has_mul (Group_to_Set_functor.obj G) :=
 begin apply has_mul.mk, change G -> G -> G, intros g₁ g₂, exact g₁ * g₂ end
@@ -316,7 +322,7 @@ structure is_ind_free_group_of (A : Set.{u}) (F : Group.{u}) :=
       Group_to_Set_functor.map g₁ (h a) = Group_to_Set_functor.map g₂ (h a)) -> g₁ = g₂)
 
 @[hott, reducible]
-def word_Monoid (A : Set.{u}) : Monoid.{u} := List_Monoid (set.to_Set (A ⊎ A))
+def word_Monoid (A : Set.{u}) : Monoid.{u} := List_Monoid (set.sum_Set A A)
 
 @[hott]
 def inv_letter_word {A : Set.{u}} : word_Monoid A -> word_Monoid A 
@@ -367,20 +373,19 @@ begin intros a b, change rev_word _ = _, rwr inv_letter_mul_word, rwr rev_mul_wo
 
 @[hott]
 def word_cancel_rel (A : Set.{u}) : 
-  Monoid_to_Set_functor.obj (word_Monoid.{u u} A) -> 
-  Monoid_to_Set_functor.obj (word_Monoid.{u u} A) -> trunctype.{u} -1
+  (word_Monoid A) -> (word_Monoid A) -> trunctype.{u} -1
 | (sum.inl a::[sum.inr b]) [] := to_Prop (a = b)
 | (sum.inr a::[sum.inl b]) [] := to_Prop (a = b)
 | _                        _  := False
 
 @[hott]
 def word_cancel_rel.rec {A : Set.{u}} 
-  {P : Π (a b : Monoid_to_Set_functor.obj (word_Monoid A)), Type _} 
+  {P : Π (a b : word_Monoid A), Type _} 
   (rec_l : Π (a b : A), (word_cancel_rel A (sum.inl a::[sum.inr b]) []) -> 
                                                           P (sum.inl a::[sum.inr b]) []) 
   (rec_r : Π (a b : A), (word_cancel_rel A (sum.inr a::[sum.inl b]) []) -> 
                                                           P (sum.inr a::[sum.inl b]) []) : 
-  Π {a b : Monoid_to_Set_functor.obj (word_Monoid A)}, (word_cancel_rel A a b) -> P a b :=
+  Π {a b : word_Monoid A}, (word_cancel_rel A a b) -> P a b :=
 begin 
   intros a b, exact match a, b with
   | (sum.inl a::[sum.inr b]), [] := λ r, rec_l a b r 
@@ -408,18 +413,21 @@ def word_quot_Monoid (A : Set.{u}) : Monoid.{u} :=
 def word_quot_Monoid_inv {A : Set.{u}} : 
   word_quot_Monoid A -> word_quot_Monoid A :=
 begin
-  fapply set.set_quotient.rec, 
-  { exact λ w, set.set_class_of (word_congruence A) (inv_word w) },
-  { intros w₁ w₂ H, apply pathover_of_eq, 
-    apply set.eq_of_setrel, hinduction H with H, hinduction H,
-    { revert r, fapply word_cancel_rel.rec, 
-      { intros a b r, apply tr, apply cong_sequence.rel, change b = a, exact r⁻¹ },
-      { intros a b r, apply tr, apply cong_sequence.rel, change b = a, exact r⁻¹ } },
-    { exact relation.rel_refl (λ b c, word_congruence A b c) _ },
-    { exact relation.rel_symm (λ b c, word_congruence A b c) ih },
-    { exact relation.rel_trans (λ b c, word_congruence A b c) ih_r ih_r' },
-    { rwr inv_mul_word, rwr inv_mul_word, hinduction ih_r, hinduction ih_s,
-      apply tr, exact cong_sequence.mul a_2 a_1 } }
+  intro w, hinduction w with w, hinduction w with w,   
+  { exact set.set_class_of (word_congruence A) (inv_word w) },
+  { apply set.eq_of_setrel, fapply trunc.rec_on H, 
+    { intro seq, fapply cong_sequence.rec_on seq,
+      { fapply word_cancel_rel.rec, 
+        { intros a b r, apply tr, apply cong_sequence.rel, change b = a, exact r⁻¹ },
+        { intros a b r, apply tr, apply cong_sequence.rel, change b = a, exact r⁻¹ } },
+      { intro a, exact relation.rel_refl (λ b c, word_congruence A b c) (inv_word a) },
+      { intros a b seq cong, exact relation.rel_symm (λ b c, word_congruence A b c) cong },
+      { intros a b c seq₁ seq₂ cong₁ cong₂,
+        exact relation.rel_trans (λ b c, word_congruence A b c) cong₁ cong₂ },
+      { intros a a' b b' seq₁ seq₂ cong₁ cong₂,
+        rwr inv_mul_word, rwr inv_mul_word, hinduction cong₁, hinduction cong₂,
+        apply tr, exact cong_sequence.mul a_2 a_1 } },
+    { intro p, apply_instance } } 
 end 
 
 @[hott]
@@ -495,7 +503,7 @@ begin
                                                [sum.inl b] [sum.inr b], from idp, 
       rwr p, rwr (monoid_hom_laws _).mul_comp,
       have q : ([] : Monoid_to_Set_functor.obj (word_Monoid A)) = 
-                @monoid.one (Monoid_to_Set_functor.obj (word_Monoid.{u u} A)) 
+                @monoid.one (Monoid_to_Set_functor.obj (word_Monoid A)) 
                                                        (lists_are_monoid _), from idp,
       rwr q, rwr (monoid_hom_laws _).one_comp,
       have ql : @is_ind_free_monoid_of.h (set.to_Set (A ⊎ A)) _ 
@@ -512,7 +520,7 @@ begin
                                                [sum.inr b] [sum.inl b], from idp, 
       rwr p, rwr (monoid_hom_laws _).mul_comp,
       have q : ([] : Monoid_to_Set_functor.obj (word_Monoid A)) = 
-                @monoid.one (Monoid_to_Set_functor.obj (word_Monoid.{u u} A)) 
+                @monoid.one (Monoid_to_Set_functor.obj (word_Monoid A)) 
                                                        (lists_are_monoid _), from idp,
       rwr q, rwr (monoid_hom_laws _).one_comp,
       have ql : @is_ind_free_monoid_of.h (set.to_Set (A ⊎ A)) _ 
@@ -557,13 +565,13 @@ def word_quot_Group_unique {A : Set.{u}} : Π {H : Group} (g₁ g₂ : word_quot
 begin 
   let R := rel_to_cong_rel (word_cancel_rel A),
   let M := word_quot_Monoid A,
-  intros H g₁ g₂ comp_eq, fapply sigma.sigma_eq, 
-    { fapply @is_univ_monoid_quotient.unique (word_Monoid A) R _ (word_quot_Monoid A) 
+  intros H g₁ g₂ comp_eq, fapply sigma.sigma_eq,
+  { fapply @is_univ_monoid_quotient.unique (word_Monoid A) R _ (word_quot_Monoid A) 
                  (monoid_to_univ_quotient R M (Monoid_cong_quotient R).is_mon_quot),
-      fapply @is_ind_free_monoid_of.unique (set.to_Set (A ⊎ A)) (word_Monoid A)
+    fapply @is_ind_free_monoid_of.unique (set.to_Set (A ⊎ A)) (word_Monoid A)
                                       (@lists_are_free_monoid (set.to_Set (A ⊎ A))),
-      intro a, rwr Monoid_to_Set_functor.map_comp, 
-      hinduction a with a a,
+    intro a, rwr Monoid_to_Set_functor.map_comp,
+    hinduction a with a a,
       { change Monoid_to_Set_functor.map g₁.1 _ = Monoid_to_Set_functor.map g₂.1 _,
         rwr <- Group_to_Monoid_to_Set_functor, rwr <- Group_to_Monoid_to_Set_functor,
         exact comp_eq a }, 
@@ -595,7 +603,7 @@ def word_quot_Group_is_ind_free_group (A : Set.{u}) :
 begin 
   let R := rel_to_cong_rel (word_cancel_rel A),
   let M := word_quot_Monoid A,
-  fapply is_ind_free_group_of.mk,
+  fapply is_ind_free_group_of.mk, 
   { intro a, exact set.set_class_of _ [sum.inl a] },
   { intros H f, fapply dpair,
     { exact word_quot_Group_free_map f },
@@ -630,7 +638,7 @@ def group_mon_is_inj {G H : Group} : Π (f : G ⟶ H),
                         (Group_to_Set_functor.map f) :=
 begin 
   intro f, fapply prod.mk,
-  { intro mono_f, apply mono_is_set_inj, intros A g₁ g₂ g_eq,
+  { intro mono_f, apply mono_is_set_inj, intros A g₁ g₂ g_eq, 
     let h := to_hom_set (word_quot_Group_is_ind_free_group A).h, 
     let g₁' := ((word_quot_Group_is_ind_free_group A).map g₁).1,
     let g₂' := ((word_quot_Group_is_ind_free_group A).map g₂).1,
