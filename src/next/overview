@@ -1,7 +1,0 @@
-Planned changes in Files, from bottom to top: 
----------------------------------------------
-algebra.ring : signature of (commutative) ring (with 1), rings as models over sets,
-               names for operations & laws, ring from operations & laws on set,
-               ring of integers 
-sets.dec_alg : operations with sets from lists
-sets.inductive: sets with inductive structure, constructive functions, decidability
