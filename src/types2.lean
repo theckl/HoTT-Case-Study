@@ -431,6 +431,22 @@ def comp_fib_eq_idp_idp {A B C : Type _} {f : A -> B} {g : B -> C} {c : C}
   comp_fib_eq f g (@idp _ fib_g) (@idp _ fib_f.point) r = idp :=
 begin intro s, rwr s, exact comp_fib_eq_idp f g end
 
+@[hott]
+def fiber_homotopy_equiv {A B : Type _} {f f' : A -> B} :
+  (f ~ f') -> Π (b : B), fiber f b ≃ fiber f' b :=
+begin
+  intros H b, fapply equiv.mk,
+  { intro fib, hinduction fib with a f_eq, exact fiber.mk a ((H a)⁻¹ ⬝ f_eq) },
+  { fapply adjointify,
+    { intro fib', hinduction fib' with a f'_eq, exact fiber.mk a (H a ⬝ f'_eq) },
+    { intro fib', hinduction fib' with a f'_eq, fapply fiber.fiber_eq,
+      exact idp, rwr ap_idp, rwr idp_con, change (H a)⁻¹ ⬝ (H a ⬝ f'_eq) = f'_eq, 
+      rwr <- con.assoc, rwr con.left_inv, exact idp_con _ },
+    { intro fib, hinduction fib with a f_eq, fapply fiber.fiber_eq,
+      exact idp, rwr ap_idp, rwr idp_con, change (H a) ⬝ ((H a)⁻¹ ⬝ f_eq) = f_eq, 
+      rwr <- con.assoc, rwr con.right_inv, exact idp_con _ } }
+end
+
 /- We use Egbert Rijke's insight that the main tool to deal with identity types in 
    HoTT is the Structure Identity Principle for Σ-types [Rijke-Book, Thm.11.6.2]. 
    It is the dependent version of the Fundamental Theorem of identity types
