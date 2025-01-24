@@ -258,7 +258,7 @@ end
 
 @[hott, instance]
 def set_has_image {A B : Set_Category.{u}} (f : A ⟶ B) : has_image f :=
-  has_image.mk (tr (set_cat_image f)) 
+  has_image.mk (set_cat_image f) 
 
 @[hott, instance]
 def set_has_images : has_images Set_Category.{u} :=
