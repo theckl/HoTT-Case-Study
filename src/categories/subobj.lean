@@ -458,17 +458,6 @@ def subobject_fac_is_prop {C : Category.{u v}} {c d : C} (f : c ⟶ d)
 is_prop.mk (subobject_fac_is_unique f a)  
 
 @[hott]
-class has_image {C : Category} {c d : C} (f : c ⟶ d) :=
-  (exists_im : ∥cat_image f∥)
-
-@[hott, instance]
-def has_im_is_prop {C : Category} {c d : C} (f : c ⟶ d) : is_prop (has_image f) :=
-begin 
-  apply is_prop.mk, intros hi₁ hi₂, hinduction hi₁, hinduction hi₂,
-  apply ap has_image.mk, exact is_prop.elim _ _ 
-end
-
-@[hott]
 def cat_image_is_unique {C : Category.{u v}} {c d : C} (f : c ⟶ d) :
   Π im₁ im₂ : cat_image f, im₁ = im₂ :=
 begin
@@ -485,25 +474,36 @@ def cat_image_is_prop {C : Category} {c d : C} (f : c ⟶ d) :
   is_prop (cat_image f) :=
 is_prop.mk (cat_image_is_unique f)  
 
+@[hott]
+class has_image {C : Category} {c d : C} (f : c ⟶ d) :=
+  (exists_im : cat_image f)
+
+@[hott, instance]
+def has_im_is_prop {C : Category} {c d : C} (f : c ⟶ d) : is_prop (has_image f) :=
+begin 
+  apply is_prop.mk, intros hi₁ hi₂, hinduction hi₁, hinduction hi₂,
+  apply ap has_image.mk, exact is_prop.elim _ _ 
+end
+
 @[hott, reducible]
 def hom.image {C : Category} {c d : C} (f : c ⟶ d) [has_image f] : 
   subobject d :=  
-(@untrunc_of_is_trunc _ _ (cat_image_is_prop f) (has_image.exists_im f)).subobj
+(has_image.exists_im f).subobj
 
 @[hott, reducible]
 def hom_to_image {C : Category} {c d : C} (f : c ⟶ d) [has_image f] :
   c ⟶ (hom.image f).obj := 
-(untrunc_of_is_trunc (has_image.exists_im f)).fac.1  
+(has_image.exists_im f).fac.1  
 
 @[hott]
 def hom_to_image_eq {C : Category} {c d : C} (f : c ⟶ d) [has_image f] :
   hom_to_image f ≫ (hom.image f).hom = f := 
-(untrunc_of_is_trunc (has_image.exists_im f)).fac.2 
+(has_image.exists_im f).fac.2 
 
 @[hott]
 def hom_image_univ {C : Category} {c d : C} (f : c ⟶ d) [has_image f] :
   Π (a : subobject d) (f' : c ⟶ a.obj), f' ≫ a.hom = f -> (hom.image f ≼ a) :=
-assume a f' p, (untrunc_of_is_trunc (has_image.exists_im f)).univ a ⟨f', p⟩ 
+assume a f' p, (has_image.exists_im f).univ a ⟨f', p⟩ 
 
 @[hott, instance]
 def subobj_has_im {C : Category} {c : C} (b : subobject c) :
@@ -511,7 +511,7 @@ def subobj_has_im {C : Category} {c : C} (b : subobject c) :
 have im_b : cat_image b.hom, from 
   cat_image.mk b (sigma.mk (𝟙 b.obj) (is_precat.id_comp b.hom)) 
                (λ a m, hom_of_monos.mk _ _ m.1 m.2),  
-has_image.mk (tr im_b)
+has_image.mk im_b
 
 @[hott]
 def subobj_is_im {C : Category} {c : C} (b : subobject c) :
@@ -577,6 +577,5 @@ end
 def has_image_of_has_images {C : Category} [has_images C] {c d : C} 
   (f : c ⟶ d) : has_image f :=
 has_images.has_im f
-
 
 end hott
