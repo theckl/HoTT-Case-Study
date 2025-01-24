@@ -199,6 +199,16 @@ def ap_5 {A B C D E F : Type _} (f : A -> B -> C -> D -> E -> F) {a₁ a₂ : A}
   f a₁ b₁ c₁ d₁ e₁ = f a₂ b₂ c₂ d₂ e₂ :=
 begin hinduction pA, hinduction pB, hinduction pC, hinduction pD, hinduction pE, refl end
 
+@[hott, hsimp]
+def ap_6 {A B C D E F G : Type _} (g : A -> B -> C -> D -> E -> F -> G) {a₁ a₂ : A} 
+  {b₁ b₂ : B} {c₁ c₂ : C} {d₁ d₂ : D} {e₁ e₂ : E} {f₁ f₂ : F} (pA : a₁ = a₂) 
+  (pB : b₁ = b₂) (pC : c₁ = c₂) (pD : d₁ = d₂) (pE : e₁ = e₂) (pF : f₁ = f₂) :
+  g a₁ b₁ c₁ d₁ e₁ f₁ = g a₂ b₂ c₂ d₂ e₂ f₂:=
+begin 
+  hinduction pA, hinduction pB, hinduction pC, hinduction pD, hinduction pE, 
+  hinduction pF, refl 
+end
+
 @[hott]
 def ap_11 {A₁ A₂ A₃ A₄ A₅ A₆ A₇ A₈ A₉ B₀ B₁ C : Type _} 
           (f : A₁ -> A₂ -> A₃ -> A₄ -> A₅ -> A₆ -> A₇ -> A₈ -> A₉ -> B₀ -> B₁ -> C)
