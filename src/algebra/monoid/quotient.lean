@@ -352,7 +352,7 @@ end
 def monoid_hom_has_image {M N : Monoid.{u}} (f : M ⟶ N) : 
   @has_image Monoid_Category.{u} _ _ f :=
 begin  
-  fapply has_image.mk, apply tr, fapply cat_image.mk,
+  fapply has_image.mk, fapply cat_image.mk,
   { fapply Submonoid_of_Subset.{u},
     { exact (λ b : N.carrier, image (Monoid_to_Set_functor.map f) b) },
     { apply tr, apply fiber.mk M.struct.one, exact (monoid_hom_laws f).one_comp },
@@ -427,7 +427,7 @@ end
 @[hott]   --[GEVE]
 class is_congruence {M : Type _} [has_mul M] (R : M -> M -> Prop)
   extends (is_equivalence (λ m n : M, R m n)) :=
-(mul_comp : Π (m m' n n' : M), R m m' -> R n n' -> R (m * n) (m' * n'))
+(mul_comp : Π {m m' n n' : M}, R m m' -> R n n' -> R (m * n) (m' * n'))
 
 @[hott]
 def kernel_pair_to_rel {M N : Monoid} (f : M ⟶ N) : M -> M -> Prop :=
@@ -680,6 +680,11 @@ def rel_to_cong_rel {M : Monoid.{u}} (R : M -> M -> trunctype.{u} -1) :
   M -> M -> Prop :=
   λ a b, ∥ cong_sequence R a b ∥
 
+@[hott]
+def cong_rel_ext_rel {M : Monoid.{u}} (R : M -> M -> trunctype.{u} -1) :
+  Π m n : M, R m n -> rel_to_cong_rel R m n :=
+λ m n rel, tr (cong_sequence.rel rel) 
+
 @[hott, instance]
 def cong_clos_rel_is_equiv_rel {M : Monoid.{u}} (R : M -> M -> trunctype.{u} -1) : 
   is_equivalence (λ a b, rel_to_cong_rel R a b) :=
@@ -701,6 +706,20 @@ begin
   hinduction c_seq₁ with seq₁, hinduction c_seq₂ with seq₂,
     exact tr (cong_sequence.mul seq₁ seq₂)
 end 
+
+@[hott]  --[GEVE]
+def cong_clos_rel_is_min_cong {M : Monoid.{u}} (R : M -> M -> trunctype.{u} -1)
+  (R' : M -> M -> trunctype.{u} -1) [H : is_congruence (λ a b, R' a b)] :
+  (Π a b, R a b -> R' a b) -> (Π a b, rel_to_cong_rel R a b -> R' a b) :=
+begin
+  intros R'_ext_R a b rel_cong_R, hinduction rel_cong_R with seq, 
+  hinduction seq,
+  { exact R'_ext_R a b r },
+  { exact is_equivalence.refl (λ a b, R' a b) a },
+  { exact is_equivalence.symm (λ a b, R' a b) ih },
+  { exact is_equivalence.trans (λ a b, R' a b) ih_r ih_r' },
+  { exact is_congruence.mul_comp _ ih_r ih_s }
+end
 
 end algebra
 
