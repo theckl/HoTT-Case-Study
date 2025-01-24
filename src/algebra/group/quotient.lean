@@ -1,4 +1,4 @@
-import algebra.group.basic 
+import algebra.group.subgroup 
        
 
 universes u u' v w
@@ -84,6 +84,45 @@ end
 @[hott]
 class is_normal {G : Group} (H : Subgroup G) :=
   (conj_eq : Π (g : G), conjugate H g = H)
+
+@[hott, instance]
+def is_normal_is_prop {G : Group} (H : Subgroup G) : is_prop (is_normal H) :=
+begin 
+  fapply is_prop.mk, intros norm₁ norm₂, 
+  hinduction norm₁ with conj₁, hinduction norm₂ with conj₂,
+  fapply ap is_normal.mk,
+  apply eq_of_homotopy, intro g, exact is_prop.elim _ _
+end
+
+@[hott]  --[GEVE]
+def inc_conj_is_normal {G : Group} (H : Subgroup G) :
+  (Π (g : G), H ≼ conjugate H g) -> is_normal H :=
+begin
+  intro inj_conj, apply is_normal.mk,
+  intro g, fapply subobj_antisymm,
+  { apply subgroup_hom_of_subset, intros h h_el,
+    change ↥(h ∈ subset_of_subgroup (Subgroup_of_Subset _ _)) at h_el,
+    rwr Subgroup_Subset_str at h_el, hinduction h_el with h'_conj, 
+    hinduction h'_conj with h' el_conj, hinduction el_conj with h'_el conj_eq,
+    rwr <- conj_eq, 
+    have el : ↥(h'∈subset_of_subgroup (conjugate H g⁻¹)), from 
+      subset_of_subgroup_hom (inj_conj g⁻¹) h' h'_el,
+    change ↥(h' ∈ subset_of_subgroup (Subgroup_of_Subset _ _)) at el,
+    rwr Subgroup_Subset_str at el, hinduction el with h''_conj, 
+    hinduction h''_conj with h'' el_conj, hinduction el_conj with h''_el conj_eq,
+    rwr <- conj_eq, 
+    have p : g * (g⁻¹ * h'' * g⁻¹⁻¹) * g⁻¹ = h'', from 
+      calc g * (g⁻¹ * h'' * g⁻¹⁻¹) * g⁻¹ = g * (g⁻¹ * h'' * g) * g⁻¹ : 
+                                                          by rwr group_inv_inv g
+           ... = (g * g⁻¹) * (h'' * (g * g⁻¹)) : by rwr (group_laws _).mul_assoc g⁻¹ _ _;
+                   rwr <- (group_laws _).mul_assoc g _ _; 
+                   rwr (group_laws _).mul_assoc _ _ g⁻¹; 
+                   rwr (group_laws _).mul_assoc _ g _
+           ... = 1 * (h'' * 1) : by rwr Group_left_inv_is_right_inv
+           ... = h'' : by rwr (group_laws _).one_mul; rwr (group_laws _).mul_one, 
+    rwr p, exact h''_el },
+  { exact inj_conj g }
+end
 
 @[hott]
 def normal_conj_el {G : Group} {H : Subgroup G} (norm_H : is_normal H) :
@@ -217,7 +256,7 @@ begin
 end
 
 @[hott]  --[GEVE]
-def cong_rel_to_normal_subgroup {G : Group} {R : G -> G -> Prop} :
+def cong_rel_to_normal_subgroup {G : Group} (R : G -> G -> Prop) :
   is_congruence (λ g h, R g h) -> Σ (H : Subgroup G), is_normal H :=
 begin
   intro cong, 
@@ -246,6 +285,26 @@ begin
       { exact @is_equivalence.refl _ (λ g h, R g h) equiv g⁻¹ } },
     { exact idp } } 
 end 
+
+@[hott]
+def cong_rel_to_subgroup_rinv {G : Group} (R : G -> G -> Prop)
+  (is_cong : is_congruence (λ g h, R g h)) : 
+  subgroup_to_rel (cong_rel_to_normal_subgroup R is_cong).1 = (λ a b, R a b) :=
+begin
+  apply eq_of_homotopy2, intros g h, fapply iff_eq, 
+  change ↥(g⁻¹ * h ∈ subset_of_subgroup 
+                            (cong_rel_to_normal_subgroup R is_cong).fst) <-> _, 
+  change ↥(g⁻¹ * h ∈ subset_of_subgroup (Subgroup_of_Subset _ _)) <-> _, 
+  rwr Subgroup_Subset_str, fapply prod.mk,
+  { intro norm_rel, apply is_equivalence.symm (λ g h, R g h), 
+    rwr <- (group_laws _).one_mul h, rwr <- (group_laws _).mul_one g,
+    rwr <- Group_left_inv_is_right_inv g, rwr (group_laws _).mul_assoc,    
+    rwr Group_left_inv_is_right_inv g, apply is_cong.mul_comp,
+    apply is_equivalence.refl (λ g h, R g h), exact norm_rel },
+  { intro rel, apply is_equivalence.symm (λ g h, R g h),
+    rwr <- (group_laws _).mul_left_inv g, apply is_cong.mul_comp,
+    apply is_equivalence.refl (λ g h, R g h), exact rel }
+end
 
 @[hott]  --[GEVE]
 structure is_group_quotient {G : Group} (H : Subgroup G) [is_normal H] 
@@ -297,6 +356,45 @@ begin
       { exact idp } } }
 end
 
+@[hott]  --[GEVE]
+def group_quot_is_monoid_quot {G : Group} (H : Subgroup G) [norm_H : is_normal H]
+  (Q : Group) : is_group_quotient H Q -> @is_monoid_quotient (Group.to_Monoid G) 
+     (group_to_monoid_rel (subgroup_to_rel H)) _ (Group.to_Monoid Q):=
+begin
+  intro is_quot, fapply is_monoid_quotient.mk,
+  { exact (concrete_forget_functor (Group.to_Monoid)).map is_quot.proj },
+  { fapply set.is_cons_quotient.mk, 
+    { exact Monoid_to_Set_functor.map 
+                      ((concrete_forget_functor Group.to_Monoid).map is_quot.proj) },
+    { intro q, hinduction is_quot.surj q with tr_eq fib, apply tr,
+      apply dpair fib.1, exact fib.2 },
+    { intros g₁ g₂, fapply prod.mk,
+      { intro g_eq, change ↥G at g₁, change ↥G at g₂, 
+        change ↥(g₁⁻¹ * g₂ ∈ subset_of_subgroup H), rwr <- is_quot.ker,
+        apply tr, fapply fiber.mk,
+        { fapply dpair (g₁⁻¹ * g₂),
+          change Group_to_Set_functor.map is_quot.proj (g₁⁻¹ * g₂) = 1,
+          rwr (group_hom_laws _).mul_comp, rwr group_hom_inv,
+          apply λ p, p ⬝ (group_laws _).mul_left_inv 
+                                        (Group_to_Set_functor.map is_quot.proj g₁), 
+          
+          exact ap (λ g, (Group_to_Set_functor.map is_quot.proj g₁)⁻¹ * g) g_eq⁻¹ },
+        { exact idp } },
+      { intro rel, change ↥G at g₁, change ↥G at g₂,
+        change ↥(g₁⁻¹ * g₂ ∈ subset_of_subgroup H) at rel, 
+        hinduction rel with fib, rwr <- is_quot.ker at fib, 
+        hinduction fib with h h_eq, hinduction h with h ker_eq,
+        change Group_to_Set_functor.map is_quot.proj h = 1 at ker_eq,
+        change h = g₁⁻¹ * g₂ at h_eq, rwr h_eq at ker_eq, 
+        change Group_to_Set_functor.map is_quot.proj g₁ = 
+                                          Group_to_Set_functor.map is_quot.proj g₂,
+        apply group_left_cancel (Group_to_Set_functor.map is_quot.proj g₁⁻¹), 
+        rwr <- (group_hom_laws _).mul_comp, rwr <- (group_hom_laws _).mul_comp, 
+        rwr (group_laws _).mul_left_inv, rwr ker_eq, 
+        exact (group_hom_laws is_quot.proj).one_comp } } },
+  { exact idp }
+end
+
 @[hott]
 def group_image_is_quot {G H : Group} (f : G ⟶ H) : 
   is_group_quotient (@kernel_subgroup G H f) (@hom.image Group_Category _ _ f _).obj :=
@@ -337,7 +435,7 @@ begin
                                                                         = 1 at h_eq,
         have inj : set.is_set_injective (Group_to_Set_functor.map 
                                     (@hom.image Group_Category _ _ f _).hom), from
-          sorry,
+          begin apply (group_mon_is_inj _).1, exact subobject.is_mono _ end,
         apply inj, 
         have p : Group_to_Set_functor.map 
                                (@hom.image Group_Category _ _ f _).hom 1 = 1, from
@@ -345,6 +443,248 @@ begin
         rwr p, exact h_eq },
       { exact idp } } }
 end 
+
+/- We define the universal property of a quotient by a normal subgroup and show the
+   equivalence with the direct definition. -/
+@[hott]
+structure is_univ_group_quotient {G : Group} (H : Subgroup G) [is_normal H] 
+  (Q : Group) :=
+(proj : G ⟶ Q)
+(ker : kernel_subgroup proj = H)
+(factors : Π {P : Group} (f : G ⟶ P), H ≼ kernel_subgroup f -> 
+                                                 Σ (g : Q ⟶ P), f = proj ≫ g)
+(unique : Π (P : Group) (g₁ g₂ : Q ⟶ P), proj ≫ g₁ = proj ≫ g₂ -> g₁ = g₂)
+
+@[hott]
+def group_quotient_is_univ {G : Group} (H : Subgroup G) [is_normal H] 
+  (Q : Group) : is_group_quotient H Q -> is_univ_group_quotient H Q :=
+begin
+  intro is_quot, fapply is_univ_group_quotient.mk,
+  { exact is_quot.proj },
+  { exact is_quot.ker },
+  { intros P f H_ker, 
+    have mon_quot_fac : Σ (g : Group.to_Monoid Q ⟶ Group.to_Monoid P),
+      (concrete_forget_functor (Group.to_Monoid)).map f = (monoid_to_univ_quotient 
+                        _ _ (group_quot_is_monoid_quot H Q is_quot)).proj ≫ g, from
+    begin
+      fapply λ is_mon_quot, @is_univ_monoid_quotient.factors _ _ _ 
+                               (Group.to_Monoid Q) is_mon_quot (Group.to_Monoid P),
+      intros g₁ g₂ rel, change ↥G at g₁, change ↥G at g₂, 
+      change Group_to_Set_functor.map f g₁ = Group_to_Set_functor.map f g₂,
+      apply group_left_cancel (Group_to_Set_functor.map f g₁⁻¹), 
+      rwr <- (group_hom_laws _).mul_comp, rwr <- (group_hom_laws _).mul_comp, 
+      rwr (group_laws _).mul_left_inv, 
+      hinduction subset_of_subgroup_hom H_ker _ rel with tr_eq fib,
+      hinduction fib with h h_eq, hinduction h with h ker_eq,
+      change Group_to_Set_functor.map f h = 1 at ker_eq,
+      change h = g₁⁻¹ * g₂ at h_eq, rwr h_eq at ker_eq, rwr ker_eq, 
+      exact (group_hom_laws f).one_comp
+    end, 
+    fapply dpair,
+    { apply group_of_monoid_hom, exact mon_quot_fac.1 },
+    { apply @concrete_forget_functor_is_faithful _ _ Group.to_Monoid,
+      rwr (concrete_forget_functor (Group.to_Monoid)).map_comp, 
+      exact mon_quot_fac.2 } },
+  { intros P f₁ f₂ comp_eq, 
+    apply @concrete_forget_functor_is_faithful _ _ Group.to_Monoid,
+    have mon_quot_unique : Π (g₁ g₂ : Group.to_Monoid Q ⟶ Group.to_Monoid P), 
+      (monoid_to_univ_quotient 
+                        _ _ (group_quot_is_monoid_quot H Q is_quot)).proj ≫ g₁ = 
+      (monoid_to_univ_quotient 
+                        _ _ (group_quot_is_monoid_quot H Q is_quot)).proj ≫ g₂ -> 
+      g₁ = g₂, by fapply λ is_mon_quot, @is_univ_monoid_quotient.unique _ _ _ 
+                               (Group.to_Monoid Q) is_mon_quot (Group.to_Monoid P),
+    apply mon_quot_unique, 
+    change (concrete_forget_functor Group.to_Monoid).map _ ≫ _ =
+           (concrete_forget_functor Group.to_Monoid).map _ ≫ _,
+    rwr <- (concrete_forget_functor (Group.to_Monoid)).map_comp, 
+    exact ap (@precategories.functor.map _ _ _ _ 
+                        (concrete_forget_functor (Group.to_Monoid)) _ _) comp_eq } 
+end
+
+@[hott]
+def univ_iso_group_quotient {G : Group} (H : Subgroup G) [is_normal H] 
+  (Q : Group) (is_quot : is_univ_group_quotient H Q) : 
+  Q ≅ quotient_Group_by_monoid_cong_rel G (subgroup_to_rel H) :=
+--    is_quot.proj = monoid_quot_is_group_quot.proj ≫ i.hom :=
+begin
+  let is_quot' : is_univ_group_quotient H (quotient_Group_by_monoid_cong_rel G 
+                                                       (subgroup_to_rel H)) := 
+      group_quotient_is_univ _ _ monoid_quot_is_group_quot,
+  have H_inc : H ≼ kernel_subgroup is_quot.proj, by rwr is_quot.ker; exact 𝟙 H,
+  have H_inc' : H ≼ kernel_subgroup monoid_quot_is_group_quot.proj, by 
+                                   rwr monoid_quot_is_group_quot.ker; exact 𝟙 H,
+  have p : is_quot.proj = is_quot'.proj ≫ (is_quot'.factors is_quot.proj H_inc).fst, from 
+        (is_univ_group_quotient.factors is_quot' is_quot.proj H_inc).2,
+  have p' : monoid_quot_is_group_quot.proj = is_quot.proj ≫ (is_quot.factors 
+                  monoid_quot_is_group_quot.proj H_inc').fst, from 
+          (is_univ_group_quotient.factors is_quot monoid_quot_is_group_quot.proj 
+                                                                          H_inc').2,
+   fapply iso.mk,
+    { fapply sigma.fst (is_univ_group_quotient.factors is_quot 
+                                        monoid_quot_is_group_quot.proj H_inc') },
+    { fapply is_iso.mk,
+      { fapply sigma.fst (is_univ_group_quotient.factors is_quot' is_quot.proj H_inc) },
+      { fapply is_univ_group_quotient.unique is_quot', 
+        rwr <- is_precat.assoc, rwr <- p, rwr <- p' },
+      { fapply is_univ_group_quotient.unique is_quot, 
+        rwr <- is_precat.assoc, rwr <- p', 
+        change is_quot'.proj ≫ _ = _, rwr <- p, rwr is_precat.comp_id } } 
+end 
+
+@[hott]
+def univ_iso_group_quotient_proj_eq {G : Group} (H : Subgroup G) [is_normal H] 
+  (Q : Group) (is_quot : is_univ_group_quotient H Q) :
+  is_quot.proj = monoid_quot_is_group_quot.proj ≫ 
+                                  (univ_iso_group_quotient H Q is_quot).ih.inv := 
+begin
+  let is_quot' : is_univ_group_quotient H (quotient_Group_by_monoid_cong_rel G 
+                                                       (subgroup_to_rel H)) := 
+      group_quotient_is_univ _ _ monoid_quot_is_group_quot,
+  let H_inc : H ≼ kernel_subgroup is_quot.proj := by rwr is_quot.ker; exact 𝟙 H,
+  exact (is_univ_group_quotient.factors is_quot' is_quot.proj H_inc).2
+end 
+
+@[hott]
+def univ_is_group_quotient {G : Group} (H : Subgroup G) [is_normal H] 
+  (Q : Group) : is_univ_group_quotient H Q -> is_group_quotient H Q :=
+begin
+  intro is_quot, fapply is_group_quotient.mk,
+  { exact is_quot.proj },
+  { intro g, rwr univ_iso_group_quotient_proj_eq H Q is_quot,
+    hinduction is_group_quotient.surj (@monoid_quot_is_group_quot G H _) 
+      (Group_to_Set_functor.map (univ_iso_group_quotient H Q is_quot).hom g) with 
+      tr_eq fib, 
+    rwr Group_to_Set_functor.map_comp, apply tr, fapply fiber.mk,
+    { exact fib.1 },
+    { change Group_to_Set_functor.map _ _ = _, rwr fib.2,
+      change (Group_to_Set_functor.map (univ_iso_group_quotient H Q is_quot).hom ≫ 
+        Group_to_Set_functor.map (univ_iso_group_quotient H Q is_quot).ih.inv) _ = _, 
+      rwr <- Group_to_Set_functor.map_comp, 
+      rwr (univ_iso_group_quotient H Q is_quot).ih.l_inv } },
+  { exact is_quot.ker }
+end 
+/- Note that the projections of the universal and the direct group structure of `Q`
+   are not automtically (= judgmentally) equal if we just transfer 
+   `is_group_quotient` along the equality induced by the isomorphism of the quotient
+   groups. -/
+
+/- We characterize the normal closure of an arbitrary subgroup, construct it by 
+   generators and show the connection to the closure of an equivalence relation to 
+   a congruence. -/
+@[hott]
+structure is_normal_closure {G : Group} (H N_H : Subgroup G) :=
+  (norm : is_normal N_H)
+  (inc : H ≼ N_H)
+  (small : Π (N : Subgroup G) [is_normal N], H ≼ N -> N_H ≼ N)
+
+@[hott]
+def normal_cong_closure {G : Group} (H N_H : Subgroup G) 
+  (norm_clos : is_normal_closure H N_H) : 
+  Π (g h : G), subgroup_to_rel N_H g h <-> @rel_to_cong_rel (Group.to_Monoid G) 
+                                (group_to_monoid_rel (subgroup_to_rel H)) g h :=
+begin
+  intros g h, fapply prod.mk,
+  { intro norm_rel, 
+    change ↥((λ g h : G, @rel_to_cong_rel (Group.to_Monoid G) 
+                            (group_to_monoid_rel (subgroup_to_rel H)) g h) g h),
+    rwr <- cong_rel_to_subgroup_rinv (@rel_to_cong_rel (Group.to_Monoid G) 
+              (group_to_monoid_rel (subgroup_to_rel H))) 
+             (@cong_clos_rel_is_cong_rel (Group.to_Monoid G)(group_to_monoid_rel 
+                                                            (subgroup_to_rel H))),
+    change ↥(g⁻¹ * h ∈ _) at norm_rel, change ↥(g⁻¹ * h ∈ _), 
+    apply @subset_of_subgroup_hom G N_H _, 
+    { change N_H ≼ _, 
+      fapply λ is_norm, is_normal_closure.small norm_clos 
+                           (cong_rel_to_normal_subgroup _ _).1 is_norm, 
+      { apply subgroup_hom_of_subset, intros g g_el, 
+        change ↥(g ∈ subset_of_subgroup (Subgroup_of_Subset _ _)),
+        rwr Subgroup_Subset_str, 
+        change ↥(@rel_to_cong_rel (Group.to_Monoid G) (group_to_monoid_rel 
+                                                            (subgroup_to_rel H)) g 1),
+        apply cong_rel_ext_rel, change ↥(g⁻¹ * 1∈subset_of_subgroup H),
+        have p : g⁻¹ * 1 = g⁻¹, from (group_laws _).mul_one g⁻¹,
+        rwr p, exact (subgroup_laws _).inv g_el },
+      { exact (cong_rel_to_normal_subgroup _ _).2 } }, 
+    { exact norm_rel } },
+  { fapply λ cong_N_H ext, @cong_clos_rel_is_min_cong (Group.to_Monoid G) 
+               (group_to_monoid_rel (subgroup_to_rel H)) _ cong_N_H ext, 
+    { exact @normal_subgroup_to_cong_rel _ _ norm_clos.norm },
+    { intros g h, change ↥(g⁻¹ * h ∈ _) -> ↥(g⁻¹ * h ∈ _), 
+      apply subset_of_subgroup_hom, exact norm_clos.inc } }
+end
+
+@[hott]
+def normal_inter_closure {G : Group} (H : Subgroup G) : Subgroup G :=
+begin
+  let I : Set := set.to_Set (Σ (H' : Subgroup G), (H ≼ H') × (is_normal H')),
+  apply @iInter_subgroups G I (λi : I, i.1)
+end
+
+@[hott]
+def normal_inter_closure_is_normal_closure {G : Group} (H : Subgroup G) :
+  is_normal_closure H (normal_inter_closure H) :=
+begin
+  fapply is_normal_closure.mk,
+  { apply conj_el_to_normal, intros h g h_el,
+    change ↥(g * h * g⁻¹ ∈ subset_of_subgroup (Subgroup_of_Subset _ _)), 
+    rwr Subgroup_Subset_str, apply prop_to_prop_resize,
+    intro i, fapply normal_conj_el, exact i.2.2, 
+    apply subset_of_subgroup_hom (subgroup_iInter _ i) h, 
+    change ↥(h ∈ subset_of_subgroup (Subgroup_of_Subset _ _)) at h_el, 
+    rwr Subgroup_Subset_str at h_el,
+    change ↥(h ∈ subset_of_subgroup (Subgroup_of_Subset _ _)), 
+    rwr Subgroup_Subset_str, exact h_el },
+  { apply subgroup_subgroup_iInter, intro i, exact i.2.1 },
+  { let I : Set := set.to_Set (Σ (H' : Subgroup G), (H ≼ H') × (is_normal H')),
+    intros N norm_N inc_N, let i := dpair N (prod.mk inc_N norm_N),
+    change @iInter_subgroups G I (λ i : I, i.1) ≼ i.1, 
+    apply subgroup_iInter }
+end
+
+@[hott]
+def normal_gen_closure {G : Group} (H : Subgroup G) : Subgroup G :=
+  gen_subgroup (@subset.Image ((Group_to_Set_functor.obj G) × 
+    (Group_to_Set_functor.obj H.obj)) (Group_to_Set_functor.obj G)
+    (λ gh, gh.1 * (Group_to_Set_functor.map H.hom gh.2) * gh.1⁻¹))
+
+@[hott]  --[GEVE]
+def normal_gen_closure_is_normal_closure  {G : Group} (H : Subgroup G) :
+  is_normal_closure H (normal_gen_closure H) :=
+begin
+  let S := (@subset.Image ((Group_to_Set_functor.obj G) × 
+    (Group_to_Set_functor.obj H.obj)) (Group_to_Set_functor.obj G)
+    (λ gh, gh.1 * (Group_to_Set_functor.map H.hom gh.2) * gh.1⁻¹)),
+  change is_normal_closure H (gen_subgroup S), fapply is_normal_closure.mk,
+  { apply inc_conj_is_normal, intro g, apply gen_subgroup_min,
+    intros s s_el, change ↥(s ∈ subset_of_subgroup (Subgroup_of_Subset _ _)),
+    rwr Subgroup_Subset_str, hinduction s_el with fib, 
+    apply tr, fapply dpair, 
+    { exact (g⁻¹ * fib.1.1) * (Group_to_Set_functor.map H.hom fib.1.2) * 
+            (fib.1.1⁻¹ * g) },
+    { fapply prod.mk,
+      { apply gen_inc_gen_subgroup, apply tr, fapply fiber.mk,
+        { fapply prod.mk, exact g⁻¹ * fib.1.1, exact fib.1.2 },
+        { rwr group_mul_inv, rwr group_inv_inv } },
+      { rwr (group_laws _).mul_assoc _ _ g⁻¹, rwr (group_laws _).mul_assoc _ _ g⁻¹,
+        rwr (group_laws _).mul_assoc _ _ g⁻¹, rwr Group_left_inv_is_right_inv,
+        rwr (group_laws _).mul_one, rwr <- (group_laws _).mul_assoc g, 
+        rwr <- (group_laws _).mul_assoc g, rwr <- (group_laws _).mul_assoc g,
+        rwr Group_left_inv_is_right_inv, rwr (group_laws _).one_mul, 
+        exact fib.2 } } },
+  { apply subgroup_hom_of_subset, fapply subset_trans _ S _, 
+    { intros h h_el, hinduction h_el with fib, apply tr, fapply fiber.mk, 
+      { apply prod.mk, exact 1, exact fib.1 },
+      { change (1 : G) * _ * (1 : G)⁻¹ = _, rwr (group_laws _).one_mul, 
+        rwr <- group_one_inv_one, rwr (group_laws _).mul_one,
+        exact fib.2 } },
+    { exact gen_inc_gen_subgroup S } },
+  { intros N norm_N H_inc_N, apply gen_subgroup_min,
+    intros s s_el, hinduction s_el with fib, rwr <- fib.2, 
+    change ↥(fib.1.1 * Group_to_Set_functor.map H.hom fib.1.2 * fib.1.1⁻¹ ∈ _),
+    apply normal_conj_el norm_N, apply subset_of_subgroup_hom H_inc_N, 
+    apply tr, fapply fiber.mk, exact fib.1.2, exact idp }
+end
 
 end algebra
 
