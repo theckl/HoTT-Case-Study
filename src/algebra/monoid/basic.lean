@@ -9,6 +9,8 @@ open trunc is_trunc hott.algebra hott.eq precategories categories hott.is_equiv
 
 namespace algebra
 
+set_option pp.universes true
+
 /- Building on the algebraic hierarchy in [hott.algebra] we introduce homomorphisms of 
    algebraic structures as extensions of homomorphisms of underlying algebraic structures
    and use the machinery of concrete categories to show that together with the objects, 
@@ -61,46 +63,74 @@ begin
 end
 
 /- Descriptions of the fibers of `Magma.to_Set` as a Σ-type: the object system. -/
-@[hott, reducible] 
-def Magma_sigma_equiv : 
-  Magma.{u} ≃ Σ (carrier : Set.{u}), carrier -> carrier -> carrier :=
+@[hott]
+def Set_Magma_str : Set_Category.{u} -> Type u := 
+  λ (carrier : Set.{u}), carrier -> carrier -> carrier
+
+@[hott, instance]
+def Set_Magma_str_is_set : Π (M : Set_Category.{u}), is_set (Set_Magma_str M) :=
+begin 
+  intro M, change is_set (M.carrier -> M.carrier -> M.carrier), apply_instance
+end
+
+@[hott, instance]
+def Magma_fib_hom_system : fib_hom_system Set_Magma_str :=
+begin
+  fapply fib_hom_system.mk,
+  { intro M, apply_instance },
+  { intros M str₁ str₂, fapply Set.mk (str₁ = str₂), apply_instance },
+  { intros M str₁ str₂, apply_instance }
+end
+
+@[hott, instance]
+def Magma_fibs_are_cat : sigma_fibs_are_cat Set_Magma_str :=
+  begin fapply sigma_fibs_are_cat.mk, intros M str₁ str₂ h, exact h end
+
+/- To construct a `concrete_sigma_system` on magmas, we need an equivalence with the 
+   dependent type given by `Set_Magma_str`, factorizing the forgetful map to `Set`. -/
+@[hott]
+def Magma_eqv_Magma_str : (Σ (M : Set_Category.{u}), Set_Magma_str M) ≃ Magma :=
 begin
   fapply equiv.mk,
-  { intro M, exact ⟨Magma.to_Set M, M.mul⟩ },
-  { fapply adjointify, 
-    { intro M_mul, exact Magma.mk M_mul.1.carrier M_mul.1.struct M_mul.2 },
-    { intro M_mul, hinduction M_mul with M mul, hinduction M, exact idp },
-    { intro A, hinduction A, exact idp } }
+  { intro M_str, hinduction M_str with M M_str, hinduction M with M is_set_M, 
+    exact Magma.mk M is_set_M M_str },
+  { fapply adjointify,
+    { intro M, hinduction M with M is_set_M M_str, 
+      exact dpair (Set.mk M is_set_M) M_str },
+    { intro M, hinduction M with M is_set_M M_str, exact idp },
+    { intro M, hinduction M with M M_str, hinduction M with M is_set_M, exact idp } }
 end
 
-@[hott, reducible, instance]
-def Magma_obj_system : concrete_obj_system Magma.to_Set.{u} 
-      (λ A : Set_Category.{u}, A.carrier -> A.carrier -> A.carrier) :=
+@[hott]
+def Magma_Set_proj_homotopy : Π (M_str : Σ (M : Set_Category.{u}), Set_Magma_str M),
+  sigma.fst M_str = Magma.to_Set (Magma_eqv_Magma_str M_str) :=
 begin
-  fapply concrete_obj_system.mk,
-  fapply concrete_equiv.mk, 
-  { exact Magma_sigma_equiv⁻¹ᵉ },
-  { intro M_mul, hinduction M_mul with M mul, hinduction M, exact idp }
+  intro M_str, hinduction M_str with M str, hinduction M with M is_set_M,
+  exact idp
 end
 
-/- Magmas over the same set are categories, via the characterisation of Magmas as Σ-type. -/
 @[hott, instance]
-def Magma_fibs_are_cat : 
-  sigma_fibs_are_cat (λ A : Set_Category.{u}, A.carrier -> A.carrier -> A.carrier) :=
+def Magma_concrete_sigma_system : 
+  concrete_sigma_system Magma.to_Set.{u} Set_Magma_str :=
 begin
-  fapply sigma_fibs_are_cat.mk, 
-  { intros A mul₁ mul₂ h h_eq,
-    apply eq_of_homotopy2, intros a b,
-    change (𝟙 A : A.carrier -> A.carrier) (mul₁ a b) = 
-              mul₂ ((𝟙 A : A.carrier -> A.carrier) a) ((𝟙 A : A.carrier -> A.carrier) b),
-    rwr <- h_eq,
-    have p : (concrete_full_hom_equiv (concrete_obj_system.fib_eqv Magma.to_Set 
-        (λ (A : ↥Set_Category), A.carrier → A.carrier → A.carrier))).map h.1 = h.1, from
-    begin 
-      hinduction A with A A_set, change 𝟙 _ ≫ _ ≫ 𝟙 _ = _, rwr is_precat.comp_id 
-    end,  
-    rwr <- p, exact h.2 a b },
-  { intros A mul, exact is_prop.elim _ _ }
+  fapply concrete_sigma_system.mk, 
+  { intro M, apply λ eqv, (fiber.fiber_pr1 Set_Magma_str M)⁻¹ᵉ ⬝e eqv,
+    apply λ eqv, eqv ⬝e (fiber.equiv_precompose Magma.to_Set Magma_eqv_Magma_str M),
+    apply fiber_homotopy_equiv, exact Magma_Set_proj_homotopy },
+  { intros M mul₁ mul₂, fapply equiv.mk,
+    { intro p, change mul₁ = mul₂ at p, rwr p, exact 𝟙 _ },
+    { fapply adjointify,
+      { intro h, hinduction M with M is_set_M,
+        hinduction h with h_ss h_eq, hinduction h_ss with h h_mul,
+        change h = (idtoiso idp).hom ≫ (idtoiso idp).hom at h_eq,
+        change h = 𝟙 (Set.mk M is_set_M) at h_eq,
+        apply eq_of_homotopy2, intros m₁ m₂,
+        change (𝟙 (Set.mk M is_set_M) : M -> M) (mul₁ _ _) = 
+                                         mul₂ ((𝟙 (Set.mk M is_set_M) : M -> M) m₁)
+                                              ((𝟙 (Set.mk M is_set_M) : M -> M) m₂),
+        rwr <- h_eq, exact h_mul m₁ m₂ },
+      { intro h, exact is_prop.elim _ _ },
+      { intro h, exact is_set.elim _ _ } } }
 end
 
 @[hott, instance]
@@ -109,7 +139,7 @@ def Magma_is_cat : is_cat Magma.{u} :=
 
 @[hott]
 def Magma_Category : Category :=
-  Category.mk Magma.{u} Magma_is_cat 
+  Category.mk Magma.{u} Magma_is_cat     
 
 /- We show that semigroups form a concrete category over the concrete category `Magma`, 
    as a full subcategory. We show the injectivity of the projection from semigroups to 
@@ -169,63 +199,86 @@ begin
     rwr <- g_el, change (g ≫ g_iso.inv).1.1 1 = 1, rwr g_iso.l_inv }
 end
 
+@[hott]
+def Semigroup_Monoid_str : Semigroup_Category.{u} -> Type u := 
+  λ SG, Σ (one : SG.carrier), (Π (m : SG.carrier), (one * m = m)) × 
+                                                    (Π (m : SG.carrier), (m * one = m))
+
+@[hott, instance]
+def Semigroup_Monoid_str_is_set : 
+  Π SG : Semigroup_Category.{u}, is_set (Semigroup_Monoid_str SG) := 
+begin 
+  intro SG, change is_set Σ (one : SG.carrier), (Π (m : SG.carrier), (one * m = m)) × 
+                                                (Π (m : SG.carrier), (m * one = m)),
+  apply_instance 
+end
+
+@[hott, instance]
+def Monoid_fib_hom_system : fib_hom_system Semigroup_Monoid_str :=
+begin
+  fapply fib_hom_system.mk,
+  { intro M, apply_instance },
+  { intros M str₁ str₂, fapply Set.mk (str₁ = str₂), apply_instance },
+  { intros M str₁ str₂, apply_instance }
+end
+
+@[hott, instance]
+def Monoid_fibs_are_cat : sigma_fibs_are_cat Semigroup_Monoid_str :=
+  begin fapply sigma_fibs_are_cat.mk, intros M str₁ str₂ h, exact h end
+
 @[hott, reducible]
-def Monoid_eqv_Semigroup_one_laws : Monoid.{u} ≃ 
-  Σ (SG : Semigroup.{u}) (one : SG), (Π (m : SG), (one * m = m)) × 
-                                     (Π (m : SG), (m * one = m)) :=
+def Semigroup_Monoid_str_eqv_Monoid : 
+  (Σ (SG : Semigroup.{u}), Semigroup_Monoid_str SG) ≃ Monoid.{u} :=
 begin
   fapply equiv.mk,
-  { intro M, fapply dpair, exact Monoid.to_Semigroup M, fapply dpair, exact 1,
-    fapply pair, exact M.struct.one_mul, exact M.struct.mul_one },
+  { intro str, fapply Monoid.mk str.1.carrier, 
+    exact monoid.mk str.1.struct.is_set_carrier str.1.struct.mul 
+                    str.1.struct.mul_assoc str.2.1 str.2.2.1 str.2.2.2 },
   { fapply adjointify,
-    { intro SG_struct, fapply Monoid.mk SG_struct.1.carrier, 
-      exact monoid.mk SG_struct.1.struct.is_set_carrier SG_struct.1.struct.mul 
-                      SG_struct.1.struct.mul_assoc SG_struct.2.1 SG_struct.2.2.1 
-                      SG_struct.2.2.2 },
-    { intro SG_struct, hinduction SG_struct with SG mon_struct, hinduction SG with SG, 
+    { intro M, fapply dpair, exact Monoid.to_Semigroup M, fapply dpair, exact 1,
+      fapply pair, exact M.struct.one_mul, exact M.struct.mul_one },
+    { intro M, hinduction M with M M_struct, hinduction M_struct, exact idp },
+    { intro str, hinduction str with SG mon_struct, hinduction SG with SG, 
       hinduction struct, hinduction mon_struct with one laws, 
-      hinduction laws with one_mul mul_one, exact idp },
-    { intro M, hinduction M with M M_struct, hinduction M_struct, exact idp } }  
+      hinduction laws with one_mul mul_one, exact idp } }  
 end
 
-@[hott, reducible, instance]
-def Monoid_obj_system : concrete_obj_system Monoid.to_Semigroup.{u} 
-  (λ (SG : Semigroup_Category.{u}), Σ (one : SG.carrier), (Π (m : SG.carrier), 
-                               (one * m = m)) × (Π (m : SG.carrier), (m * one = m))) :=
+@[hott]
+def Monoid_Semigroup_proj_homotopy : Π (M_str : Σ (M : Semigroup_Category.{u}), 
+  Semigroup_Monoid_str M), sigma.fst M_str = 
+                          Monoid.to_Semigroup (Semigroup_Monoid_str_eqv_Monoid M_str) :=
 begin
-  fapply concrete_obj_system.mk,
-  fapply concrete_equiv.mk, exact Monoid_eqv_Semigroup_one_laws⁻¹ᵉ,
-  intro SG_mon, hinduction SG_mon with SG one_laws, change SG = _, 
-  hinduction SG with SG, hinduction struct, exact idp
+  intro M_str, hinduction M_str with M str, hinduction M with M sg_M,
+  hinduction sg_M, exact idp
 end
 
 @[hott, instance]
-def Monoid_sigma_fibs_are_cat : sigma_fibs_are_cat (λ (SG : Semigroup_Category.{u}), 
-        Σ (one : SG.carrier), (Π (m : SG.carrier), (one * m = m)) × (Π (m : SG.carrier), 
-                                                                       (m * one = m))) :=
+def Monoid_concrete_sigma_system : 
+  concrete_sigma_system Monoid.to_Semigroup.{u} Semigroup_Monoid_str :=
 begin
-  fapply sigma_fibs_are_cat.mk, 
-  { intros SG mon₁ mon₂ g g_eq,
-    hinduction mon₁ with one₁ laws₁, hinduction mon₂ with one₂ laws₂, 
-    fapply sigma.sigma_eq, 
-    { have g_eq_carrier : g.1.1.1 = 𝟙 (Magma.to_Set (Semigroup.to_Magma SG)), from 
-        ap sigma.fst (ap sigma.fst g_eq),
-      change (𝟙 (Magma.to_Set (Semigroup.to_Magma SG)) : SG.carrier -> SG.carrier) one₁ = _,
-      rwr <- g_eq_carrier,
-      have p : (concrete_full_hom_equiv (concrete_obj_system.fib_eqv Monoid.to_Semigroup 
-        (λ (SG : Semigroup_Category.{u}), Σ (one : SG.carrier), (Π (m : SG.carrier), 
-             (one * m = m)) × (Π (m : SG.carrier), (m * one = m))))).map g.1 = g.1, from
-      begin 
-        hinduction SG with SG SG_struct, hinduction SG_struct, 
-        change (𝟙 _) ≫ g.1 ≫ (𝟙 _) = _, rwr is_precat.comp_id, rwr is_precat.id_comp 
-      end,
-      rwr <- p, exact g.2 },
-    { apply pathover_of_tr_eq, exact is_prop.elim _ _ } },
-  { intros SG mon, exact is_prop.elim _ _ }
+  fapply concrete_sigma_system.mk, 
+  { intro M, apply λ eqv, (fiber.fiber_pr1 Semigroup_Monoid_str M)⁻¹ᵉ ⬝e eqv,
+    apply λ eqv, eqv ⬝e (fiber.equiv_precompose Monoid.to_Semigroup 
+                                                      Semigroup_Monoid_str_eqv_Monoid M),
+    apply fiber_homotopy_equiv, exact Monoid_Semigroup_proj_homotopy },
+  { intros M str₁ str₂, fapply equiv.mk,
+    { intro p, change str₁ = str₂ at p, rwr p, exact 𝟙 _ },
+    { fapply adjointify,
+      { hinduction str₁ with one₁ laws₁, hinduction str₂ with one₂ laws₂, 
+        intro h, fapply sigma.sigma_eq,
+        { hinduction M with M sg_M, hinduction sg_M with is_set_M,
+          hinduction h with h_ss h_eq, hinduction h_ss with h h_one,
+          change h = (idtoiso idp).hom ≫ (idtoiso idp).hom at h_eq,
+          change h = 𝟙 (Semigroup.mk M (semigroup.mk is_set_M mul mul_assoc)) at h_eq,
+          change h.1.1 one₁ = one₂ at h_one, change one₁ = one₂, rwr <- h_one,
+          rwr h_eq },
+        { apply pathover_of_tr_eq, exact is_prop.elim _ _ } },
+      { intro h, exact is_prop.elim _ _ },
+      { intro h, exact is_set.elim _ _ } } }
 end
 
 @[hott, instance]
-def Monoid_is_cat : is_cat Monoid.{u} := by apply_instance
+def Monoid_is_cat : is_cat.{u u+1} Monoid.{u} := by apply_instance
 
 @[hott]
 def Monoid_Category : Category :=
