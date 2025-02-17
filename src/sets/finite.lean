@@ -1,41 +1,39 @@
-import sets.subset hott.types.nat.default hott.types.sigma
+import sets.subset hott.types.nat.default hott.types.sigma tuple
 
 universes u u' v w
 hott_theory
 
 namespace hott
-open hott.nat is_trunc trunc subset hott.sigma
+open hott.nat is_trunc trunc subset hott.sigma hott.is_equiv
 
 namespace set
 
 /- We construct finite sets of size `n` as the set of natural numbers `m` with `m < n`.
    With this definition we can easily define maps from finite sets to any carrier type. -/
 @[hott]
-def fin_Set (n : ℕ) : Set.{0} := to_Set (Σ m : ℕ, m < n)
+def fin_equiv_sigma (n : ℕ) : fin n ≃ Σ m : ℕ, m < n :=
+begin
+  fapply equiv.mk,
+  { intro i, exact ⟨i.val, i.is_lt⟩ },
+  { fapply adjointify,
+    { intro i, exact fin.mk i.1 i.2 },
+    { intro i, hinduction i, exact idp },
+    { intro i, hinduction i, exact idp } }
+end
+
+@[hott, instance]
+def fin_is_set (n : ℕ) : is_set (fin n) :=
+  begin fapply is_trunc_equiv_closed_rev 0 (fin_equiv_sigma n), apply_instance end
 
 @[hott]
-def fin_Set_lift {n m : ℕ} (H : n ≤ m) : fin_Set n -> fin_Set m :=
-  assume a, ⟨a.1, nat.lt_of_lt_of_le a.2 H⟩
-
-@[hott, hsimp]
-def fin_Set_desc {n m : ℕ} (b : fin_Set m) (H : b.1 < n) : fin_Set n :=
-  ⟨b.1, H⟩  
-
-@[hott]
-def fin_Set_eq {n : ℕ} {a b : fin_Set n} : a.1 = b.1 -> a = b :=
-  assume p, sigma_eq p (pathover_of_tr_eq (is_prop.elim _ _)) 
-
-@[hott]
-def fin_Set_lift_desc {n m : ℕ} (H1 : n ≤ m) (b : fin_Set m) (H2 : b.1 < n) :
-  fin_Set_lift H1 (fin_Set_desc b H2) = b :=
-begin apply fin_Set_eq, refl end  
+def fin_Set (n : ℕ) : Set.{0} := to_Set (fin n)
 
 @[hott]
 def dec_fin_Set (n : ℕ) : dec_Set :=
 begin 
   fapply dec_Set.mk, exact fin_Set n, 
   intros m₁ m₂, hinduction nat_eq_is_decidable m₁.1 m₂.1 with h val, 
-    apply sum.inl, exact fin_Set_eq val,
+    apply sum.inl, exact fin_eq val,
     apply sum.inr, intro p, exact val (ap _ p)
 end
 
@@ -44,7 +42,7 @@ end
 def fin_Set_1_is_prop : is_prop (fin_Set 1) :=
 begin 
   apply is_prop.mk, intros n m, hinduction n with n p, hinduction m with m q,
-  fapply apd011 dpair,
+  fapply apd011 fin.mk,
   rwr nat.eq_zero_of_le_zero' (nat.le_of_lt_succ p), 
   rwr nat.eq_zero_of_le_zero' (nat.le_of_lt_succ q), 
   apply pathover_of_tr_eq, exact is_prop.elim _ _ 
@@ -88,7 +86,7 @@ begin
   { exact λ x, ⟨0, nat.le_refl 1⟩ },
   { exact λ m, ⟨a, idpath a⟩ },
   { fapply is_set_inverse_of.mk,
-    { intro m, hsimp, apply fin_Set_eq, hsimp, 
+    { intro m, hsimp, apply fin_eq, hsimp, 
       have ps : m.1 = 0 ⊎ m.1 < 0, from nat.eq_sum_lt_of_le (nat.le_of_succ_le_succ m.2),
       hinduction ps, rwr val, hinduction nat.not_lt_zero m.1 val },
     { intro x, hsimp, hinduction x, fapply sigma.sigma_eq, 
@@ -111,7 +109,7 @@ def fin_map_ind {C : Type _} {n : ℕ} : Π (f : fin_Set n -> C) (c : C),
 begin
   intros f c m, fapply dite (m.1 = n), 
   { intro p, exact c },
-  { intro np, exact f (fin_Set_desc m (nat.lt_of_le_prod_ne (nat.le_of_lt_succ m.2) np)) }
+  { intro np, exact f (fin_desc m (nat.lt_of_le_prod_ne (nat.le_of_lt_succ m.2) np)) }
 end 
 
 @[hott, hsimp]
@@ -132,46 +130,46 @@ def fin_card_of (S : Set) [fin : is_finite S] : ℕ := fin.fin_bij.1
 @[hott]
 def fin_Set_bij_succ_map_eq_ineq {n m : ℕ} 
   (bij : bijection (fin_Set (n+1)) (fin_Set (m+1))) {a : fin_Set n} 
-  (p : (bij.map (fin_Set_lift (nat.le_succ n) a)).1 = m) :
+  (p : (bij.map (fin_lift (nat.le_succ n) a)).1 = m) :
   (bij.map ⟨n, nat.le_refl (n+1)⟩).1 < m :=
 have H1 : (bij ⟨n, nat.le_refl (n+1)⟩).1 ≠ m, from 
   begin 
     intro q, apply λ H : a.1 = n, 
                nat.lt_irrefl n (nat.le_trans (nat.le_of_eq (ap nat.succ H⁻¹)) a.2), 
-    have r : (fin_Set_lift (nat.le_succ n) a) = ⟨n, nat.le_refl (n+1)⟩, from 
-          begin apply bij.bij.inj, exact fin_Set_eq (p ⬝ q⁻¹) end,
-    exact ap sigma.fst r
+    have r : (fin_lift (nat.le_succ n) a) = ⟨n, nat.le_refl (n+1)⟩, from 
+          begin apply bij.bij.inj, exact fin_eq (p ⬝ q⁻¹) end,
+    exact ap fin.val r
   end,  
 nat.lt_of_le_prod_ne (le_of_succ_le_succ (bij ⟨n, nat.le_refl (n+1)⟩).2) H1
 
 @[hott]
 def fin_Set_bij_succ_map_neq_ineq {n m : ℕ} 
   (bij : bijection (fin_Set (n+1)) (fin_Set (m+1))) {a : fin_Set n} 
-  (np : (bij.map (fin_Set_lift (nat.le_succ n) a)).1 ≠ m) :
-  (bij (fin_Set_lift (nat.le_succ n) a)).1 < m :=
-nat.lt_of_le_prod_ne (le_of_succ_le_succ (bij (fin_Set_lift (nat.le_succ n) a)).2) np
+  (np : (bij.map (fin_lift (nat.le_succ n) a)).1 ≠ m) :
+  (bij (fin_lift (nat.le_succ n) a)).1 < m :=
+nat.lt_of_le_prod_ne (le_of_succ_le_succ (bij (fin_lift (nat.le_succ n) a)).2) np
 
 @[hott]
 def fin_Set_bij_succ_map {n m : ℕ} (bij : bijection (fin_Set (n+1)) (fin_Set (m+1))) :
   fin_Set n -> fin_Set m :=
 begin
   let f := bij.map, let g := (inv_of_bijection bij).1,
-  intro a, exact (dite ((f (fin_Set_lift (nat.le_succ n) a)).1 = m)
+  intro a, exact (dite ((f (fin_lift (nat.le_succ n) a)).1 = m)
            (λ p, ⟨(f ⟨n, nat.le_refl (n+1)⟩).1, fin_Set_bij_succ_map_eq_ineq bij p⟩) 
-  (λ np, ⟨(f (fin_Set_lift (nat.le_succ n) a)).1, fin_Set_bij_succ_map_neq_ineq bij np⟩))
+  (λ np, ⟨(f (fin_lift (nat.le_succ n) a)).1, fin_Set_bij_succ_map_neq_ineq bij np⟩))
 end  
 
 @[hott]
 def fin_Set_bij_succ_map_eq {n m : ℕ} (bij : bijection (fin_Set (n+1)) (fin_Set (m+1)))
-  {a : fin_Set n} (p : (bij.map (fin_Set_lift (nat.le_succ n) a)).1 = m) :
-  fin_Set_bij_succ_map bij a = fin_Set_desc (bij.map ⟨n, nat.le_refl (n+1)⟩) 
+  {a : fin_Set n} (p : (bij.map (fin_lift (nat.le_succ n) a)).1 = m) :
+  fin_Set_bij_succ_map bij a = fin_desc (bij.map ⟨n, nat.le_refl (n+1)⟩) 
                                  (fin_Set_bij_succ_map_eq_ineq bij p) :=
 begin change dite _ _ _ = _, rwr dif_pos p end
 
 @[hott]
 def fin_Set_bij_succ_map_neq {n m : ℕ} (bij : bijection (fin_Set (n+1)) (fin_Set (m+1)))
-  {a : fin_Set n} (np : ¬(bij.map (fin_Set_lift (nat.le_succ n) a)).1 = m) :
-  fin_Set_bij_succ_map bij a = fin_Set_desc (bij.map (fin_Set_lift (nat.le_succ n) a)) 
+  {a : fin_Set n} (np : ¬(bij.map (fin_lift (nat.le_succ n) a)).1 = m) :
+  fin_Set_bij_succ_map bij a = fin_desc (bij.map (fin_lift (nat.le_succ n) a)) 
                                  (fin_Set_bij_succ_map_neq_ineq bij np) :=
 begin change dite _ _ _ = _, rwr dif_neg np end
 
@@ -181,30 +179,30 @@ def fin_Set_bij_succ_map_inv {n m : ℕ} (bij : bijection (fin_Set (n+1)) (fin_S
                           (fin_Set_bij_succ_map (inv_bijection_of bij)) :=
 begin 
   let f := bij.map, let bij_inv := inv_bijection_of bij, let g := bij_inv.map,
-  intro b, apply fin_Set_eq, 
-  hinduction nat.has_decidable_eq (g (fin_Set_lift (nat.le_succ m) b)).1 n with h p np,
-  { have q : (f (fin_Set_lift (le_succ n) (fin_Set_bij_succ_map bij_inv b))).1 = m, by
+  intro b, apply fin_eq, 
+  hinduction nat.has_decidable_eq (g (fin_lift (nat.le_succ m) b)).1 n with h p np,
+  { have q : (f (fin_lift (le_succ n) (fin_Set_bij_succ_map bij_inv b))).1 = m, by
     begin 
-      rwr fin_Set_bij_succ_map_eq bij_inv p, rwr fin_Set_lift_desc, 
+      rwr fin_Set_bij_succ_map_eq bij_inv p, rwr fin_lift_desc, 
       rwr @is_set_inverse_of.r_inv _ _ f g _
     end,
     rwr fin_Set_bij_succ_map_eq bij q, 
-    change (bij.map ⟨n, nat.le_refl (n + 1)⟩).1 = (fin_Set_lift (le_succ m) b).1,
-    rwr <- @is_set_inverse_of.r_inv _ _ f g _ (fin_Set_lift (le_succ m) b),
-    rwr <- @fin_Set_eq _ _ ⟨n, nat.le_refl (n + 1)⟩ p },
+    change (bij.map ⟨n, nat.le_refl (n + 1)⟩).1 = (fin_lift (le_succ m) b).1,
+    rwr <- @is_set_inverse_of.r_inv _ _ f g _ (fin_lift (le_succ m) b),
+    rwr <- @fin_eq _ _ ⟨n, nat.le_refl (n + 1)⟩ p },
   { rwr fin_Set_bij_succ_map_neq bij_inv np, 
-    have nq : (f (fin_Set_lift (nat.le_succ n) (fin_Set_desc (bij_inv.map 
-                  (fin_Set_lift (le_succ m) b)) (fin_Set_bij_succ_map_neq_ineq 
+    have nq : (f (fin_lift (nat.le_succ n) (fin_desc (bij_inv.map 
+                  (fin_lift (le_succ m) b)) (fin_Set_bij_succ_map_neq_ineq 
                                                            bij_inv np)))).1 ≠ m, by
     begin
-      rwr fin_Set_lift_desc, rwr @is_set_inverse_of.r_inv _ _ f bij_inv.map _, 
+      rwr fin_lift_desc, rwr @is_set_inverse_of.r_inv _ _ f bij_inv.map _, 
       change b.1 ≠ m, 
       exact λH1, nat.lt_irrefl m (nat.le_trans (nat.le_of_eq (ap nat.succ H1⁻¹)) b.2)
     end,  
     rwr fin_Set_bij_succ_map_neq bij nq, 
-    change (bij.map (fin_Set_lift (le_succ n) (fin_Set_desc (bij_inv.map (fin_Set_lift 
+    change (bij.map (fin_lift (le_succ n) (fin_desc (bij_inv.map (fin_lift 
       (le_succ m) b)) (fin_Set_bij_succ_map_neq_ineq bij_inv np)))).1 = b.1, 
-    rwr fin_Set_lift_desc, rwr @is_set_inverse_of.r_inv _ _ bij.map bij_inv.map _ }
+    rwr fin_lift_desc, rwr @is_set_inverse_of.r_inv _ _ bij.map bij_inv.map _ }
 end    
 
 @[hott]
@@ -303,11 +301,9 @@ def fin_Set_is_decidable {n : ℕ} : Π (m₁ m₂ : fin_Set n), (m₁ = m₂) �
 begin
   intros m₁ m₂, hinduction m₁ with m₁ bd₁, hinduction m₂ with m₂ bd₂, 
   hinduction nat_eq_is_decidable m₁ m₂, 
-    apply sum.inl, fapply sigma_eq, exact val, apply pathover_of_tr_eq, 
-                                               exact is_prop.elim _ _,
-    apply sum.inr, intro p, exact val (ap sigma.fst p)
+  { apply sum.inl, fapply fin_eq, exact val },
+  { apply sum.inr, intro p, exact val (ap fin.val p) }
 end
-
 
 /- For first-order languages we need finiteness of decidable subsets. -/
 @[hott]
@@ -392,9 +388,9 @@ begin
   { intros a f eq, hinduction H (f ⟨n, nat.le_refl (n+1)⟩) a,
       exact dpair ⟨n, nat.le_refl (n+1)⟩ a_1, 
       rwr fin_map_to_dec_sset_ind f a_1 at eq, 
-      let peq := ih a (λ (m : (fin_Set n)), f ⟨m.fst, nat.le.step m.snd⟩) eq, 
+      let peq := ih a (λ (m : (fin_Set n)), f ⟨m.val, nat.le.step m.is_lt⟩) eq, 
       fapply sigma.mk,  
-        exact sigma.mk peq.1.1 (nat.le.step peq.1.2),
+        exact fin.mk peq.1.1 (nat.le.step peq.1.2),
         exact peq.2 }
 end 
 
@@ -406,19 +402,16 @@ begin
   intro n, hinduction n, 
   { intros a f m_eq, hinduction nat.not_lt_zero m_eq.1.1 m_eq.1.2 },
   { intros a f m_eq, hinduction H (f ⟨n, nat.le_refl (n+1)⟩) a, 
-      change @decidable.rec _ (λs, Two) _ _ (H (f ⟨n, nat.le_refl (n+1)⟩) a) = _, rwr _h, 
-      rwr fin_map_to_dec_sset_ind f a_1, fapply ih, 
+    { change @decidable.rec _ (λs, Two) _ _ (H (f ⟨n, nat.le_refl (n+1)⟩) a) = _, rwr _h }, 
+    { rwr fin_map_to_dec_sset_ind f a_1, fapply ih, 
       hinduction nat.eq_sum_lt_of_le m_eq.1.2,
-        have p : m_eq.1 = ⟨n, nat.le_refl (n + 1)⟩, from 
-          begin 
-            fapply sigma.sigma_eq, exact nat.succ.inj val, 
-            apply pathover_of_tr_eq, exact is_prop.elim _ _
-          end,
-        rwr <- p at a_1, hinduction a_1 m_eq.2,
-        fapply sigma.mk,
-          exact sigma.mk m_eq.1.1 (nat.le_of_succ_le_succ val),
-          rwr <- m_eq.2, apply ap f, hinduction m_eq.1, 
-          fapply sigma.sigma_eq, refl, apply pathover_of_tr_eq, exact is_prop.elim _ _ }
+      { have p : m_eq.1 = ⟨n, nat.le_refl (n + 1)⟩, from 
+          begin fapply fin_eq, exact nat.succ.inj val end,
+        rwr <- p at a_1, hinduction a_1 m_eq.2 },
+      { fapply sigma.mk,
+        { exact fin.mk m_eq.1.1 (nat.le_of_succ_le_succ val) },
+        { rwr <- m_eq.2, apply ap f, hinduction m_eq.1, 
+          fapply fin_eq, refl } } } }
 end 
 
 @[hott, instance]
