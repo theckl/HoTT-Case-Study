@@ -532,7 +532,7 @@ begin
 end
 
 @[hott]
-def product_of_products_is_product {n : ℕ} (A : tuple Set.{u} n) (P : Set.{u})
+def set_product_of_products_is_product {n : ℕ} (A : tuple Set.{u} n) (P : Set.{u})
   {m : ℕ} (B : tuple Set.{u} m) (Q : Set.{u}) : is_cons_set_tuple_product A P ->
   is_cons_set_tuple_product B Q -> is_cons_set_tuple_product (tuple.append A B) (P × Q) :=
 begin 
