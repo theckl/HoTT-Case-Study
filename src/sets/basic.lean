@@ -1,11 +1,11 @@
-import hott.init init2 hott.types.trunc prop_logic hott.types.prod hott.hit.quotient 
-       hott.algebra.relation types2 hott.types.nat.order hott.function
+import hott.init hott.types.trunc prop_logic hott.types.prod hott.hit.quotient 
+       hott.algebra.relation types2 hott.types.nat.order hott.function tuple
 
 universes u u' v w
 hott_theory
 
 namespace hott
-open is_trunc trunc equiv is_equiv hott.prod hott.quotient hott.sigma hott.relation 
+open is_trunc trunc equiv hott.is_equiv hott.prod hott.quotient hott.sigma hott.relation 
      nat 
 
 namespace set
@@ -651,6 +651,16 @@ def Prod_set.fst (A : Set) (B : Set) : Prod_Set A B -> A := prod.fst
 @[hott]
 def Prod_set.snd (A : Set) (B : Set) : Prod_Set A B -> B := prod.snd
 
+/- The Cartesian product of finitely many sets, seen as the type of tuples with 
+   components in these sets, is a set. -/
+@[hott, instance]
+def fin_prod_of_sets_is_set {n : ℕ} : Π (B : tuple Set n), is_set (Π i : fin n, B i) :=
+  λ B, is_set_dmap
+
+@[hott]
+def tuple_Set {n : ℕ} (A : tuple Set n) : Set :=
+  Set.mk (Π i : fin n, A i) (fin_prod_of_sets_is_set A)
+
 /- Pathover equalities of set elements are equal. -/
 @[hott]
 def set_po_eq {A : Type _} {B : A -> Set} {a₁ a₂ : A} {p : a₁ = a₂} {b₁ : B a₁} {b₂ : B a₂}
@@ -755,7 +765,7 @@ begin
                                       (decode_eq_equiv refl_code decode c d) (H c d)
 end
 
-/- Natural numnbers form a set. We need the encode-decode method. -/
+/- Natural numbers form a set. We need the encode-decode method. -/
 @[hott]
 def nat_code : ℕ -> ℕ -> Type _
 | 0     0     := One 
@@ -806,6 +816,26 @@ begin
         exact sum.inl (ap succ val),
         apply sum.inr, intro p, exact val (hott.nat.succ.inj p)
 end   
+
+/- Finite sets are sets. -/
+@[hott]
+def fin_eqv_sigma (n : nat) : fin n ≃ Σ (m : ℕ), m < n :=
+begin
+  fapply equiv.mk,
+  { intro m, hinduction m with m is_lt, exact ⟨m, is_lt⟩ },
+  { fapply adjointify,
+    { intro m, hinduction m with m is_lt, exact fin.mk m is_lt },
+    { intro m, hinduction m with m is_lt, exact idp },
+    { intro m, hinduction m with m is_lt, exact idp } }
+end
+
+
+@[hott, instance]
+def fin_is_set (n : nat) : is_set (fin n) :=
+begin
+  apply is_trunc_equiv_closed_rev 0 (fin_eqv_sigma n), 
+  fapply dprod_of_Sets_is_set'
+end
 
 /- Lists of elements in a set form a set. -/
 @[hott]
