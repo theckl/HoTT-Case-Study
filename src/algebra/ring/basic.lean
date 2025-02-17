@@ -22,7 +22,7 @@ attribute [instance] CommRing.struct
 /- For later calculations, the ring laws should be available with `0`, `1`, `*`, 
    `+`, `-` and `⁻¹` - the `rwr`-tactic does not accept these notations from the 
    commutative ring structure directly. -/
-@[hott]
+@[hott] --[GEVE]
 structure comm_ring_str {R : CommRing} :=
   (add_assoc : Π (r₁ r₂ r₃ : R), (r₁ + r₂) + r₃ = r₁ + (r₂ + r₃))
   (add_zero : Π r : R, r + 0 = r)
@@ -44,12 +44,12 @@ def comm_ring_laws {R : CommRing} : @comm_ring_str R :=
                    comm_ring.right_distrib comm_ring.mul_comm
 
 /- Units and their unique inverses in rings. -/
-@[hott]
+@[hott]  --[GEVE]
 structure is_unit {R : CommRing} (u : R) :=
   (inv : R)
   (has_inv : inv * u = 1)
 
-@[hott]
+@[hott]  --[GEVE]
 def inverse_is_unique {R : CommRing} (u : R) :
   Π (inv₁ inv₂ : R), inv₁ * u = 1 -> inv₂ * u = 1 -> inv₁ = inv₂ :=
 begin
@@ -203,30 +203,63 @@ begin
   hinduction abg_R, exact idp
 end
 
+@[hott, reducible]
+def AddAbGroup_CommRing_str_eqv_fiber : Π (R : AddAbGroup_Category.{u}),
+  AddAbGroup_CommRing_str R ≃ fiber CommRing.to_AddAbGroup R :=
+λ R, (fiber.fiber_pr1 AddAbGroup_CommRing_str R)⁻¹ᵉ ⬝e 
+     (fiber_homotopy_equiv CommRing_AddAbGroup_proj_homotopy R) ⬝e 
+     (fiber.equiv_precompose CommRing.to_AddAbGroup AddAbGroup_CommRing_str_eqv_CommRing R)  
+
+@[hott]
+def AddAbGroup_CommRing_str_to_fiber_eq {R : AddAbGroup_Category.{u}} : 
+  Π (str : AddAbGroup_CommRing_str R), 
+    ((AddAbGroup_CommRing_str_eqv_fiber R).to_fun str).2 =
+            ((fiber_homotopy_equiv CommRing_AddAbGroup_proj_homotopy R).to_fun 
+                                                            (fiber.mk ⟨R,str⟩ idp)).2 :=
+λ str, idp
+
+@[hott]
+def AddAbGroup_CommRing_str_to_fiber_idp {R : Type u} {is_set_R : is_set R}
+  {mul : R -> R -> R} {mul_assoc : Π r s t, mul (mul r s) t = mul r (mul s t)}
+  {one : R} {one_mul : Π r, mul one r = r} {mul_one : Π r, mul r one = r}
+  {inv : R -> R} {mul_left_inv : Π r, mul (inv r) r = one} 
+  {mul_comm : Π r s, mul r s = mul s r} : 
+  let R' := AddAbGroup.mk R (ab_group.mk is_set_R mul mul_assoc one one_mul mul_one
+                                         inv mul_left_inv mul_comm) in
+  Π (str : AddAbGroup_CommRing_str R'), ((fiber_homotopy_equiv 
+        CommRing_AddAbGroup_proj_homotopy R').to_fun (fiber.mk ⟨R',str⟩ idp)).2 = idp :=
+λ str, idp
+
 @[hott, instance]
 def CommRing_concrete_sigma_system : 
   concrete_sigma_system CommRing.to_AddAbGroup.{u} AddAbGroup_CommRing_str :=
 begin
   fapply concrete_sigma_system.mk, 
-  { intro R, apply λ eqv, (fiber.fiber_pr1 AddAbGroup_CommRing_str R)⁻¹ᵉ ⬝e eqv,
-    apply λ eqv, eqv ⬝e (fiber.equiv_precompose CommRing.to_AddAbGroup 
-                                                AddAbGroup_CommRing_str_eqv_CommRing R),
-    apply fiber_homotopy_equiv, exact CommRing_AddAbGroup_proj_homotopy },
-  { intros R str₁ str₂, fapply equiv.mk,
+  { intro R, exact AddAbGroup_CommRing_str_eqv_fiber R },
+  { intro R, intros str₁ str₂, fapply equiv.mk,
     { intro p, change str₁ = str₂ at p, rwr p, exact 𝟙 _ },
     { fapply adjointify,
-      { hinduction str₁ with ops₁ laws₁, hinduction str₂ with ops₂ laws₂,
-        hinduction ops₁ with mul₁ one₁, hinduction ops₂ with mul₂ one₂,
-        intro h, fapply sigma.sigma_eq,
-        { hinduction R with R abg_R, hinduction abg_R with is_set_R,
-          hinduction h with h_ss h_eq, hinduction h_ss with h h_laws,
+      { intro h, hinduction h with h_ss h_eq, hinduction h_ss with h h_laws,
+        rwr AddAbGroup_CommRing_str_to_fiber_eq str₁ at h_eq,
+        rwr AddAbGroup_CommRing_str_to_fiber_eq str₂ at h_eq,
+        hinduction R with R abg_R, hinduction abg_R,
+        rwr AddAbGroup_CommRing_str_to_fiber_idp at h_eq,
+        rwr AddAbGroup_CommRing_str_to_fiber_idp at h_eq,
+        change h = _ at h_eq,
+        have h_eq' : h.1.1.1.1.1.1 = 𝟙 (Set.mk R is_set_carrier), by rwr h_eq,
+        fapply sigma.sigma_eq,
+        { hinduction str₁ with ops₁ laws₁, hinduction str₂ with ops₂ laws₂,
+          hinduction ops₁ with mul₁ one₁, hinduction ops₂ with mul₂ one₂,
           hinduction h_laws with h_one h_mul,
-          --change h = (idtoiso idp).hom ≫ (idtoiso idp).hom at h_eq,
-          --change h = 𝟙 (AddAbGroup.mk R (addabgroup.mk is_set_R _ _ _ _ _ _)) at h_eq,
-          change h.1.1.1.1.1.1 one₁ = one₂ at h_one, 
-          --change one₁ = one₂, rwr <- h_one,
-          --rwr h_eq
-          sorry },
+          change h.1.1.1.1.1.1 one₁ = one₂ at h_one,
+          change Π r₁ r₂, h.1.1.1.1.1.1 (mul₁ r₁ r₂) = 
+                                            mul₂ (h.1.1.1.1.1.1 r₁) (h.1.1.1.1.1.1 r₂) at h_mul,
+          fapply ap011 (mul_monoid_ops_str.mk),
+          { apply eq_of_homotopy2, intros r₁ r₂, 
+            change _ = mul₂ ((𝟙 (Set.mk R is_set_carrier) : R -> R) r₁) 
+                            ((𝟙 (Set.mk R is_set_carrier) : R -> R) r₂),
+            rwr <- h_eq', rwr <- h_mul, rwr h_eq' },
+          { rwr <- h_one, rwr h_eq' } },
         { apply pathover_of_tr_eq, exact is_prop.elim _ _ } },
       { intro h, exact is_prop.elim _ _ },
       { intro h, exact is_set.elim _ _ } } }
@@ -239,48 +272,74 @@ def CommRing_is_cat : is_cat.{u u+1} CommRing.{u} := by apply_instance
 def CommRing_Category : Category :=
   Category.mk CommRing.{u} CommRing_is_cat
 
-/-
-@[hott, instance]
-def CommRing_sigma_fibs_are_cat : 
-  sigma_fibs_are_cat (λ (R : AddAbGroup_Category.{u}), 
-                   Σ (ops : mul_monoid_ops_str R), mul_monoid_laws_str R ops) :=
+/- For calculations with ring homomorphisms, it is more effective to extract the laws
+   of a homomorphism. -/
+@[hott, reducible]
+def CommRing_to_Set_functor : CommRing ⥤ Set :=
 begin
-  fapply sigma_fibs_are_cat.mk,
-  { intros G mon₁ mon₂ g g_eq,
-    have p : ((concrete_full_hom_equiv (concrete_obj_system.fib_eqv 
-                CommRing.to_AddAbGroup (λ (R : ↥AddAbGroup_Category), 
-          Σ (ops : mul_monoid_ops_str R), mul_monoid_laws_str R ops))).map 
-                                       g.1).1.1.1.1.1.1 = g.1.1.1.1.1.1.1, from 
-    begin 
-      hinduction G with G G_struct, hinduction G_struct, 
-      apply λ p', ap sigma.fst (ap sigma.fst (ap sigma.fst (ap sigma.fst 
-                            (ap sigma.fst (ap sigma.fst p'))))), 
-      --hinduction laws₁, hinduction laws₂, 
-      change _ ≫ g.1 ≫ _ = _, 
-      --rwr is_precat.comp_id, rwr is_precat.id_comp 
-      sorry
-    end, 
-    have g_eq_carrier : g.1.1.1.1.1.1.1 = (𝟙 (Magma.to_Set _)), from 
-          ap sigma.fst (ap sigma.fst (ap sigma.fst (ap sigma.fst (ap sigma.fst 
-                                                       (ap sigma.fst g_eq))))),
-    hinduction mon₁ with ops₁ laws₁, hinduction mon₂ with ops₂ laws₂,
-    fapply sigma.sigma_eq,
-    { hinduction ops₁ with mul₁ one₁, hinduction ops₂ with mul₂ one₂,
-      fapply ap011 mul_monoid_ops_str.mk,
-      { apply eq_of_homotopy2, intros r₁ r₂,
-        have q : g.1.1.1.1.1.1.1 (mul₁ r₁ r₂) = mul₁ r₁ r₂, from 
-          ap10 g_eq_carrier (mul₁ r₁ r₂),
-        rwr <- q, rwr <- p, --rwr g.2.2, 
-        have q₁ : g.1.1.1.1.1.1.1 r₁ = r₁, from ap10 g_eq_carrier r₁,
-        have q₂ : g.1.1.1.1.1.1.1 r₂ = r₂, from ap10 g_eq_carrier r₂,
-        rwr <- q₁, rwr <- q₂, sorry },
-      { have q : g.1.1.1.1.1.1.1 one₁ = one₁, from ap10 g_eq_carrier one₁,                                               
-        rwr <- q, rwr <- p, exact g.2.1 } },
-    { apply pathover_of_tr_eq, exact is_prop.elim _ _ } },
-  { intros G mon, apply λ H, @is_set.elim _ H, 
-    exact set.dprod_of_Sets_is_set' _ _ }
-end
--/
+  apply λ F, concrete_forget_functor (CommRing.to_AddAbGroup) ⋙ F,
+  apply λ F, concrete_forget_functor (AddAbGroup.to_AbGroup) ⋙ F,
+  apply λ F, concrete_forget_functor (AbGroup.to_Group) ⋙ F,
+  exact Group_to_Set_functor
+end   
+
+@[hott]
+def CommRing_to_Set_map_comp {R S T : CommRing} (f : R ⟶ S) (g : S ⟶ T) :
+  Π (l : CommRing_to_Set_functor.obj R), 
+       (CommRing_to_Set_functor.map f ≫ CommRing_to_Set_functor.map g) l =
+        CommRing_to_Set_functor.map g (CommRing_to_Set_functor.map f l) := 
+λ l, idp 
+
+@[hott, instance]
+def CommRing_Set_has_add (R : CommRing) : has_add (CommRing_to_Set_functor.obj R) :=
+  begin apply has_add.mk, change R -> R -> R, intros r₁ r₂, exact r₁ + r₂ end
+
+@[hott, instance]
+def CommRing_Set_has_zero (R : CommRing) : has_zero (CommRing_to_Set_functor.obj R) :=
+  begin apply has_zero.mk, change ↥R, exact 0 end
+
+@[hott, instance]
+def CommRing_Set_has_neg (R : CommRing) : has_neg (CommRing_to_Set_functor.obj R) :=
+  begin apply has_neg.mk, change R -> R, intro r, exact -r end  
+
+@[hott, instance]
+def CommRing_Set_has_mul (R : CommRing) : has_mul (CommRing_to_Set_functor.obj R) :=
+  begin apply has_mul.mk, change R -> R -> R, intros r₁ r₂, exact r₁ * r₂ end
+
+@[hott, instance]
+def CommRing_Set_has_one (R : CommRing) : has_one (CommRing_to_Set_functor.obj R) :=
+  begin apply has_one.mk, change ↥R, exact 1 end  
+
+@[hott]  --[GEVE]
+structure comm_ring_hom_str {R S : CommRing} (f : R.carrier -> S.carrier) :=
+  (add_comp : Π (r₁ r₂ : R), f (r₁ + r₂) = f r₁ + f r₂)
+  (zero_comp : f 0 = 0)
+  (mul_comp : Π (r₁ r₂ : R), f (r₁ * r₂) = f r₁ * f r₂)
+  (one_comp : f 1 = 1) 
+
+@[hott]
+def comm_ring_hom_laws {R S : CommRing} (f : R ⟶ S) : 
+  comm_ring_hom_str (CommRing_to_Set_functor.map f) :=
+comm_ring_hom_str.mk f.1.1.1.1.1.1.2 f.1.1.1.1.2 f.2.2 f.2.1  
+
+@[hott]  --[GEVE]
+def comm_ring_hom.mk {R S : CommRing} (f : R -> S) : 
+  comm_ring_hom_str f -> (R ⟶ S) :=
+λ str, ⟨⟨⟨⟨⟨⟨⟨f, str.add_comp⟩, true.intro⟩, str.zero_comp⟩, true.intro⟩, true.intro⟩, 
+                             true.intro⟩, ⟨str.one_comp, str.mul_comp⟩⟩ 
+
+@[hott] 
+def CommRing_to_Set_functor_is_faithful : is_faithful_functor (CommRing_to_Set_functor) :=
+begin 
+  fapply faithful_is_trans (concrete_forget_functor (CommRing.to_AddAbGroup)), 
+  { apply @concrete_forget_functor_is_faithful _ _ CommRing.to_AddAbGroup },
+  { fapply faithful_is_trans (concrete_forget_functor (AddAbGroup.to_AbGroup)), 
+    { apply @concrete_forget_functor_is_faithful _ _ AddAbGroup.to_AbGroup },
+    { fapply faithful_is_trans (concrete_forget_functor (AbGroup.to_Group)),
+      { apply @concrete_forget_functor_is_faithful _ _ AbGroup.to_Group },
+      { apply Group_to_Set_functor_is_faithful } } } 
+end 
+
 end algebra
 
 end hott
