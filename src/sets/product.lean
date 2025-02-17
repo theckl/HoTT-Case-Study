@@ -1,4 +1,4 @@
-import hott.init sets.basic
+import sets.basic
 
 universes u v w
 hott_theory
@@ -27,6 +27,15 @@ begin
     { intros a b, fapply prod.mk,
       { exact (is_prod.free (is_prod.gens (is_prod.pair a b)).2.2).1⁻¹ },
       { exact (is_prod.free (is_prod.gens (is_prod.pair a b)).2.2).2⁻¹ } } }                                                         
+end
+
+@[hott]
+def cons_prod_pair_eq {A B P : Type _} (is_prod : is_cons_product A B P) :
+  Π (p : P), 
+      p = is_prod.pair ((cons_prod_proj is_prod).1 p) ((cons_prod_proj is_prod).2.1 p) :=
+begin 
+  intro p, change p = is_prod.pair (is_prod.gens p).1 (is_prod.gens p).2.1, 
+  exact (is_prod.gens p).2.2 
 end
 
 @[hott]  --[GEVE]
@@ -91,6 +100,32 @@ structure is_product (A B P : Type _) :=
   (snd : P -> B)
   (pair_exists : Π (a : A) (b : B), Σ (p : P), (fst p = a) × (snd p = b))
   (pair_unique : Π (p p' : P), fst p = fst p' -> snd p = snd p' -> p = p')
+
+@[hott]
+def cons_product_equiv_product (A B P : Type _) : 
+  is_cons_product A B P <-> is_product A B P :=
+begin
+  fapply prod.mk,
+  { intro is_prod, fapply is_product.mk,
+    { exact (cons_prod_proj is_prod).1 },
+    { exact (cons_prod_proj is_prod).2.1 },
+    { intros a b, fapply dpair (is_prod.pair a b), fapply prod.mk,
+      { exact ((cons_prod_proj is_prod).2.2 a b).1 },
+      { exact ((cons_prod_proj is_prod).2.2 a b).2 } },
+    { intros p p' fst_eq snd_eq, 
+      rwr cons_prod_pair_eq is_prod p, rwr cons_prod_pair_eq is_prod p',
+      fapply ap011 is_prod.pair, exact fst_eq, exact snd_eq } },
+  { intro is_prod, fapply is_cons_product.mk,
+    { intros a b, exact (is_prod.pair_exists a b).1 },
+    { intro p, fapply dpair (is_prod.fst p), fapply dpair (is_prod.snd p), 
+      change p = (is_prod.pair_exists _ _).1, fapply is_prod.pair_unique,
+      exact (is_prod.pair_exists _ _).2.1⁻¹, exact (is_prod.pair_exists _ _).2.2⁻¹ },
+    { intros a₁ a₂ b₁ b₂ pair_eq, fapply prod.mk, 
+      { rwr <- (is_prod.pair_exists a₁ b₁).2.1, rwr <- (is_prod.pair_exists a₂ b₂).2.1,
+        exact ap is_prod.fst pair_eq },
+      { rwr <- (is_prod.pair_exists a₁ b₁).2.2, rwr <- (is_prod.pair_exists a₂ b₂).2.2,
+        exact ap is_prod.snd pair_eq } } }
+end
 
 @[hott, reducible]
 def type_product_is_product (A B : Type _) : is_product A B (A × B) :=
@@ -277,221 +312,242 @@ begin
             (product_eq_contr A B) P_prod)⁻¹ᶠ (product_eq_proj_eq P_prod) }
 end
 
-/- Characterisations of triple products by universal properties derived from the 
-   constructors and from the inductive principle are equivalent, but not the most effective 
-   ones: Iterating the constructive characterisation of the ordinary product of two 
-   factors gives an easy proof of uniqueness of triple products of sets. -/
-@[hott]  --[GEVE]
-structure is_triple_product (A B C P : Type _) := 
-  (fst : P -> A)
-  (snd : P -> B)
-  (trd : P -> C)
-  (triple_exists : Π (a : A) (b : B) (c : C), 
-                                     Σ (p : P), (fst p = a) × (snd p = b) × (trd p = c))
-  (triple_unique : Π (p p' : P), (fst p = fst p') -> (snd p = snd p') -> (trd p = trd p') ->
-                                  p = p')
+/- Characterisations of products of finitely many sets by universal properties derived from the 
+   constructors and from the inductive principle are equivalent. -/
+@[hott]
+structure is_cons_set_tuple_product {n : ℕ} (A : tuple Set.{u} n) (P : Set.{u}) :=
+  (tuple : (Π (i : fin n), A i) -> P)
+  (gens : Π (p : P), Σ (t : Π (i : fin n), A i), tuple t = p)
+  (free : Π (s t : Π (i : fin n), A i), (tuple s = tuple t) -> s = t)
 
-@[hott]  --[GEVE]
-structure is_triple_product' (A B C P : Type _) := 
-  (fst : P -> A)
-  (snd : P -> B)
-  (trd : P -> C)
-  (factors : Π {Q : Type _} {qA : Q -> A} {qB : Q -> B} {qC : Q -> C}, Σ (qP : Q -> P), 
-          Π (q : Q), (fst (qP q) = qA q) × (snd (qP q) = qB q) × (trd (qP q) = qC q))
-  (unique : Π {Q : Type _} {qA : Q -> A} {qB : Q -> B} {qC : Q -> C} (qP qP' : Q -> P),
-           fst ∘ qP = fst ∘ qP' -> snd ∘ qP = snd ∘ qP' -> trd ∘ qP = trd ∘ qP' -> qP = qP')
+@[hott]
+def tuple_is_set_product {n : ℕ} (A : tuple Set.{u} n) : 
+  is_cons_set_tuple_product A (set.tuple_Set A) :=
+begin
+  fapply is_cons_set_tuple_product.mk,
+  { exact id },
+  { intro p, exact ⟨p, idp⟩ },
+  { intros s t q, exact q }
+end
 
-@[hott, reducible] --[GEVE]
-def equiv_char_of_triple_products (A B C P : Type _) : 
-  is_triple_product A B C P <-> is_triple_product' A B C P :=
-begin  
+@[hott]
+structure is_set_tuple_product {n : ℕ} (A : tuple Set.{u} n) (P : Set.{u}) :=
+  (proj : Π (i : fin n), P -> A i)
+  (tuple_exists : Π (t : Π (i : fin n), A i), Σ (p : P), Π (i : fin n), proj i p = t i)
+  (tuple_unique : Π (p p' : P), (Π (i : fin n), proj i p = proj i p') -> p = p')
+
+@[hott]
+def is_cons_equiv_is_set_tuple_product {n : ℕ} (A : tuple Set.{u} n) (P : Set.{u}) :
+  is_cons_set_tuple_product A P <-> is_set_tuple_product A P :=
+begin
   fapply prod.mk,
-  { intro is_prod, fapply is_triple_product'.mk,
-    { exact is_prod.fst },
-    { exact is_prod.snd },
-    { exact is_prod.trd },
-    { intros Q qA qB qC, fapply dpair,
-      { intro q, exact (is_prod.triple_exists (qA q) (qB q) (qC q)).1 },
-      { intro q, fapply prod.mk, 
-        { exact (is_prod.triple_exists (qA q) (qB q) (qC q)).2.1 }, 
-        { exact (is_prod.triple_exists (qA q) (qB q) (qC q)).2.2 } } },
-    { intros Q qA qB qC qP qP' qAP qBP qCP, apply eq_of_homotopy, intro q,
-      exact @is_triple_product.triple_unique _ _ _ _ is_prod (qP q) (qP' q) 
-              (ap10 qAP q) (ap10 qBP q) (ap10 qCP q) } },
-  { intro is_prod', fapply is_triple_product.mk,
-    { exact is_prod'.fst },
-    { exact is_prod'.snd },
-    { exact is_prod'.trd },
-    { intros a b c, fapply dpair,
-      { exact (@is_triple_product'.factors _ _ _ _ is_prod' _ (@One.rec (λ n, A) a) 
-                            (@One.rec (λ n, B) b) (@One.rec (λ n, C) c)).1 One.star },
-      { exact (@is_triple_product'.factors _ _ _ _ is_prod' _ (@One.rec (λ n, A) a) 
-                            (@One.rec (λ n, B) b) (@One.rec (λ n, C) c)).2 One.star } },
-    { intros p p' pa pb pc, 
-      let qA := @One.rec (λ n, A) (is_prod'.fst p), 
-      let qB := @One.rec (λ n, B) (is_prod'.snd p),
-      let qC := @One.rec (λ n, C) (is_prod'.trd p),
+  { intro is_prod, fapply is_set_tuple_product.mk,
+    { intros i p, exact (is_prod.gens p).1 i },
+    { intro t, fapply dpair (is_prod.tuple t), apply apd10,
+      apply is_prod.free, exact (is_prod.gens _).2 },
+    { intros p p' tuple_eq, rwr <- (is_prod.gens p).2, rwr <- (is_prod.gens p').2,
+      apply ap is_prod.tuple, apply eq_of_homotopy, exact tuple_eq } },
+  { intro is_prod, fapply is_cons_set_tuple_product.mk,
+    { intro t, exact (is_prod.tuple_exists t).1 },
+    { intro p, fapply dpair,
+      { exact λ i, is_prod.proj i p },
+      { apply is_prod.tuple_unique, intro i, exact ((is_prod.tuple_exists _).2 i) } },
+    { intros s t tuple_eq, apply eq_of_homotopy, intro i,
+      rwr <- ((is_prod.tuple_exists s).2 i), rwr <- ((is_prod.tuple_exists t).2 i), 
+      exact ap (is_prod.proj i) tuple_eq } }
+end
+
+@[hott]
+structure is_univ_set_tuple_product {n : ℕ} (A : tuple Set.{u} n) (P : Set.{u}) :=
+  (proj : Π (i : fin n), P -> A i)
+  (factors : Π {Q : Set.{u}} (qA : Π (i : fin n), Q -> A i), Σ (qP : Q -> P),
+               Π (q : Q) (i : fin n), proj i (qP q) = qA i q)
+  (unique : Π {Q : Set.{u}} (qP qP' : Q -> P), (Π (i : fin n), 
+              (proj i) ∘ qP = (proj i) ∘ qP') -> qP = qP')
+
+@[hott]
+def set_tuple_product_equiv_univ {n : ℕ} (A : tuple Set.{u} n) (P : Set.{u}) : 
+  is_set_tuple_product A P <-> is_univ_set_tuple_product A P :=
+begin
+  fapply prod.mk,
+  { intro is_prod, fapply is_univ_set_tuple_product.mk,
+    { exact is_prod.proj },
+    { intros Q qA, fapply dpair,
+      { intro q, exact (is_prod.tuple_exists (λ i, qA i q)).1 },
+      { intros q i, exact (is_prod.tuple_exists _).2 i } },
+    { intros Q qP qP' proj_eq, apply eq_of_homotopy, intro q,
+      apply is_prod.tuple_unique, intro i, exact ap10 (proj_eq i) q } },
+  { intro is_prod, fapply is_set_tuple_product.mk,
+    { exact is_prod.proj },
+    { intro t, fapply dpair,
+      { exact (@is_univ_set_tuple_product.factors _ _ _ is_prod One_Set 
+                                         (λ i, @One.rec (λ n, A i) (t i))).1 One.star },
+      { exact (@is_univ_set_tuple_product.factors _ _ _ is_prod One_Set 
+                                         (λ i, @One.rec (λ n, A i) (t i))).2 One.star } },
+    { intros p p' proj_eq, 
       let qP := @One.rec (λ n, P) p, let qP' := @One.rec (λ n, P) p',
-      let qAP := @One.rec (λ n, is_prod'.fst (qP n) = is_prod'.fst (qP' n)) pa,
-      let qBP := @One.rec (λ n, is_prod'.snd (qP n) = is_prod'.snd (qP' n)) pb,
-      let qCP := @One.rec (λ n, is_prod'.trd (qP n) = is_prod'.trd (qP' n)) pc,
-      exact @ap10 One P _ _ (@is_triple_product'.unique _ _ _ _ is_prod' _ qA qB qC qP qP'
-               (eq_of_homotopy qAP) (eq_of_homotopy qBP) (eq_of_homotopy qCP)) One.star } }
-end                                                                     
+      change qP One.star = qP' One.star, apply λ q, apd10 q One.star, 
+      apply @is_univ_set_tuple_product.unique _ _ _ is_prod One_Set, 
+      intro i, apply eq_of_homotopy, intro o,
+      have op : o = One.star, from @is_prop.elim _ One_is_prop _ _, rwr op,
+      exact proj_eq i } }
+end
+
+/- The product of two sets can be characterised by 2-tuples = pairs, or directly from the 
+   factors. -/
+@[hott]
+def is_tuple_product_equiv_is_pair_product {A B : Set.{u}} (P : Set.{u}) :
+  is_cons_set_tuple_product (tuple_of_list [A, B]) P <-> is_cons_product A B P :=
+begin
+  fapply prod.mk,
+  { intro is_prod, fapply is_cons_product.mk,
+    { intros a b, exact is_prod.tuple (λ i, cast (tuple_of_list.map 
+                                 (λ A : Set, A.carrier) [A, B] i) (fin_map_two a b _)) },
+    { intro p, fapply dpair,
+      { exact (is_prod.gens p).1 (fin.mk 0 (nat.zero_lt_succ 1)) },
+      { fapply dpair,
+        { exact (is_prod.gens p).1 (fin.mk 1 (nat.le_refl 2)) },
+        { apply λ q, (is_prod.gens p).2⁻¹ ⬝ q, apply ap is_prod.tuple, 
+          apply eq_of_homotopy, intro i, change _ = hott.eq.cast _ _, 
+          hinduction i with i is_lt, hinduction i, 
+          { change _ = hott.eq.cast (@idp _ A.carrier) ((is_prod.gens p).1 (fin.mk 0 _)),
+            have q : is_lt = nat.zero_lt_succ 1, from is_prop.elim _ _, rwr q },
+          { hinduction n,
+            { change _ = hott.eq.cast _ ((is_prod.gens p).1 (fin.mk 1 _)), 
+              have q : is_lt = nat.le_refl 2, from is_prop.elim _ _, rwr q },
+            { change n + 2 < 2 + 0 at is_lt, rwr nat.add_comm n 2 at is_lt, 
+              hinduction nat.not_lt_zero n (nat.lt_of_add_lt_add_left is_lt) } } } } },
+    { intros a₁ a₂ b₁ b₂ tuple_eq, fapply prod.mk,
+      exact apd10 (is_prod.free _ _ tuple_eq) (fin.mk 0 (nat.zero_lt_succ 1)), 
+      exact apd10 (is_prod.free _ _ tuple_eq) (fin.mk 1 (nat.le_refl 2)) } },
+  { intro is_prod, fapply is_cons_set_tuple_product.mk,
+    { intro t, exact is_prod.pair (t (fin.mk 0 (nat.zero_lt_succ 1))) 
+                                  (t (fin.mk 1 (nat.le_refl 2))) },
+    { intro p, fapply dpair,
+      { exact λ i, hott.eq.cast (tuple_of_list.map (λ A : Set, A.carrier) [A, B] i) 
+                (fin_map_two (is_prod.gens p).1 (is_prod.gens p).2.1 (fin.mk i.val _)) },
+      { let q := (is_prod.gens p).2.2, rwr q } },
+    { intros s t pair_eq, apply eq_of_homotopy, intro i, hinduction i with i is_lt,
+      hinduction i, 
+      { have q : is_lt = nat.zero_lt_succ 1, from is_prop.elim _ _, rwr q,
+        exact (is_prod.free pair_eq).1 },
+      { hinduction n,
+        { have q : is_lt = nat.le_refl 2, from is_prop.elim _ _, rwr q,
+          exact (is_prod.free pair_eq).2 },
+        { change n + 2 < 2 + 0 at is_lt, rwr nat.add_comm n 2 at is_lt, 
+          hinduction nat.not_lt_zero n (nat.lt_of_add_lt_add_left is_lt) } } } } 
+end
+
+/- Nested constructions of products of finitely many sets are possible. -/
+@[hott]
+def fin_map.split_left {n : ℕ} {A : tuple Set.{u} n} {m : ℕ} {B : tuple Set.{u} m} : 
+  (Π (i : fin (n + m)), tuple.append A B i) -> Π (i : fin n), A i :=
+λ t i, (tuple.append_left A B i) ▸ t (fin_lift i)
 
 @[hott]
-structure triple_Set_product (A B C : Set) :=
-  (carrier : Set)
-  (is_triple_prod : is_triple_product A B C carrier)
+def fin_map.split_right {n : ℕ} {A : tuple Set.{u} n} {m : ℕ} {B : tuple Set.{u} m} : 
+  (Π (i : fin (n + m)), tuple.append A B i) -> Π (i : fin m), B i :=
+λ t i, (tuple.append_right A B i) ▸ t (fin_lift_rev i) 
 
-@[hott]  --[GEVE]
-structure left_triple_Set_product (A B C : Set) :=
-  (left_prod : Set_product A B)
-  (prod : Set_product left_prod.carrier C)
-
-@[hott, reducible]
-def ind_left_triple_Set_product (A B C : Set) : left_triple_Set_product A B C :=
-  left_triple_Set_product.mk (ind_Set_product A B) (ind_Set_product (A × B) C) 
-
-@[hott, instance]  --[GEVE]
-def left_triple_Set_products_are_canonically_equal (A B C : Set) : 
-  is_contr (left_triple_Set_product A B C) :=
+@[hott, hsimp]
+def fin_map.append {n : ℕ} {A : tuple Set.{u} n} {m : ℕ} {B : tuple Set.{u} m} : 
+  (Π (i : fin n), A i) -> (Π (i : fin m), B i) -> 
+  (Π (i : fin (n + m)), tuple.append A B i) :=
 begin
-  fapply is_contr.mk,
-  { exact ind_left_triple_Set_product A B C },
-  { intro P_prod, hinduction P_prod, change left_triple_Set_product.mk _ _ = _,
-    have p : ind_Set_product A B = left_prod, from is_prop.elim _ _,
-    hinduction p,
-    fapply apd011 left_triple_Set_product.mk, 
-    { exact idp },
-    { apply pathover_idp_of_eq, exact is_prop.elim _ _ } }
-end
-
-/- The construction of an equivalence between iterated and constructive characterisation 
-   of triple products uses the standard arguments showing that `(A × B) × C` is a 
-   triple product. -/
-
-@[hott, reducible]  --[GEVE]
-def triple_Set_product_to_left (A B C : Set) :
-  triple_Set_product A B C -> left_triple_Set_product A B C :=
-begin
-intro P, fapply left_triple_Set_product.mk,
-{ exact ind_Set_product A B },
-{ fapply Set_product.mk,
-  { exact P.carrier },
-  { fapply is_product.mk,
-    { intro p, exact ((type_product_is_product A B).pair_exists 
-                    (P.is_triple_prod.fst p) (P.is_triple_prod.snd p)).1 },
-    { exact P.is_triple_prod.trd },
-    { intros ab c, fapply dpair,
-      { exact (P.is_triple_prod.triple_exists 
-                            ((type_product_is_product A B).fst ab) 
-                            ((type_product_is_product A B).snd ab) c).1 },
-      { fapply prod.mk, 
-        { rwr (P.is_triple_prod.triple_exists ab.fst ab.snd c).2.1,
-          rwr (P.is_triple_prod.triple_exists ab.fst ab.snd c).2.2.1,
-          hinduction ab, exact idp }, 
-        { rwr (P.is_triple_prod.triple_exists ab.fst ab.snd c).2.2.2 } } },
-    { intros p p' fst_snd_eq trd_eq,
-      fapply P.is_triple_prod.triple_unique, 
-      { exact ap prod.fst fst_snd_eq },
-      { exact ap prod.snd fst_snd_eq },
-      { assumption } } } }
-end
-
-@[hott, reducible]  --[GEVE]
-def left_to_triple_Set_product (A B C : Set) :
-  left_triple_Set_product A B C -> triple_Set_product A B C :=
-begin
-  intro P, 
-  fapply triple_Set_product.mk,
-  { exact P.prod.carrier },
-  { fapply is_triple_product.mk, 
-    { exact P.left_prod.is_prod.fst ∘ P.prod.is_prod.fst },
-    { exact P.left_prod.is_prod.snd ∘ P.prod.is_prod.fst },
-    { exact P.prod.is_prod.snd },
-    { intros a b c, fapply dpair,
-      { exact (P.prod.is_prod.pair_exists 
-                     (P.left_prod.is_prod.pair_exists a b).1 c).1 },
-      { fapply prod.mk, 
-        { change P.left_prod.is_prod.fst (P.prod.is_prod.fst _) = _,
-          rwr (P.prod.is_prod.pair_exists _ c).2.1, 
-          rwr (P.left_prod.is_prod.pair_exists _ _).2.1 },
-        { fapply prod.mk,
-          { change P.left_prod.is_prod.snd (P.prod.is_prod.fst _) = _,
-            rwr (P.prod.is_prod.pair_exists _ c).2.1, 
-            rwr (P.left_prod.is_prod.pair_exists _ _).2.2 },
-          { rwr (P.prod.is_prod.pair_exists _ c).2.2 } } } },
-    { intros p p' fst_eq snd_eq trd_eq, fapply P.prod.is_prod.pair_unique,
-      { fapply P.left_prod.is_prod.pair_unique, 
-        { assumption },
-        { assumption } },
-      { assumption } } }
+  intros s t i, 
+  fapply @sum.rec (i.val < n) (i.val ≥ n) (λ s, @tuple.append Set _ _ A B i),
+  { intro q, rwr <- fin_lift_desc i q, 
+    rwr tuple.append_left A B (fin_desc i q), exact s _ },
+  { intro q, rwr <- fin_lift_desc_rev i q,
+    rwr tuple.append_right A B (fin_desc_rev i q), exact t _ },
+  { exact nat.lt_sum_ge i.val n }
 end
 
 @[hott]
-def triple_Set_product_equiv_left (A B C : Set) :
-  triple_Set_product A B C ≃ left_triple_Set_product A B C :=
+def fin_map.append_left {n : ℕ} {A : tuple Set.{u} n} {m : ℕ} {B : tuple Set.{u} m} 
+  (s : Π (i : fin n), A i) (t : Π (i : fin m), B i) : Π (i : fin n),
+  (tuple.append_left A B i) ▸ (fin_map.append s t) (fin_lift i) = s i :=
 begin
-  fapply equiv.mk,
-  { exact triple_Set_product_to_left A B C },
-  { fapply adjointify, 
-    { exact left_to_triple_Set_product A B C },
-    { intro P, exact @eq_of_is_contr _ 
-                  (left_triple_Set_products_are_canonically_equal A B C) _ _ },
-    { intro P, hinduction P with P P_prod, fapply apd011 triple_Set_product.mk, 
-      { exact idp },
-      { apply pathover_idp_of_eq, 
-        hinduction P_prod with fst snd trd triple_exists triple_unique,
-        hsimp, fapply apd011111 is_triple_product.mk, 
-        { exact idp },
-        { exact idp },
-        { exact idp },
-        { apply pathover_idp_of_eq, apply eq_of_homotopy3, intros a b c, 
-          fapply sigma.sigma_eq,
-          { exact idp },
-          { apply pathover_of_tr_eq, exact is_prop.elim _ _ } },
-        { apply pathover_of_tr_eq, exact is_prop.elim _ _ } } } }
+  intro i, 
+  hinduction nat.lt_sum_ge (@fin_lift n m i).val n with in_sum q q,
+  { apply tr_eq_of_eq_inv_tr, 
+    change @sum.rec ((@fin_lift n m i).val < n) ((@fin_lift n m i).val ≥ n) 
+                    (λ s, @tuple.append Set _ _ A B (@fin_lift n m i)) _ _ _ = _, 
+    rwr in_sum, change _ ▸[λ i, @tuple.append Set n m A B i] _ = _, rwr eq.inv_inv,
+    have p : fin_lift_desc (fin_lift i) q = ap fin_lift (fin_desc_lift i q), from 
+      is_set.elim _ _, rwr p, rwr tr_ap, 
+    exact apdt (λ i, (tuple.append_left A B i)⁻¹ ▸ s i) (fin_desc_lift i q) },
+  { hinduction nat.lt_irrefl _ (nat.lt_of_le_of_lt q i.is_lt) }
 end
 
 @[hott]
-def triple_Set_products_are_canonically_equal (A B C P : Set) : 
-  is_contr (triple_Set_product A B C) :=
-is_trunc_equiv_closed_rev -2 (triple_Set_product_equiv_left A B C)
-                      (left_triple_Set_products_are_canonically_equal A B C)
-
-/- Moving brackets in iterated triple products leads to equivalent types, as can be 
-   directly derived from the uniqueness properties of ordinary products of sets. -/
-@[hott]  --[GEVE]
-structure right_triple_Set_product (A B C : Set) :=
-  (right_prod : Set_product B C)
-  (prod : Set_product A right_prod.carrier)
-
-@[hott, reducible]
-def ind_right_triple_Set_product (A B C : Set) : right_triple_Set_product A B C :=
-  right_triple_Set_product.mk (Set_product.mk (B × C) (type_product_is_product B C))
-                      (Set_product.mk (A × B × C) (type_product_is_product A (B × C))) 
-
-@[hott]  --[GEVE]
-def left_equiv_right_triple_Set_product (A B C : Set) : 
-  left_triple_Set_product A B C ≃ right_triple_Set_product A B C :=
+def fin_map.append_right {n : ℕ} {A : tuple Set.{u} n} {m : ℕ} {B : tuple Set.{u} m} 
+  (s : Π (i : fin n), A i) (t : Π (i : fin m), B i) : Π (i : fin m),
+  tuple.append_right A B i ▸ fin_map.append s t (fin_lift_rev i) = t i :=
 begin
-  fapply equiv.mk,
-  { intro P, fapply right_triple_Set_product.mk, 
-    { exact ind_Set_product B C },
-    { exact ind_Set_product A (B × C) } },
-  { fapply adjointify, 
-    { intro P, fapply left_triple_Set_product.mk,
-      { exact ind_Set_product A B },
-      { exact ind_Set_product (A × B) C } },
-    { intro P_prod, hinduction P_prod with P_right_prod P_prod, 
-      fapply apd011 right_triple_Set_product.mk, 
-      { exact is_prop.elim _ _ },
-      { apply pathover_of_tr_eq, exact is_prop.elim _ _ } },
-    { intro P_prod, hinduction P_prod with P_left_prod P_prod, 
-      fapply apd011 left_triple_Set_product.mk, 
-      { exact is_prop.elim _ _ },
-      { apply pathover_of_tr_eq, exact is_prop.elim _ _ } } }
+  intro i, 
+  hinduction nat.lt_sum_ge (@fin_lift_rev n m i).val n with in_sum q q,
+  { hinduction nat.not_lt_zero _ (nat.lt_of_add_lt_add_left q) },
+  { apply tr_eq_of_eq_inv_tr, 
+    change @sum.rec ((@fin_lift_rev n m i).val < n) ((@fin_lift_rev n m i).val ≥ n) 
+                    (λ s, @tuple.append Set _ _ A B (@fin_lift_rev n m i)) _ _ _ = _, 
+    rwr in_sum, change _ ▸[λ i, @tuple.append Set n m A B i] _ = _, rwr eq.inv_inv,
+    have p : fin_lift_desc_rev (fin_lift_rev i) q = 
+                        ap fin_lift_rev (fin_desc_lift_rev i q), from is_set.elim _ _, 
+    rwr p, rwr tr_ap,
+    exact apdt (λ i, (tuple.append_right A B i)⁻¹ ▸ t i) (fin_desc_lift_rev i q) }
+end 
+
+@[hott]
+def fin_map.split_append {n : ℕ} {A : tuple Set.{u} n} {m : ℕ} {B : tuple Set.{u} m} : 
+  Π (s : Π (i : fin n), A i) (t : Π (i : fin m), B i), 
+  (fin_map.split_left (fin_map.append s t) = s) × 
+  (fin_map.split_right (fin_map.append s t) = t) :=
+begin
+  intros s t, fapply prod.mk,
+  { apply eq_of_homotopy, intro i, hinduction nat.lt_sum_ge i.val n with in_sum q q,
+    { change (tuple.append_left A B i) ▸ (fin_map.append s t) _ = _, 
+      rwr fin_map.append_left },
+    { hinduction nat.lt_irrefl _ (nat.lt_of_le_of_lt q i.is_lt) } },
+  { apply eq_of_homotopy, intro i, 
+    hinduction nat.lt_sum_ge (@fin_lift_rev n m i).val n with in_sum q q,
+    { hinduction nat.not_lt_zero _ (nat.lt_of_add_lt_add_left q) },
+    { change (tuple.append_right A B i) ▸ (fin_map.append s t) _ = _, 
+      rwr fin_map.append_right } }
+end
+
+@[hott]
+def fin_map.append_split {n : ℕ} {A : tuple Set.{u} n} {m : ℕ} {B : tuple Set.{u} m} :
+  Π (s : Π (i : fin (n+m)), tuple.append A B i), s = 
+                        fin_map.append (fin_map.split_left s) (fin_map.split_right s) :=
+begin
+  intro s, apply eq_of_homotopy, intro i, 
+  hinduction nat.lt_sum_ge i.val n with in_sum q q,
+  { change _ = @sum.rec (i.val < n) (i.val ≥ n) (λ s, @tuple.append Set _ _ A B i) _ _ _,
+    rwr in_sum, hsimp, change s i = fin_lift_desc i q ▸ _, 
+    exact (apdt (λ i, s i) (fin_lift_desc i q))⁻¹ },
+  { change _ = @sum.rec (i.val < n) (i.val ≥ n) (λ s, @tuple.append Set _ _ A B i) _ _ _,
+    rwr in_sum, hsimp, change s i = fin_lift_desc_rev i q ▸ _, 
+    exact (apdt (λ i, s i) (fin_lift_desc_rev i q))⁻¹ }
+end
+
+@[hott]
+def product_of_products_is_product {n : ℕ} (A : tuple Set.{u} n) (P : Set.{u})
+  {m : ℕ} (B : tuple Set.{u} m) (Q : Set.{u}) : is_cons_set_tuple_product A P ->
+  is_cons_set_tuple_product B Q -> is_cons_set_tuple_product (tuple.append A B) (P × Q) :=
+begin 
+  intros is_prod_P is_prod_Q, fapply is_cons_set_tuple_product.mk,
+  { intro t, fapply prod.mk,
+    { exact is_prod_P.tuple (fin_map.split_left t) },
+    { exact is_prod_Q.tuple (fin_map.split_right t) } },
+  { intro pq, hinduction pq with p q, fapply dpair, 
+    { exact fin_map.append (is_prod_P.gens p).1 (is_prod_Q.gens q).1 },
+    { rwr (fin_map.split_append _ _).1, rwr (fin_map.split_append _ _).2,
+      fapply pair_eq, exact (is_prod_P.gens p).2, exact (is_prod_Q.gens q).2 } },
+  { intros s t tuple_pair_eq, rwr fin_map.append_split s, rwr fin_map.append_split t,
+    apply ap011 fin_map.append,
+    { exact is_prod_P.free _ _ (ap prod.fst tuple_pair_eq) },
+    { exact is_prod_Q.free _ _ (ap prod.snd tuple_pair_eq) } }
 end
 
 end hott
