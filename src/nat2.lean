@@ -9,6 +9,10 @@ open hott.is_equiv hott.is_trunc hott.trunc hott.nat unit
 /- Facts about natural numbers not found in the [HoTT3]-library (or only as theorems). -/
 open nat
 
+@[hott]
+def ne_of_lt {n m : ℕ} : n < m -> ¬(n = m) :=
+  begin intros p q, rwr q at p, hinduction nat.lt_irrefl m p end  
+
 @[hott] 
 def eq_zero_sum_eq_succ_pred (n : ℕ) : n = 0 ⊎ n = succ (pred n) :=
 begin
@@ -18,8 +22,28 @@ begin
 end
 
 @[hott] 
+def succ_pred_of_pos' {n : ℕ} (H : 0 < n) : succ (pred n) = n :=
+  (sum.resolve_left (eq_zero_sum_eq_succ_pred n) (ne.symm (ne_of_lt H)))⁻¹
+
+@[hott] 
 def exists_eq_succ_of_ne_zero {n : ℕ} (H : n ≠ 0) : Σk : ℕ, n = succ k :=
   sigma.mk (pred n) (sum.resolve_left (eq_zero_sum_eq_succ_pred n) H)
+
+@[hott] 
+def eq_zero_of_add_eq_zero_right {n m : ℕ} : n + m = 0 → n = 0 :=
+  nat.rec_on n
+    (λ(H : 0 + m = 0), rfl)
+    (λk IH,
+      assume H : succ k + m = 0,
+      absurd
+        (show succ (k + m) = 0, from calc
+           succ (k + m) = succ k + m : by rwr succ_add
+                    ... = 0          : H)
+        (succ_ne_zero _))
+
+@[hott] 
+def eq_zero_of_add_eq_zero_left {n m : ℕ} (H : n + m = 0) : m = 0 :=
+  eq_zero_of_add_eq_zero_right (nat.add_comm _ _ ⬝ H)
 
 @[hott, elab_as_eliminator] 
 def nat.sub_induction' {P : ℕ → ℕ → Type _} (n m : ℕ) (H1 : Πm, P 0 m)
@@ -167,9 +191,24 @@ lt_of_succ_le this
 def nat.lt_of_le_neq {m n : nat} (h₁: m ≤ n) (h₂ : m ≠ n) : m < n :=
   begin hinduction nat.eq_sum_lt_of_le h₁, hinduction h₂ val, exact val end
 
+@[hott] def nat.le_lt_antisymm' {n m : ℕ} (H1 : n ≤ m) (H2 : m < n) : empty :=
+  nat.lt_irrefl _ (nat.lt_of_le_of_lt H1 H2)
+
 @[hott] 
 def nat.eq_zero_of_le_zero' {n : ℕ} (H : n ≤ 0) : n = 0 :=
   begin hinduction n, exact idp, hinduction nat.not_succ_le_zero n H end
+
+@[hott]
+def nat.lt_add_of_lt_right' {b c : ℕ} (H : b < c) (a : ℕ) : b < c + a :=
+  begin hinduction a, exact H, exact le.step ih end 
+
+@[hott]
+def nat.lt_add_of_lt_left' {b c : ℕ} (H : b < c) (a : ℕ) : b < a + c :=
+  begin hinduction a, rwr nat.zero_add, exact H, rwr nat.succ_add, exact le.step ih end 
+
+@[hott]
+def nat.lt_of_succ_lt_succ' {a b : ℕ} : succ a < succ b → a < b :=
+  nat.le_of_succ_le_succ
 
 /- We formalize the example on the use of (computational) univalence presented in the 
    paper [Vezzosi, Abel and Mörtberg: Cubical Agda]: When calculating 
