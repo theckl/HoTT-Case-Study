@@ -14,7 +14,7 @@ sets
   axioms    :   355         
   algebra   :   362         
   quotients :   799  
-  product   :   497  4211   
+  product   :   553  4267   
 categories
   precat    :   772          
   basic     :   572         
@@ -44,7 +44,7 @@ algebra
    module   :   345  
    examples :    52  3641
                     -----
-                    19961               
+                    20017               
 
 
 Planned changes in Files, from bottom to top: 
