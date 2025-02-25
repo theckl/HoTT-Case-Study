@@ -367,6 +367,22 @@ begin
   exact ab_group.to_add_ab_group
 end
 
+@[hott]
+def direct_sum_of_AddAbGroups {n : ℕ} (A : tuple AddAbGroup n) : AddAbGroup :=
+begin
+  fapply AddAbGroup.mk (Π (i : fin n), (A i).carrier),
+  fapply λ s, @ab_group.to_add_ab_group _ s, fapply ab_group.mk,
+  { apply_instance },
+  { intros a b i, exact a i + b i },
+  { intros a b c, apply eq_of_homotopy, intro i, apply (A i).struct'.mul_assoc },
+  { intro i, exact (A i).struct'.one },
+  { intro a, apply eq_of_homotopy, intro i, apply (A i).struct'.one_mul },
+  { intro a, apply eq_of_homotopy, intro i, apply (A i).struct'.mul_one },
+  { intros a i, apply @hott.algebra.ab_group.inv _ (A i).struct' (a i) },
+  { intro i, apply eq_of_homotopy, intro i, apply (A i).struct'.mul_left_inv },
+  { intros a b, apply eq_of_homotopy, intro i, apply (A i).struct'.mul_comm }, 
+end
+
 /- We characterize free groups by their universal property. Then we construct
    a free group as the quotient of the type of lists over the set of generators and 
    their inverses, dividing out the inverseness equalities. -/
