@@ -859,7 +859,8 @@ begin hinduction x, intro H, rwr down_up_eq down at H, exact ap ulift.up H end
 /- The calculation rules for dependent if-then-else `dite` are missing in 
    [hott.init.logic]: Instances of the decision-clause may be not equal, and then the 
    eliminator `decidable.rec` does not work. This problem vanishes if the decision-clause 
-   is a proposition. -/
+   is a proposition. Also, equivalent decision-clauses leading to equal 
+   then-else-branches are equal if-then-else statements. -/
 @[hott] def dif_pos {c : Type _} [is_prop c] [H : decidable c] (Hc : c) {A : Type _} 
   {t : c -> A} {e : ¬c -> A} : (dite c t e) = t Hc :=
 decidable.rec
@@ -875,6 +876,24 @@ decidable.rec
   (λ Hnc' : ¬c, calc @dite c (decidable.inr Hnc') A t e = e Hnc' : rfl 
                      ... = e Hnc : ap e (is_prop.elim _ _))
   H   
+
+@[hott]
+def equiv_dite {c : Type _} [is_prop c] [H : decidable c] {c' : Type _} [is_prop c'] 
+  [H' : decidable c'] {A : Type _} {t : c -> A} {e : ¬c -> A} {t' : c' -> A} 
+  {e' : ¬c' -> A} : (c <-> c') -> (Π (Hc : c) (Hc' : c'), t Hc = t' Hc') ->
+  (Π (Hnc : ¬c) (Hnc' : ¬c'), e Hnc = e' Hnc') -> dite c t e = dite c' t' e' :=
+begin 
+  intros equiv pos_eq neg_eq, fapply @decidable.rec c (λ H, dite c t e = dite c' t' e'),
+  { intro Hc, fapply @decidable.rec c' (λ H', dite c t e = dite c' t' e'),
+    { intro Hc', rwr dif_pos Hc, rwr dif_pos Hc', exact pos_eq Hc Hc' },
+    { intros Hnc', hinduction Hnc' (equiv.1 Hc) },
+    { exact H' } },
+  { intro Hnc, fapply @decidable.rec c' (λ H', dite c t e = dite c' t' e'),
+    { intro Hc', hinduction Hnc (equiv.2 Hc') },
+    { intro Hnc', rwr dif_neg Hnc, rwr dif_neg Hnc', exact neg_eq Hnc Hnc' },
+    { exact H' } },
+  { exact H } 
+end  
 
 /- We need some equivalent descriptions of equalities of functions. -/
 @[hott, hsimp]
