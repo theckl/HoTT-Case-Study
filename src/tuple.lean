@@ -58,9 +58,25 @@ def fin_desc_lift_rev {n m : ℕ} (i : fin m) (H : (@fin_lift_rev n m i).val ≥
   fin_desc_rev (fin_lift_rev i) H = i :=
 begin apply fin_eq, exact nat.add_sub_cancel_left' n i.val end
 
+@[hott, instance]
+def fin.has_decidable_eq {n : ℕ} : Π (i j : fin n), decidable (i = j) :=
+begin   
+  intros i j, hinduction nat.has_decidable_eq i.val j.val with dec p np,
+  { exact decidable.inl (fin_eq p) },
+  { apply decidable.inr, intro p, hinduction np (ap fin.val p) }
+end
+
 
 @[hott] 
 def tuple (A : Type _) (n : ℕ) := fin n -> A
+
+@[hott]
+def tuple.map {A B : Type _} (f : A -> B) {n : ℕ} : tuple A n -> tuple B n :=
+  λ t i, f (t i) 
+
+@[hott]
+def tuple_map_eq {A B : Type _} (f : A -> B) {n : ℕ} : Π (t : tuple A n)
+  (i : fin n), tuple.map f t i = f (t i) := λ t i, idp
 
 @[hott]
 def tuple_of_list {A : Type _} (l : list A) : tuple A (list.length l) :=
@@ -72,28 +88,19 @@ begin
     { exact l_ih (fin.mk n (nat.lt_of_succ_lt_succ' is_lt)) } }
 end
 
-@[hott]
-def tuple_of_list.map {A B : Type _} (f : A -> B) (l : list A) : 
-  Π (i : fin (list.length l)), 
-    tuple_of_list (list.map f l) (fin_size_eq (list_map_size_eq f l)⁻¹ i) = 
-    f (tuple_of_list l i) :=
-begin
-  intro i, induction l, 
-  { hinduction nat.not_lt_zero i.val i.is_lt },
-  { hinduction i with i is_lt, hinduction i,
-    { exact idp },
-    { change tuple_of_list (list.map f l_tl) _ = f (tuple_of_list l_tl (fin.mk n _)), 
-      rwr <- l_ih, apply ap (tuple_of_list (list.map f l_tl)), apply fin_eq, exact idp } }
-end
-
 @[hott, hsimp]
 def tuple.append {A : Type _} {n m : ℕ} (B : tuple A n) (C : tuple A m) : 
   tuple A (n+m) :=
-begin 
-  intro i, hinduction nat.lt_sum_ge i.val n with in_sum p p,
-  { exact B ⟨i.val, p⟩ },
-  { exact C ⟨i.val-n, nat.sub_lt_of_lt_add i.is_lt p⟩ }
-end 
+λ i, @sum.rec (i.val < n) (i.val ≥ n) (λ s, A) (λ p, B (fin_desc i p)) 
+                                   (λ p, C (fin_desc_rev i p)) (nat.lt_sum_ge i.val n)
+
+@[hott]
+def tuple.split_left {A : Type _} {n m : ℕ} : tuple A (n+m) -> tuple A n :=
+  λ t i, t (fin_lift i)   
+
+@[hott]
+def tuple.split_right {A : Type _} {n m : ℕ} : tuple A (n+m) -> tuple A m :=
+  λ t i, t (fin_lift_rev i)
 
 @[hott]
 def tuple.append_left {A : Type _} {n m : ℕ} (B : tuple A n) (C : tuple A m) :
@@ -115,6 +122,22 @@ begin
 end
 
 @[hott]
+def tuple.split_append {A : Type _} {n m : ℕ} (B : tuple A n) (C : tuple A m) :
+  (tuple.split_left (tuple.append B C) = B) × (tuple.split_right (tuple.append B C) = C) :=
+⟨eq_of_homotopy (tuple.append_left B C), eq_of_homotopy (tuple.append_right B C)⟩
+
+@[hott]
+def tuple.append_split {A : Type _} {n m : ℕ} (B : tuple A (n+m)) :
+  tuple.append (tuple.split_left B) (tuple.split_right B) = B :=
+begin
+  apply eq_of_homotopy, intro i, 
+  change @sum.rec (i.val < n) (i.val ≥ n) (λ s, A) _ _ (nat.lt_sum_ge i.val n) = _,
+  hinduction nat.lt_sum_ge i.val n with in_sum q q,
+  { change B _ = B i, rwr fin_lift_desc },
+  { change B _ = B _, rwr fin_lift_desc_rev }
+end
+
+@[hott]
 def fin_map_next {n : ℕ} (A : fin (n+1) -> Type _) :
   (Π (i : fin n), A (fin_lift i)) -> A ⟨n, nat.le_refl (n+1)⟩ -> 
   Π (i : fin (n+1)), A i :=
@@ -127,7 +150,8 @@ begin
 end
 
 @[hott, reducible]
-def fin_map_two {A B : Type u} : A -> B -> Π (i : fin 2), tuple_of_list [A, B] i :=
+def fin_map_two {C : Type (u+1)} {f : C -> Type u} {A B : C} : f A -> f B -> 
+  Π (i : fin 2), f (tuple_of_list [A, B] i) :=
 begin
   intros a b i, hinduction i with i is_lt, hinduction i with i ih,
   { exact a },
