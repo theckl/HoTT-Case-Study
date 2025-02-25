@@ -126,23 +126,6 @@ begin
   exact sum.inl ⟨a, idp⟩, exact sum.inr ⟨b, idp⟩
 end
 
-/- Calculating with `dite`, from [types.sum] -/
-@[hott] def dite_true {C : Type _} [H : decidable C] {A : Type _}
-    {t : C → A} {e : ¬ C → A} (c : C) (H' : is_prop C) : dite C t e = t c :=
-begin
-  resetI, induction H with H H,
-  exact ap t (is_prop.elim _ _),
-  apply empty.elim, exact H c,
-end
-
-@[hott] def dite_false {C : Type _} [H : decidable C] {A : Type _}
-  {t : C → A} {e : ¬ C → A} (c : ¬ C) : dite C t e = e c :=
-begin
-  resetI, induction H with H H,
-  apply empty.elim, exact c H,
-  exact ap e (is_prop.elim _ _),
-end
-
 /- The injectivity of a map of types is only useful if it also implies relations between
    equalities of objects of domain and codomain, in particular that `rfl` is mapped to 
    `rfl`. For sets, this is automatic and shown in [sets.basic]. We also show a criterion
