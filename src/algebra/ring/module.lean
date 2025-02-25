@@ -1,11 +1,11 @@
-import algebra.ring.basic 
+import algebra.ring.basic nat2 
        
 universes u u' v w
 hott_theory
 
 namespace hott
 open trunc is_trunc hott.algebra hott.relation hott.is_equiv subset precategories 
-     categories categories.sets
+     categories categories.sets hott.nat
 
 class has_act (α : Type _) (β : Type _) := (scal_mul : α → β → β)
 infix ⬝ := has_act.scal_mul
@@ -42,6 +42,16 @@ instance has_coe_Module (R : CommRing.{u}) : has_coe_to_sort (Module.{u} R) :=
   ⟨Type u, Module.carrier⟩
 
 attribute [instance] Module.struct
+
+/- Sums of finitely many elements of a module -/
+@[hott]
+def module_sum_of_tuple {R : CommRing} {M : Module R} {n : ℕ} :
+  tuple M n -> M :=
+begin
+  hinduction n,
+  { intro t, exact 0 },
+  { intro t, exact ih (@tuple.split_left _ n 1 t) + t ⟨n, nat.le_refl (n+1)⟩ }
+end
 
 /- For later calculations, the module laws should be available with `0`, `1`, `*`, 
    `+`, `-` and `⁻¹` - the `rwr`-tactic does not accept these notations from the 
@@ -82,6 +92,75 @@ begin
   rwr <- (module_laws M).left_distr, rwr (module_laws M).add_zero,
   rwr (module_laws M).add_zero
 end 
+
+@[hott]
+def module_sum_of_tuples_add {R : CommRing} {M : Module R} {n : ℕ} :
+  Π (s t : tuple M n), module_sum_of_tuple (λ i : fin n, s i + t i) =
+                                      module_sum_of_tuple s + module_sum_of_tuple t :=
+begin
+  hinduction n,
+  { intros s t, change (0 : M) = 0 + 0, exact ((module_laws M).add_zero (0 : M))⁻¹ },
+  { intros s t, 
+    change (module_sum_of_tuple _) + (s _ + t _) = ((module_sum_of_tuple _) + (s _)) +
+                                                    ((module_sum_of_tuple _) + (t _)),
+    rwr (module_laws M).add_assoc, rwr <- (module_laws M).add_assoc (s _),
+    rwr (module_laws M).add_comm (s _) (module_sum_of_tuple _), 
+    rwr (module_laws M).add_assoc _ (s _), 
+    rwr <- (module_laws M).add_assoc _ (module_sum_of_tuple _), rwr <- ih }
+end
+
+@[hott]
+def module_sum_of_tuples_zero {R : CommRing} {M : Module R} (n : ℕ) :
+  module_sum_of_tuple (λ i : fin n, (0 : M)) = 0 :=
+begin
+  hinduction n, exact idp, change module_sum_of_tuple (λ (i : fin n), 0) + 0 = 0,
+  rwr ih, rwr (module_laws M).add_zero
+end
+
+@[hott]
+def module_sum_of_tuples_scal_mul {R : CommRing} {M : Module R} {n : ℕ} :
+  Π (r : R) (s : tuple M n), module_sum_of_tuple (λ i : fin n, r ⬝ (s i)) =
+                                      r ⬝ module_sum_of_tuple s :=
+begin
+  hinduction n,
+  { intros r s, exact (scal_mul_zero_zero M r)⁻¹ },
+  { intros r s, change module_sum_of_tuple (λ i : fin n, r ⬝ _) + r ⬝ _ = 
+                                                       r ⬝ (module_sum_of_tuple _ + _),
+    rwr ih r (λ i : fin n, s (@fin_lift n 1 i)), rwr (module_laws M).left_distr }
+end
+
+@[hott]
+def module_sum_of_tuple_comp {R : CommRing} {M : Module R} {n : ℕ} :
+  Π (m : M) (i : fin n),
+    module_sum_of_tuple (λ (j : fin n), dite (i = j) (λ p, m) (λ np, (0 : M))) = m :=
+begin
+  hinduction n, 
+  { intros m i, hinduction nat.not_lt_zero i.val i.is_lt },
+  { intros m i, change module_sum_of_tuple (λ (j : fin n), dite _ _ _) + dite _ _ _ = _,
+    hinduction fin.has_decidable_eq i ⟨n, nat.le_refl (n+1)⟩ with dec p np,
+    { change _ + m = _, apply λ r, eq.concat r ((module_laws M).zero_add m),
+      apply ap (λ k, k + m), apply λ r, eq.concat r (module_sum_of_tuples_zero n), 
+      apply ap module_sum_of_tuple, apply eq_of_homotopy, intro j, 
+      change dite _ _ _ = (0 : M), 
+      have np : ¬(i = @fin_lift n 1 j), from 
+        begin rwr p, intro q, exact nat.lt_irrefl n (nat.lt_of_le_of_lt 
+                                            (nat.le_of_eq (ap fin.val q)) j.is_lt) end,
+      exact dif_neg np },
+    { change _ + 0 = m, rwr (module_laws M).add_zero, 
+      have q : i.val < n, from 
+        begin fapply nat.lt_of_le_prod_ne, exact nat.le_of_lt_succ i.is_lt, intro ne,
+                                                               exact np (fin_eq ne) end,
+      apply λ r, eq.concat r (ih m (@fin_desc n 1 i q)), apply ap module_sum_of_tuple, 
+      apply eq_of_homotopy, intro j, change @dite _ _ M _ _ = @dite _ _ M _ _, 
+      fapply equiv_dite,
+      { fapply prod.mk, 
+        { intro p, rwr <- @fin_desc_lift n 1 j j.is_lt, fapply apd011 (@fin_desc n 1) p,
+          apply pathover_of_tr_eq, exact is_prop.elim _ _ }, 
+        { intro p, rwr <- @fin_lift_desc n 1 i q, exact ap fin_lift p } },
+      { intros p₁ q₁, exact idp },
+      { intros np₁ nq₁, exact idp } } }
+end 
+
 
 /- Modules over a fixed commutative ring with one are a concrete category over 
    (additive) abelian groups. -/
@@ -275,6 +354,7 @@ def Module_Category (R : CommRing.{u}) : Category :=
 
 /- For calculations with module homomorphisms, it is more effective to extract the laws
    of a homomorphism. -/
+
 @[hott, reducible]
 def Module_to_Set_functor (R : CommRing.{u}) : Module R ⥤ Set :=
 begin
@@ -339,7 +419,24 @@ begin
     { fapply faithful_is_trans (concrete_forget_functor (AbGroup.to_Group)),
       { apply @concrete_forget_functor_is_faithful _ _ AbGroup.to_Group },
       { apply Group_to_Set_functor_is_faithful } } } 
+end  
+
+@[hott]
+def module_sum_of_tuple_hom {R : CommRing} {M N : Module R} {n : ℕ} (h : M ⟶ N) :
+  Π (m : tuple M n), (Module_to_Set_functor R).map h (module_sum_of_tuple m) = 
+            module_sum_of_tuple (λ i : fin n, (Module_to_Set_functor R).map h (m i)) :=
+begin
+  hinduction n,
+  { intro m, change (Module_to_Set_functor R).map h 0 = 0, 
+    exact (module_hom_laws h).zero_comp },
+  { intro m, change (Module_to_Set_functor R).map h (module_sum_of_tuple _ + _) = 
+                    module_sum_of_tuple _ + (Module_to_Set_functor R).map _ _, 
+    rwr (module_hom_laws h).add_comp, 
+    apply ap (λ l : N, l + (Module_to_Set_functor R).map h 
+                                           (m (fin.mk n (nat.le_refl (n + 1))))),
+    rwr ih (@tuple.split_left _ n 1 m) }
 end
+
 
 end algebra
 
