@@ -1,20 +1,20 @@
 Compiling files, in order of dependencies:
 ------------------------------------------
-init2       :  1032
+init2       :  1051
 nat2        :   413
-types2      :   935 
+types2      :   918 
 nattype     :   327
 prop_axioms :   556         
 prop_logic  :   241  
-tuple       :   130  3634
+tuple       :   164  3670
 sets
   basic     :   883         
   subset    :   819         
-  finite    :   496         
+  finite    :   481         
   axioms    :   355         
   algebra   :   362         
   quotients :   799  
-  product   :   553  4267   
+  product   :   549  4248   
 categories
   precat    :   772          
   basic     :   572         
@@ -36,21 +36,21 @@ algebra
    basic    :   432
    quotient :   726    
   group        
-   basic    :   683
+   basic    :   699
    subgroup :   367  
    quotient :   691  
   ring
    basic    :   345  
-   module   :   345  
-   examples :    52  3641
+   module   :   443  
+   examples :   270  3973
                     -----
-                    20017               
+                    20366               
 
 
 Planned changes in Files, from bottom to top: 
 ---------------------------------------------
 - [algebra.ring.examples] : examples of modules and commutative rings with one
-- [sets.product] : characterisations of products of finitely many sets
+
             
  
 
