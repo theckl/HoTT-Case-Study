@@ -314,13 +314,13 @@ end
 
 /- Characterisations of products of finitely many sets by universal properties derived from the 
    constructors and from the inductive principle are equivalent. -/
-@[hott]
+@[hott]  --[GEVE]
 structure is_cons_set_tuple_product {n : ℕ} (A : tuple Set.{u} n) (P : Set.{u}) :=
   (tuple : (Π (i : fin n), A i) -> P)
   (gens : Π (p : P), Σ (t : Π (i : fin n), A i), tuple t = p)
   (free : Π (s t : Π (i : fin n), A i), (tuple s = tuple t) -> s = t)
 
-@[hott]
+@[hott]  --[GEVE]
 def tuple_is_set_product {n : ℕ} (A : tuple Set.{u} n) : 
   is_cons_set_tuple_product A (set.tuple_Set A) :=
 begin
@@ -330,13 +330,13 @@ begin
   { intros s t q, exact q }
 end
 
-@[hott]
+@[hott]  --[GEVE]
 structure is_set_tuple_product {n : ℕ} (A : tuple Set.{u} n) (P : Set.{u}) :=
   (proj : Π (i : fin n), P -> A i)
   (tuple_exists : Π (t : Π (i : fin n), A i), Σ (p : P), Π (i : fin n), proj i p = t i)
   (tuple_unique : Π (p p' : P), (Π (i : fin n), proj i p = proj i p') -> p = p')
 
-@[hott]
+@[hott]  --[GEVE]
 def is_cons_equiv_is_set_tuple_product {n : ℕ} (A : tuple Set.{u} n) (P : Set.{u}) :
   is_cons_set_tuple_product A P <-> is_set_tuple_product A P :=
 begin
@@ -357,7 +357,7 @@ begin
       exact ap (is_prod.proj i) tuple_eq } }
 end
 
-@[hott]
+@[hott]   --[GEVE]
 structure is_univ_set_tuple_product {n : ℕ} (A : tuple Set.{u} n) (P : Set.{u}) :=
   (proj : Π (i : fin n), P -> A i)
   (factors : Π {Q : Set.{u}} (qA : Π (i : fin n), Q -> A i), Σ (qP : Q -> P),
@@ -365,7 +365,7 @@ structure is_univ_set_tuple_product {n : ℕ} (A : tuple Set.{u} n) (P : Set.{u}
   (unique : Π {Q : Set.{u}} (qP qP' : Q -> P), (Π (i : fin n), 
               (proj i) ∘ qP = (proj i) ∘ qP') -> qP = qP')
 
-@[hott]
+@[hott]  --[GEVE]
 def set_tuple_product_equiv_univ {n : ℕ} (A : tuple Set.{u} n) (P : Set.{u}) : 
   is_set_tuple_product A P <-> is_univ_set_tuple_product A P :=
 begin
@@ -401,20 +401,17 @@ def is_tuple_product_equiv_is_pair_product {A B : Set.{u}} (P : Set.{u}) :
 begin
   fapply prod.mk,
   { intro is_prod, fapply is_cons_product.mk,
-    { intros a b, exact is_prod.tuple (λ i, cast (tuple_of_list.map 
-                                 (λ A : Set, A.carrier) [A, B] i) (fin_map_two a b _)) },
+    { intros a b, exact is_prod.tuple (λ i, fin_map_two a b i) },
     { intro p, fapply dpair,
       { exact (is_prod.gens p).1 (fin.mk 0 (nat.zero_lt_succ 1)) },
       { fapply dpair,
         { exact (is_prod.gens p).1 (fin.mk 1 (nat.le_refl 2)) },
         { apply λ q, (is_prod.gens p).2⁻¹ ⬝ q, apply ap is_prod.tuple, 
-          apply eq_of_homotopy, intro i, change _ = hott.eq.cast _ _, 
-          hinduction i with i is_lt, hinduction i, 
+          apply eq_of_homotopy, intro i, hinduction i with i is_lt, hinduction i, 
           { change _ = hott.eq.cast (@idp _ A.carrier) ((is_prod.gens p).1 (fin.mk 0 _)),
             have q : is_lt = nat.zero_lt_succ 1, from is_prop.elim _ _, rwr q },
           { hinduction n,
-            { change _ = hott.eq.cast _ ((is_prod.gens p).1 (fin.mk 1 _)), 
-              have q : is_lt = nat.le_refl 2, from is_prop.elim _ _, rwr q },
+            { have q : is_lt = nat.le_refl 2, from is_prop.elim _ _, rwr q },
             { change n + 2 < 2 + 0 at is_lt, rwr nat.add_comm n 2 at is_lt, 
               hinduction nat.not_lt_zero n (nat.lt_of_add_lt_add_left is_lt) } } } } },
     { intros a₁ a₂ b₁ b₂ tuple_eq, fapply prod.mk,
@@ -424,8 +421,7 @@ begin
     { intro t, exact is_prod.pair (t (fin.mk 0 (nat.zero_lt_succ 1))) 
                                   (t (fin.mk 1 (nat.le_refl 2))) },
     { intro p, fapply dpair,
-      { exact λ i, hott.eq.cast (tuple_of_list.map (λ A : Set, A.carrier) [A, B] i) 
-                (fin_map_two (is_prod.gens p).1 (is_prod.gens p).2.1 (fin.mk i.val _)) },
+      { exact λ i, fin_map_two (is_prod.gens p).1 (is_prod.gens p).2.1 i },
       { let q := (is_prod.gens p).2.2, rwr q } },
     { intros s t pair_eq, apply eq_of_homotopy, intro i, hinduction i with i is_lt,
       hinduction i, 
@@ -468,7 +464,7 @@ def fin_map.append_left {n : ℕ} {A : tuple Set.{u} n} {m : ℕ} {B : tuple Set
   (s : Π (i : fin n), A i) (t : Π (i : fin m), B i) : Π (i : fin n),
   (tuple.append_left A B i) ▸ (fin_map.append s t) (fin_lift i) = s i :=
 begin
-  intro i, 
+  intro i, have p : (@fin_lift n m i).val < n, from i.is_lt, 
   hinduction nat.lt_sum_ge (@fin_lift n m i).val n with in_sum q q,
   { apply tr_eq_of_eq_inv_tr, 
     change @sum.rec ((@fin_lift n m i).val < n) ((@fin_lift n m i).val ≥ n) 
@@ -531,7 +527,7 @@ begin
     exact (apdt (λ i, s i) (fin_lift_desc_rev i q))⁻¹ }
 end
 
-@[hott]
+@[hott]  --[GEVE]
 def set_product_of_products_is_product {n : ℕ} (A : tuple Set.{u} n) (P : Set.{u})
   {m : ℕ} (B : tuple Set.{u} m) (Q : Set.{u}) : is_cons_set_tuple_product A P ->
   is_cons_set_tuple_product B Q -> is_cons_set_tuple_product (tuple.append A B) (P × Q) :=
