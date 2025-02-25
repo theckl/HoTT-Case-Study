@@ -11,21 +11,6 @@ namespace set
 /- We construct finite sets of size `n` as the set of natural numbers `m` with `m < n`.
    With this definition we can easily define maps from finite sets to any carrier type. -/
 @[hott]
-def fin_equiv_sigma (n : ℕ) : fin n ≃ Σ m : ℕ, m < n :=
-begin
-  fapply equiv.mk,
-  { intro i, exact ⟨i.val, i.is_lt⟩ },
-  { fapply adjointify,
-    { intro i, exact fin.mk i.1 i.2 },
-    { intro i, hinduction i, exact idp },
-    { intro i, hinduction i, exact idp } }
-end
-
-@[hott, instance]
-def fin_is_set (n : ℕ) : is_set (fin n) :=
-  begin fapply is_trunc_equiv_closed_rev 0 (fin_equiv_sigma n), apply_instance end
-
-@[hott]
 def fin_Set (n : ℕ) : Set.{0} := to_Set (fin n)
 
 @[hott]
@@ -130,13 +115,13 @@ def fin_card_of (S : Set) [fin : is_finite S] : ℕ := fin.fin_bij.1
 @[hott]
 def fin_Set_bij_succ_map_eq_ineq {n m : ℕ} 
   (bij : bijection (fin_Set (n+1)) (fin_Set (m+1))) {a : fin_Set n} 
-  (p : (bij.map (fin_lift (nat.le_succ n) a)).1 = m) :
+  (p : (bij.map (@fin_lift n 1 a)).1 = m) :
   (bij.map ⟨n, nat.le_refl (n+1)⟩).1 < m :=
 have H1 : (bij ⟨n, nat.le_refl (n+1)⟩).1 ≠ m, from 
   begin 
     intro q, apply λ H : a.1 = n, 
                nat.lt_irrefl n (nat.le_trans (nat.le_of_eq (ap nat.succ H⁻¹)) a.2), 
-    have r : (fin_lift (nat.le_succ n) a) = ⟨n, nat.le_refl (n+1)⟩, from 
+    have r : (@fin_lift n 1 a) = ⟨n, nat.le_refl (n+1)⟩, from 
           begin apply bij.bij.inj, exact fin_eq (p ⬝ q⁻¹) end,
     exact ap fin.val r
   end,  
@@ -145,31 +130,31 @@ nat.lt_of_le_prod_ne (le_of_succ_le_succ (bij ⟨n, nat.le_refl (n+1)⟩).2) H1
 @[hott]
 def fin_Set_bij_succ_map_neq_ineq {n m : ℕ} 
   (bij : bijection (fin_Set (n+1)) (fin_Set (m+1))) {a : fin_Set n} 
-  (np : (bij.map (fin_lift (nat.le_succ n) a)).1 ≠ m) :
-  (bij (fin_lift (nat.le_succ n) a)).1 < m :=
-nat.lt_of_le_prod_ne (le_of_succ_le_succ (bij (fin_lift (nat.le_succ n) a)).2) np
+  (np : (bij.map (@fin_lift  n 1 a)).1 ≠ m) :
+  (bij (@fin_lift n 1 a)).1 < m :=
+nat.lt_of_le_prod_ne (le_of_succ_le_succ (bij (@fin_lift n 1 a)).2) np
 
 @[hott]
 def fin_Set_bij_succ_map {n m : ℕ} (bij : bijection (fin_Set (n+1)) (fin_Set (m+1))) :
   fin_Set n -> fin_Set m :=
 begin
   let f := bij.map, let g := (inv_of_bijection bij).1,
-  intro a, exact (dite ((f (fin_lift (nat.le_succ n) a)).1 = m)
+  intro a, exact (dite ((f (@fin_lift n 1 a)).1 = m)
            (λ p, ⟨(f ⟨n, nat.le_refl (n+1)⟩).1, fin_Set_bij_succ_map_eq_ineq bij p⟩) 
-  (λ np, ⟨(f (fin_lift (nat.le_succ n) a)).1, fin_Set_bij_succ_map_neq_ineq bij np⟩))
+  (λ np, ⟨(f (@fin_lift n 1 a)).1, fin_Set_bij_succ_map_neq_ineq bij np⟩))
 end  
 
 @[hott]
 def fin_Set_bij_succ_map_eq {n m : ℕ} (bij : bijection (fin_Set (n+1)) (fin_Set (m+1)))
-  {a : fin_Set n} (p : (bij.map (fin_lift (nat.le_succ n) a)).1 = m) :
+  {a : fin_Set n} (p : (bij.map (@fin_lift n 1 a)).1 = m) :
   fin_Set_bij_succ_map bij a = fin_desc (bij.map ⟨n, nat.le_refl (n+1)⟩) 
                                  (fin_Set_bij_succ_map_eq_ineq bij p) :=
 begin change dite _ _ _ = _, rwr dif_pos p end
 
 @[hott]
 def fin_Set_bij_succ_map_neq {n m : ℕ} (bij : bijection (fin_Set (n+1)) (fin_Set (m+1)))
-  {a : fin_Set n} (np : ¬(bij.map (fin_lift (nat.le_succ n) a)).1 = m) :
-  fin_Set_bij_succ_map bij a = fin_desc (bij.map (fin_lift (nat.le_succ n) a)) 
+  {a : fin_Set n} (np : ¬(bij.map (@fin_lift n 1 a)).1 = m) :
+  fin_Set_bij_succ_map bij a = fin_desc (bij.map (@fin_lift n 1 a)) 
                                  (fin_Set_bij_succ_map_neq_ineq bij np) :=
 begin change dite _ _ _ = _, rwr dif_neg np end
 
@@ -180,19 +165,19 @@ def fin_Set_bij_succ_map_inv {n m : ℕ} (bij : bijection (fin_Set (n+1)) (fin_S
 begin 
   let f := bij.map, let bij_inv := inv_bijection_of bij, let g := bij_inv.map,
   intro b, apply fin_eq, 
-  hinduction nat.has_decidable_eq (g (fin_lift (nat.le_succ m) b)).1 n with h p np,
-  { have q : (f (fin_lift (le_succ n) (fin_Set_bij_succ_map bij_inv b))).1 = m, by
+  hinduction nat.has_decidable_eq (g (@fin_lift m 1 b)).1 n with h p np,
+  { have q : (f (@fin_lift n 1 (fin_Set_bij_succ_map bij_inv b))).1 = m, by
     begin 
       rwr fin_Set_bij_succ_map_eq bij_inv p, rwr fin_lift_desc, 
       rwr @is_set_inverse_of.r_inv _ _ f g _
     end,
     rwr fin_Set_bij_succ_map_eq bij q, 
-    change (bij.map ⟨n, nat.le_refl (n + 1)⟩).1 = (fin_lift (le_succ m) b).1,
-    rwr <- @is_set_inverse_of.r_inv _ _ f g _ (fin_lift (le_succ m) b),
+    change (bij.map ⟨n, nat.le_refl (n + 1)⟩).1 = (@fin_lift m 1 b).1,
+    rwr <- @is_set_inverse_of.r_inv _ _ f g _ (@fin_lift m 1 b),
     rwr <- @fin_eq _ _ ⟨n, nat.le_refl (n + 1)⟩ p },
   { rwr fin_Set_bij_succ_map_neq bij_inv np, 
-    have nq : (f (fin_lift (nat.le_succ n) (fin_desc (bij_inv.map 
-                  (fin_lift (le_succ m) b)) (fin_Set_bij_succ_map_neq_ineq 
+    have nq : (f (@fin_lift n 1 (fin_desc (bij_inv.map 
+                  (@fin_lift m 1 b)) (fin_Set_bij_succ_map_neq_ineq 
                                                            bij_inv np)))).1 ≠ m, by
     begin
       rwr fin_lift_desc, rwr @is_set_inverse_of.r_inv _ _ f bij_inv.map _, 
@@ -200,8 +185,8 @@ begin
       exact λH1, nat.lt_irrefl m (nat.le_trans (nat.le_of_eq (ap nat.succ H1⁻¹)) b.2)
     end,  
     rwr fin_Set_bij_succ_map_neq bij nq, 
-    change (bij.map (fin_lift (le_succ n) (fin_desc (bij_inv.map (fin_lift 
-      (le_succ m) b)) (fin_Set_bij_succ_map_neq_ineq bij_inv np)))).1 = b.1, 
+    change (bij.map (@fin_lift n 1 (fin_desc (bij_inv.map (@fin_lift m 1 b)) 
+                                  (fin_Set_bij_succ_map_neq_ineq bij_inv np)))).1 = b.1, 
     rwr fin_lift_desc, rwr @is_set_inverse_of.r_inv _ _ bij.map bij_inv.map _ }
 end    
 
