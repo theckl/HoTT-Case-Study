@@ -71,7 +71,7 @@ begin
 end 
 
 /- We characterize and construct products of two monoids using products of the 
-   underlying sets. This implies and is implied by the standard universl property. -/
+   underlying sets. This implies and is implied by the standard universal property. -/
 @[hott]  --[GEVE]
 structure is_monoid_product (M N P : Monoid) :=
   (set_prod : is_product (Monoid_to_Set_functor.obj M) 
