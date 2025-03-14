@@ -15,6 +15,10 @@ open hott.eq hott.sigma hott.set hott.subset hott.is_trunc
 def is_mono {C : Category} {c₁ c₂ : C} (f : c₁ ⟶ c₂) :=
   Π (d : C) (g₁ g₂ : d ⟶ c₁), g₁ ≫ f = g₂ ≫ f -> g₁ = g₂
 
+@[hott]
+def is_epi {C : Category} {c₁ c₂ : C} (f : c₁ ⟶ c₂) :=
+  Π (d : C) (g₁ g₂ : c₂ ⟶ d), f ≫ g₁ = f ≫ g₂ -> g₁ = g₂
+
 @[hott, instance]
 def is_mono_is_prop {C : Category} {c₁ c₂ : C} (f : c₁ ⟶ c₂) : 
   is_prop (is_mono f) :=
