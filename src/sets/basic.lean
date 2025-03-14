@@ -766,7 +766,7 @@ begin
 end
 
 /- Natural numbers form a set. We need the encode-decode method. -/
-@[hott]
+@[hott, reducible]
 def nat_code : ℕ -> ℕ -> Type _
 | 0     0     := One 
 | (n+1) 0     := Zero
@@ -785,7 +785,7 @@ def nat_refl : Π (n : ℕ), nat_code n n :=
   begin intro n, hinduction n, exact One.star, exact ih end 
 
 @[hott]
-def nat_decode : Π (m n : ℕ), nat_code n m -> n = m
+def nat_decode : Π (n m : ℕ), nat_code n m -> n = m
 | 0     0     := λ cd, idp  
 | (n+1) 0     := λ cd, by hinduction cd
 | 0     (m+1) := λ cd, by hinduction cd
@@ -801,6 +801,45 @@ end
 @[hott]
 def nat_Set : Set :=
   Set.mk ℕ nat_is_set
+
+/- integers form a set. We use the encode-decode method for ℕ. -/
+@[hott]
+def int_code : ℤ -> ℤ -> Type _
+| (int.of_nat n) (int.of_nat m) := nat_code n m
+| (int.of_nat n) -[1+ m]        := Zero
+| -[1+ n]        (int.of_nat m) := Zero
+| -[1+ n]        -[1+m]         := nat_code n m
+
+@[hott, instance]
+def int_code_is_prop : Π (n m : ℤ), is_prop (int_code n m)
+| (int.of_nat n) (int.of_nat m) := by exact nat_code_is_prop n m
+| (int.of_nat n) -[1+ m]        := by change is_prop Zero; apply_instance
+| -[1+ n]        (int.of_nat m) := by change is_prop Zero; apply_instance
+| -[1+ n]        -[1+m]         := by exact nat_code_is_prop n m
+
+@[hott]
+def int_refl : Π (n : ℤ), int_code n n
+| (int.of_nat n) := nat_refl n
+| -[1+ n]        := nat_refl n 
+
+@[hott]
+def int_decode : Π (n m : ℤ), int_code n m -> n = m
+| (int.of_nat n) (int.of_nat m) := λ c, ap int.of_nat (nat_decode n m c)
+| (int.of_nat n) -[1+ m]        := λ c, by hinduction c
+| -[1+ n]        (int.of_nat m) := λ c, by hinduction c 
+| -[1+ n]        -[1+m]         := λ c, ap int.neg_succ_of_nat (nat_decode n m c)
+
+@[hott, instance] 
+def int_is_set : is_set ℤ :=
+begin 
+  fapply @encode_decode_set _ int_code int_refl int_code_is_prop, 
+  intros a b cd, exact int_decode _ _ cd 
+end
+
+@[hott]
+def int_Set : Set :=
+  Set.mk ℤ int_is_set
+
 
 /- Decidability of ℕ in [types.nat.basic] is not hott. -/
 @[hott]
