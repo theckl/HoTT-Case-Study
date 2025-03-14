@@ -25,6 +25,14 @@ end
 def succ_pred_of_pos' {n : ℕ} (H : 0 < n) : succ (pred n) = n :=
   (sum.resolve_left (eq_zero_sum_eq_succ_pred n) (ne.symm (ne_of_lt H)))⁻¹
 
+@[hott]
+def lt_pred_self_pos {n : ℕ} (H : 0 < n) : pred n < n :=
+  begin change succ (pred n) ≤ n, rwr succ_pred_of_pos' H end
+
+@[hott]
+def nat.pred_add_pred_add_pos {n m : ℕ} (H : 0 < n) : pred (n + m) = (pred n) + m :=
+  begin hinduction n, hinduction nat.lt_irrefl 0 H, rwr nat.succ_add end 
+
 @[hott] 
 def exists_eq_succ_of_ne_zero {n : ℕ} (H : n ≠ 0) : Σk : ℕ, n = succ k :=
   sigma.mk (pred n) (sum.resolve_left (eq_zero_sum_eq_succ_pred n) H)
@@ -97,6 +105,19 @@ def nat.succ_sub_succ' (n m : ℕ) : succ n - succ m = n - m :=
 @[hott] 
 def nat.sub_self' (n : ℕ) : n - n = 0 :=
 nat.rec_on n (nat.sub_zero' _) (λk IH, nat.succ_sub_succ' _ _ ⬝ IH)
+
+@[hott] def nat.add_sub_add_right' (n k m : ℕ) : (n + k) - (m + k) = n - m :=
+nat.rec_on k
+  (calc
+    (n + 0) - (m + 0) = n - (m + 0) : by rwr nat.add_zero
+                  ... = n - m       : by rwr nat.add_zero)
+  (λl : nat,
+    assume IH : (n + l) - (m + l) = n - m,
+    calc
+      (n + succ l) - (m + succ l) = succ (n + l) - (m + succ l) : by rwr nat.add_succ
+                              ... = succ (n + l) - succ (m + l) : by rwr nat.add_succ
+                              ... = (n + l) - (m + l)           : by rwr nat.succ_sub_succ'
+                              ... =  n - m                      : IH)
 
 @[hott] 
 def nat.sub_self_add' (n m : ℕ) : n - (n + m) = 0 :=
@@ -179,6 +200,38 @@ begin
 end
 
 @[hott]
+def nat.add_sub_comm  (n m k : ℕ) : m ≥ k -> m + n - k = m - k + n :=
+begin
+  intro p, hinduction n, exact idp,
+  change succ (m + n) - k = succ _, rwr nat.succ_sub (nat.le_trans p (nat.le_add_right m n)),
+  exact ap succ ih
+end
+
+@[hott]
+def nat.sub_add_sub_sub_add_sub {n m k l : ℕ} : 
+  m ≥ k -> n ≥ l -> (m - k) + (n - l) = (m + n) - (k + l) :=
+begin
+  intros p q, 
+  calc m - k + (n - l) = m - k + n - l : (nat.add_sub_assoc q _)⁻¹
+       ... = m + n - k - l : by rwr <- nat.add_sub_comm _ _ _ p
+       ... = m + n - (k + l) : nat.sub_sub' _ _ _
+end
+
+@[hott] 
+def nat.add_sub_sub_sub {n m k : ℕ} (H : m ≥ k - n) (H' : k ≥ n) : 
+  m + n - k = m - (k - n) :=
+begin
+  apply @nat.add_right_cancel _ (k-n) _, rwr <- nat.add_sub_comm _ _ _ H,
+  rwr nat.add_sub_cancel', rwr <- nat.add_sub_assoc H' (m + n - k), 
+  have p : m + n ≥ k, from 
+  begin 
+    rwr <- nat.add_sub_cancel' k n, rwr nat.add_sub_comm _ _ _ H',
+    rwr nat.add_comm _ n, rwr nat.add_comm _ n, exact nat.add_le_add_left H _ 
+  end,
+  rwr <- nat.add_sub_comm _ _ _ p, rwr nat.add_sub_cancel', rwr nat.add_sub_cancel'
+end
+
+@[hott]
 def nat.sub_lt_of_lt_add {v n m : nat} (h₁ : v < n + m) (h₂ : v ≥ n) : v - n < m :=
   have nat.succ v ≤ n + m,   from succ_le_of_lt h₁,
   have nat.succ (v - n) ≤ m, from
@@ -209,6 +262,73 @@ def nat.lt_add_of_lt_left' {b c : ℕ} (H : b < c) (a : ℕ) : b < a + c :=
 @[hott]
 def nat.lt_of_succ_lt_succ' {a b : ℕ} : succ a < succ b → a < b :=
   nat.le_of_succ_le_succ
+
+@[hott] 
+def nat.lt_trans' {n m k : ℕ} (H1 : n < m) : m < k → n < k :=
+  nat.le_trans (le.step H1)
+
+@[hott] 
+def nat.le_add_left' (n m : ℕ): n ≤ m + n :=
+  by rwr nat.add_comm; apply nat.le_add_right
+
+@[hott] def nat.lt_of_add_lt_add_right {k n m : ℕ} (H : n + k < m + k) : n < m :=
+  begin hinduction k, exact H, apply ih, exact nat.lt_of_succ_lt_succ' H end
+
+@[hott]
+def nat.sub_gt_zero_of_lt {n m : ℕ} : n < m -> m - n > 0 :=
+begin 
+  intro q, apply @nat.lt_of_add_lt_add_right n 0 (m-n), rwr nat.add_comm, 
+  rwr nat.add_comm (m - n) n, rwr nat.add_sub_cancel_left'' n m (nat.le_of_lt q), 
+  exact q 
+end
+
+@[hott]
+def nat.lt_sub_of_add_lt {n m v : ℕ} (h₁ : n + m < v) : n < v - m :=
+  have p : m < v, from nat.lt_of_le_of_lt (nat.le_add_left' m n) h₁,
+  begin 
+    apply λ q, nat.lt_of_le_of_lt q (lt_pred_self_pos (nat.sub_gt_zero_of_lt p)), 
+    rwr <- nat.sub_succ', rwr <- nat.add_sub_cancel_left' (succ m) n,
+    rwr nat.add_comm (succ m) n, exact nat.sub_le_sub_right h₁ (succ m) 
+  end
+
+@[hott] 
+def nat.mul_pred_left' (n m : ℕ) : pred n * m = n * m - m :=
+nat.rec_on n
+  (calc
+    pred 0 * m = 0 * m     : by rwr pred_zero
+           ... = 0         : by rwr nat.zero_mul
+           ... = 0 - m     : by rwr nat.zero_sub'
+           ... = 0 * m - m : by rwr nat.zero_mul)
+  (λk : nat,
+    assume IH : pred k * m = k * m - m,
+    calc
+      pred (succ k) * m = k * m          : by rwr pred_succ
+                    ... = k * m + m - m  : by rwr nat.add_sub_cancel'
+                    ... = succ k * m - m : by rwr succ_mul)
+
+@[hott] 
+protected def nat.mul_sub_right_distrib' (n m k : ℕ) : (n - m) * k = n * k - m * k :=
+nat.rec_on m
+  (calc
+    (n - 0) * k = n * k         : by rwr nat.sub_zero'
+            ... = n * k - 0     : by rwr nat.sub_zero'
+            ... = n * k - 0 * k : by rwr nat.zero_mul)
+  (λl : nat,
+    assume IH : (n - l) * k = n * k - l * k,
+    calc
+      (n - succ l) * k = pred (n - l) * k     : by rwr nat.sub_succ'
+                   ... = (n - l) * k - k      : by rwr nat.mul_pred_left'
+                   ... = n * k - l * k - k    : by rwr IH
+                   ... = n * k - (l * k + k)  : by rwr nat.sub_sub'
+                   ... = n * k - (succ l * k) : by rwr succ_mul)
+
+@[hott] 
+protected def nat.mul_sub_left_distrib' (n m k : ℕ) : n * (m - k) = n * m - n * k :=
+calc
+  n * (m - k) = (m - k) * n   : by rwr nat.mul_comm
+          ... = m * n - k * n : by rwr nat.mul_sub_right_distrib'
+          ... = n * m - k * n : by rwr nat.mul_comm
+          ... = n * m - n * k : by rwr nat.mul_comm k n
 
 /- We formalize the example on the use of (computational) univalence presented in the 
    paper [Vezzosi, Abel and Mörtberg: Cubical Agda]: When calculating 
