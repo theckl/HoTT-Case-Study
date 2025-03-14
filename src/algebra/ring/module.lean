@@ -94,6 +94,44 @@ begin
 end 
 
 @[hott]
+def neg_scal_mul_eq_mul_neg {R : CommRing} {M : Module R} : 
+  Π (r : R) (m : M), -(r ⬝ m) = r ⬝ (-m) :=
+begin
+  intros r m, apply module_left_cancel M (r ⬝ m), rwr (module_laws M).add_comm,
+  rwr (module_laws M).add_comm (r ⬝ m), rwr (module_laws M).add_left_inv, 
+  rwr <- (module_laws M).left_distr, rwr (module_laws M).add_left_inv,
+  rwr scal_mul_zero_zero
+end 
+
+@[hott]
+def zero_scal_mul_zero {R : CommRing} (M : Module R) : 
+  Π (m : M), (0:R) ⬝ m = 0 :=
+begin
+  intro m, apply module_left_cancel M m, rwr add_zero, 
+  apply λ p, eq.concat (ap (λ n, n + (0:R) ⬝ m) ((module_laws M).one_scal_mul m)⁻¹) p,
+  change (1:R) ⬝ m + _ = _,  rwr <- (module_laws M).right_distr, rwr add_zero,
+  exact (module_laws M).one_scal_mul m
+end
+
+@[hott]
+def neg_scal_mul_eq_neg_mul {R : CommRing} {M : Module R} : 
+  Π (r : R) (m : M), -(r ⬝ m) = (-r) ⬝ m :=
+begin
+  intros r m, apply module_left_cancel M (r ⬝ m), rwr (module_laws M).add_comm,
+  rwr (module_laws M).add_comm (r ⬝ m), rwr (module_laws M).add_left_inv, 
+  rwr <- (module_laws M).right_distr, rwr comm_ring_laws.add_left_inv,
+  rwr zero_scal_mul_zero
+end
+
+@[hott]
+def neg_eq_neg_one_scal_mul {R : CommRing} {M : Module R} :
+  Π (m : M), -m = (- (1:R)) ⬝ m := 
+begin 
+  intro m, rwr <- (module_laws M).one_scal_mul m, rwr neg_scal_mul_eq_neg_mul,
+  rwr (module_laws M).one_scal_mul m 
+end
+
+@[hott]
 def module_sum_of_tuples_add {R : CommRing} {M : Module R} {n : ℕ} :
   Π (s t : tuple M n), module_sum_of_tuple (λ i : fin n, s i + t i) =
                                       module_sum_of_tuple s + module_sum_of_tuple t :=
@@ -437,6 +475,13 @@ begin
     rwr ih (@tuple.split_left _ n 1 m) }
 end
 
+/- Bilinear maps of modules -/
+@[hott]
+structure is_bilinear_map {R : CommRing} {N M L : Module R} (f : N -> M -> L) :=
+  (left_lin : Π (n₁ n₂ : N) (m : M), f (n₁ + n₂) m = f n₁ m + f n₂ m)
+  (left_scal : Π (r : R) (n : N) (m : M), f (r ⬝ n) m = r ⬝ f n m)
+  (right_lin : Π (n : N) (m₁ m₂ : M), f n (m₁ + m₂) = f n m₁ + f n m₂)
+  (right_scal : Π (r : R) (n : N) (m : M), f n (r ⬝ m) = r ⬝ f n m)
 
 end algebra
 
