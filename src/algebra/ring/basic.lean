@@ -1,10 +1,10 @@
-import algebra.group.basic 
+import int2 algebra.group.basic
        
 universes u u' v w
 hott_theory
 
 namespace hott
-open trunc is_trunc hott.algebra hott.relation hott.is_equiv subset precategories 
+open trunc is_trunc hott.algebra hott.relation hott.is_equiv set subset precategories 
      categories categories.sets
 
 namespace algebra
@@ -61,6 +61,13 @@ begin
        ... = 1 * inv₂ : by rwr law₁
        ... = inv₂ : comm_ring_laws.one_mul _
 end
+
+/- Some calculation rules, already in [hott.algebra.ring], but as theorems and lemmas. -/
+@[hott] def neg_mul_neg' {R : CommRing} : Π (a b : R), -a * -b = a * b :=
+λ a b, calc
+       -a * -b = -(a * -b) : by rwr ←neg_mul_eq_neg_mul
+       ... = - -(a * b)  : by rwr ←neg_mul_eq_mul_neg
+       ... = a * b       : by rwr neg_neg
 
 /- Commutative rings with one are a concrete category over abelian groups, with fibers
    having the structure of commutative monoids. -/
@@ -272,8 +279,8 @@ def CommRing_is_cat : is_cat.{u u+1} CommRing.{u} := by apply_instance
 def CommRing_Category : Category :=
   Category.mk CommRing.{u} CommRing_is_cat
 
-/- For calculations with ring homomorphisms, it is more effective to extract the laws
-   of a homomorphism. -/
+/- For constructions of and then calculations with ring homomorphisms, it is more 
+   effective to extract the laws of a homomorphism as equation between set_elements. -/
 @[hott, reducible]
 def CommRing_to_Set_functor : CommRing ⥤ Set :=
 begin
@@ -339,6 +346,233 @@ begin
       { apply @concrete_forget_functor_is_faithful _ _ AbGroup.to_Group },
       { apply Group_to_Set_functor_is_faithful } } } 
 end 
+
+/- Calculation rules of rings can be used directly; to use calculation rules of the 
+   underlying additive abelian groups we need an instance. -/
+@[hott, instance]
+def add_ab_group_of_set_comm_ring (R : CommRing) : 
+  add_ab_group (CommRing_to_Set_functor.obj R) :=
+@add_ab_group_of_ring R (comm_ring.to_ring R)
+
+/- Some calculation rules for ring homomorphisms. -/
+@[hott]
+def ring_hom_neg {R S : CommRing} (f : R ⟶ S) : Π (r : R), 
+  CommRing_to_Set_functor.map f (-r) = - CommRing_to_Set_functor.map f r :=
+begin 
+  intro r, apply @add_cancel_right _ _ _ _ (CommRing_to_Set_functor.map f r), 
+  rwr comm_ring_laws.add_left_inv, rwr <- (comm_ring_hom_laws f).add_comp,
+  rwr comm_ring_laws.add_left_inv, apply λ q, (comm_ring_hom_laws f).zero_comp ⬝ q,
+  exact idp
+end
+
+/- We define algebras over a commutative ring `R` as commutative rings with a ring 
+   homomorphism from `R`. -/
+@[hott]
+structure algebra (R : CommRing.{u}) (S : Type u) :=
+  (ring_str : comm_ring S)
+  (scalar_map : R -> S)
+  (hom_str : @comm_ring_hom_str R (CommRing.mk S ring_str) scalar_map)
+
+attribute [class] algebra
+
+@[hott]  --[GEVE]
+structure Algebra (R : CommRing.{u}) :=
+  (carrier : Type u)
+  (struct : algebra R carrier)
+
+instance has_coe_Algebra (R : CommRing.{u}) : has_coe_to_sort (Algebra.{u} R) :=
+  ⟨Type u, Algebra.carrier⟩
+
+attribute [instance] Algebra.struct
+
+@[hott]
+def Algebra.mk' {R : CommRing.{u}} (S : CommRing.{u}) (s : R ⟶ S) : Algebra R :=
+  Algebra.mk S (algebra.mk S.struct (CommRing_to_Set_functor.map s) 
+                                    (comm_ring_hom_laws s)) 
+
+@[hott, reducible, instance] 
+def comm_ring_of_algebra {R : CommRing.{u}} (S : Type u) [H : algebra R S] : 
+  comm_ring S :=
+H.ring_str
+
+@[hott, reducible] 
+def Algebra.to_CommRing {R : CommRing.{u}} : Algebra R -> CommRing :=
+  λ S, CommRing.mk S S.struct.ring_str
+
+/- ℤ is a commutative ring and an initial object in the category of commutative rings. -/
+@[hott]
+def int_comm_ring : comm_ring ℤ := 
+begin
+  fapply comm_ring.mk,
+  { exact set.int_is_set },
+  { exact int.add },
+  { exact int.add_assoc },
+  { exact 0 },
+  { exact int.zero_add },
+  { exact int.add_zero },
+  { exact int.neg },
+  { exact int.add_left_neg },
+  { exact int.add_comm },
+  { exact int.mul },
+  { exact int.mul_assoc },
+  { exact 1 },
+  { exact int.one_mul },
+  { exact int.mul_one },
+  { exact int.distrib_left },
+  { exact int.distrib_right },
+  { exact int.mul_comm }
+end
+
+@[hott]
+def int_Ring := CommRing.mk ℤ (int_comm_ring)
+
+@[hott]
+def initial_ring_map (R : CommRing) : ℤ -> R :=
+begin
+  intro a, hinduction a with n n,
+  { hinduction n, exact 0, exact ih + 1 },
+  { hinduction n, exact (- 1 : R), exact ih - 1 }
+end
+
+@[hott]
+def initial_ring_map_nat_neg (R : CommRing) : 
+  Π (n : ℕ), initial_ring_map R (int.neg_of_nat n) = - (initial_ring_map R (int.of_nat n)) :=
+begin
+  intro n, hinduction n, 
+  { change (0 : R) = -0, rwr <- comm_ring_laws.add_zero (-0), 
+    rwr comm_ring_laws.add_left_inv },
+  { change initial_ring_map R -[1+ n] = -(initial_ring_map R (int.of_nat n) + 1),
+    rwr neg_add', rwr <- ih, hinduction n,
+    { change (- 1 : R) = 0 + - 1, rwr zero_add },
+    { change initial_ring_map R -[1+ n] - 1 = _, exact idp } }
+end 
+
+@[hott]
+def initial_ring_map_succ (R : CommRing) : 
+   Π (a : ℤ), initial_ring_map R (a + 1) = initial_ring_map R a + 1 :=
+begin
+  intro a, hinduction a with n n, exact idp, hinduction n,
+  { change initial_ring_map R (int.sub_nat_nat 1 1) = -(1:R) + 1, 
+    rwr comm_ring_laws.add_left_inv 1 }, 
+  { change initial_ring_map R (int.sub_nat_nat 1 ((n+1)+1)) = _, 
+    change _ = initial_ring_map R -[1+ n] + - 1 + 1, rwr add.assoc _ (- 1:R) 1,
+    rwr comm_ring_laws.add_left_inv, rwr add_zero }
+end 
+
+@[hott]
+def initial_ring_map_nat_add (R : CommRing) : 
+   Π (n m : ℕ), initial_ring_map R (int.of_nat (n + m)) = 
+                initial_ring_map R (int.of_nat n) + initial_ring_map R (int.of_nat m) :=
+begin
+  intros n m, hinduction m with m, 
+  { change initial_ring_map R (n + (0:ℤ)) = _ + 0, rwr int.add_zero, rwr add_zero },
+  { rwr nat.add_succ, change initial_ring_map R (int.of_nat (n+m) + 1) = 
+                                              _ + initial_ring_map R (int.of_nat m + 1), 
+    rwr initial_ring_map_succ, rwr initial_ring_map_succ, rwr ih, rwr add.assoc }
+end
+
+@[hott]
+def initial_ring_map_nat_mul (R : CommRing) : 
+   Π (n m : ℕ), initial_ring_map R (int.of_nat (n * m)) = 
+                initial_ring_map R (int.of_nat n) * initial_ring_map R (int.of_nat m) :=
+begin
+  intros n m, hinduction m with m,
+  { rwr nat.mul_zero, change (0:R) = _ * 0, rwr mul_zero },
+  { change initial_ring_map R (int.of_nat (n * m + n)) =
+           initial_ring_map R (int.of_nat n) * initial_ring_map R (int.of_nat (m + 1)),
+    rwr initial_ring_map_nat_add, rwr initial_ring_map_nat_add, rwr ih,
+    rwr left_distrib, change _ = _ + (_ * ((0:R) + 1)), rwr zero_add, rwr mul_one }
+end
+
+@[hott]  --[GEVE]
+def int_is_initial_ring : Π {R : CommRing}, int_Ring ⟶ R :=
+begin
+  intro R, fapply comm_ring_hom.mk,
+  { exact initial_ring_map R },
+  { fapply comm_ring_hom_str.mk,
+    { intros a b, hinduction a with n n, 
+      { hinduction b with m m, 
+        { exact initial_ring_map_nat_add _ _ _ },
+        { hinduction n with n,
+          { change initial_ring_map R (0 + _) = 0 + _, rwr int.zero_add, rwr zero_add },
+          { change initial_ring_map R (int.of_nat n + 1 + _) = 
+                   initial_ring_map R (int.of_nat n + 1) + _, rwr int.add_assoc, 
+            rwr int.add_comm 1, rwr <- int.add_assoc, rwr initial_ring_map_succ, rwr ih,
+            rwr initial_ring_map_succ, rwr comm_ring_laws.add_assoc _ 1 _, 
+            rwr comm_ring_laws.add_comm 1, rwr <- comm_ring_laws.add_assoc } } },
+      { hinduction b with m m,
+        { hinduction m with m,
+          { change initial_ring_map R (_ + 0) = _ + 0, rwr int.add_zero, rwr add_zero },
+          { change initial_ring_map R (_ + (int.of_nat _ + 1)) =
+                                            _ + initial_ring_map R (int.of_nat _ + 1), 
+            rwr <- int.add_assoc -[1+ n], rwr initial_ring_map_succ,
+            rwr initial_ring_map_succ, rwr <- comm_ring_laws.add_assoc, rwr ih } },
+        { hinduction m with m,
+          { change initial_ring_map R -[1+ nat.succ n] = initial_ring_map R -[1+ n] - 1, 
+            exact idp },
+          { change initial_ring_map R -[1+ n + nat.succ m] - 1 = _, rwr nat.add_succ,
+            change initial_ring_map R (-[1+ n] + -[1+ m]) + - 1 = _, rwr ih, 
+            rwr comm_ring_laws.add_assoc } } } },
+    { exact idp },
+    { intros a b, hinduction a with n n,
+      { hinduction b with m m,
+        { exact initial_ring_map_nat_mul _ _ _ },
+        { change initial_ring_map R (int.neg_of_nat _) = 
+                 _ * initial_ring_map R (int.neg_of_nat (nat.succ m)), 
+          rwr initial_ring_map_nat_neg, rwr initial_ring_map_nat_neg,
+          rwr initial_ring_map_nat_mul, rwr neg_mul_eq_mul_neg } },
+      { hinduction b with m m,
+        { change initial_ring_map R (int.neg_of_nat _) = 
+                 initial_ring_map R (int.neg_of_nat (nat.succ n)) * _, 
+          rwr initial_ring_map_nat_neg, rwr initial_ring_map_nat_neg,
+          rwr initial_ring_map_nat_mul, rwr neg_mul_eq_neg_mul },
+        { change initial_ring_map R (int.of_nat _) = 
+                 initial_ring_map R (int.neg_of_nat (nat.succ n)) * 
+                 initial_ring_map R (int.neg_of_nat (nat.succ m)), 
+          rwr initial_ring_map_nat_neg, rwr initial_ring_map_nat_neg,
+          rwr initial_ring_map_nat_mul, rwr neg_mul_neg' } } },
+    { change initial_ring_map R 0 + 1 = 1, exact comm_ring_laws.zero_add 1 } } 
+end
+
+@[hott]  --[GEVE]
+def initial_ring_map_is_unique {R : CommRing} : Π (f g : int_Ring ⟶ R), f = g :=
+begin
+  intros f g, apply CommRing_to_Set_functor_is_faithful, apply eq_of_homotopy, intro a,
+  hinduction a with n n,
+  { hinduction n, 
+    { change CommRing_to_Set_functor.map f 0 = CommRing_to_Set_functor.map g 0,
+      apply λ q, (comm_ring_hom_laws f).zero_comp ⬝ q, apply eq.inverse, 
+      apply λ q, (comm_ring_hom_laws g).zero_comp ⬝ q, exact idp },
+    { change CommRing_to_Set_functor.map f (int.of_nat n + 1) = 
+                                     CommRing_to_Set_functor.map g (int.of_nat n + 1),
+      apply λ q, (comm_ring_hom_laws f).add_comp _ _ ⬝ q, apply eq.inverse, 
+      apply λ q, (comm_ring_hom_laws g).add_comp _ _ ⬝ q, 
+      apply λ q, ap (λ r, _ + r) (comm_ring_hom_laws g).one_comp ⬝ q, apply eq.inverse, 
+      apply λ q, ap (λ r, _ + r) (comm_ring_hom_laws f).one_comp ⬝ q, 
+      change _ + (1:R) = _ + 1, exact ap (λ r:R, r + 1) ih } },
+  { hinduction n,
+    { change CommRing_to_Set_functor.map f (-(1:ℤ)) = 
+             CommRing_to_Set_functor.map g (-(1:ℤ)),
+      rwr ring_hom_neg, rwr ring_hom_neg, 
+      apply λ q, ap (λ r, - r) (comm_ring_hom_laws f).one_comp ⬝ q, apply eq.inverse,
+      apply λ q, ap (λ r, - r) (comm_ring_hom_laws g).one_comp ⬝ q, exact idp },
+    { change CommRing_to_Set_functor.map f (-[1+ n] + -[1+ 0]) = 
+             CommRing_to_Set_functor.map g (-[1+ n] + -[1+ 0]), 
+      apply λ q, (comm_ring_hom_laws f).add_comp _ _ ⬝ q, apply eq.inverse, 
+      apply λ q, (comm_ring_hom_laws g).add_comp _ _ ⬝ q, apply eq.inverse,
+      rwr add.comm, rwr add.comm _ (CommRing_to_Set_functor.map g -[1+ 0]), rwr ih,
+      apply λ p, ap (λ (r:R), r + (CommRing_to_Set_functor.map g -[1+ n])) p, 
+      change CommRing_to_Set_functor.map f (-(1:ℤ)) = 
+             CommRing_to_Set_functor.map g (-(1:ℤ)),
+      rwr ring_hom_neg, rwr ring_hom_neg, 
+      apply λ q, ap (λ r, - r) (comm_ring_hom_laws f).one_comp ⬝ q, apply eq.inverse,
+      apply λ q, ap (λ r, - r) (comm_ring_hom_laws g).one_comp ⬝ q, exact idp } }
+end
+
+/- Every commutative ring is a ℤ-algebra. -/
+@[hott]
+def int_Algebra (R : CommRing) : Algebra (int_Ring) := 
+  Algebra.mk' R (@int_is_initial_ring R)
 
 end algebra
 
