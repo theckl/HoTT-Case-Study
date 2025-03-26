@@ -38,16 +38,16 @@ algebra
    quotient :   726    
   group        
    basic    :   569
-   abelian  :   393
+   abelian  :   465
    subgroup :   367  
-   quotient :   691  
+   quotient :   692  
   ring
    basic    :   579  
    module   :   480  
-   examples :   641
-   submod   :   328  5206
+   examples :   863
+   submod   :   343  5516
                     -----
-                    22129               
+                    22439               
 
 
 Planned changes in Files, from bottom to top: 
