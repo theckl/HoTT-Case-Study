@@ -13,7 +13,7 @@ namespace algebra
 /- The monoid quotient of the underlying monoid of a group by a congruence relation 
    inherits the group structure and can thus be considered as a group quotient. -/
 @[hott]
-def group_to_monoid_rel {G : Group} (R : G -> G -> Prop) :
+def group_to_monoid_rel {G : Group.{u}} (R : G -> G -> trunctype.{u} -1) :
   (Group.to_Monoid G).carrier -> (Group.to_Monoid G).carrier -> Prop :=
 λ g h, R g h
 
@@ -57,7 +57,7 @@ begin
 end
 
 @[hott]
-def conjugate {G : Group} (H : Subgroup G) (g : G) : Subgroup G :=
+def conjugate {G : Group.{u}} (H : Subgroup G) (g : G) : Subgroup G :=
 begin
   fapply Subgroup_of_Subset,
   { intro h', exact ∥Σ (h : G), (h ∈ subset_of_subgroup H) × (g * h * g⁻¹ = h')∥ },
@@ -181,7 +181,7 @@ end
 /- The extra structure on groups compared to monoids associates equivalence relations 
    and congruences to subgroups and normal subgroups. -/
 @[hott]
-def subgroup_to_rel {G : Group} (H : Subgroup G) : G -> G -> Prop := 
+def subgroup_to_rel {G : Group.{u}} (H : Subgroup G) : G -> G -> Prop := 
   λ g h : G, to_Prop (g⁻¹ * h ∈ subset_of_subgroup H)
 
 @[hott, instance]  --[GEVE]
@@ -310,25 +310,30 @@ end
 structure is_group_quotient {G : Group} (H : Subgroup G) [is_normal H] 
   (Q : Group) :=
 (proj : G ⟶ Q)
-(surj : is_surjective (Group_to_Set_functor.map proj))
+(surj : is_surjective.{u u} (Group_to_Set_functor.map proj))
 (ker : kernel_subgroup proj = H)
 
+@[hott]
+def quotient_Group_by_normal_subgroup (G : Group) (H : Subgroup G) [norm_H : is_normal H] :
+  Group :=
+quotient_Group_by_monoid_cong_rel G (subgroup_to_rel H)
+
 @[hott]  --[GEVE]
-def monoid_quot_is_group_quot {G : Group} {H : Subgroup G} [norm_H : is_normal H] :
-  is_group_quotient H (quotient_Group_by_monoid_cong_rel G (subgroup_to_rel H)) :=
+def quot_Group_is_group_quot {G : Group.{u}} (H : Subgroup G) [norm_H : is_normal H] :
+  is_group_quotient H (quotient_Group_by_normal_subgroup G H) :=
 begin
   have equiv : is_equivalence (λ g h, subgroup_to_rel H g h), from 
     (normal_subgroup_to_cong_rel H).to_is_equivalence, 
-  fapply is_group_quotient.mk,
+  fapply is_group_quotient.mk, 
   { apply group_of_monoid_hom, 
     exact (@Monoid_cong_quotient (Group.to_Monoid G) (group_to_monoid_rel 
                                         (subgroup_to_rel H)) _).is_mon_quot.proj },
-  { rwr Group_to_Monoid_to_Set_functor', 
+  { rwr Group_to_Monoid_to_Set_functor'.{u u}, 
     rwr (@Monoid_cong_quotient (Group.to_Monoid G) (group_to_monoid_rel 
                                         (subgroup_to_rel H)) _).is_mon_quot.proj_eq, 
     intro q, hinduction (@Monoid_cong_quotient (Group.to_Monoid G) (group_to_monoid_rel 
                    (subgroup_to_rel H)) _).is_mon_quot.is_set_quot.gen q with fib_eq fib, 
-    apply tr, exact fiber.mk fib.1 fib.2 },
+    apply tr, exact fiber.mk fib.1 fib.2 }, 
   { fapply subobj_antisymm, 
     { apply subgroup_hom_of_subset, intros h h_el, hinduction h_el with fib,
       hinduction fib, hinduction point with h' h_eq, 
@@ -396,7 +401,7 @@ begin
 end
 
 @[hott]
-def group_image_is_quot {G H : Group} (f : G ⟶ H) : 
+def group_image_is_quot {G H : Group.{u}} (f : G ⟶ H) : 
   is_group_quotient (@kernel_subgroup G H f) (@hom.image Group_Category _ _ f _).obj :=
 begin
   fapply is_group_quotient.mk,
@@ -505,24 +510,23 @@ end
 @[hott]
 def univ_iso_group_quotient {G : Group} (H : Subgroup G) [is_normal H] 
   (Q : Group) (is_quot : is_univ_group_quotient H Q) : 
-  Q ≅ quotient_Group_by_monoid_cong_rel G (subgroup_to_rel H) :=
---    is_quot.proj = monoid_quot_is_group_quot.proj ≫ i.hom :=
+  Q ≅ quotient_Group_by_normal_subgroup G H :=
 begin
   let is_quot' : is_univ_group_quotient H (quotient_Group_by_monoid_cong_rel G 
                                                        (subgroup_to_rel H)) := 
-      group_quotient_is_univ _ _ monoid_quot_is_group_quot,
+      group_quotient_is_univ _ _ (quot_Group_is_group_quot _),
   have H_inc : H ≼ kernel_subgroup is_quot.proj, by rwr is_quot.ker; exact 𝟙 H,
-  have H_inc' : H ≼ kernel_subgroup monoid_quot_is_group_quot.proj, by 
-                                   rwr monoid_quot_is_group_quot.ker; exact 𝟙 H,
+  have H_inc' : H ≼ kernel_subgroup (quot_Group_is_group_quot _).proj, by 
+                                   rwr (quot_Group_is_group_quot _).ker; exact 𝟙 H,
   have p : is_quot.proj = is_quot'.proj ≫ (is_quot'.factors is_quot.proj H_inc).fst, from 
         (is_univ_group_quotient.factors is_quot' is_quot.proj H_inc).2,
-  have p' : monoid_quot_is_group_quot.proj = is_quot.proj ≫ (is_quot.factors 
-                  monoid_quot_is_group_quot.proj H_inc').fst, from 
-          (is_univ_group_quotient.factors is_quot monoid_quot_is_group_quot.proj 
+  have p' : (quot_Group_is_group_quot _).proj = is_quot.proj ≫ (is_quot.factors 
+                  (quot_Group_is_group_quot _).proj H_inc').fst, from 
+          (is_univ_group_quotient.factors is_quot (quot_Group_is_group_quot _).proj 
                                                                           H_inc').2,
    fapply iso.mk,
     { fapply sigma.fst (is_univ_group_quotient.factors is_quot 
-                                        monoid_quot_is_group_quot.proj H_inc') },
+                                        (quot_Group_is_group_quot _).proj H_inc') },
     { fapply is_iso.mk,
       { fapply sigma.fst (is_univ_group_quotient.factors is_quot' is_quot.proj H_inc) },
       { fapply is_univ_group_quotient.unique is_quot', 
@@ -535,14 +539,11 @@ end
 @[hott]
 def univ_iso_group_quotient_proj_eq {G : Group} (H : Subgroup G) [is_normal H] 
   (Q : Group) (is_quot : is_univ_group_quotient H Q) :
-  is_quot.proj = monoid_quot_is_group_quot.proj ≫ 
+  is_quot.proj = (quot_Group_is_group_quot _).proj ≫ 
                                   (univ_iso_group_quotient H Q is_quot).ih.inv := 
 begin
-  let is_quot' : is_univ_group_quotient H (quotient_Group_by_monoid_cong_rel G 
-                                                       (subgroup_to_rel H)) := 
-      group_quotient_is_univ _ _ monoid_quot_is_group_quot,
-  let H_inc : H ≼ kernel_subgroup is_quot.proj := by rwr is_quot.ker; exact 𝟙 H,
-  exact (is_univ_group_quotient.factors is_quot' is_quot.proj H_inc).2
+  apply λ (H_inc : H ≼ kernel_subgroup is_quot.proj), (is_univ_group_quotient.factors 
+                 (group_quotient_is_univ _ _ (quot_Group_is_group_quot _)) is_quot.proj H_inc).2,
 end 
 
 @[hott]
@@ -552,7 +553,7 @@ begin
   intro is_quot, fapply is_group_quotient.mk,
   { exact is_quot.proj },
   { intro g, rwr univ_iso_group_quotient_proj_eq H Q is_quot,
-    hinduction is_group_quotient.surj (@monoid_quot_is_group_quot G H _) 
+    hinduction is_group_quotient.surj (quot_Group_is_group_quot _) 
       (Group_to_Set_functor.map (univ_iso_group_quotient H Q is_quot).hom g) with 
       tr_eq fib, 
     rwr Group_to_Set_functor.map_comp, apply tr, fapply fiber.mk,
@@ -644,15 +645,15 @@ end
 
 @[hott]
 def normal_gen_closure {G : Group} (H : Subgroup G) : Subgroup G :=
-  gen_subgroup (@subset.Image ((Group_to_Set_functor.obj G) × 
+  gen_subgroup (@subset.Image.{u u} ((Group_to_Set_functor.obj G) × 
     (Group_to_Set_functor.obj H.obj)) (Group_to_Set_functor.obj G)
     (λ gh, gh.1 * (Group_to_Set_functor.map H.hom gh.2) * gh.1⁻¹))
 
 @[hott]  --[GEVE]
-def normal_gen_closure_is_normal_closure  {G : Group} (H : Subgroup G) :
+def normal_gen_closure_is_normal_closure  {G : Group.{u}} (H : Subgroup G) :
   is_normal_closure H (normal_gen_closure H) :=
 begin
-  let S := (@subset.Image ((Group_to_Set_functor.obj G) × 
+  let S := (@subset.Image.{u u} ((Group_to_Set_functor.obj G) × 
     (Group_to_Set_functor.obj H.obj)) (Group_to_Set_functor.obj G)
     (λ gh, gh.1 * (Group_to_Set_functor.map H.hom gh.2) * gh.1⁻¹)),
   change is_normal_closure H (gen_subgroup S), fapply is_normal_closure.mk,
