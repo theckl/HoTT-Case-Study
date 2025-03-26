@@ -5,7 +5,7 @@ hott_theory
 
 namespace hott
 open trunc is_trunc hott.algebra hott.relation hott.is_equiv subset precategories 
-     categories categories.sets
+     categories categories.sets categories.colimits
 
 namespace algebra
 
@@ -105,6 +105,7 @@ begin
                                                       (Module_to_Set_functor R).map _ n, 
     exact (fib_n _).2 }
 end
+
 
 @[hott]
 def subset_of_submod_hom {R : CommRing} {M : Module R} {N₁ N₂ : Submodule M} :
@@ -322,6 +323,20 @@ begin
       have q : fac.1 ≫ N'.hom = f, from fac.2,
       rwr q, exact n_fib.2 } }
 end
+
+set_option pp.universes true
+
+/- Elements of a module generate a submodule; the sum of submodules is a submodule. -/
+@[hott]
+def gen_Submodule  {R : CommRing} {M : Module R} (gen : Subset (set.to_Set M.carrier)) :
+  Submodule M :=
+hom.image (@copi.desc _ _ _ (λ m : pred_Set gen, R^[1]) 
+    (module_has_sum (λ m : pred_Set gen, R^[1])) _ (λ m : pred_Set gen, mod_to_mod_hom M m.1))
+
+@[hott]
+def sum_mod_submodule {R : CommRing} {M : Module R} {I : Set} (N : I -> Submodule M) :
+  Submodule M :=
+hom.image (@copi.desc _ _ _ (λ i : I, (N i).obj) (module_has_sum _) _ (λ i : I, (N i).hom)) 
 
 end algebra
 
