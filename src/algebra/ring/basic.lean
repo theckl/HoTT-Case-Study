@@ -1,4 +1,4 @@
-import int2 algebra.group.basic
+import int2 algebra.group.abelian
        
 universes u u' v w
 hott_theory
