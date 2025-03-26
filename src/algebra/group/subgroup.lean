@@ -29,7 +29,7 @@ def subgroup_is_set (G : Group) : is_set (Subgroup G) :=
   by change is_set (@subobject Group_Category G); apply_instance
 
 @[hott]  --[GEVE]
-def group_mon_is_inj {G H : Group} : Π (f : G ⟶ H), 
+def group_mon_is_inj {G H : Group.{u}} : Π (f : G ⟶ H), 
   @is_mono Group_Category _ _ f <-> 
   @set.is_set_injective (Group_to_Set_functor.obj H) (Group_to_Set_functor.obj G) 
                         (Group_to_Set_functor.map f) :=
@@ -70,7 +70,7 @@ begin
 end
 
 @[hott]
-def unit_subgroup (G : Group): Subgroup G :=
+def unit_subgroup (G : Group.{u}) : Subgroup G :=
 begin  
   fapply subobject.mk, exact unit_Group, exact init_group_hom G, 
   intros H f₁ f₂ f_eq, fapply Group_to_Set_functor_is_faithful,
@@ -101,7 +101,7 @@ begin
 end 
 
 @[hott]
-def subgroup_hom_of_subset {G : Group} (H₁ H₂ : Subgroup G) :
+def subgroup_hom_of_subset {G : Group.{u}} (H₁ H₂ : Subgroup G) :
   (subset_of_subgroup H₁ ⊆ subset_of_subgroup H₂) -> (H₁ ⟶ H₂) :=
 begin
   intro sset, 
@@ -181,10 +181,10 @@ end
 
 /- Group homomorphisms have images. -/
 @[hott, instance]  --[GEVE]
-def group_hom_has_image {G H : Group} (f : G ⟶ H) : 
+def group_hom_has_image {G H : Group.{u}} (f : G ⟶ H) : 
   @has_image Group_Category _ _ f :=
-begin  
-  fapply has_image.mk, fapply cat_image.mk,
+begin
+  fapply has_image.mk, fapply cat_image.mk, 
   { fapply Subgroup_of_Subset,
     { exact (λ h : H.carrier, image (Group_to_Set_functor.map f) h) },
     { fapply subgroup_str.mk,
@@ -194,7 +194,7 @@ begin
         rwr (group_hom_laws f).mul_comp, rwr fib₁.2, rwr fib₂.2 },
       { intros h h_el, hinduction h_el with fib, 
         apply tr, fapply fiber.mk, exact has_inv.inv fib.1, 
-        rwr group_hom_inv, rwr fib.2 } } },
+        rwr group_hom_inv, rwr fib.2 } } }, 
   { fapply dpair,  
     { fapply group_hom.mk, 
       { intro m, fapply dpair, exact Group_to_Set_functor.map f m, 
@@ -202,7 +202,7 @@ begin
       { fapply group_hom_str.mk,
         { intros m₁ m₂, apply pred_Set_eq, exact (group_hom_laws f).mul_comp _ _ },
         { apply pred_Set_eq, exact (group_hom_laws f).one_comp } } },
-    { apply Group_to_Set_functor_is_faithful, exact idp } },
+    { apply Group_to_Set_functor_is_faithful, exact idp } }, 
   { intros H' fac, fapply subgroup_hom_of_subset, 
     intros h el_im, change ↥(image _ _), change ↥(image _ _) at el_im,
     hinduction el_im with fib, change fiber (pred_Set_map _) h at fib,
@@ -214,7 +214,7 @@ begin
                              Group_to_Set_functor.map H'.hom) m_fib.1 = _, 
       rwr <- Group_to_Set_functor.map_comp, 
       have q : fac.1 ≫ H'.hom = f, from fac.2,
-      rwr q, exact m_fib.2 } }
+      rwr q, exact m_fib.2 } } 
 end
 
 @[hott]  --[GEVE]
@@ -325,7 +325,7 @@ end
 def iInter_subgroups {G : Group.{u}} {I : Set.{v}} (f : I -> Subgroup G) :
   Subgroup G :=
 begin 
-  fapply Subgroup_of_Subset.{u u},
+  fapply Subgroup_of_Subset,
   { exact λ g, prop_resize.{u (max v u)} (to_Prop.{max v u} 
                          (∀ i : I, g ∈ subset_of_subgroup (f i))) },
   { fapply subgroup_str.mk,
@@ -346,9 +346,9 @@ has_ind_inter.mk (λ f, iInter_subgroups f)
 def subgroup_iInter {G : Group.{u}} {I : Set.{v}} (f : I -> Subgroup G) 
   (i : I) : (⋂ᵢ f) ≼ (f i) :=
 begin 
-  apply subgroup_hom_of_subset.{u u}, 
+  apply subgroup_hom_of_subset, 
   intros g el, 
-  change ↥(g ∈ subset_of_subgroup (Subgroup_of_Subset.{u u} _ _)) at el, 
+  change ↥(g ∈ subset_of_subgroup (Subgroup_of_Subset _ _)) at el, 
   rwr Subgroup_Subset_str at el, exact prop_resize_to_prop el i,
 end  
 
@@ -356,8 +356,8 @@ end
 def subgroup_subgroup_iInter {G : Group.{u}} {I : Set.{v}} (f : I -> Subgroup G)
   (H : Subgroup G) : (Π (i : I), H ≼ f i) -> H ≼ ⋂ᵢ f :=
 begin
-  intro H_inc, apply subgroup_hom_of_subset.{u u}, 
-  intros g el, change ↥(g ∈ subset_of_subgroup (Subgroup_of_Subset.{u u} _ _)), 
+  intro H_inc, apply subgroup_hom_of_subset, 
+  intros g el, change ↥(g ∈ subset_of_subgroup (Subgroup_of_Subset _ _)), 
   rwr Subgroup_Subset_str, apply prop_to_prop_resize,
   intro i, exact subset_of_subgroup_hom (H_inc i) g el
 end
