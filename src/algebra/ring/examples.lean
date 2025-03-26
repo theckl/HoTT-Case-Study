@@ -5,7 +5,8 @@ hott_theory
 
 namespace hott
 open trunc is_trunc hott.algebra hott.relation hott.is_equiv subset precategories 
-     categories categories.sets hott.categories.limits hott.categories.strict
+     categories categories.sets hott.categories.limits hott.categories.colimits 
+     hott.categories.strict
 
 namespace algebra
 
@@ -69,7 +70,7 @@ begin
   rwr p ((Module_to_Set_functor R).map g m), rwr p ((Module_to_Set_functor R).map f m) 
 end
 
-/- A product of modules indexed by a set and characterised by the universal property. -/
+/- A product of modules indexed by a set and characterised by the universal property of a limit. -/
 @[hott]  --[GEVE]
 def product_Module {R : CommRing.{max u' u}} {I : Set.{u'}} (M : I -> Module_Category R) : 
   Module R :=
@@ -149,158 +150,337 @@ def module_has_limit {J : Set.{u'}} {R : CommRing.{max u' u}} (M : J -> Module_C
   has_limit (discrete.functor M) := 
 has_limit.mk (module_Product M)
 
-@[hott]
+@[hott, instance]
 def module_has_product {R : CommRing.{max u' u}} {I : Set.{u'}} (M : I -> Module R) :
   has_product M :=
 ⟨module_has_limit M⟩
 
-/-
-
-/- Direct sums of finitely many R-modules satisfy the universal properties of both 
-   products and sums resp. coproducts. -/
+/- A direct sum of modules indexed by a set and characterised by the universal property of a 
+   colimit. -/
 @[hott]
-structure is_direct_sum_module {R : CommRing} (SM : Module R) {n : ℕ} 
-  (M : tuple (Module R) n) :=
-(set_prod : is_cons_set_tuple_product (λi : fin n, set.to_Set (M i)) (set.to_Set SM))
-(proj_hom : Π (i : fin n), module_hom_str (λ m, (set_prod.gens m).1 i))
+def add_comb_Module_scal_mul {R : CommRing.{max u' u}} {I : Set.{u'}} (M : I -> Module_Category R) :
+  R -> (add_comb_Monoid (λ (i : ↥I), Module.to_AddAbGroup (M i))) ->
+       (add_comb_Monoid (λ (i : ↥I), Module.to_AddAbGroup (M i))) :=
+begin
+  intros r ac, hinduction ac with i a ac,
+  { exact add_comb.zero },
+  { exact add_comb.sum (r ⬝ a) ih }
+end
+
+@[hott]
+def add_comb_Module_scal_mul_add {R : CommRing.{max u' u}} {I : Set.{u'}} 
+  (M : I -> Module_Category R) : 
+  Π (r : R) (ac₁ ac₂ : add_comb_Monoid (λ (i : ↥I), Module.to_AddAbGroup (M i))), 
+  add_comb_Module_scal_mul M r (ac₁ * ac₂) = (add_comb_Module_scal_mul M r ac₁) * 
+                                             (add_comb_Module_scal_mul M r ac₂) :=
+begin
+  intros r ac₁ ac₂, hinduction ac₁ with i a ac₁,
+  { exact idp },
+  { change add_comb.sum _ (add_comb_Module_scal_mul M r (ac₁ * ac₂)) = 
+           add_comb.sum _ (add_comb_Module_scal_mul M r ac₁ * add_comb_Module_scal_mul M r ac₂), 
+    rwr ih }
+end                                             
+
+@[hott]
+def sum_Module_scal_mul {R : CommRing.{max u' u}} {I : Set.{u'}} (M : I -> Module_Category R) :
+  R -> (direct_sum_of_AddAbGroups.{u u'} (λ i : I, (M i).to_AddAbGroup)).carrier ->
+       (direct_sum_of_AddAbGroups.{u u'} (λ i : I, (M i).to_AddAbGroup)).carrier :=
+begin
+  intro r, fapply set.set_quotient.rec,
+  { intro ac, exact set.set_class_of _ (add_comb_Module_scal_mul M r ac)  },
+  { intros ac₁ ac₂ H, hinduction H with H, hinduction H with ac₁ ac₂ rel,
+    { apply pathover_of_eq, apply set.eq_of_setrel, apply tr, revert ac₂ rel,
+      fapply @add_comb.rec _ _ (λ a, Π {b : add_comb_Monoid (λ i : I, (M i).to_AddAbGroup)}, 
+                add_comb_rel (λ i : I, (M i).to_AddAbGroup) a b → 
+                cong_sequence (add_comb_rel (λ i : I, (M i).to_AddAbGroup)) 
+                (add_comb_Module_scal_mul M r a) (add_comb_Module_scal_mul M r b)), 
+      { intros b rel, hinduction rel },
+      { intros i a' ac ih, hinduction ac with j a'' bc, 
+        { intros bc' rel, hinduction bc' with j b bc',
+          { have p : a' = 0, from rel, 
+            change cong_sequence (add_comb_rel _) (add_comb.sum (r ⬝ a') add_comb.zero) add_comb.zero,
+            fapply @cong_sequence.rel (add_comb_Monoid _), change r ⬝ a' = 0, rwr p, 
+            exact scal_mul_zero_zero _ _ },
+          { hinduction rel } },
+        { intros bc' rel, hinduction bc' with k b bc', 
+          { hinduction bc with l b' bc'', hinduction rel, hinduction rel },
+          { hinduction bc with l b' bc'',
+            { hinduction bc' with m b'' bc''',
+              { hinduction rel with p qs, hinduction qs with q s, hinduction p, hinduction q,
+                have s' : a' + a'' = b, from s,
+                have mul_s : r ⬝ a' + r ⬝ a'' = r ⬝ b, by 
+                  rwr <- (module_laws _).left_distr; rwr s', 
+                fapply @cong_sequence.rel (add_comb_Monoid _), exact ⟨idp, ⟨idp, mul_s⟩⟩ },
+              { hinduction bc''' with n b₃ bc₄, 
+                { hinduction rel with p₁ pq, hinduction pq with p₂ q, hinduction q with q₁ q₂,
+                  hinduction p₁, hinduction p₂, have q₁' : a' = b'', from q₁, 
+                  have q₂' : a'' = b, from q₂, fapply @cong_sequence.rel (add_comb_Monoid _),
+                  fapply dpair idp, fapply dpair idp, rwr q₁', rwr q₂', exact ⟨idp, idp⟩ },
+                { hinduction rel } } },
+            { hinduction rel } } } } },
+    { apply pathover_of_eq, apply set.eq_of_setrel, apply tr, exact cong_sequence.refl _ _ },
+    { apply pathover_of_eq, apply eq.inverse, exact eq_of_pathover ih },
+    { apply pathover_of_eq, exact (eq_of_pathover ih_r) ⬝ (eq_of_pathover ih_r') },
+    { apply pathover_of_eq, rwr add_comb_Module_scal_mul_add, rwr add_comb_Module_scal_mul_add, 
+      apply λ p, eq.concat ((monoid_hom_laws (Monoid_quotient.is_mon_quot (Monoid_cong_quotient 
+                                               (add_comb_congruence _))).proj).mul_comp _ _) p,  
+      apply λ p, eq.concat p (eq.inverse ((monoid_hom_laws (Monoid_quotient.is_mon_quot 
+                            (Monoid_cong_quotient (add_comb_congruence _))).proj).mul_comp _ _)),
+      apply λ p, eq.concat (ap (λ acl, acl + _) (eq_of_pathover ih_r)) p, 
+      apply λ p, eq.concat (ap (λ acl, _ + acl) (eq_of_pathover ih_s)) p, exact idp } }
+end
 
 @[hott]  --[GEVE]
-def direct_sum_module {R : CommRing} {n : ℕ} (M : tuple (Module R) n) : Module R :=
+def sum_Module {R : CommRing.{max u' u}} {I : Set.{u'}} (M : I -> Module_Category R) : 
+  Module R :=
 begin
-  fapply Module.mk (Π (i : fin n), M i), 
-  fapply module.mk,
-  { exact (direct_sum_of_AddAbGroups (tuple.map Module.to_AddAbGroup M)).struct' },
-  { intros r m i, exact (M i).struct.scal_mul r (m i) },
-  { intro m, apply eq_of_homotopy, intro i, exact (M i).struct.one_scal_mul (m i) },
-  { intros r s m, apply eq_of_homotopy, intro i, 
-    exact (M i).struct.scal_mul_assoc r s (m i) },
-  { intros r m n, apply eq_of_homotopy, intro i, 
-    exact (M i).struct.left_distr r (m i) (n i) },
-  { intros r s m, apply eq_of_homotopy, intro i, 
-    exact (M i).struct.right_distr r s (m i) }
+  fapply Module.mk,
+  { exact (direct_sum_of_AddAbGroups.{u u'} (λ i : I, (M i).to_AddAbGroup)).carrier },  
+  { fapply module.mk,
+    { exact (direct_sum_of_AddAbGroups.{u u'} (λ i : I, (M i).to_AddAbGroup)).struct' },
+    { exact sum_Module_scal_mul M },
+    { fapply set.set_quotient.prec, intro ac, apply set.eq_of_setrel, apply tr,
+      hinduction ac with i a ac, exact cong_sequence.refl _ _, 
+      change cong_sequence (add_comb_rel (λ (i : I), Module.to_AddAbGroup (M i))) 
+                           (add_comb.sum ((1:R) ⬝ a) _) _,
+      rwr (module_laws _).one_scal_mul, 
+      fapply @cong_sequence.mul (add_comb_Monoid _) _ (add_comb.sum a add_comb.zero) 
+                                                      (add_comb.sum a add_comb.zero) _ _, 
+      exact cong_sequence.refl _ _, exact ih },
+    { intros r s, fapply set.set_quotient.prec, intro ac, apply set.eq_of_setrel, apply tr,
+      hinduction ac with i a ac, exact cong_sequence.refl _ _, 
+      change cong_sequence (add_comb_rel (λ (i : I), Module.to_AddAbGroup (M i))) 
+                           (add_comb.sum ((r * s) ⬝ a) _) _,
+      rwr (module_laws _).scal_mul_assoc, 
+      fapply @cong_sequence.mul (add_comb_Monoid _) _ (add_comb.sum (r ⬝ (s ⬝ a)) add_comb.zero)
+                                                      (add_comb.sum (r ⬝ (s ⬝ a)) add_comb.zero) _ _,
+      exact cong_sequence.refl _ _, exact ih },
+    { intro r, fapply set.set_quotient.prec2, intros ac bc, apply set.eq_of_setrel, apply tr,
+      hinduction ac with i a ac, exact cong_sequence.refl _ _, 
+      fapply @cong_sequence.mul (add_comb_Monoid _) _ (add_comb.sum (r ⬝ a) add_comb.zero) 
+                                                      (add_comb.sum (r ⬝ a) add_comb.zero) _ _, 
+      exact cong_sequence.refl _ _, exact ih },
+    { intros r s, fapply set.set_quotient.prec, intro ac, apply set.eq_of_setrel, apply tr,
+      hinduction ac with i a ac, exact cong_sequence.refl _ _, 
+      change cong_sequence (add_comb_rel (λ (i : ↥I), Module.to_AddAbGroup (M i))) 
+                           (add_comb.sum _ (add_comb_Module_scal_mul M (r + s) _)) _,
+      rwr (module_laws _).right_distr, 
+      fapply @cong_sequence.trans (add_comb_Monoid _) _ _ 
+               ((add_comb.sum (r ⬝ a) add_comb.zero) * (add_comb.sum (s ⬝ a) add_comb.zero) *
+                (add_comb_Module_scal_mul M (r + s) ac)),
+      { fapply @cong_sequence.mul (add_comb_Monoid _) _ (add_comb.sum (r ⬝ a + s ⬝ a) add_comb.zero) _
+                (add_comb_Module_scal_mul M (r + s) ac) (add_comb_Module_scal_mul M (r + s) ac),
+        { fapply cong_sequence.symm _, fapply @cong_sequence.rel (add_comb_Monoid _), 
+          exact ⟨idp, ⟨idp, idp⟩⟩ },
+        { exact cong_sequence.refl _ _ } },
+      { fapply @cong_sequence.trans (add_comb_Monoid _) _ _ 
+               ((add_comb.sum (r ⬝ a) add_comb.zero) * (add_comb.sum (s ⬝ a) add_comb.zero) *
+                ((add_comb_Module_scal_mul M r ac) * (add_comb_Module_scal_mul M s ac))),
+        { fapply @cong_sequence.mul (add_comb_Monoid _) _ 
+                ((add_comb.sum (r ⬝ a) add_comb.zero) * (add_comb.sum (s ⬝ a) add_comb.zero)) _
+                                                (add_comb_Module_scal_mul M (r + s) ac) _, 
+          exact cong_sequence.refl _ _, exact ih },
+        { change cong_sequence (add_comb_rel (λ (i : ↥I), Module.to_AddAbGroup (M i)))
+            (@monoid.mul (add_comb_Monoid _) _ (@monoid.mul (add_comb_Monoid _) _
+                (add_comb.sum (r ⬝ a) add_comb.zero) (add_comb.sum (s ⬝ a) add_comb.zero)) 
+                (@monoid.mul (add_comb_Monoid _) _ (add_comb_Module_scal_mul M r ac) 
+                                                   (add_comb_Module_scal_mul M s ac)))
+            (@monoid.mul (add_comb_Monoid _) _ (@monoid.mul (add_comb_Monoid _) _
+                (add_comb.sum (r ⬝ a) add_comb.zero) (add_comb_Module_scal_mul M r ac)) 
+                (@monoid.mul (add_comb_Monoid _) _ (add_comb.sum (s ⬝ a) add_comb.zero)
+                                                   (add_comb_Module_scal_mul M s ac))), 
+          rwr @monoid.mul_assoc (add_comb_Monoid _) _, 
+          rwr <- @monoid.mul_assoc (add_comb_Monoid _) _ (add_comb.sum (s ⬝ a) add_comb.zero),
+          rwr @monoid.mul_assoc (add_comb_Monoid _) _ (add_comb.sum (r ⬝ a) add_comb.zero),
+          rwr <- @monoid.mul_assoc (add_comb_Monoid _) _ _ (add_comb.sum (s ⬝ a) add_comb.zero),
+          fapply @cong_sequence.mul (add_comb_Monoid _) _ (add_comb.sum (r ⬝ a) add_comb.zero)
+                                                          (add_comb.sum (r ⬝ a) add_comb.zero), 
+          { exact cong_sequence.refl _ _ },
+          { fapply @cong_sequence.mul (add_comb_Monoid _) (add_comb_rel (λ (i : ↥I), Module.to_AddAbGroup (M i))) 
+                ((add_comb.sum (s ⬝ a) add_comb.zero) * (add_comb_Module_scal_mul M r ac))
+                ((add_comb_Module_scal_mul M r ac) * (add_comb.sum (s ⬝ a) add_comb.zero)) _ _,
+            { exact add_comb_comm_cong_seq _ _ _ },
+            { exact cong_sequence.refl _ _ } } } } } }
 end
 
 @[hott]
-def direct_sum_module_is_direct_sum {R : CommRing} {n : ℕ} (M : tuple (Module R) n) : 
-  is_direct_sum_module (direct_sum_module M) M :=
-begin
-  fapply is_direct_sum_module.mk, 
-  { fapply is_cons_set_tuple_product.mk,
-    { exact id },
-    { intro m, exact ⟨m, idp⟩ },
-    { intros s t p, exact p } },
-  { intro i, fapply module_hom_str.mk,
-    { intros m n, exact idp },
-    { exact idp },
-    { intros r m, exact idp } }
-end
-@[hott]
-structure is_module_sum {R : CommRing} (S : Module R) {n : ℕ} 
-  (M : tuple (Module R) n) :=
-(inj : Π (i : fin n), M i ⟶ S)
-(factors : Π {T : Module R} (q : Π (i : fin n), M i ⟶ T), 
-                                      Σ (h : S ⟶ T), Π (i : fin n), q i = inj i ≫ h)
-(unique : Π {T : Module R} (h₁ h₂ : S ⟶ T), 
-                                (Π (i : fin n), inj i ≫ h₁ = inj i ≫ h₂) -> h₁ = h₂)
-
-@[hott]
-def direct_summand_hom {R : CommRing} {n : ℕ} (M : tuple (Module R) n) : 
-  Π (i : fin n), M i ⟶ (direct_sum_module M) :=  
+def sum_Module_inj {R : CommRing.{max u' u}} {I : Set.{u'}} (M : I -> Module_Category R) :
+  Π (i : I), (discrete.functor M).obj i ⟶ sum_Module M :=
 begin
   intro i, fapply module_hom.mk,
-  { intros m j, exact dite (i = j) (λ p, p ▸ m) (λ np, 0) },
+  { intro m, exact set.set_class_of _ (add_comb.sum m add_comb.zero) },
   { fapply module_hom_str.mk,
-    { intros m₁ m₂, apply eq_of_homotopy, intro j, 
-      change @decidable.rec (i = j) (λ dec, M j) _ _ _ = 
-                                  @decidable.rec (i = j) (λ dec, M j) _ _ _ +
-                                  @decidable.rec (i = j) (λ dec, M j) _ _ _,
-      hinduction (fin.has_decidable_eq i j) with dec p np, 
-      { change p ▸ (m₁ + m₂) = p ▸ m₁ + p ▸ m₂, hinduction p, exact idp },
-      { change (0 : M j) = 0 + 0, exact ((module_laws (M j)).add_zero 0)⁻¹ } },
-    { apply eq_of_homotopy, intro j, 
-      change @decidable.rec (i = j) (λ dec, M j) _ _ _ = 0, 
-      hinduction (fin.has_decidable_eq i j) with dec p np,
-      { change p ▸ 0 = 0, hinduction p, exact idp },
-      { exact idp } },
-    { intros r m, apply eq_of_homotopy, intro j, 
-      change @decidable.rec (i = j) (λ dec, M j) _ _ _ = 
-                                        r ⬝ @decidable.rec (i = j) (λ dec, M j) _ _ _,
-      hinduction (fin.has_decidable_eq i j) with dec p np,
-      { change p ▸ (r ⬝ m) = r ⬝ (p ▸ m), hinduction p, exact idp },
-      { change (0 : M j) = r ⬝ 0, exact (scal_mul_zero_zero (M j) r)⁻¹ } } }
+    { intros m₁ m₂, apply set.eq_of_setrel, apply tr,
+      fapply cong_sequence.symm _, fapply @cong_sequence.rel (add_comb_Monoid _),
+      exact ⟨idp, ⟨idp, idp⟩⟩ },
+    { apply set.eq_of_setrel, apply tr, fapply @cong_sequence.rel (add_comb_Monoid _),
+      exact idp },
+    { intros r m, apply set.eq_of_setrel, apply tr, exact cong_sequence.refl _ _ } }
 end
-
 
 @[hott]
-def direct_summand_hom_sum_eq {R : CommRing} {n : ℕ} (M : tuple (Module R) n) :
-  Π (m : direct_sum_module M), m = 
-       module_sum_of_tuple (λ i : fin n, (Module_to_Set_functor R).map 
-                                                    (direct_summand_hom M i) (m i)) :=
-begin 
-  intro m, apply eq_of_homotopy, intro j, 
-  rwr <- direct_sum_proj_hom_eq M j (module_sum_of_tuple (λ (i : fin n), 
-                        (Module_to_Set_functor R).map (direct_summand_hom M i) (m i))),
-  rwr module_sum_of_tuple_hom,
-  change _ = module_sum_of_tuple (λ (i : fin n), dite _ _ _),
-  apply (λ q, eq.concat (module_sum_of_tuple_comp (m j) j)⁻¹ q),
-  apply ap module_sum_of_tuple, apply eq_of_homotopy, intro i, 
-  change dite _ _ _ = dite _ _ _, hinduction fin.has_decidable_eq j i with dec p np,
-  { hinduction p, change m j = _, hinduction fin.has_decidable_eq j j with dec' q nq,
-    { change _ = q ▸ m j, have r : q = idp, from is_set.elim _ _, rwr r },
-    { hinduction nq idp } },
-  { change (0 : M j) = _, hinduction fin.has_decidable_eq i j with dec' q nq,
-    { hinduction np q⁻¹ },
-    { exact idp } }
+def sum_Module_cocone {R : CommRing.{max u' u}} {J : Set.{u'}} (M : J -> Module_Category R) : 
+  cocone (discrete.functor M) :=
+begin
+  fapply cocone.mk,
+  { exact sum_Module M },
+  { fapply nat_trans.mk,
+    { intro i, exact sum_Module_inj M i },
+    { intros i j f, hinduction f, rwr is_precat.comp_id (sum_Module_inj M i), 
+      exact is_precat.id_comp (sum_Module_inj M i) } }
 end
 
-@[hott]  --[GEVE]
-def direct_sum_of_modules_is_sum {R : CommRing} {n : ℕ} (M : tuple (Module R) n) : 
-  is_module_sum (direct_sum_module M) M :=
-begin 
-  fapply is_module_sum.mk,
-  { intro i, exact direct_summand_hom M i },
-  { intros T sum_hom, fapply dpair,
-    { fapply module_hom.mk,
-      { intro m, exact module_sum_of_tuple 
-                       (λ i : fin n, (Module_to_Set_functor R).map (sum_hom i) (m i) ) },
-      { fapply module_hom_str.mk,
-        { intros m₁ m₂, 
-          change module_sum_of_tuple (λ (i : fin n), (Module_to_Set_functor R).map 
-                                                          (sum_hom i) (m₁ i + m₂ i)) = _,
-          rwr <- module_sum_of_tuples_add, apply ap module_sum_of_tuple,
-          apply eq_of_homotopy, intro i, change (Module_to_Set_functor R).map _ _ = _,
-          rwr (module_hom_laws (sum_hom i)).add_comp },
-        { change _ = (0 : T), rwr <- @module_sum_of_tuples_zero R T n, 
-          apply ap module_sum_of_tuple, apply eq_of_homotopy, intro i,
-          change (Module_to_Set_functor R).map _ (0 : M i) = 0, 
-          exact (module_hom_laws (sum_hom i)).zero_comp },
-        { intros r m, rwr <- @module_sum_of_tuples_scal_mul R T n, 
-          apply ap module_sum_of_tuple, apply eq_of_homotopy, intro i,
-          change (Module_to_Set_functor R).map _ (r ⬝ _) = r ⬝ _, 
-          rwr (module_hom_laws (sum_hom i)).scal_mul_comp } } },
-    { intro j, apply Module_to_Set_functor_is_faithful,
-      rwr (Module_to_Set_functor R).map_comp, apply eq_of_homotopy, intro m,
-      change _ = module_sum_of_tuple (λ (i : fin n), (Module_to_Set_functor R).map 
-             (sum_hom i) ((Module_to_Set_functor R).map (direct_summand_hom M j) m i)), 
-      rwr <- module_sum_of_tuple_comp ((Module_to_Set_functor R).map (sum_hom j) m) j, 
-      apply ap module_sum_of_tuple, apply eq_of_homotopy, intro i, 
-      change dite _ _ _ = (Module_to_Set_functor R).map _ (dite _ _ _), 
-      hinduction fin.has_decidable_eq j i with dec p np,
-      { change (Module_to_Set_functor R).map (sum_hom j) m = 
-               (Module_to_Set_functor R).map (sum_hom i) (p ▸ m), hinduction p, 
-        exact idp },
-      { change (0 : T) = (Module_to_Set_functor R).map _ 0, 
-        exact (module_hom_laws (sum_hom i)).zero_comp⁻¹ } } },
-  { intros T h₁ h₂ sum_hom_eq, apply Module_to_Set_functor_is_faithful,
-    apply eq_of_homotopy, intro m, rwr direct_summand_hom_sum_eq M m,
-    rwr module_sum_of_tuple_hom h₁, rwr module_sum_of_tuple_hom h₂,
-    apply ap module_sum_of_tuple, apply eq_of_homotopy, intro i,
-    change ((Module_to_Set_functor R).map _ ≫ (Module_to_Set_functor R).map h₁) (m i) = 
-           ((Module_to_Set_functor R).map _ ≫ (Module_to_Set_functor R).map h₂) (m i),
-    rwr <- (Module_to_Set_functor R).map_comp, 
-    exact ap10 (ap (@precategories.functor.map _ _ _ _ (Module_to_Set_functor R) _ _) 
-                                                                (sum_hom_eq i)) (m i) }
+@[hott]
+def ac_Module_to_cocone_map {R : CommRing.{max u' u}} {J : Set.{u'}}
+  (M : J -> Module_Category R) (Q : cocone (discrete.functor M)) :
+  ↥(Monoid_to_Set_functor.obj (add_comb_Monoid (λ (i : ↥J), Module.to_AddAbGroup (M i)))) → 
+                                                                                 Q.X.carrier :=
+begin
+  intro ac, hinduction ac with i a ac,
+  { exact 0 },
+  { exact (Module_to_Set_functor _).map (Q.π.app i) a + ih }
 end
+
+@[hott]
+def ac_Module_to_cocone_map_add {R : CommRing.{max u' u}} {J : Set.{u'}}
+  {M : J -> Module_Category R} (Q : cocone (discrete.functor M)) :
+Π (ac bc : ↥(add_comb_Monoid (λ (i : ↥J), Module.to_AddAbGroup (M i)))), 
+  ac_Module_to_cocone_map M Q (ac * bc) = (ac_Module_to_cocone_map M Q ac) +
+                                                     (ac_Module_to_cocone_map M Q bc) :=
+begin
+  intros ac bc, hinduction ac with i a ac,
+  { change ac_Module_to_cocone_map M Q bc = 0 + ac_Module_to_cocone_map M Q bc,
+    exact ((module_laws _).zero_add (ac_Module_to_cocone_map M Q bc))⁻¹ },
+  { apply λ p, eq.concat (ap (λ q, (Module_to_Set_functor _).map (Q.π.app i) a + q) ih) p,
+    exact ((module_laws _).add_assoc _ _ _)⁻¹ }
+end
+
+@[hott]
+def ac_Module_to_cocone_map_scal_mul {R : CommRing.{max u' u}} {J : Set.{u'}}
+  {M : J -> Module_Category R} (Q : cocone (discrete.functor M)) :
+Π (r : R) (ac : ↥(add_comb_Monoid (λ (i : ↥J), Module.to_AddAbGroup (M i)))), 
+  ac_Module_to_cocone_map M Q (add_comb_Module_scal_mul M r ac) = r ⬝ (ac_Module_to_cocone_map M Q ac) :=
+begin
+  intros r ac, hinduction ac with i a ac,
+  { exact (scal_mul_zero_zero _ r)⁻¹ },
+  { fapply @eq.concat _ ((Module_to_Set_functor _).map (Q.π.app i) (r ⬝ a) + _) 
+                        (r ⬝ ((Module_to_Set_functor _).map (Q.π.app i) a) + 
+                           ac_Module_to_cocone_map M Q (add_comb_Module_scal_mul M r ac)) _,
+    { rwr (module_hom_laws _).scal_mul_comp _ _ },
+    { rwr ih, rwr <- (module_laws _).left_distr } }
+end
+
+@[hott]
+def sum_Module_to_cocone_map {R : CommRing.{max u' u}} {J : Set.{u'}}
+  (M : J -> Module_Category R) (Q : cocone (discrete.functor M)) :
+(sum_Module_cocone M).X.carrier → Q.X.carrier :=
+begin 
+  fapply set.set_quotient.rec, 
+  { exact ac_Module_to_cocone_map M Q },
+  { intros ac ac' H, apply pathover_of_eq, hinduction H with H, hinduction H,
+    { revert b r,
+      fapply @add_comb.rec _ _ (λ a, Π {b : add_comb_Monoid _}, add_comb_rel _ a b → 
+                               ac_Module_to_cocone_map M Q a = ac_Module_to_cocone_map M Q b), 
+      { intros b r, hinduction r },
+      { intros i a' ac ih, hinduction ac with j a'' bc, 
+        { intros bc' r, hinduction bc' with j b bc',
+          { have p : a' = 0, from r, rwr p,
+            apply λ q, eq.concat (ap (λ m : Q.X.carrier, m + 0) 
+                                     (module_hom_laws (Q.π.app i)).zero_comp) q, 
+            exact (module_laws _).add_zero 0 },
+          { hinduction r } },
+        { intros bc' r, hinduction bc' with k b bc', 
+          { hinduction bc with l b' bc'', hinduction r, hinduction r },
+          { hinduction bc with l b' bc'',
+            { hinduction bc' with m b'' bc''',
+              { hinduction r with p qs, hinduction qs with q s, hinduction p, hinduction q,
+                have s' : a' + a'' = b, from s, rwr <- s',
+                fapply @eq.concat _ _ (((Module_to_Set_functor _).map (Q.π.app j) a' + 
+                                        (Module_to_Set_functor _).map (Q.π.app j) a'') + 0) _, 
+                { exact ((module_laws _).add_assoc _ _ _)⁻¹ },
+                { rwr eq.inverse ((module_hom_laws _).add_comp _ _) } },
+              { hinduction bc''' with n b₃ bc₄, 
+                { hinduction r with p₁ pq, hinduction pq with p₂ q, hinduction q with q₁ q₂,
+                  hinduction p₁, hinduction p₂, have q₁' : a' = b'', from q₁, rwr <- q₁',
+                  have q₂' : a'' = b, from q₂, rwr <- q₂',
+                  fapply @eq.concat _ _ ((((Module_to_Set_functor _).map (Q.π.app i) a' : Q.X.carrier) + 
+                                        ((Module_to_Set_functor _).map (Q.π.app j) a'')) + 0) _,
+                  { exact ((module_laws _).add_assoc _ _ _)⁻¹ },
+                  { rwr (module_laws _).add_comm ((Module_to_Set_functor _).map (Q.π.app i) a'), 
+                    exact (module_laws _).add_assoc _ _ _ } },
+                { hinduction r } } },
+            { hinduction r } } } } },
+    { exact idp },
+    { rwr ih },
+    { rwr ih_r, exact ih_r' },
+    { rwr ac_Module_to_cocone_map_add, rwr ac_Module_to_cocone_map_add,
+      rwr ih_r, rwr ih_s } }
+end
+
+@[hott]
+def sum_Module_to_cocone_hom {R : CommRing.{max u' u}} {J : Set.{u'}}
+  (M : J -> Module_Category R) (Q : cocone (discrete.functor M)) :
+(sum_Module_cocone M).X ⟶ Q.X :=
+begin 
+  fapply module_hom.mk,
+    { exact sum_Module_to_cocone_map M Q },
+    { fapply module_hom_str.mk,
+      { fapply set.set_quotient.prec2, intros ac bc, exact ac_Module_to_cocone_map_add _ _ _ },
+      { exact idp },
+      { intro r, fapply set.set_quotient.prec, intro ac, 
+        exact ac_Module_to_cocone_map_scal_mul _ _ _ } }
+end
+
+@[hott]  
+def sum_Module_is_sum {R : CommRing.{max u' u}} {J : Set.{u'}}
+  (M : J -> Module_Category R) : is_colimit (sum_Module_cocone M) :=
+begin 
+  fapply is_colimit.mk, 
+  { intro Q, exact sum_Module_to_cocone_hom M Q },
+  { intros Q j, apply Module_to_Set_functor_is_faithful, 
+    apply @eq.concat _ _ ((Module_to_Set_functor R).map ((sum_Module_cocone M).π.app j) ≫ 
+                          (Module_to_Set_functor R).map (sum_Module_to_cocone_hom M Q)) _, 
+    { exact (Module_to_Set_functor R).map_comp _ _ },
+    { apply eq_of_homotopy, intro m, exact (module_laws _).add_zero _ } },
+  { intros Q s sum_eq, apply Module_to_Set_functor_is_faithful,
+    apply eq_of_homotopy, fapply set.set_quotient.prec, intro ac,
+    hinduction ac with i a ac,
+    { exact (module_hom_laws _).zero_comp },
+    { apply @eq.concat _ _ ((Module_to_Set_functor R).map s 
+                  (set.set_class_of _ (add_comb.sum a add_comb.zero) + set.set_class_of _ ac)) _,
+      { exact idp },
+      { apply @eq.concat _ _ ((Module_to_Set_functor R).map s 
+                  (set.set_class_of _ (add_comb.sum a add_comb.zero)) + 
+                  ((Module_to_Set_functor R).map s (set.set_class_of _ ac))) _,
+        { exact (module_hom_laws _).add_comp _ _ },
+        { rwr ih, apply @eq.concat _ _ ((((Module_to_Set_functor R).map 
+                 ((sum_Module_cocone M).π.app i) ≫ (Module_to_Set_functor R).map s) a) + _) _,        
+          { exact idp },
+          { fapply @eq.concat _ _ (((Module_to_Set_functor R).map 
+                 ((sum_Module_cocone M).π.app i ≫ s) a) + (ac_Module_to_cocone_map M Q ac)) _,
+            { rwr (module_laws _).add_comm, 
+              rwr (module_laws _).add_comm _ (ac_Module_to_cocone_map M Q ac) },
+            { fapply @eq.concat _ _ (((Module_to_Set_functor R).map 
+                 (Q.π.app i) a) + (ac_Module_to_cocone_map M Q ac)) _,
+              { apply ap (λ q, q + (ac_Module_to_cocone_map M Q ac)), 
+                exact ap (λ f, (Module_to_Set_functor R).map f a) (sum_eq i) },
+              { exact idp } } } } } } }
+end
+
+@[hott, reducible]
+def module_Sum {J : Set.{u'}} {R : CommRing.{max u' u}} (M : J -> Module_Category R) : 
+  colimit_cocone (discrete.functor M) := 
+colimit_cocone.mk (sum_Module_cocone M) (sum_Module_is_sum M)
+
+@[hott, instance]
+def module_has_colimit {J : Set.{u'}} {R : CommRing.{max u' u}} (M : J -> Module_Category R) :
+  has_colimit (discrete.functor M) := 
+has_colimit.mk (module_Sum M)
+
+@[hott, instance]
+def module_has_sum {R : CommRing.{max u' u}} {I : Set.{u'}} (M : I -> Module R) :
+  has_coproduct M :=
+⟨module_has_colimit M⟩ 
 
 /- `R`-algebras are `R`-modules, and the ring homomorphism from `R` is a module 
     homomorphism. -/
@@ -329,6 +509,12 @@ def ring_Module (R : CommRing.{u}) : Module R :=
   Algebra.to_Module (Algebra.mk' R (𝟙 R))
 
 notation R`^[1]` := ring_Module R
+
+/- The free module over a set `I` is just the direct sum of `I` copies of `R^[1]`. The 
+   universal property of freeness is the universal property of a direct sum. -/
+@[hott]
+def free_Module {R : CommRing.{max u' u}} {I : Set.{u'}} : Module R :=
+  copi_obj (λ i : I, R^[1]) 
 
 @[hott]  --[GEVE]
 def scalar_to_mod_hom {R : CommRing.{u}} {S : CommRing.{u}} (h : R ⟶ S) : 
@@ -671,7 +857,7 @@ begin
       rwr <- (module_hom_laws f).scal_mul_comp, 
       apply ap ((Module_to_Set_functor R).map f), exact comm_ring_laws.mul_one r } }
 end
--/
+
 end algebra
 
 end hott
