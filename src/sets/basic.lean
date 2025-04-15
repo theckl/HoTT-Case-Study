@@ -367,7 +367,20 @@ begin
   { exact (inv_of_bijection (inv_bijection_of f)).2 } 
 end 
 
+@[hott]
+def inv_bij_of_inv_to_bij  {A : Set} {B : Set} (f : A -> B) (g : B -> A) 
+  (f_g_inv : is_set_inverse_of f g) :
+  (inv_bijection_of (has_inverse_to_bijection f g f_g_inv)).map = g :=
+begin
+  fapply inv_is_unique f,
+  { change is_set_inverse_of ⇑(has_inverse_to_bijection f g f_g_inv) (inv_of_bijection _).1,
+    exact (inv_of_bijection _).2 },
+  { exact f_g_inv }
+end
+
 /- The composition of two bijections is a bijection -/
+
+@[hott]
 def comp_bijection {A B C : Set} (f : bijection A B) (g : bijection B C) : bijection A C :=
 begin
   fapply has_inverse_to_bijection, 
