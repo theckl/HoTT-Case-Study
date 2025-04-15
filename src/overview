@@ -9,21 +9,21 @@ prop_axioms :   556
 prop_logic  :   241  
 tuple       :   164  4137
 sets
-  basic     :   942         
+  basic     :   955         
   subset    :   819         
   finite    :   481         
   axioms    :   355         
   algebra   :   362         
   quotients :   799  
-  product   :   549  4307   
+  product   :   549  4320   
 categories
-  precat    :   772          
-  basic     :   572         
-  examples  :   564         
+  precat    :   751          
+  basic     :   570         
+  examples  :   559         
   subobj    :   585
   subcat    :   125         
-  adjoints  :   437         
-  strict_cat:   390         
+  adjoints  :   516         
+  strict_cat:   367         
   diagrams  :   617         
   limits    :   826         
   colimits  :   589         
@@ -31,30 +31,30 @@ categories
   inf_pb    :   252         
   boolean   :   368         
   sets      :   948  
-  concrete  :   526  8479
+  concrete  :   526  8507
 algebra
   monoid
    basic    :   432
    quotient :   726    
   group        
    basic    :   569
-   abelian  :   465
    subgroup :   367  
-   quotient :   692  
+   quotient :   708 
+   abelian  :   465 
   ring
    basic    :   579  
    module   :   480  
    examples :   863
-   submod   :   343  5516
+   submod   :   343  5532
                     -----
-                    22439               
+                    22496               
 
 
 Planned changes in Files, from bottom to top: 
 ---------------------------------------------
-- [algebra.ring.submod] : submodules, examples
-- [algebra.ring.examples] : direct sums of modules
-- [algebra.group.basic] : direct sums of additive abelian groups
+- [algebra.ring.submod] : quotients of modules by submodules
+- [algebra.group.abelian] : quotients of abelian groups by abelian subgroups
+- [categories.adjoints] : subobjects through forgetful functors
 
             
  
