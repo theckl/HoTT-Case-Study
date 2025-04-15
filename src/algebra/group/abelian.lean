@@ -1,10 +1,11 @@
-import algebra.group.quotient algebra.group.subgroup
+import categories.adjoints algebra.group.quotient algebra.group.subgroup
        
 universes u u' v w
 hott_theory
 
 namespace hott
 open trunc is_trunc hott.algebra hott.is_equiv subset precategories categories categories.sets
+     categories.adjoints
 
 namespace algebra
 
@@ -81,6 +82,15 @@ def AbGroup_to_Group_functor : AbGroup.{u} ⥤ Group :=
 @[hott]
 def AbGroup_to_Group_functor_is_faithful : is_faithful_functor AbGroup_to_Group_functor :=
   @concrete_forget_functor_is_faithful _ _ (AbGroup.to_Group) _
+
+@[hott]
+def AbGroup_to_Group_functor_is_fully_faithful : is_fully_faithful_functor AbGroup_to_Group_functor :=
+begin
+  intros x y, fapply set.is_set_bijective.mk AbGroup_to_Group_functor_is_faithful,
+  intro h, apply tr, fapply fiber.mk, 
+  { apply dpair h, exact true.intro }, 
+  { exact idp }
+end
 
 @[hott]
 def AbGroup_Group_map_inv {A B : AbGroup.{u}} (f : A ⟶ B) :
@@ -581,11 +591,38 @@ begin
 end
 
 @[hott]
+def Subgroup_of_comm_group_is_comm (A : AbGroup_Category) :
+  Π (B : Subgroup (AbGroup.to_Group A)), Π (a b : B.obj.carrier), a * b = b * a :=
+begin
+  intro B, intros a b, apply (group_mon_is_inj B.hom).1 B.is_mono, 
+  rwr (group_hom_laws _).mul_comp, rwr (group_hom_laws _).mul_comp, 
+  exact ab_group.mul_comm _ _
+end
+
+@[hott]
+def commutator_AbGroup_is_id (G : Group) : 
+  (Π a b : G, a * b = b * a) -> commutator_Subgroup G = unit_subgroup G :=
+begin
+  intro comm, fapply subobj_antisymm,
+  { apply gen_subgroup_min, intros c c_el, hinduction c_el with c_comm, 
+    hinduction c_comm with a b_comm, hinduction b_comm with b com, rwr com, 
+    apply tr, fapply fiber.mk, exact 1, 
+    apply λ p, (group_hom_laws (unit_subgroup G).hom).one_comp ⬝ p, apply eq.inverse,
+    calc commutator a b = a * b * a⁻¹ * b⁻¹ : idp
+         ... = b * a * a⁻¹ * b⁻¹ : by rwr comm a b
+         ... = b * (a * a⁻¹) * b⁻¹ : by rwr (group_laws _).mul_assoc b _ _
+         ... = b * 1 * b⁻¹ : by rwr Group_left_inv_is_right_inv
+         ... = b * b⁻¹ : by rwr (group_laws _).mul_one
+         ... = 1 : Group_left_inv_is_right_inv b },
+  { exact unit_subgroup_is_initial _ }
+end
+
+@[hott]
 def abelianized_Group (G : Group.{u}) : AbGroup :=
 begin
   fapply AbGroup.mk',
   { exact @quotient_Group_by_normal_subgroup G (commutator_Subgroup G) 
-                                                  (@commutator_Subgroup_is_normal G)},
+                                                  (@commutator_Subgroup_is_normal G) },
   { fapply set.set_quotient.prec2, change Π (a b : Group_to_Set_functor.obj G), _, intros a b, 
     change set.set_class_of _ _ = set.set_class_of _ _, apply set.eq_of_setrel, 
     change ↥((a * b)⁻¹ * (b * a) ∈ subset_of_subgroup _), apply gen_inc_gen_subgroup,
@@ -597,7 +634,7 @@ end
 
 @[hott, reducible]
 def abelianized_Group_proj (G : Group) : 
-  G ⟶ (AbGroup.to_Group (abelianized_Group G)) :=
+  G ⟶ (AbGroup_to_Group_functor.obj (abelianized_Group G)) :=
 (quot_Group_is_group_quot (commutator_Subgroup G)).proj
 
 @[hott]
@@ -620,7 +657,7 @@ begin
 end
 
 @[hott]
-def abelianize_adjoint_hom_exists {G : Group} {A : AbGroup} (f : G ⟶ AbGroup.to_Group A) : 
+def abelianize_adjoint_hom_exists {G : Group} {A : AbGroup} (f : G ⟶ AbGroup_to_Group_functor.obj A) : 
   Σ (g : abelianized_Group G ⟶ A),
       f = abelianized_Group_proj G ≫ (AbGroup_to_Group_functor).map g :=
 begin
@@ -643,9 +680,119 @@ begin
           (commutator_Subgroup G))) _ _ _ proj_eq
 end
 
-set_option profiler true
+@[hott]
+def Group_to_AbGroup_functor : Group.{u} ⥤ AbGroup :=
+begin
+  fapply precategories.functor.mk,
+  { intro G, exact abelianized_Group G },
+  { intros G H f, exact (abelianize_adjoint_hom_exists (f ≫ abelianized_Group_proj H)).1 },
+  { intro H, change (abelianize_adjoint_hom_exists _).1 = _, apply abelianize_adjoint_hom_unique,
+    rwr <- (abelianize_adjoint_hom_exists (_ ≫ abelianized_Group_proj H)).2 },
+  { intros G₁ G₂ G₃ f g, 
+    change (abelianize_adjoint_hom_exists _).1 = (abelianize_adjoint_hom_exists _).1 ≫ 
+                                                 (abelianize_adjoint_hom_exists _).1, 
+    apply abelianize_adjoint_hom_unique,
+    rwr <- (abelianize_adjoint_hom_exists (_ ≫ abelianized_Group_proj _)).2,
+    rwr functor.map_comp, rwr <- is_precat.assoc, 
+    rwr <- (abelianize_adjoint_hom_exists (_ ≫ abelianized_Group_proj _)).2,
+    rwr is_precat.assoc _ (abelianized_Group_proj G₂) _, 
+    rwr <- (abelianize_adjoint_hom_exists (_ ≫ abelianized_Group_proj _)).2,
+    exact is_precat.assoc _ _ _ }
+end
+
+@[hott]
+def Group_AbGroup_adjoint_hom_bij (G : Group.{u}) (A : AbGroup) :
+  set.bijection (Group_to_AbGroup_functor.obj G ⟶ A) (G ⟶ AbGroup_to_Group_functor.obj A) :=
+begin 
+  fapply set.has_inverse_to_bijection,
+  { intro f, exact abelianized_Group_proj G ≫ AbGroup_to_Group_functor.map f },
+  { intro f, exact (abelianize_adjoint_hom_exists f).1 },
+  { fapply set.is_set_inverse_of.mk,
+    { intro f, exact (abelianize_adjoint_hom_exists f).2⁻¹ },
+    { intro f, apply abelianize_adjoint_hom_unique, rwr <- (abelianize_adjoint_hom_exists _).2 } }  
+end
+
+@[hott]
+def Group_AbGroup_adjoint_functors : 
+  adjoint_functors_on_hom Group_to_AbGroup_functor AbGroup_to_Group_functor :=
+begin
+  fapply adjoint_functors_on_hom.mk,
+  { intros G A, exact Group_AbGroup_adjoint_hom_bij G A },
+  { intros G A H h f, 
+    change abelianized_Group_proj H ≫ AbGroup_to_Group_functor.map _ =
+           h ≫ abelianized_Group_proj G ≫ AbGroup_to_Group_functor.map f,
+    rwr <- is_precat.assoc,
+    let p := (abelianize_adjoint_hom_exists (h ≫ abelianized_Group_proj G)).2, rwr p,
+    rwr functor.map_comp AbGroup_to_Group_functor, 
+    apply λ q, q ⬝ eq.inverse (is_precat.assoc (abelianized_Group_proj H) _ _), 
+    apply λ q, ap (λ g, abelianized_Group_proj H ≫ g ≫ AbGroup_to_Group_functor.map f) q, 
+    apply λ q, ap (λ g, AbGroup_to_Group_functor.map g) q, exact idp },
+  { intros G A B g f, 
+    change abelianized_Group_proj G ≫ _ = (abelianized_Group_proj G ≫ _) ≫ _, 
+    apply λ q, q ⬝ eq.inverse (is_precat.assoc (abelianized_Group_proj G) _ _),
+    apply λ q, ap (λ g, abelianized_Group_proj G ≫ g) q, apply functor.map_comp }
+end
+
+@[hott]
+def Group_AbGroup_adjoint_inv_hom (G : Group.{u}) (A : AbGroup) : 
+  Π (f : G ⟶ AbGroup_to_Group_functor.obj A), 
+    set.inv_bijection_of (Group_AbGroup_adjoint_functors.hom_bij G A) f = 
+                                                        (abelianize_adjoint_hom_exists f).1 :=
+λ f, ap10 (set.inv_bij_of_inv_to_bij _ _ _) f
+
+@[hott]
+def abelianized_comm_group_proj_is_iso {G : Group} : (Π a b : G, a * b = b * a) ->
+  is_iso (abelianized_Group_proj G) :=
+begin
+  intro G_comm, change is_iso (quot_Group_is_group_quot _).proj, 
+  have q : unit_subgroup G = commutator_Subgroup G, from 
+    begin apply eq.inverse, apply commutator_AbGroup_is_id, exact G_comm end,
+  have r : unit_subgroup_is_normal G =[q] @commutator_Subgroup_is_normal G, from 
+    begin apply pathover_of_tr_eq, exact is_prop.elim _ _ end,
+  apply transporto (λ H norm_H, is_iso (@is_group_quotient.proj _ H norm_H _ 
+                                                (@quot_Group_is_group_quot G H norm_H))) r,
+  have s : (quot_Group_is_group_quot (unit_subgroup G)).proj = 
+                               (univ_iso_group_quotient (unit_subgroup G) _ 
+                                  (group_quotient_is_univ _ _ (quotient_by_unit_subgroup _))).hom, from 
+  begin 
+    apply λ t, t ⬝ (is_precat.id_comp _), apply iso_inv_move_rl, rwr <- univ_iso_group_quotient_proj_eq 
+  end,
+  rwr s, exact (univ_iso_group_quotient (unit_subgroup G) _ 
+                                  (group_quotient_is_univ _ _ (quotient_by_unit_subgroup _))).ih
+end
+
+@[hott]
+def sub_of_AbGroup_right_adj_iso : Π (A : AbGroup) (B : Subgroup (AbGroup_to_Group_functor.obj A)),
+  is_iso ((Group_AbGroup_adjoint_functors.hom_bij B.obj (Group_to_AbGroup_functor.obj B.obj)) 
+          (𝟙 (Group_to_AbGroup_functor.obj B.obj))) :=
+begin
+  intros A B,
+  have p : (Group_AbGroup_adjoint_functors.hom_bij B.obj (Group_to_AbGroup_functor.obj B.obj)) 
+                                                      (𝟙 (Group_to_AbGroup_functor.obj B.obj)) =
+          abelianized_Group_proj B.obj ≫ AbGroup_to_Group_functor.map 
+                                          (𝟙 (Group_to_AbGroup_functor.obj B.obj)), from idp,
+  rwr p, rwr functor.map_id AbGroup_to_Group_functor (Group_to_AbGroup_functor.obj B.obj),
+  change is_iso (abelianized_Group_proj B.obj ≫ 𝟙 (AbGroup_to_Group_functor.obj (abelianized_Group B.obj))),
+  rwr is_precat.comp_id (abelianized_Group_proj B.obj), 
+  exact abelianized_comm_group_proj_is_iso (Subgroup_of_comm_group_is_comm _ B)
+end
+
+@[hott]
+def AbGroup_left_adj_iso : Π (A : AbGroup_Category), is_iso 
+  (set.inv_bijection_of (Group_AbGroup_adjoint_functors.hom_bij (AbGroup_to_Group_functor.obj A) A) 
+                                                          (𝟙 (AbGroup_to_Group_functor.obj A))) :=
+begin
+  intro A, rwr Group_AbGroup_adjoint_inv_hom, 
+  fapply ff_functor_iso_iso @AbGroup_to_Group_functor_is_fully_faithful,
+  fapply @iso_comp_snd_is_iso _ _ _ _ _ (𝟙 (AbGroup_to_Group_functor.obj A)) 
+           (abelianized_Group_proj (AbGroup_to_Group_functor.obj A)),
+  { exact (id_iso (AbGroup_to_Group_functor.obj A)).ih },
+  { exact abelianized_comm_group_proj_is_iso (@ab_group.mul_comm A.carrier A.struct') },
+  { apply λ r, (abelianize_adjoint_hom_exists (𝟙 (AbGroup_to_Group_functor.obj A))).2 ⬝ r, exact idp }
+end
 
 /- Subobjects of (additive) abelian groups `A` are just subgroups of the group `A`. -/
+
 @[hott]
 def subobj_AddAbGroup_to_AbGroup (A : AddAbGroup_Category.{u}) : 
   (set.to_Set (subobject A)) -> (set.to_Set (subobject (AddAbGroup.to_AbGroup A))) :=
@@ -709,7 +856,7 @@ end
 
 @[hott]
 def subobj_AbGroup_to_Group (A : AbGroup_Category) : 
-  (set.to_Set (subobject A)) -> (set.to_Set (Subgroup (AbGroup.to_Group A))) :=
+  subobject A -> Subgroup (AbGroup.to_Group A) :=
 begin
   intro B, fapply subobject.mk,
   { exact AbGroup.to_Group B.obj },
@@ -728,37 +875,68 @@ begin
 end
 
 @[hott]
-def subobj_Group_to_AbGroup (A : AbGroup_Category) : 
-  (set.to_Set (Subgroup (AbGroup.to_Group A))) -> (set.to_Set (subobject A)) :=
+def Subgroup_of_AbGroup_AbGroup (A : AbGroup_Category) : 
+  Subgroup (AbGroup.to_Group A) -> AbGroup :=
 begin
-  intro B, fapply subobject.mk,
-  { fapply AbGroup_eqv_Group_comm.to_is_equiv.inv, fapply dpair,
+  intro B, fapply AbGroup.mk',
     { exact B.obj },
     { intros a b, apply (group_mon_is_inj B.hom).1 B.is_mono, 
       rwr (group_hom_laws _).mul_comp, rwr (group_hom_laws _).mul_comp, 
-      exact ab_group.mul_comm _ _ } },
-  { exact dpair B.hom true.intro },
-  { intros C f g hom_eq, apply AbGroup_to_Group_functor_is_faithful, apply B.is_mono,
-    --let hom_eq' := ap (precategories.functor.map AbGroup_to_Group_functor) hom_eq,
-    --let hom_eq'' := eq.inverse (functor.map_comp _ _ _) ⬝ hom_eq' ⬝ 
-      --                           (functor.map_comp _ _ _),
-    apply λ p, eq.inverse (ap (λ h, AbGroup_to_Group_functor.map f ≫ h) 
-                                               (AbGroup_Group_map_inv ⟨B.hom, true.intro⟩)) ⬝ p ⬝
-                     ap (λ h, AbGroup_to_Group_functor.map g ≫ h) 
-                                               (AbGroup_Group_map_inv _),
-    sorry }--exact hom_eq''' }
+      exact ab_group.mul_comm _ _ }
 end
 
 @[hott]
-def subobj_of_AbGroup_Group (A : AbGroup_Category) : 
-  set.bijection (set.to_Set (subobject A)) (set.to_Set (Subgroup (AbGroup.to_Group A))) :=
+def Subgroup_of_AbGroup_AbGroup_hom {A : AbGroup_Category} (B : Subgroup (AbGroup.to_Group A)) :
+  Subgroup_of_AbGroup_AbGroup A B ⟶ A :=
+⟨B.hom, true.intro⟩ 
+
+@[hott]
+def subobj_Group_to_AbGroup (A : AbGroup_Category) : 
+  Subgroup (AbGroup.to_Group A) -> subobject A :=
 begin
-  fapply set.has_inverse_to_bijection,
-  { exact subobj_AbGroup_to_Group A },
-  { exact subobj_Group_to_AbGroup A },
-  { fapply set.is_set_inverse_of.mk,
+  intro B, fapply subobject.mk,
+  { exact Subgroup_of_AbGroup_AbGroup A B },
+  { exact Subgroup_of_AbGroup_AbGroup_hom B },
+  { intros C f g hom_eq, apply AbGroup_to_Group_functor_is_faithful, apply B.is_mono,
+    sorry },
+end
+
+set_option pp.implicit true
+
+@[hott]
+def subobj_of_AbGroup_Group (A : AbGroup_Category) : 
+  set.bijection (set.to_Set (subobject A)) (set.to_Set (Subgroup (AbGroup_to_Group_functor.obj A))) :=
+begin
+  fapply @adjoint_subobjects Group_Category AbGroup_Category _ _ Group_AbGroup_adjoint_functors
+           @AbGroup_to_Group_functor_is_faithful,
+  { intros A' B, change AbGroup at A', change Subgroup _ at B,
+    have p : (Group_AbGroup_adjoint_functors.hom_bij B.obj (Group_to_AbGroup_functor.obj B.obj)) 
+                                                      (𝟙 (Group_to_AbGroup_functor.obj B.obj)) =
+          abelianized_Group_proj B.obj ≫ AbGroup_to_Group_functor.map 
+                                          (𝟙 (Group_to_AbGroup_functor.obj B.obj)), from idp,
+    rwr p, rwr functor.map_id AbGroup_to_Group_functor (Group_to_AbGroup_functor.obj B.obj),
+    change is_iso (abelianized_Group_proj B.obj ≫ 𝟙 (AbGroup_to_Group_functor.obj (abelianized_Group B.obj))),
+    rwr is_precat.comp_id (abelianized_Group_proj B.obj), 
+    exact abelianized_comm_group_proj_is_iso (Subgroup_of_comm_group_is_comm _ B) },
+  { intro A', rwr Group_AbGroup_adjoint_inv_hom, 
+    fapply ff_functor_iso_iso @AbGroup_to_Group_functor_is_fully_faithful, 
+    fapply iso_comp_snd_is_iso, 
+    { exact AbGroup_to_Group_functor.obj A' },
+    { exact 𝟙 (AbGroup_to_Group_functor.obj A') }, 
+    { --change ↥(_ ⟶ AbGroup_to_Group_functor.obj (abelianized_Group (AbGroup_to_Group_functor.obj A'))),
+      let g := abelianized_Group_proj (AbGroup_to_Group_functor.obj A'), 
+      sorry }, 
+    { exact (id_iso (AbGroup_to_Group_functor.obj A')).ih },
     { sorry },
-    { sorry } }
+    { sorry }
+    /-fapply @iso_comp_snd_is_iso Group _ (AbGroup_to_Group_functor.obj A') _ 
+               (AbGroup_to_Group_functor.obj A') (𝟙 (AbGroup_to_Group_functor.obj A')) 
+         (abelianized_Group_proj (AbGroup_to_Group_functor.obj A'))
+         (AbGroup_to_Group_functor.map (abelianize_adjoint_hom_exists (𝟙 (AbGroup_to_Group_functor.obj A'))).fst),
+    { exact (id_iso (AbGroup_to_Group_functor.obj A')).ih },
+    { exact abelianized_comm_group_proj_is_iso (@ab_group.mul_comm A'.carrier A'.struct') },
+    { apply λ r, (abelianize_adjoint_hom_exists (𝟙 (AbGroup_to_Group_functor.obj A'))).2 ⬝ r, 
+      exact idp }-/ }  
 end
 
 @[hott]
