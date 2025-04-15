@@ -220,6 +220,16 @@ def iso_comp_is_iso {C : Type u} [is_precat.{v} C] {c₁ c₂ c₃ : C} :
   ∀ (f : c₁ ≅ c₂) (g : c₂ ≅ c₃), is_iso (f.hom ≫ g.hom) :=
 λ f g, (iso_comp f g).ih
 
+@[hott]
+def iso_comp_snd_is_iso {C : Type u} [is_precat.{v} C] {c₁ c₂ c₃ : C} :  
+  ∀ {f : c₁ ⟶ c₃} {g : c₁ ⟶ c₂} {h : c₂ ⟶ c₃}, is_iso f -> is_iso g -> f = g ≫ h -> is_iso h :=
+begin
+  intros f g h f_iso g_iso comp, 
+  have q : h = (iso.mk g g_iso).ih.inv ≫ f, from 
+    begin fapply iso_move_lr, exact comp⁻¹ end,
+  rwr q, fapply iso_comp_is_iso (iso.mk g_iso.inv _) (iso.mk f f_iso), exact (inv_iso (iso.mk g g_iso)).ih
+end 
+
 /- `idtoiso` commutes with functors -/
 @[hott]
 def funct_idtoiso {C : Type _} [is_precat C] {c₁ c₂ : C} 
@@ -241,6 +251,22 @@ begin
     { exact F.map i.ih.inv },
     { rwr <- F.map_comp, rwr i.ih.r_inv, rwr F.map_id },
     { rwr <- F.map_comp, rwr i.ih.l_inv, rwr F.map_id } }
+end
+
+/- Homomorphisms mapped by fully faithful functors to isomorphisms are isomorphisms. -/
+@[hott, reducible]
+def ff_functor_iso_iso {C : Type u} [is_precat C] {D : Type u'} 
+  [is_precat D] {F : C ⥤ D} (ffF : is_fully_faithful_functor F) :
+  Π {x y : C} (f : x ⟶ y), is_iso (F.map f) -> is_iso f :=
+begin 
+  intros x y f iso_Ff, fapply is_iso.mk,
+  { exact (inv_of_bijection (bijection.mk _ (@ffF y x))).1 iso_Ff.inv },
+  { apply (@ffF y y).inj, rwr functor.map_comp, rwr functor.map_id, 
+    change (bijection.mk _ (@ffF y x)) _ ≫ _ = _,
+    rwr (inv_of_bijection (bijection.mk _ (@ffF y x))).2.r_inv, exact iso_Ff.r_inv },
+  { apply (@ffF x x).inj, rwr functor.map_comp, rwr functor.map_id, 
+    change _ ≫ (bijection.mk _ (@ffF y x)) _ = _,
+    rwr (inv_of_bijection (bijection.mk _ (@ffF y x))).2.r_inv, exact iso_Ff.l_inv }
 end
 
 @[hott]
@@ -289,62 +315,44 @@ structure Category :=
 def Cat.to_Precat : Category -> Precategory :=
   λ C, Precategory.mk C.obj C.struct.to_is_precat
 
-attribute [instance] Category.struct
-
-@[hott, reducible, hsimp]
-def category.isotoid {C : Category} : 
-  Π {a b : C}, a ≅ b -> a = b :=
-assume a b iso,  
-@is_equiv.inv _ _ _ (is_cat.ideqviso a b) iso  
-
 @[hott]
-def is_cat.isotoid {C : Type _} [is_cat C] : 
+def category.isotoid {C : Type _} [is_cat C] : 
   Π {a b : C}, a ≅ b -> a = b :=
 assume a b iso,  
 @is_equiv.inv _ _ _ (is_cat.ideqviso a b) iso  
 
 @[hott, hsimp]
-def category.ideqviso {C : Category} : 
+def category.ideqviso {C : Type _} [is_cat C] : 
   Π {a b : C}, (a = b) ≃ (a ≅ b) :=
 λ a b, equiv.mk idtoiso (is_cat.ideqviso a b)
 
 @[hott, hsimp]
-def category.idtoiso_rinv {C : Category} {a b : C} :
+def category.idtoiso_rinv {C : Type _} [is_cat C] {a b : C} :
   ∀ i : a ≅ b, idtoiso (idtoiso⁻¹ᶠ i) = i :=
 is_equiv.right_inv (@idtoiso _ _ a b) 
 
 @[hott, hsimp]
-def category.idtoiso_linv {C : Category} {a b : C} :
+def category.idtoiso_linv {C : Type _} [is_cat C] {a b : C} :
   ∀ p : a = b, idtoiso⁻¹ᶠ (idtoiso p) = p :=
 is_equiv.left_inv (@idtoiso _ _ a b) 
 
 @[hott, hsimp]
-def category.idtoiso_rinv' {C : Category} {a b : C} :
+def category.idtoiso_rinv' {C : Type _} [is_cat C] {a b : C} :
   ∀ i : a ≅ b, idtoiso (category.isotoid i) = i :=
 is_equiv.right_inv (@idtoiso _ _ a b) 
 
 @[hott, hsimp]
-def is_cat.idtoiso_rinv' {C : Type _} [is_cat C] {a b : C} :
-  ∀ i : a ≅ b, idtoiso (is_cat.isotoid i) = i :=
-is_equiv.right_inv (@idtoiso _ _ a b) 
-
-@[hott, hsimp]
 def category.idtoiso_linv' {C : Type _} [is_cat C] {a b : C} :
-  ∀ p : a = b, is_cat.isotoid (idtoiso p) = p :=
+  ∀ p : a = b, category.isotoid (idtoiso p) = p :=
 is_equiv.left_inv (@idtoiso _ _ a b)
 
 @[hott]
-def isotoid_id_refl {C : Category} :
+def isotoid_id_refl {C : Type _} [is_cat C] :
   Π (a : C), category.isotoid (id_iso a) = refl a :=
 begin intro a, exact category.idtoiso_linv' (refl a) end 
 
 @[hott]
-def isotoid_id_refl' {C : Type _} [is_cat C] :
-  Π (a : C), is_cat.isotoid (id_iso a) = refl a :=
-begin intro a, exact category.idtoiso_linv' (refl a) end
-
-@[hott]
-def iso_hom_tr_comp {C : Category} {c₁ c₂ d : C} (i : c₁ ≅ c₂)
+def iso_hom_tr_comp {C : Type _} [is_cat C] {c₁ c₂ d : C} (i : c₁ ≅ c₂)
   (h : c₁ ⟶ d) : (idtoiso⁻¹ᶠ i) ▸ h = i⁻¹ʰ.hom ≫ h :=
 begin 
   rwr <- (category.idtoiso_rinv i),  
@@ -353,16 +361,7 @@ begin
 end 
 
 @[hott]
-def iso_hom_tr_comp' {C : Category} {c₁ c₂ d : C} (i : c₁ ≅ c₂)
-  (h : d ⟶ c₁) : (idtoiso⁻¹ᶠ i) ▸ h = h ≫ i.hom :=
-begin 
-  rwr <-(category.idtoiso_rinv i),  
-  rwr category.idtoiso_linv (idtoiso⁻¹ᶠ i),
-  exact id_hom_tr_comp' (idtoiso⁻¹ᶠ i) h
-end 
-
-@[hott]
-def idtoiso_is_inj {C : Category} {c₁ c₂ : C} {p q : c₁ = c₂} :
+def idtoiso_is_inj {C : Type _} [is_cat C] {c₁ c₂ : C} {p q : c₁ = c₂} :
   idtoiso p = idtoiso q -> p = q :=
 begin 
   intro r, rwr <- (category.idtoiso_linv p), rwr <- (category.idtoiso_linv q), 
@@ -372,12 +371,12 @@ end
 /- In categories, identity types are sets. In categories whose objects form a set, 
    isomorphism types are propositions (since identity types are propositions). -/
 @[hott, instance]
-def cat_eq_is_set {C : Category} {c₁ c₂ : C} : is_set (c₁ = c₂) :=
+def cat_eq_is_set {C : Type _} [is_cat C] {c₁ c₂ : C} : is_set (c₁ = c₂) :=
   is_trunc_equiv_closed_rev 0 category.ideqviso (iso_is_set c₁ c₂)
 
 @[hott, instance]
 def cat_set_eq_is_prop {C : Type _} [is_set C] [H : is_cat C] {c₁ c₂ : C} : is_prop (c₁ ≅ c₂) :=
-  is_trunc_equiv_closed -1 (@category.ideqviso (Category.mk C H) _ _) (is_trunc_eq -1 _ _)
+  is_trunc_equiv_closed -1 (@category.ideqviso C H _ _) (is_trunc_eq -1 _ _)
 
 /- A modified criterion for equality of functors -/
 @[hott]
@@ -407,17 +406,17 @@ begin change ap _ (functor_eq _ _) = _, rwr functor_eq_obj end
 
 /- Induction on isomorphisms via equalities, with elimination rule -/
 @[hott]
-def iso_ind_of_eq {A : Category} {D : Π {a b : A} (i : a ≅ b), Type _} :
+def iso_ind_of_eq {A : Type _} [is_cat A] {D : Π {a b : A} (i : a ≅ b), Type _} :
   (Π {a b : A} (p : a = b), D (idtoiso p)) -> Π {a b : A} (i : a ≅ b), D i :=
 assume Hp a b i, category.idtoiso_rinv i ▸ Hp (idtoiso⁻¹ᶠ i)
 
 @[hott]
-def iso_ind {A : Category} {D : Π {a b : A} (i : a ≅ b), Type _} :
+def iso_ind {A : Type _} [is_cat A] {D : Π {a b : A} (i : a ≅ b), Type _} :
   (Π (a : A), D (id_iso a)) -> Π {a b : A} (i : a ≅ b), D i :=
 begin intros Hid, apply iso_ind_of_eq, intros a b p, hinduction p, exact Hid a end
 
 @[hott]
-def iso_ind_id {A : Category} {D : Π {a b : A} (i : a ≅ b), Type _} 
+def iso_ind_id {A : Type _} [is_cat A] {D : Π {a b : A} (i : a ≅ b), Type _} 
   (Hid : Π (a : A), D (id_iso a)) : Π (a : A), iso_ind Hid (id_iso a) = Hid a :=
 begin
   intro a, 
@@ -430,9 +429,8 @@ begin
               (apd (@eq.rec _ _ (λ (b : A) (p : a = b), D (idtoiso p)) 
                                              (Hid a) a) (isotoid_id_refl a)),
   rwr <- tr_eq_of_pathover p, 
-  change @is_equiv.right_inv _ _ idtoiso 
-                            (@is_cat.ideqviso _ (Category.struct A) _ _) _ ▸ _ = _,
-  rwr (@is_cat.ideqviso _ (Category.struct A) _ _).adj
+  change @is_equiv.right_inv _ _ idtoiso (is_cat.ideqviso _ _) _ ▸ _ = _,
+  rwr (is_cat.ideqviso _ _).adj
 end 
 
 /- The underlying functor of an isomorphism between two precategories as encoded by
@@ -549,16 +547,16 @@ begin
   { intro i, 
     apply λ p, (ap10 (precat_equiv.rinv_obj pce) d₁)⁻¹ ⬝ p ⬝ 
                (ap10 (precat_equiv.rinv_obj pce) d₂),
-    apply ap pce.functor.obj, apply is_cat.isotoid, 
+    apply ap pce.functor.obj, apply category.isotoid, 
     exact funct_iso_iso pce.inv_functor i },
   { intro i, apply hom_eq_to_iso_eq, rwr <- idtoiso_comp_eq, rwr <- idtoiso_comp_eq,
-    rwr <- funct_idtoiso, rwr is_cat.idtoiso_rinv', apply eq.inverse,
+    rwr <- funct_idtoiso, rwr category.idtoiso_rinv', apply eq.inverse,
     apply iso_inv_move_rl, apply iso_inv_move_lr, 
     rwr <- id_inv_iso_inv_hom, rwr hott.eq.inv_inv, rwr <- id_inv_iso_inv_hom, 
     change _ = pce.functor.map (pce.inv_functor.map i.hom),
     apply eq.inverse, apply pce.rinv_map },
   { intro i, hinduction i, rwr idtoiso_refl_eq, rwr funct_id_iso_id_iso, 
-    rwr isotoid_id_refl', rwr ap_idp, change _ ⬝ _ ⬝ _ = _, rwr con_idp, 
+    rwr isotoid_id_refl, rwr ap_idp, change _ ⬝ _ ⬝ _ = _, rwr con_idp, 
     rwr con.left_inv }
 end 
 
