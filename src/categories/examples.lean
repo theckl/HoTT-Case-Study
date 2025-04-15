@@ -315,8 +315,7 @@ def functor_isotoid [is_precat.{v} C] [HD : is_cat.{v'} D] {F G : C ⥤ D} :
 begin
   intro i, fapply functor_eq', 
   { intro c, 
-    exact @category.isotoid (Category.mk D HD) _ _ 
-                            (@functor_iso_to_isos _ _ _ _ F G i c) },
+    exact @category.isotoid D HD _ _ (@functor_iso_to_isos _ _ _ _ F G i c) },
   { intros c₁ c₂ h, rwr id_inv_iso_inv, 
     change (idtoiso (idtoiso⁻¹ᶠ (functor_iso_to_isos i c₁))).ih.inv ≫ _ ≫
            (idtoiso (idtoiso⁻¹ᶠ (functor_iso_to_isos i c₂))).hom = _, 
@@ -339,10 +338,10 @@ begin
   { intro p, hinduction p, rwr idtoiso_refl_eq, 
     change functor_eq' _ _ = idp, 
     rwr <- functor_eq_idp, fapply apd011 (functor_eq), 
-    { change eq_of_homotopy (λ (c : C), @category.isotoid (Category.mk D HD) _ _ 
+    { change eq_of_homotopy (λ (c : C), @category.isotoid D HD _ _ 
                                (@functor_iso_to_isos C _ _ _ _ _ (id_iso F) c)) = idpath _,
       rwr <- eq_of_homotopy_idp, apply ap eq_of_homotopy, apply eq_of_homotopy, intro c, 
-      change @category.isotoid (Category.mk D HD) _ _ (functor_iso_to_isos (id_iso F) c) = idpath (F.obj c),
+      change @category.isotoid D HD _ _ (functor_iso_to_isos (id_iso F) c) = idpath (F.obj c),
       rwr functor_isoid_to_isoids, rwr isotoid_id_refl },
     { apply pathover_of_tr_eq, exact is_prop.elim _ _ } }
 end
@@ -424,10 +423,8 @@ end
 @[hott]
 def l_neutral_funct {C D : Type _} [is_precat C] [is_cat D] (F : C ⥤ D) :
   (id_functor C ⋙ F) = F :=
-have i : (id_functor C ⋙ F) ≅ F, from 
-  l_neutral_funct_iso F,
-@category.isotoid (Category.mk (C ⥤ D) (functor_is_cat)) 
-                                        (id_functor C ⋙ F) F i
+have i : (id_functor C ⋙ F) ≅ F, from l_neutral_funct_iso F,
+@category.isotoid (C ⥤ D) (functor_is_cat) (id_functor C ⋙ F) F i
 
 @[hott, reducible]
 def r_neutral_funct_iso {C D : Type _} [is_precat C] [is_precat D] 
@@ -449,8 +446,7 @@ end
 @[hott]
 def r_neutral_funct {C D : Type _} [is_precat C] [is_cat D] 
   (F : C ⥤ D) : (F ⋙ id_functor D) = F :=
-@category.isotoid (Category.mk (C ⥤ D) (functor_is_cat)) _ _
-  (r_neutral_funct_iso F)
+@category.isotoid (C ⥤ D) (functor_is_cat) _ _ (r_neutral_funct_iso F)
 
 @[hott, reducible]
 def assoc_funct_iso {C D E F : Type _} [is_precat C] [is_precat D] 
@@ -471,11 +467,10 @@ begin
 end   
 
 @[hott]
-def assoc_funct {C D E : Type _} [is_precat C] [is_precat D] 
-  [is_precat E] {F : Category} (G : C ⥤ D) (H : D ⥤ E) (I : E ⥤ F) : 
+def assoc_funct {C D E F : Type _} [is_precat C] [is_precat D] 
+  [is_precat E] [is_cat F] (G : C ⥤ D) (H : D ⥤ E) (I : E ⥤ F) : 
   ((G ⋙ H) ⋙ I) = (G ⋙ (H ⋙ I)) := 
-@category.isotoid (Category.mk (C ⥤ F) (functor_is_cat)) _ _ 
-  (assoc_funct_iso G H I)
+@category.isotoid (C ⥤ F) (functor_is_cat) _ _ (assoc_funct_iso G H I)
 
 
 /- The power set `𝒫 A` of a set `A` is a precategory, with inclusions of 
@@ -510,7 +505,7 @@ def power_set_precat {A : Set} : is_precat (𝒫 A) :=
   is_precat.mk id_comp comp_id assoc
 
 /- Every subset of a set that is a (small?) precategory is a 
-   (full sub-)is_precat. -/
+   (full sub-)precategory. -/
 @[hott, instance]
 def subset_precat_has_hom {A : Set.{u}} [hA : has_hom.{v} A] (B : Subset A) :
   has_hom ↥B :=
@@ -536,12 +531,12 @@ is_precat.mk (λ (b c : ↥B) (f : b ⟶ c), is_precat.id_comp f)
 
    We need two equalities easily shown by induction. -/ 
 @[hott]
-def tr_tr_cat_id {C : Precategory} {c c' : C} (p : c = c') : 
+def tr_tr_cat_id {C : Type _} [is_precat C] {c c' : C} (p : c = c') : 
   p ▸[λ d, c' ⟶ d] (p ▸[λ d, d ⟶ c] 𝟙 c) = 𝟙 c' :=
 begin hinduction p, refl end   
 
 @[hott]
-def tr_tr_cat_comp {C : Precategory} {c₁ c₁' c₂ c₂' c₃ c₃': C} (p : c₁ = c₁') 
+def tr_tr_cat_comp {C : Type _} [is_precat C] {c₁ c₁' c₂ c₂' c₃ c₃': C} (p : c₁ = c₁') 
   (q : c₂ = c₂') (r : c₃ = c₃') (f : c₁' ⟶ c₂') (g : c₂' ⟶ c₃') : 
   r ▸[λ d, c₁' ⟶ d] (p ▸[λ d, d ⟶ c₃] ((p⁻¹ ▸[λ d, d ⟶ c₂] (q⁻¹ ▸[λ d, c₁' ⟶ d] f)) ≫ 
                                          (q⁻¹ ▸[λ d, d ⟶ c₃] (r⁻¹ ▸[λ d, c₂' ⟶ d] g)))) = f ≫ g :=
