@@ -282,8 +282,6 @@ structure Precategory :=
 @[hott, hsimp] instance : has_coe_to_sort Precategory := 
   has_coe_to_sort.mk Type.{u} Precategory.obj
 
-attribute [instance] Precategory.struct
-
 @[hott]
 def Precat_sig := Σ (obj : Type u), is_precat obj 
 
@@ -673,99 +671,80 @@ def precat_iso_idp_of_obj_id (C : Type _) [is_precat C] :
 (precat_dep_ppred C).dep_base
 
 @[hott]
-def precat_contr_ppred (C₀ : Precategory) :
+def precat_contr_ppred (C₀ : Type _) [is_precat C₀] :
   is_contr (Σ (C : Type _), (precat_dep_ppred C₀).ppred_fst.fam C) :=
 begin
   fapply is_contr.mk, 
-  { exact ⟨C₀.obj, @equiv.rfl C₀⟩ },
-  { intro C_obj_iso, hinduction C_obj_iso with C_obj pc_oi_C,
-    change _ ≃ C_obj at pc_oi_C,
-    change dpair C₀.obj (@equiv.rfl C₀) = _,   
-    fapply sigma.sigma_eq, 
+  { exact ⟨C₀, @equiv.rfl C₀⟩ },
+  { intro C_obj_iso, hinduction C_obj_iso with C_obj pc_oi_C, fapply sigma.sigma_eq, 
     { exact ua pc_oi_C },
-    { fapply obj_char_id_eq (eq_equiv_equiv C₀.obj) } }
+    { fapply obj_char_id_eq (eq_equiv_equiv C₀) } }
 end  
 
 @[hott]
-def precat_contr_dep_ppred (C₀ : Precategory) :
-is_contr (Σ (pc : is_precat C₀.obj), 
-  (precat_dep_ppred C₀).dep_fam C₀.obj pc 
-                        (precat_dep_ppred C₀).ppred_fst.base) :=
+def precat_contr_dep_ppred (C₀ : Type _) [pc₀ : is_precat C₀] :
+is_contr (Σ (pc : is_precat C₀), (precat_dep_ppred C₀).dep_fam C₀ pc 
+                                                                  (precat_dep_ppred C₀).ppred_fst.base) :=
 begin
   fapply is_contr.mk, 
-  { exact ⟨C₀.struct, (precat_dep_ppred _).dep_base⟩ },
+  { exact ⟨pc₀, (precat_dep_ppred _).dep_base⟩ },
   { intro pc_str_iso, hinduction pc_str_iso with pc_str pc_iso,
-    hinduction C₀ with C₀_obj C₀_struct,
-    change @precat_iso_of_obj C₀_obj C₀_obj C₀_struct pc_str (equiv.refl C₀_obj) 
+    change @precat_iso_of_obj C₀ C₀ pc₀ pc_str (equiv.refl C₀) 
       at pc_iso,
     fapply sigma.sigma_eq, 
-    { exact (pc_str_eqv_pc_io C₀_struct pc_str)⁻¹ᶠ pc_iso },
-    { fapply obj_char_id_eq (pc_str_eqv_pc_io C₀_struct) } }
+    { exact (pc_str_eqv_pc_io pc₀ pc_str)⁻¹ᶠ pc_iso },
+    { fapply obj_char_id_eq (pc_str_eqv_pc_io pc₀) } }
 end
 
 @[hott]
-def precat_sig_equiv_obj_iso (C₀ C : Precategory) : 
-  ((Precat_str_equiv_sig C₀) = (Precat_str_equiv_sig C)) ≃
-  (Σ (pc_obj : C₀ ≃ C.obj), @precat_iso_of_obj C₀ C.obj C₀.struct C.struct pc_obj) :=
+def precat_sig_equiv_obj_iso (C₀ C : Type _) [pc₀ : is_precat C₀] [pc : is_precat C] : 
+  ((Precat_str_equiv_sig (Precategory.mk C₀ pc₀)) = (Precat_str_equiv_sig (Precategory.mk C pc))) ≃
+  (Σ (pc_obj : C₀ ≃ C), @precat_iso_of_obj C₀ C pc₀ pc pc_obj) :=
 begin
-  fapply struct_id_char_of_contr C₀.struct (precat_dep_ppred C₀)
-                                 _ _ (Precat_str_equiv_sig C),
-  { exact precat_contr_ppred C₀ },
-  { exact precat_contr_dep_ppred C₀ }
+  fapply struct_id_char_of_contr pc₀ (@precat_dep_ppred C₀ pc₀)
+                                 _ _ (Precat_str_equiv_sig (Precategory.mk C pc)),
+  { exact @precat_contr_ppred C₀ pc₀ },
+  { exact @precat_contr_dep_ppred C₀ pc₀ }
 end   
 
 @[hott]
-def precat_sig_equiv_obj_iso_idp (C₀ C : Precategory) : 
+def precat_sig_equiv_obj_iso_idp (C₀ : Type _) [pc₀ : is_precat C₀] : 
   (precat_sig_equiv_obj_iso C₀ C₀ idp).1 = equiv.rfl :=
 begin 
-  change ((struct_id_char_of_contr C₀.struct (precat_dep_ppred C₀)
-           (precat_contr_ppred C₀) (precat_contr_dep_ppred C₀) 
-           (dpair C₀.obj _)).to_fun idp).1 = _,
-  have r : (struct_id_char_of_contr C₀.struct (precat_dep_ppred C₀)
-           (precat_contr_ppred C₀) (precat_contr_dep_ppred C₀) 
-           (dpair C₀.obj _)).to_fun idp = 
-           ⟨@equiv.rfl C₀, (precat_dep_ppred C₀).dep_base⟩,
-  from struct_id_char_of_contr_idp C₀.struct (precat_dep_ppred C₀)
-        (precat_contr_ppred C₀) (precat_contr_dep_ppred C₀), 
+  change ((struct_id_char_of_contr pc₀ (precat_dep_ppred C₀) (precat_contr_ppred C₀) (precat_contr_dep_ppred C₀) 
+           (dpair C₀ _)).to_fun idp).1 = _,
+  have r : (struct_id_char_of_contr pc₀ (precat_dep_ppred C₀) (precat_contr_ppred C₀) (precat_contr_dep_ppred C₀) 
+             (dpair C₀ _)).to_fun idp = ⟨@equiv.rfl C₀, (precat_dep_ppred C₀).dep_base⟩,
+  from struct_id_char_of_contr_idp pc₀ (precat_dep_ppred C₀) (precat_contr_ppred C₀) (precat_contr_dep_ppred C₀), 
   exact ap sigma.fst r
 end
 
-def precat_sig_equiv_obj_iso_idp_map (C₀ C : Precategory) : 
-  (precat_sig_equiv_obj_iso C₀ C₀ idp).2.hom_map = 
-                                          (id_functor C₀).map :=
+def precat_sig_equiv_obj_iso_idp_map (C₀ : Type _) [pc₀ : is_precat C₀] : 
+  @precat_iso_of_obj.hom_map _ _ _ _ _ (precat_sig_equiv_obj_iso C₀ C₀ idp).2 = (id_functor C₀).map :=
 begin 
-  change ((struct_id_char_of_contr C₀.struct (precat_dep_ppred C₀)
+  change ((struct_id_char_of_contr pc₀ (precat_dep_ppred C₀)
            (precat_contr_ppred C₀) (precat_contr_dep_ppred C₀) 
-           (dpair C₀.obj _)).to_fun idp).2.hom_map = 
+           (dpair C₀ _)).to_fun idp).2.hom_map = 
            (precat_dep_ppred C₀).dep_base.hom_map,
   apply ap precat_iso_of_obj.hom_map,
-  have q : precat_sig_equiv_obj_iso_idp C₀ C₀ = idpath (@equiv.rfl C₀), from rfl,
-  have s : ((struct_id_char_of_contr C₀.struct (precat_dep_ppred C₀)
+  have q : precat_sig_equiv_obj_iso_idp C₀ = idpath (@equiv.rfl C₀), from rfl,
+  have s : ((struct_id_char_of_contr pc₀ (precat_dep_ppred C₀)
            (precat_contr_ppred C₀) (precat_contr_dep_ppred C₀) 
-           (dpair C₀.obj _)).to_fun idp).2 =[idpath (@equiv.rfl C₀)]
+           (dpair C₀ _)).to_fun idp).2 =[idpath (@equiv.rfl C₀)]
            (precat_dep_ppred C₀).dep_base, by rwr <- q; rwr sigma.eq_snd,
   exact eq_of_pathover_idp s
 end
 
 @[hott]
-def Precat_id_equiv_iso (C D : Precategory.{u v}) : 
-  (C = D) ≃ (precat_iso C D) :=
-eq_equiv_fn_eq_of_equiv Precat_str_equiv_sig C D ⬝e
+def Precat_id_equiv_iso (C D : Type u) [pc : is_precat.{v} C] [pd : is_precat.{v} D] : 
+  (Precategory.mk C pc = Precategory.mk D pd) ≃ (precat_iso C D) :=
+eq_equiv_fn_eq_of_equiv Precat_str_equiv_sig (Precategory.mk C pc) (Precategory.mk D pd) ⬝e
 precat_sig_equiv_obj_iso C D ⬝e
 precat_iso_of_obj_equiv_iso C D
 
 @[hott]
-def precat_id_equiv_iso (C D : Type u) [pcC : is_precat.{v u} C] [pcD : is_precat.{v u} D] : 
-  ((Precategory.mk C pcC) = (Precategory.mk D pcD)) ≃ (precat_iso C D) :=
-Precat_id_equiv_iso (Precategory.mk C pcC) (Precategory.mk D pcD)
-
-@[hott]
-def Precat_idp_equiv_id_iso (C : Precategory) :
-  Precat_id_equiv_iso C C idp = precat_iso_idp C := idp
-
-@[hott]
 def precat_idp_equiv_id_iso (C : Type _) [is_precat C] :
-  precat_id_equiv_iso C C idp = precat_iso_idp C := idp
+  Precat_id_equiv_iso C C idp = precat_iso_idp C := idp
 
 end precategories
 
