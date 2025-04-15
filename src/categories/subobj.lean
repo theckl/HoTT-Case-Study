@@ -12,27 +12,27 @@ open hott.eq hott.sigma hott.set hott.subset hott.is_trunc
    monomorphisms factorizing the monomorphisms. Therefore in HoTT categories, it is not necessary 
    to define subobjects as isomorphism classes. -/
 @[hott]  --[GEVE]
-def is_mono {C : Category} {c₁ c₂ : C} (f : c₁ ⟶ c₂) :=
+def is_mono {C : Type _} [is_cat C] {c₁ c₂ : C} (f : c₁ ⟶ c₂) :=
   Π (d : C) (g₁ g₂ : d ⟶ c₁), g₁ ≫ f = g₂ ≫ f -> g₁ = g₂
 
 @[hott]
-def is_epi {C : Category} {c₁ c₂ : C} (f : c₁ ⟶ c₂) :=
+def is_epi {C : Type _} [is_cat C] {c₁ c₂ : C} (f : c₁ ⟶ c₂) :=
   Π (d : C) (g₁ g₂ : c₂ ⟶ d), f ≫ g₁ = f ≫ g₂ -> g₁ = g₂
 
 @[hott, instance]
-def is_mono_is_prop {C : Category} {c₁ c₂ : C} (f : c₁ ⟶ c₂) : 
+def is_mono_is_prop {C : Type _} [is_cat C] {c₁ c₂ : C} (f : c₁ ⟶ c₂) : 
   is_prop (is_mono f) :=
 begin apply is_prop_dprod, intro d, apply_instance end 
 
 @[hott]
-def is_mono_is_trans {C : Category} {c₁ c₂ c₃ : C} {f : c₁ ⟶ c₂} 
+def is_mono_is_trans {C : Type _} [is_cat C] {c₁ c₂ c₃ : C} {f : c₁ ⟶ c₂} 
   {g : c₂ ⟶ c₃} : is_mono f -> is_mono g -> is_mono (f ≫ g) :=
 begin 
   intros Hf Hg d h₁ h₂, rwr <- is_precat.assoc, rwr <- is_precat.assoc, 
   intro H, exact Hf d h₁ h₂ (Hg d (h₁ ≫ f) (h₂ ≫ f) H) end  
 
 @[hott]
-def isos_are_mono {C : Category} {c₁ c₂ : C} (i : c₁ ≅ c₂) : is_mono i.hom :=  
+def isos_are_mono {C : Type _} [is_cat C] {c₁ c₂ : C} (i : c₁ ≅ c₂) : is_mono i.hom :=  
   assume d g₁ g₂ eq_comp, 
   calc g₁ = g₁ ≫ 𝟙 c₁ : by rwr is_precat.comp_id
        ... = g₁ ≫ (i.hom ≫ i.ih.inv) : by rwr is_iso.l_inv
@@ -41,13 +41,13 @@ def isos_are_mono {C : Category} {c₁ c₂ : C} (i : c₁ ≅ c₂) : is_mono i
        ... = g₂ : by rwr is_precat.assoc; rwr is_iso.l_inv; rwr is_precat.comp_id   
 
 @[hott]
-structure hom_of_monos {C : Category} {c d₁ d₂: C} {f : d₁ ⟶ c} 
+structure hom_of_monos {C : Type _} [is_cat C] {c d₁ d₂: C} {f : d₁ ⟶ c} 
   (Hf : is_mono f) {g : d₂ ⟶ c} (Hg : is_mono g) :=
 (hom_obj : d₁ ⟶ d₂)
 (fac : hom_obj ≫ g = f)
 
 @[hott]
-def hom_of_monos_is_mono {C : Category} {c d₁ d₂: C} {f : d₁ ⟶ c} 
+def hom_of_monos_is_mono {C : Type _} [is_cat C] {c d₁ d₂: C} {f : d₁ ⟶ c} 
   {Hf : is_mono f} {g : d₂ ⟶ c} {Hg : is_mono g} (hm : hom_of_monos Hf Hg) :
   is_mono hm.hom_obj :=
 begin 
@@ -56,7 +56,7 @@ begin
 end
 
 @[hott, instance]
-def is_prop_hom_of_monos {C : Category} {c d₁ d₂: C} {f : d₁ ⟶ c} (Hf : is_mono f)
+def is_prop_hom_of_monos {C : Type _} [is_cat C] {c d₁ d₂: C} {f : d₁ ⟶ c} (Hf : is_mono f)
   {g : d₂ ⟶ c} (Hg : is_mono g) : is_prop (hom_of_monos Hf Hg) :=
 begin 
   apply is_prop.mk, intros hm₁ hm₂, hinduction hm₁ with h₁ fac₁, hinduction hm₂ with h₂ fac₂, 
@@ -66,13 +66,13 @@ begin
 end  
 
 @[hott]
-structure iso_of_monos {C : Category} {c d₁ d₂: C} {f : d₁ ⟶ c} (Hf : is_mono f)
+structure iso_of_monos {C : Type _} [is_cat C] {c d₁ d₂: C} {f : d₁ ⟶ c} (Hf : is_mono f)
   {g : d₂ ⟶ c} (Hg : is_mono g) :=
 (iso_obj : d₁ ≅ d₂)
 (fac : iso_obj.hom ≫ g = f) 
 
 @[hott]
-def iso_of_monos_eq {C : Category} {c d₁ d₂: C} {f : d₁ ⟶ c} {Hf : is_mono f}
+def iso_of_monos_eq {C : Type _} [is_cat C] {c d₁ d₂: C} {f : d₁ ⟶ c} {Hf : is_mono f}
   {g : d₂ ⟶ c} {Hg : is_mono g} (im₁ im₂ : iso_of_monos Hf Hg) : 
   im₁.iso_obj = im₂.iso_obj -> im₁ = im₂ :=
 begin 
@@ -82,7 +82,7 @@ begin
 end 
 
 @[hott]
-def homs_eqv_iso_of_monos {C : Category.{u v}} {c d₁ d₂: C} {f : d₁ ⟶ c} (Hf : is_mono f)
+def homs_eqv_iso_of_monos {C : Type u} [is_cat.{v} C] {c d₁ d₂: C} {f : d₁ ⟶ c} (Hf : is_mono f)
   {g : d₂ ⟶ c} (Hg : is_mono g) : 
   (hom_of_monos Hf Hg) × (hom_of_monos Hg Hf) ≃ iso_of_monos Hf Hg :=
 begin 
@@ -112,12 +112,12 @@ begin
 end  
 
 @[hott, instance]
-def is_prop_iso_of_monos {C : Category} {c d₁ d₂: C} {f : d₁ ⟶ c} (Hf : is_mono f)
+def is_prop_iso_of_monos {C : Type u} [is_cat.{v} C] {c d₁ d₂: C} {f : d₁ ⟶ c} (Hf : is_mono f)
   {g : d₂ ⟶ c} (Hg : is_mono g) : is_prop (iso_of_monos Hf Hg) :=
 begin apply is_trunc_equiv_closed -1 (homs_eqv_iso_of_monos Hf Hg), apply_instance end
 
 @[hott]  --[GEVE]
-def mono_is_faithful {C D : Category} {F : C ⥤ D} [H : is_faithful_functor F] {c₁ c₂: C} :
+def mono_is_faithful {C : Type _} [is_cat C] {D : Type _} [is_cat D] {F : C ⥤ D} [H : is_faithful_functor F] {c₁ c₂: C} :
   Π (f : c₁ ⟶ c₂), is_mono (F.map f) -> is_mono f :=
 begin 
   intros f mono_F, intros d g₁ g₂ p, apply H, apply mono_F,
@@ -125,13 +125,13 @@ begin
 end 
 
 @[hott]  --[GEVE]
-structure subobject {C : Category} (c : C) :=
+structure subobject {C : Type _} [is_cat C] (c : C) :=
   (obj : C)
   (hom : obj ⟶ c)
   (is_mono : is_mono hom)  
 
 @[hott]
-def subobject_eq {C : Category} {c : C} {s₁ s₂ : subobject c} :
+def subobject_eq {C : Type _} [is_cat C] {c : C} {s₁ s₂ : subobject c} :
   Π (p : s₁.obj = s₂.obj), s₁.hom =[p; λ a : C, a ⟶ c ] s₂.hom -> s₁ = s₂ :=
 begin
   hinduction s₁ with a₁ h₁ mono₁, hinduction s₂ with a₂ h₂ mono₂,
@@ -140,9 +140,9 @@ begin
 end
 
 @[hott] 
-def subobject_eq_idp {C : Category} {c : C} {s : subobject c} 
+def subobject_eq_idp {C : Type _} [is_cat C] {c : C} {s : subobject c} 
   {q : s.hom =[idp; λ a : C, a ⟶ c ] s.hom} :
-  @subobject_eq C c s _ idp q = idp :=
+  @subobject_eq C _ c s _ idp q = idp :=
 begin
   have r : q = idpo, from begin apply is_prop.elim end,
   hinduction s with a h mono, rwr r, change apd0111 subobject.mk idp idpo _ = idp, 
@@ -150,7 +150,7 @@ begin
 end
 
 @[hott]
-def subobject_eq_obj {C : Category} {c : C} {s₁ s₂ : subobject c} 
+def subobject_eq_obj {C : Type _} [is_cat C] {c : C} {s₁ s₂ : subobject c} 
   {p : s₁.obj = s₂.obj} {q : s₁.hom =[p; λ a : C, a ⟶ c ] s₂.hom} :
   ap subobject.obj (subobject_eq p q) = p :=
 begin
@@ -166,16 +166,16 @@ end
    homomorphisms between subobjects in both ways imply an isomorphism of subobjects and therefore
    equality. -/
 @[hott]
-def subobject_hom {C : Category} {c : C} (s₁ s₂ : subobject c) :=
+def subobject_hom {C : Type _} [is_cat C] {c : C} (s₁ s₂ : subobject c) :=
   hom_of_monos s₁.is_mono s₂.is_mono
 
 @[hott, instance]
-def subobject_hom_is_prop {C : Category} {c : C} (s₁ s₂ : subobject c) :
+def subobject_hom_is_prop {C : Type _} [is_cat C] {c : C} (s₁ s₂ : subobject c) :
   is_prop (subobject_hom s₁ s₂) :=
 begin change is_prop (hom_of_monos s₁.is_mono s₂.is_mono), apply_instance end    
 
 @[hott]
-def equal_subobj_to_iso_mono {C : Category} {c : C} (s₁ s₂ : subobject c) :
+def equal_subobj_to_iso_mono {C : Type _} [is_cat C] {c : C} (s₁ s₂ : subobject c) :
   s₁ = s₂ -> iso_of_monos s₁.is_mono s₂.is_mono :=
 begin 
   intro p, fapply iso_of_monos.mk, 
@@ -184,13 +184,13 @@ begin
 end  
 
 @[hott] 
-def idp_subobj_to_iso_mono {C : Category} {c : C} (s : subobject c) :
+def idp_subobj_to_iso_mono {C : Type _} [is_cat C] {c : C} (s : subobject c) :
   equal_subobj_to_iso_mono s s idp = iso_of_monos.mk s.is_mono s.is_mono (id_iso s.obj) 
                                                      (is_precat.id_comp s.hom) :=
 begin apply iso_of_monos_eq, change idtoiso idp = id_iso s.obj, rwr idtoiso_refl_eq end                                                     
 
 @[hott, reducible]
-def iso_mono_to_equal_subobj {C : Category} {c : C} (s₁ s₂ : subobject c) :
+def iso_mono_to_equal_subobj {C : Type _} [is_cat C] {c : C} (s₁ s₂ : subobject c) :
   iso_of_monos s₁.is_mono s₂.is_mono -> s₁ = s₂ :=
 begin
   intro im, fapply subobject_eq,
@@ -200,7 +200,7 @@ begin
 end
 
 @[hott]
-def iso_mono_to_equal_subobj_iso {C : Category} {c : C} {s₁ s₂ : subobject c} 
+def iso_mono_to_equal_subobj_iso {C : Type _} [is_cat C] {c : C} {s₁ s₂ : subobject c} 
   (im : iso_of_monos s₁.is_mono s₂.is_mono) : 
   ap subobject.obj (iso_mono_to_equal_subobj s₁ s₂ im) = category.isotoid im.iso_obj :=
 begin
@@ -209,7 +209,7 @@ begin
 end    
 
 @[hott]
-def equal_subobj_eqv_iso_mono {C : Category} {c : C} (s₁ s₂ : subobject c) :
+def equal_subobj_eqv_iso_mono {C : Type _} [is_cat C] {c : C} (s₁ s₂ : subobject c) :
   s₁ = s₂ ≃ iso_of_monos s₁.is_mono s₂.is_mono :=
 begin
   fapply equiv.mk,
@@ -230,7 +230,7 @@ end
 /- The subobjects of an object in a HoTT-category form a set, so a HoTT-category is 
    well-powered. -/
 @[hott, instance]
-def subobject_is_set {C : Category} (c : C) : is_set (subobject c) :=
+def subobject_is_set {C : Type _} [is_cat C] (c : C) : is_set (subobject c) :=
 begin 
   apply is_trunc_succ_intro, intros s₁ s₂, 
   apply is_trunc_equiv_closed_rev -1 (equal_subobj_eqv_iso_mono s₁ s₂), 
@@ -239,21 +239,21 @@ begin
 end
 
 @[hott]
-def Subobject {C : Category} (c : C) : Set :=
+def Subobject {C : Type _} [is_cat C] (c : C) : Set :=
   Set.mk (subobject c) (subobject_is_set c)
 
 /- The subobjects of an object, together with their monomorphism-preserving homomorphisms
    defined in [categories.basic], form a category. -/  
 @[hott, instance]
-def subobject_has_hom {C : Category} {c : C} : has_hom (subobject c) :=
+def subobject_has_hom {C : Type _} [is_cat C] {c : C} : has_hom (subobject c) :=
   has_hom.mk (λ a b : subobject c, Set.mk (subobject_hom a b) (is_trunc_succ _ -1))
 
 @[hott]
-def id_subobject {C : Category} {c : C} (a : subobject c) : subobject_hom a a :=
+def id_subobject {C : Type _} [is_cat C] {c : C} (a : subobject c) : subobject_hom a a :=
   begin fapply hom_of_monos.mk a.is_mono a.is_mono, exact 𝟙 a.obj, hsimp end  
 
 @[hott] 
-def comp_subobject {C : Category} {c : C} (a₁ a₂ a₃ : subobject c) :
+def comp_subobject {C : Type _} [is_cat C] {c : C} (a₁ a₂ a₃ : subobject c) :
   subobject_hom a₁ a₂ -> subobject_hom a₂ a₃ -> subobject_hom a₁ a₃ :=
 begin 
   intros f g, fapply hom_of_monos.mk a₁.is_mono a₃.is_mono, exact f.hom_obj ≫ g.hom_obj, 
@@ -261,12 +261,12 @@ begin
 end  
 
 @[hott, instance]
-def subobject_cat_struct {C : Category} {c : C} : 
+def subobject_cat_struct {C : Type _} [is_cat C] {c : C} : 
   category_struct (subobject c) :=
 category_struct.mk id_subobject comp_subobject
 
 @[hott, instance]
-def subobject_is_precat {C : Category} {c : C} : 
+def subobject_is_precat {C : Type _} [is_cat C] {c : C} : 
   is_precat (subobject c) :=
 have ic : Π (a b : subobject c) (f : a ⟶ b), 𝟙 a ≫ f = f, from 
   assume a b f, by exact is_prop.elim _ _,
@@ -278,7 +278,7 @@ have as : Π (a₁ a₂ a₃ a₄ : subobject c) (f : a₁ ⟶ a₂) (g : a₂ �
 is_precat.mk ic ci as  
 
 @[hott]
-def iso_of_monos_to_iso {C : Category} {c : C} (a b : subobject c) :
+def iso_of_monos_to_iso {C : Type _} [is_cat C] {c : C} (a b : subobject c) :
   (iso_of_monos a.is_mono b.is_mono) -> (a ≅ b) :=
 begin 
   intro im, fapply iso.mk, 
@@ -289,7 +289,7 @@ begin
 end
 
 @[hott]
-def iso_to_iso_of_monos {C : Category} {c : C} (a b : subobject c) :
+def iso_to_iso_of_monos {C : Type _} [is_cat C] {c : C} (a b : subobject c) :
   (a ≅ b) -> (iso_of_monos a.is_mono b.is_mono) :=
 begin 
   intro i, fapply iso_of_monos.mk, 
@@ -301,7 +301,7 @@ begin
 end    
 
 @[hott]
-def iso_of_monos_eqv_iso {C : Category} {c : C} (a b : subobject c) :
+def iso_of_monos_eqv_iso {C : Type u} [is_cat.{v} C] {c : C} (a b : subobject c) :
   (iso_of_monos a.is_mono b.is_mono) ≃ (a ≅ b) :=
 begin 
   fapply equiv.mk,
@@ -314,18 +314,18 @@ begin
 end  
 
 @[hott]
-def subobj_idtoiso {C : Category} {c : C} (a b : subobject c) : 
+def subobj_idtoiso {C : Type u} [is_cat.{v} C] {c : C} (a b : subobject c) : 
   @idtoiso _ _ a b = (iso_of_monos_eqv_iso a b).to_fun ∘ 
                      (equal_subobj_eqv_iso_mono a b).to_fun :=
 begin apply eq_of_homotopy, intro p, apply hom_eq_to_iso_eq, exact is_prop.elim _ _ end                       
 
 @[hott, instance]
-def subobject_is_cat {C : Category} {c : C} : 
+def subobject_is_cat {C : Type u} [is_cat.{v} C] {c : C} : 
   is_cat (subobject c) :=
 begin apply is_cat.mk, intros a b, rwr subobj_idtoiso a b, apply_instance end    
 
 @[hott]
-def subobject_Category {C : Category} (c : C) : Category :=
+def subobject_Category {C : Type _} [is_cat C] (c : C) : Category :=
   Category.mk (subobject c) subobject_is_cat
 
 /- Since homomorphisms between subobjects are unique and anti-symmetric (see below), 
@@ -340,12 +340,12 @@ class has_order (A : Type _) := (le : A → A → Type _)
 hott_theory_cmd "local infix ` ≼ `:60  := hott.has_order.le"
 
 @[hott, instance]
-def subobject_has_order {C : Category.{u v}} (c : C) : 
-  has_order.{(max u v) v} (subobject c) :=
+def subobject_has_order {C : Type _} [is_cat C] (c : C) : 
+  has_order (subobject c) :=
   has_order.mk (λ a b, a ⟶ b)  
 
 @[hott]
-def subobj_antisymm {C : Category} {c : C} (a b : subobject c) : 
+def subobj_antisymm {C : Type u} [is_cat.{v} C] {c : C} (a b : subobject c) : 
   (a ≼ b) -> (b ≼ a) -> (a = b) :=
 begin 
   intros i j , 
@@ -355,30 +355,30 @@ begin
       exact @is_prop.elim _ (subobject_hom_is_prop b b) _ _, 
       exact @is_prop.elim _ (subobject_hom_is_prop a a) _ _ 
     end,  
-  exact @category.isotoid (subobject_Category c) _ _ iso_ab 
+  exact @category.isotoid (subobject c) subobject_is_cat _ _ iso_ab 
 end  
 
 @[hott]
-def subobj_trans {C : Category} {d : C} {a b c : subobject d} : 
+def subobj_trans {C : Type _} [is_cat C] {d : C} {a b c : subobject d} : 
   (a ≼ b) -> (b ≼ c) -> (a ≼ c) :=
 λ i j, i ≫ j 
 
 @[hott]
-def subobj_subobj_trans {C : Category} {c : C} (a : subobject c) 
+def subobj_subobj_trans {C : Type _} [is_cat C] {c : C} (a : subobject c) 
   (b : subobject a.obj) : subobject c :=
 subobject.mk b.obj (b.hom ≫ a.hom) (is_mono_is_trans b.is_mono a.is_mono) 
 
 @[hott]
-def subobj_trans_hom_hom {C : Category} {c : C} (a : subobject c) 
+def subobj_trans_hom_hom {C : Type _} [is_cat C] {c : C} (a : subobject c) 
   (b : subobject a.obj) : (subobj_subobj_trans a b).hom = b.hom ≫ a.hom := rfl
 
 @[hott]
-def subobj_subobj_trans_hom {C : Category} {c : C} (a : subobject c) 
+def subobj_subobj_trans_hom {C : Type _} [is_cat C] {c : C} (a : subobject c) 
   (b : subobject a.obj) : subobj_subobj_trans a b ≼ a :=
 begin fapply hom_of_monos.mk, exact b.hom, refl end
 
 @[hott]
-def subobj_subobj_trans_pres_hom {C : Category} {d : C} (a : subobject d) 
+def subobj_subobj_trans_pres_hom {C : Type _} [is_cat C] {d : C} (a : subobject d) 
   (b c : subobject a.obj) : b ≼ c -> subobj_subobj_trans a b ≼ subobj_subobj_trans a c :=
 begin
   intro bc, fapply hom_of_monos.mk, 
@@ -387,12 +387,12 @@ begin
 end
 
 @[hott]
-def subobj_rest {C : Category} {c : C} {a b : subobject c} (f : b ≼ a) :
+def subobj_rest {C : Type _} [is_cat C] {c : C} {a b : subobject c} (f : b ≼ a) :
   subobject a.obj := 
 subobject.mk b.obj f.hom_obj (hom_of_monos_is_mono f)
 
 @[hott]
-def subobj_hom_rest {C : Category} {c : C} {a b b': subobject c} (f : b ≼ a) 
+def subobj_hom_rest {C : Type _} [is_cat C] {c : C} {a b b': subobject c} (f : b ≼ a) 
   (f' : b' ≼ a) (g : b ≼ b') : (subobj_rest f) ⟶ (subobj_rest f') :=
 begin 
   fapply hom_of_monos.mk, exact g.hom_obj, change (g ≫ f').hom_obj = f.hom_obj,
@@ -400,7 +400,7 @@ begin
 end
 
 @[hott]
-def subobj_hom_rest_hom {C : Category} {c : C} {a b b': subobject c} (f : b ≼ a) 
+def subobj_hom_rest_hom {C : Type _} [is_cat C] {c : C} {a b b': subobject c} (f : b ≼ a) 
   (f' : b' ≼ a) (g : subobj_rest f ≼ subobj_rest f') : b ≼ b' :=
 begin 
   fapply hom_of_monos.mk, exact g.hom_obj, 
@@ -410,7 +410,7 @@ begin
 end  
 
 @[hott]
-def subobj_rest_trans {C : Category} {c : C} (a : subobject c) (b : subobject a.obj) :
+def subobj_rest_trans {C : Type _} [is_cat C] {c : C} (a : subobject c) (b : subobject a.obj) :
   subobj_rest (subobj_subobj_trans_hom a b) = b :=
 begin 
   fapply subobj_antisymm,
@@ -424,16 +424,16 @@ end
 
 /- The category of subobjects always has a top element. -/
 @[hott]
-def top_subobject {C : Category} (c : C) : subobject c := 
+def top_subobject {C : Type _} [is_cat C] (c : C) : subobject c := 
   subobject.mk c (𝟙 c) (isos_are_mono (id_iso c))
 
 @[hott]
-def top_subobj_prop {C : Category} {c : C} : 
+def top_subobj_prop {C : Type _} [is_cat C] {c : C} : 
   Π (a : subobject c), a ≼ top_subobject c := 
 begin intro a, fapply hom_of_monos.mk, exact a.hom, hsimp end 
 
 @[hott]
-def top_subobj_unique {C : Category} {c : C} (d : subobject c) :
+def top_subobj_unique {C : Type _} [is_cat C] {c : C} (d : subobject c) :
   (Π (a : subobject c), a ≼ d) -> d = top_subobject c :=
 begin intro max, fapply subobj_antisymm, exact top_subobj_prop d, exact max _ end
  
@@ -442,13 +442,13 @@ begin intro max, fapply subobj_antisymm, exact top_subobj_prop d, exact max _ en
    minimality property. Note that the factoring homomorphism is unique as the inclusion 
    homomorphism is a monomorphism. -/
 @[hott]
-structure cat_image {C : Category} {c d : C} (f : c ⟶ d) :=
+structure cat_image {C : Type _} [is_cat C] {c d : C} (f : c ⟶ d) :=
   (subobj : subobject d)
   (fac : Σ f' : c ⟶ subobj.obj, f' ≫ subobj.hom = f)
   (univ : Π (a : subobject d), (Σ f' : c ⟶ a.obj, f' ≫ a.hom = f) -> (subobj ≼ a))
 
 @[hott] 
-def subobject_fac_is_unique {C : Category.{u v}} {c d : C} (f : c ⟶ d) 
+def subobject_fac_is_unique {C : Type u} [is_cat.{v} C] {c d : C} (f : c ⟶ d) 
   (a : subobject d) : Π fac₁ fac₂ : (Σ (f' : c ⟶ a.obj), f' ≫ a.hom = f), fac₁ = fac₂ :=
 begin 
   intros fac₁ fac₂, fapply sigma.sigma_eq, 
@@ -457,12 +457,12 @@ begin
 end
 
 @[hott, instance] 
-def subobject_fac_is_prop {C : Category.{u v}} {c d : C} (f : c ⟶ d) 
+def subobject_fac_is_prop {C : Type u} [is_cat.{v} C] {c d : C} (f : c ⟶ d) 
   (a : subobject d) : is_prop (Σ f' : c ⟶ a.obj, f' ≫ a.hom = f) :=
 is_prop.mk (subobject_fac_is_unique f a)  
 
 @[hott]
-def cat_image_is_unique {C : Category.{u v}} {c d : C} (f : c ⟶ d) :
+def cat_image_is_unique {C : Type u} [is_cat.{v} C] {c d : C} (f : c ⟶ d) :
   Π im₁ im₂ : cat_image f, im₁ = im₂ :=
 begin
   intros im₁ im₂, 
@@ -474,43 +474,43 @@ begin
 end  
 
 @[hott, instance]
-def cat_image_is_prop {C : Category} {c d : C} (f : c ⟶ d) : 
+def cat_image_is_prop {C : Type u} [is_cat.{v} C] {c d : C} (f : c ⟶ d) : 
   is_prop (cat_image f) :=
 is_prop.mk (cat_image_is_unique f)  
 
 @[hott]
-class has_image {C : Category} {c d : C} (f : c ⟶ d) :=
+class has_image {C : Type _} [is_cat C] {c d : C} (f : c ⟶ d) :=
   (exists_im : cat_image f)
 
 @[hott, instance]
-def has_im_is_prop {C : Category} {c d : C} (f : c ⟶ d) : is_prop (has_image f) :=
+def has_im_is_prop {C : Type u} [is_cat.{v} C] {c d : C} (f : c ⟶ d) : is_prop (has_image f) :=
 begin 
   apply is_prop.mk, intros hi₁ hi₂, hinduction hi₁, hinduction hi₂,
   apply ap has_image.mk, exact is_prop.elim _ _ 
 end
 
 @[hott, reducible]
-def hom.image {C : Category} {c d : C} (f : c ⟶ d) [has_image f] : 
+def hom.image {C : Type u} [is_cat.{v} C] {c d : C} (f : c ⟶ d) [has_image f] : 
   subobject d :=  
 (has_image.exists_im f).subobj
 
 @[hott, reducible]
-def hom_to_image {C : Category} {c d : C} (f : c ⟶ d) [has_image f] :
+def hom_to_image {C : Type u} [is_cat.{v} C] {c d : C} (f : c ⟶ d) [has_image f] :
   c ⟶ (hom.image f).obj := 
 (has_image.exists_im f).fac.1  
 
 @[hott]
-def hom_to_image_eq {C : Category} {c d : C} (f : c ⟶ d) [has_image f] :
+def hom_to_image_eq {C : Type u} [is_cat.{v} C] {c d : C} (f : c ⟶ d) [has_image f] :
   hom_to_image f ≫ (hom.image f).hom = f := 
 (has_image.exists_im f).fac.2 
 
 @[hott]
-def hom_image_univ {C : Category} {c d : C} (f : c ⟶ d) [has_image f] :
+def hom_image_univ {C : Type u} [is_cat.{v} C] {c d : C} (f : c ⟶ d) [has_image f] :
   Π (a : subobject d) (f' : c ⟶ a.obj), f' ≫ a.hom = f -> (hom.image f ≼ a) :=
 assume a f' p, (has_image.exists_im f).univ a ⟨f', p⟩ 
 
 @[hott, instance]
-def subobj_has_im {C : Category} {c : C} (b : subobject c) :
+def subobj_has_im {C : Type u} [is_cat.{v} C] {c : C} (b : subobject c) :
   has_image b.hom :=
 have im_b : cat_image b.hom, from 
   cat_image.mk b (sigma.mk (𝟙 b.obj) (is_precat.id_comp b.hom)) 
@@ -518,11 +518,11 @@ have im_b : cat_image b.hom, from
 has_image.mk im_b
 
 @[hott]
-def subobj_is_im {C : Category} {c : C} (b : subobject c) :
+def subobj_is_im {C : Type u} [is_cat.{v} C] {c : C} (b : subobject c) :
   hom.image b.hom = b := idp  
 
 @[hott]
-def im_incl {C : Category} {a b c : C} (f : a ⟶ b) (g : b ⟶ c) 
+def im_incl {C : Type u} [is_cat.{v} C] {a b c : C} (f : a ⟶ b) (g : b ⟶ c) 
   [has_image (f ≫ g)] [has_image g] : hom.image (f ≫ g) ≼ hom.image g :=
 begin 
   fapply cat_image.univ, fapply sigma.mk, 
@@ -531,7 +531,7 @@ begin
 end  
 
 @[hott]
-def im_incl_eq {C : Category} 
+def im_incl_eq {C : Type u} [is_cat.{v} C] 
   {c d : C} (a : subobject c) (f : d ⟶ a.obj) [has_image f] [has_image (f ≫ a.hom)] : 
   (hom.image (f ≫ a.hom)) = (subobj_subobj_trans a (hom.image f)) :=
 begin 
@@ -541,7 +541,7 @@ begin
                                                                    (hom_to_image f) p,
   fapply subobj_antisymm, 
   { exact g }, 
-  { fapply @subobj_hom_rest_hom _ _ a, 
+  { fapply @subobj_hom_rest_hom _ _ _ a, 
     { exact subobj_subobj_trans_hom _ _ },
     { exact g ≫ subobj_subobj_trans_hom _ _ },
     { rwr subobj_rest_trans, fapply hom_image_univ, 
@@ -553,7 +553,7 @@ begin
 end
 
 @[hott]
-def im_iso_comp {C : Category} {a b c : C} (i : a ≅ b) (g : b ⟶ c) 
+def im_iso_comp {C : Type u} [is_cat.{v} C] {a b c : C} (i : a ≅ b) (g : b ⟶ c) 
   [has_image (i.hom ≫ g)] [has_image g] : hom.image (i.hom ≫ g) = hom.image g :=
 begin
   apply subobj_antisymm,
@@ -567,18 +567,18 @@ begin
 end
 
 @[hott]
-class has_images (C : Category) :=
+class has_images (C : Type u) [is_cat.{v} C] :=
   (has_im : Π {c d : C} (f : c ⟶ d), has_image f)
 
 @[hott, instance]
-def has_ims_is_prop (C : Category) : is_prop (has_images C) :=
+def has_ims_is_prop {C : Type u} [is_cat.{v} C] : is_prop (has_images C) :=
 begin 
   apply is_prop.mk, intros hi₁ hi₂, hinduction hi₁, hinduction hi₂,
   apply ap has_images.mk, exact is_prop.elim _ _ 
 end
 
 @[hott, instance]
-def has_image_of_has_images {C : Category} [has_images C] {c d : C} 
+def has_image_of_has_images {C : Type u} [is_cat.{v} C] [has_images C] {c d : C} 
   (f : c ⟶ d) : has_image f :=
 has_images.has_im f
 
