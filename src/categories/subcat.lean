@@ -12,20 +12,20 @@ open hott.eq hott.sigma hott.set hott.subset hott.is_trunc
    We start with a synonym for an (embedded) type `D`, on which the category structure
    will be defined, as in [category_theory.full_subcategory] of the mathlib. -/
 @[hott]
-def ind_cat_type {C : Category} {D : Type u'} (f : D -> C) := D
+def ind_cat_type {C : Type u} [is_cat.{v} C] {D : Type u'} (f : D -> C) := D
 
 @[hott, instance]
-def mapped_type_has_hom {C : Category} {D : Type u'} (f : D -> C) : 
+def mapped_type_has_hom {C : Type u} [is_cat.{v} C] {D : Type u'} (f : D -> C) : 
   has_hom (ind_cat_type f) :=
 begin fapply has_hom.mk, intros d₁ d₂, exact f d₁ ⟶ f d₂ end  
 
 @[hott]
-def ind_type_hom_hom {C : Category} {D : Type u'} (f : D -> C)
+def ind_type_hom_hom {C : Type u} [is_cat.{v} C] {D : Type u'} (f : D -> C)
   {d₁ d₂ : ind_cat_type f} : (d₁ ⟶ d₂) -> (f d₁ ⟶ f d₂) := 
 assume h, h  
 
 @[hott, instance]
-def ind_type_cat_struct {C : Category} {D : Type u'} (f : D -> C) : 
+def ind_type_cat_struct {C : Type u} [is_cat.{v} C] {D : Type u'} (f : D -> C) : 
   category_struct (ind_cat_type f) :=
 begin
   fapply category_struct.mk,
@@ -34,7 +34,7 @@ begin
 end  
 
 @[hott, instance]
-def fully_ind_precategory {C : Category} {D : Type u'} (f : D -> C) : 
+def fully_ind_precategory {C : Type u} [is_cat.{v} C] {D : Type u'} (f : D -> C) : 
   is_precat (ind_cat_type f) :=
 begin
   fapply is_precat.mk,
@@ -44,7 +44,7 @@ begin
 end  
 
 @[hott]
-def ind_type_iso_iso {C : Category} {D : Type u'} (f : D -> C)
+def ind_type_iso_iso {C : Type u} [is_cat.{v} C] {D : Type u'} (f : D -> C)
   {d₁ d₂ : ind_cat_type f} : (d₁ ≅ d₂) -> (f d₁ ≅ f d₂) := 
 begin
   intro i, fapply iso.mk,  
@@ -55,7 +55,7 @@ begin
 end  
 
 @[hott]
-def ind_idtoiso_hom {C : Category} {D : Type u'} (f : D -> C)
+def ind_idtoiso_hom {C : Type u} [is_cat.{v} C] {D : Type u'} (f : D -> C)
   (inj : is_injective (λ d : ind_cat_type f, f d)) {d₁ d₂ : ind_cat_type f} : 
   Π p : f d₁ = f d₂, (idtoiso (inj_imp inj d₁ d₂ p)).hom = (idtoiso p).hom :=
 begin 
@@ -72,7 +72,7 @@ begin
 end
 
 @[hott, instance]
-def fully_embedded_category {C : Category} {D : Type u'} (f : D -> C)
+def fully_embedded_category {C : Type u} [is_cat.{v} C] {D : Type u'} (f : D -> C)
   [inj : is_injective f] : is_cat (ind_cat_type f) :=
 begin
   fapply is_cat.mk,
@@ -89,7 +89,7 @@ begin
 end    
 
 @[hott]
-def emb_functor {C : Category} {D : Type u'} (f : D -> C) : 
+def emb_functor {C : Type u} [is_cat.{v} C] {D : Type u'} (f : D -> C) : 
   (ind_cat_type f) ⥤ C :=
 begin
   fapply precategories.functor.mk,
@@ -113,13 +113,13 @@ begin apply is_injective.mk, intros sc₁ sc₂, exact (subtype_eq_equiv sc₁ s
 @[hott, instance]
 def full_subcat_on_subtype {C : Type _} [H : is_cat C] (P : C -> trunctype -1) :
   is_cat (subtype (λ c : C, ↥(P c))) :=
-@fully_embedded_category (Category.mk C H) _ (subtype_emb P) (subtype_emb_is_inj P)  
+@fully_embedded_category C H _ (subtype_emb P) (subtype_emb_is_inj P)  
 
 @[hott]
 def embed {C : Type _} [HC : is_cat C] {P : C -> trunctype -1} 
   {D : Type _} [H : is_precat D] (F : D ⥤ subtype (λ c : C, ↥(P c))) : D ⥤ C :=
 have G : subtype (λ c : C, ↥(P c)) ⥤ C, from 
-  @emb_functor (Category.mk C HC) _ (subtype_emb P), 
+  @emb_functor C HC _ (subtype_emb P), 
 F ⋙ G 
 
 end hott
