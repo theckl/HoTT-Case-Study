@@ -178,8 +178,21 @@ begin
   { exact idp }
 end
 
+@[hott, instance]
+def unit_subgroup_is_normal (G : Group) : is_normal (unit_subgroup G) :=
+begin  
+  fapply conj_el_to_normal, intros h g h_el, hinduction h_el with fib,
+  hinduction fib with h' h'_eq, change One at h',
+  have p : h' = One.star, from is_prop.elim _ _, 
+  rwr p at h'_eq, 
+  have q : h = 1, by rwr <- h'_eq, rwr q, apply tr, fapply fiber.mk,
+  { exact 1 },
+  { rwr (group_laws _).mul_one, rwr Group_left_inv_is_right_inv }
+end
+
 /- The extra structure on groups compared to monoids associates equivalence relations 
    and congruences to subgroups and normal subgroups. -/
+
 @[hott]
 def subgroup_to_rel {G : Group.{u}} (H : Subgroup G) : G -> G -> Prop := 
   λ g h : G, to_Prop (g⁻¹ * h ∈ subset_of_subgroup H)
@@ -449,8 +462,19 @@ begin
       { exact idp } } }
 end 
 
+@[hott]
+def quotient_by_unit_subgroup (G : Group) : is_group_quotient (unit_subgroup G) G :=
+begin  
+  fapply is_group_quotient.mk,
+  { exact 𝟙 G },
+  { intro g, apply tr, apply fiber.mk g, exact idp },
+  { fapply (trivial_kernel_is_mono _).2,  
+    change @is_mono Group_Category G G (id_iso G).hom, exact isos_are_mono (id_iso _) }
+end
+
 /- We define the universal property of a quotient by a normal subgroup and show the
    equivalence with the direct definition. -/
+
 @[hott]
 structure is_univ_group_quotient {G : Group} (H : Subgroup G) [is_normal H] 
   (Q : Group) :=
@@ -461,35 +485,52 @@ structure is_univ_group_quotient {G : Group} (H : Subgroup G) [is_normal H]
 (unique : Π (P : Group) (g₁ g₂ : Q ⟶ P), proj ≫ g₁ = proj ≫ g₂ -> g₁ = g₂)
 
 @[hott]
+def group_mon_quot_fac {G : Group} {H : Subgroup G} [is_normal H] 
+  {Q : Group} (is_quot : is_group_quotient H Q) {P : Group} (f : G ⟶ P) 
+  (H_ker : H ≼ kernel_subgroup f) : Σ (g : Group.to_Monoid Q ⟶ Group.to_Monoid P),
+      (concrete_forget_functor (Group.to_Monoid)).map f = 
+                          (concrete_forget_functor Group.to_Monoid).map is_quot.proj ≫ g :=
+begin
+  have p : (concrete_forget_functor Group.to_Monoid).map is_quot.proj =
+           (monoid_to_univ_quotient 
+                        _ _ (group_quot_is_monoid_quot H Q is_quot)).proj, from idp,
+  rwr p, fapply λ is_mon_quot, @is_univ_monoid_quotient.factors _ _ _ 
+                               (Group.to_Monoid Q) is_mon_quot (Group.to_Monoid P),
+  intros g₁ g₂ rel, change ↥G at g₁, change ↥G at g₂, 
+  change Group_to_Set_functor.map f g₁ = Group_to_Set_functor.map f g₂,
+  apply group_left_cancel (Group_to_Set_functor.map f g₁⁻¹), 
+  rwr <- (group_hom_laws _).mul_comp, rwr <- (group_hom_laws _).mul_comp, 
+  rwr (group_laws _).mul_left_inv, 
+  hinduction subset_of_subgroup_hom H_ker _ rel with tr_eq fib,
+  hinduction fib with h h_eq, hinduction h with h ker_eq,
+  change Group_to_Set_functor.map f h = 1 at ker_eq,
+  change h = g₁⁻¹ * g₂ at h_eq, rwr h_eq at ker_eq, rwr ker_eq, 
+  exact (group_hom_laws f).one_comp
+end 
+
+@[hott]
+def group_quotient_factors {G : Group} {H : Subgroup G} [is_normal H] 
+  {Q : Group} (is_quot : is_group_quotient H Q) : Π {P : Group} (f : G ⟶ P), 
+  H ≼ kernel_subgroup f → (Σ (g : ↥(Q ⟶ P)), f = is_quot.proj ≫ g) :=
+begin 
+  intros P f H_ker, fapply dpair,
+  { apply group_of_monoid_hom, exact (group_mon_quot_fac is_quot f H_ker).1 },
+  { apply @concrete_forget_functor_is_faithful _ _ Group.to_Monoid,
+    rwr (concrete_forget_functor (Group.to_Monoid)).map_comp, 
+    change _ = _ ≫ (group_mon_quot_fac is_quot f H_ker).fst,
+    let p := (group_mon_quot_fac is_quot f H_ker).2, apply λ q, p ⬝ q, 
+    apply ap (λ f, (concrete_forget_functor Group.to_Monoid).map is_quot.proj ≫ f),
+    exact idp }
+end
+
+@[hott]
 def group_quotient_is_univ {G : Group} (H : Subgroup G) [is_normal H] 
   (Q : Group) : is_group_quotient H Q -> is_univ_group_quotient H Q :=
 begin
   intro is_quot, fapply is_univ_group_quotient.mk,
   { exact is_quot.proj },
   { exact is_quot.ker },
-  { intros P f H_ker, 
-    have mon_quot_fac : Σ (g : Group.to_Monoid Q ⟶ Group.to_Monoid P),
-      (concrete_forget_functor (Group.to_Monoid)).map f = (monoid_to_univ_quotient 
-                        _ _ (group_quot_is_monoid_quot H Q is_quot)).proj ≫ g, from
-    begin
-      fapply λ is_mon_quot, @is_univ_monoid_quotient.factors _ _ _ 
-                               (Group.to_Monoid Q) is_mon_quot (Group.to_Monoid P),
-      intros g₁ g₂ rel, change ↥G at g₁, change ↥G at g₂, 
-      change Group_to_Set_functor.map f g₁ = Group_to_Set_functor.map f g₂,
-      apply group_left_cancel (Group_to_Set_functor.map f g₁⁻¹), 
-      rwr <- (group_hom_laws _).mul_comp, rwr <- (group_hom_laws _).mul_comp, 
-      rwr (group_laws _).mul_left_inv, 
-      hinduction subset_of_subgroup_hom H_ker _ rel with tr_eq fib,
-      hinduction fib with h h_eq, hinduction h with h ker_eq,
-      change Group_to_Set_functor.map f h = 1 at ker_eq,
-      change h = g₁⁻¹ * g₂ at h_eq, rwr h_eq at ker_eq, rwr ker_eq, 
-      exact (group_hom_laws f).one_comp
-    end, 
-    fapply dpair,
-    { apply group_of_monoid_hom, exact mon_quot_fac.1 },
-    { apply @concrete_forget_functor_is_faithful _ _ Group.to_Monoid,
-      rwr (concrete_forget_functor (Group.to_Monoid)).map_comp, 
-      exact mon_quot_fac.2 } },
+  { intros P f H_ker, exact group_quotient_factors is_quot f H_ker },
   { intros P f₁ f₂ comp_eq, 
     apply @concrete_forget_functor_is_faithful _ _ Group.to_Monoid,
     have mon_quot_unique : Π (g₁ g₂ : Group.to_Monoid Q ⟶ Group.to_Monoid P), 
