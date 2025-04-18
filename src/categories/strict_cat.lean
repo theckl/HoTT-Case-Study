@@ -48,6 +48,10 @@ structure strict_Category :=
 @[hott] instance : has_coe_to_sort strict_Category := 
   has_coe_to_sort.mk Type.{u} (λ D, D.obj)
 
+@[hott, instance]
+def strict_Category_is_precat : Π (D : strict_Category), is_precat D.obj :=
+  λ D, @is_strict_cat.to_is_precat D D.strict_cat
+
 @[hott] 
 def strict_Cat.to_Precat : strict_Category -> Precategory :=
   λ C, Precategory.mk C.obj (@is_strict_cat.to_is_precat C.obj C.strict_cat)
@@ -361,6 +365,34 @@ end
 @[hott]
 def Strict_Categories : Category :=
   Category.mk strict_Category strict_cat_is_cat
+
+@[hott, instance]
+def Strict_Categories_are_strict_cat : Π (D : Strict_Categories), is_strict_cat D.obj :=
+  λ D, strict_Category.strict_cat D 
+
+@[hott, instance]
+def Strict_Categories_is_cat : is_cat ↥Strict_Categories :=
+  strict_cat_is_cat
+
+/- Isomorphisms of strict catgeories can be cancelled in natural transformations. -/
+@[hott]
+def strict_cat_iso_lcancel {J₁ J₂ : Strict_Categories} {C : Type u} [is_cat.{v} C] (H : J₁ ≅ J₂) 
+  {F G : J₂.obj ⥤ C} : ((H.hom ⋙ F) ⟹ (H.hom ⋙ G)) -> (F ⟹ G) :=
+begin 
+  intro H_nat_tr, fapply nat_trans.mk, 
+  { intro j₂, exact F.map ((functor_eq_to_nat_trans (H.ih.r_inv⁻¹)).app j₂) ≫ 
+                    H_nat_tr.app (H.ih.inv.obj j₂) ≫ 
+                    G.map ((functor_eq_to_nat_trans H.ih.r_inv).app j₂) },
+  { intros j₂ j₂' f, rwr <- is_precat.assoc (F.map f), rwr <- F.map_comp,
+    change F.map ((𝟙 J₂ : J₂.obj ⥤ J₂.obj).map f ≫ _) ≫ _ ≫ _ = _,
+    rwr (functor_eq_to_nat_trans (H.ih.r_inv)⁻¹).naturality f, rwr F.map_comp, rwr is_precat.assoc,
+    rwr <- is_precat.assoc _ (H_nat_tr.app (H.ih.inv.obj j₂')), 
+    change _ ≫ ((H.hom ⋙ F).map _ ≫ _) ≫ _ = _, rwr H_nat_tr.naturality, rwr is_precat.assoc,
+    change _ ≫ _ ≫ G.map _ ≫ _ = _, rwr <- G.map_comp, 
+    rwr is_precat.assoc _ _ (G.map f), rwr is_precat.assoc _ _ (G.map f), rwr <- G.map_comp, 
+    change _ = _ ≫ _ ≫ G.map (_ ≫ ((𝟙 J₂ : J₂.obj ⥤ J₂.obj).map f)), 
+    rwr <- (functor_eq_to_nat_trans H.ih.r_inv).naturality f }
+end
 
 end categories
 
