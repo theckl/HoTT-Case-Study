@@ -15,8 +15,6 @@ open hott.eq hott.is_trunc hott.trunc hott.is_equiv hott.set hott.subset
 
 namespace categories.limits
 
-set_option pp.universes true
-
 @[hott]
 structure cone {J : Type _} [is_strict_cat J] {C : Type _} 
   [is_precat C] (F : J ⥤ C) :=
@@ -170,7 +168,7 @@ begin
   { exact idtoiso⁻¹ᶠ lcp_iso.1 },
   { intro j, apply pathover_of_tr_eq,
     change idtoiso⁻¹ᶠ lcp_iso.1 ▸[λ c : C, c ⟶ F.obj j] (cone.leg cone₁ j) = _, 
-    apply eq.concat (@iso_hom_tr_comp (Category.mk C _) _ _ _ lcp_iso.1 (cone.leg cone₁ j)),
+    apply eq.concat (iso_hom_tr_comp lcp_iso.1 (cone.leg cone₁ j)),
     apply inverse, apply iso_move_lr, 
     have p : lcp_iso.fst.hom = (is_limit₂.lift cone₁).v_lift, from lcp_iso.2,
     rwr p, exact (is_limit₂.lift _).fac _ }
@@ -206,14 +204,14 @@ def limit_leg {J : Type _} [is_strict_cat J] {C : Type u}
   limit F ⟶ F.obj j := (limit.cone F).π.app j 
 
 @[hott]
-def diag_eq_lim_eq_lim {J : strict_Category} {C : Type u} [is_cat.{v} C]
-  {F F' : J.obj ⥤ C} (p : F = F') [hlF : has_limit F] [hlF' : has_limit F'] : 
+def diag_eq_lim_eq_lim {J : Type _} [is_strict_cat J] {C : Type u} [is_cat.{v} C]
+  {F F' : J ⥤ C} (p : F = F') [hlF : has_limit F] [hlF' : has_limit F'] : 
   @limit _ _ _ _ F hlF = @limit _ _ _ _ F' hlF' :=
 apd011 (@limit _ _ _ _) p (pathover_of_tr_eq (has_limit_eq _ _))  
 
 @[hott]
-def diag_inv_eq_lim_eq {J : strict_Category} {C : Type u} [is_cat.{v} C]
-  {F F' : J.obj ⥤ C} (p : F = F') [hlF : has_limit F] [hlF' : has_limit F'] :
+def diag_inv_eq_lim_eq {J : Type _} [is_strict_cat J] {C : Type u} [is_cat.{v} C]
+  {F F' : J ⥤ C} (p : F = F') [hlF : has_limit F] [hlF' : has_limit F'] :
   (diag_eq_lim_eq_lim p⁻¹) = (diag_eq_lim_eq_lim p)⁻¹ :=
 begin
   change apd011 _ _ _ = eq.inverse (apd011 _ _ _), 
@@ -222,117 +220,118 @@ begin
 end
 
 @[hott]
-def diag_eq_leg_eq {J : strict_Category} {C : Type _} [is_cat C]
-  {F F' : J.obj ⥤ C} (p : F = F') (j : J) [hlF : has_limit F] [hlF' : has_limit F'] :
-  limit_leg F' j = ((ap (λ F : J.obj ⥤ C, F.obj j) p) ▸[λ d : C, limit F' ⟶ d] 
+def diag_eq_leg_eq {J : Type _} [is_strict_cat J] {C : Type _} [is_cat C]
+  {F F' : J ⥤ C} (p : F = F') (j : J) [hlF : has_limit F] [hlF' : has_limit F'] :
+  limit_leg F' j = ((ap (λ F : J ⥤ C, F.obj j) p) ▸[λ d : C, limit F' ⟶ d] 
                    ((diag_eq_lim_eq_lim p) ▸[λ c : C, c ⟶ F.obj j] limit_leg F j)) :=
 @tr_tr_fn2_fn2_fn _ C C _ _ p _ _ _ (pathover_of_tr_eq (has_limit_eq (p ▸ hlF) hlF'))
-                 (λ d e : C, d ⟶ e) _ _ (λ (F : J.obj ⥤ C) (hlF : has_limit F), 
+                 (λ d e : C, d ⟶ e) _ _ (λ (F : J ⥤ C) (hlF : has_limit F), 
                                                           @limit_leg _ _ _ _ F hlF j)
-
 
 /- Limits of diagrams of shapes with a functor between them are not necessarily naturally
    mapped to each other. But limits of diagrams of isomorphic shapes are naturally 
    isomorphic and hence equal. -/
 @[hott]
-def cone_to_diag_iso_cone {J₁ J₂ : Strict_Categories} {C : Type u} [is_cat.{v} C]
-  (H : J₁ ≅ J₂) {F : J₂.obj ⥤ C} (cF : cone F) : cone (H.hom ⋙ F) :=
+def cone_to_diag_iso_cone {J₁ J₂ : Strict_Categories} {C : Type u} [is_cat.{v} C] (H : J₁ ≅ J₂) 
+  {F : J₂.obj ⥤ C} (s : cone F) : cone (H.hom ⋙ F) :=
 begin
-  revert J₁ J₂ H F cF, 
-  apply @iso_ind _ (λ {J₁ J₂ : Strict_Categories} H, Π {F : J₂.obj ⥤ C}, 
-                                                         cone F → cone (H.hom ⋙ F)),
-  intros J₁ F cF, fapply cone.mk, exact cF.X,
-  fapply nat_trans.mk, exact cF.π.app, exact cF.π.naturality
+  fapply cone.mk, exact s.X, fapply nat_trans.mk, 
+  { intro j₁, exact s.π.app (H.hom.obj j₁) },
+  { intros j₁ j₁' f, exact s.π.naturality _ }
 end 
 
 @[hott]
-def diag_id_iso_cone {J : Strict_Categories} {C : Type u} [is_cat.{v} C] 
-  {F : J.obj ⥤ C} (cF : cone F) : 
-  cone_to_diag_iso_cone (id_iso J) cF = 
-                         cone.mk cF.X (nat_trans.mk cF.π.app cF.π.naturality) :=
+def cone_to_diag_iso_cone_inv {J₁ J₂ : Strict_Categories} {C : Type u} [is_cat.{v} C] (H : J₁ ≅ J₂) 
+  {F : J₂.obj ⥤ C} (t : cone (H.hom ⋙ F)) : cone F :=
+begin
+  fapply cone.mk, exact t.X, fapply nat_trans.mk, 
+  { intro j₂, exact t.π.app (H.ih.inv.obj j₂) ≫ F.map ((functor_eq_to_nat_trans H.ih.r_inv).app j₂) },
+  { intros j₂ j₂' f, change (constant_functor t.X).map (H.ih.inv.map f) ≫ _ = _,
+    rwr <- is_precat.assoc ((constant_functor t.X).map f), rwr t.π.naturality (H.ih.inv.map f), 
+    rwr is_precat.assoc, change _ ≫ F.map _ ≫ _ = _, rwr <- F.map_comp, rwr is_precat.assoc, rwr <- F.map_comp,
+    change _ = _ ≫ F.map (_ ≫ ((𝟙 J₂ : J₂.obj ⥤ J₂.obj).map f)), 
+    rwr <- (functor_eq_to_nat_trans H.ih.r_inv).naturality f }
+end 
+
+@[hott]
+def cone_to_diag_iso_cone_map {J₁ J₂ : Strict_Categories} {C : Type u} [is_cat.{v} C] (H : J₁ ≅ J₂) 
+  {F : J₂.obj ⥤ C} (cF : cone F) (cHF : cone (H.hom ⋙ F)) : 
+  cone_map ((cone_to_diag_iso_cone_inv H cHF)) cF -> cone_map cHF (cone_to_diag_iso_cone H cF) :=
 begin 
-  change @iso_ind _ (λ {J₁ J₂ : Strict_Categories} H, Π {F : J₂.obj ⥤ C}, 
-                             cone F → cone (H.hom ⋙ F)) _ _ _ (id_iso J) F cF = _, 
-  rwr iso_ind_id 
+  intro m, fapply cone_map.mk,
+  { exact m.v_lift },
+  { intro j₁, change _ ≫ cF.π.app (H.hom.obj j₁) = _, rwr m.fac (H.hom.obj j₁), 
+    change cHF.π.app _ ≫ F.map _ = _, 
+    have p : F.map ((functor_eq_to_nat_trans H.ih.r_inv).app (H.hom.obj j₁)) = 
+             (H.hom ⋙ F).map ((functor_eq_to_nat_trans H.ih.l_inv).app j₁), from 
+    begin 
+      change F.map _ = F.map _, apply ap (@precategories.functor.map _ _ _ _ F _ _), 
+      change (idtoiso _).hom = H.hom.map (idtoiso _).hom, rwr funct_idtoiso, 
+      apply ap (λ p, (idtoiso p).hom), exact is_prop.elim _ _ 
+    end,
+    rwr p, rwr <- cHF.π.naturality, change 𝟙 _ ≫ _ = _, rwr is_precat.id_comp }
 end
 
 @[hott]
-def diag_id_iso_cone' {J : Strict_Categories} {C : Type u} [is_cat.{v} C] 
-  {F : J.obj ⥤ C} (cF : cone F) : 
-  cone_to_diag_iso_cone (id_iso J) cF = (funct_id_comp F)⁻¹ ▸ cF :=
+def cone_to_diag_iso_cone_map_inv {J₁ J₂ : Strict_Categories} {C : Type u} [is_cat.{v} C] (H : J₁ ≅ J₂) 
+  {F : J₂.obj ⥤ C} (cF : cone F) (cHF : cone (H.hom ⋙ F)) : 
+  cone_map cHF (cone_to_diag_iso_cone H cF) -> cone_map ((cone_to_diag_iso_cone_inv H cHF)) cF :=
 begin 
-  rwr diag_id_iso_cone, 
-  hinduction cF with X π, hinduction π with app naturality,
-  change @cone.mk _ _ _ _ ((id_iso J).hom ⋙ F) X (nat_trans.mk app @naturality) = 
-         _ ▸ @cone.mk _ _ _ _ F X (nat_trans.mk app @naturality),
-  rwr tr_fn3_ev_fn3_tr_tr_ev (λ (F : J.obj ⥤ C) (app : Π j : J.obj, X ⟶ F.obj j)
-        (naturality : Π (j j' : J.obj) (f : j ⟶ j'), (constant_functor X).map f ≫ app j' = app j ≫ F.map f), 
-        @cone.mk _ _ _ _ F X (nat_trans.mk app naturality)), hsimp,
-  fapply apd011, exact idp, apply pathover_idp_of_eq,
-  fapply apd011, 
-  { apply eq_of_homotopy, intro j, rwr tr_fn_tr_eval, 
-    rwr tr_compose (λ f : J.obj -> C, X ⟶ f j) functor.obj, rwr ap_inv,
-    have r : funct_id_comp F = functor_eq _ _, from rfl,
-    rwr r, rwr functor_eq_obj }, 
-  { apply pathover_of_tr_eq, exact is_prop.elim _ _ } 
+  intro m, fapply cone_map.mk,
+  { exact m.v_lift },
+  { intro j₂, change _ = cHF.π.app _ ≫ _, rwr <- m.fac (H.ih.inv.obj j₂), rwr is_precat.assoc, 
+    change _ = _ ≫ cF.π.app _ ≫ _, rwr <- cF.π.naturality, change _ = _ ≫ 𝟙 _ ≫ _, 
+    rwr is_precat.id_comp }
 end
+
+@[hott]
+def cone_to_diag_iso_cone_map_vert {J₁ J₂ : Strict_Categories} {C : Type u} [is_cat.{v} C] (H : J₁ ≅ J₂) 
+  {F : J₂.obj ⥤ C} {cF : cone F} {cHF : cone (H.hom ⋙ F)} 
+  (m : cone_map ((cone_to_diag_iso_cone_inv H cHF)) cF) : 
+  m.v_lift = (cone_to_diag_iso_cone_map H cF cHF m).v_lift := idp
+
+@[hott]
+def cone_to_diag_iso_cone_map_vert_inv {J₁ J₂ : Strict_Categories} {C : Type u} [is_cat.{v} C] (H : J₁ ≅ J₂) 
+  {F : J₂.obj ⥤ C} {cF : cone F} {cHF : cone (H.hom ⋙ F)} (m : cone_map cHF ((cone_to_diag_iso_cone H cF))) : 
+  m.v_lift = (cone_to_diag_iso_cone_map_inv H cF cHF m).v_lift := idp
+
+@[hott]
+def diag_id_iso_cone {J : Strict_Categories} {C : Type u} [is_cat.{v} C] {F : J.obj ⥤ C} (cF : cone F) : 
+  cone_to_diag_iso_cone (id_iso J) cF = cone.mk cF.X (nat_trans.mk cF.π.app cF.π.naturality) := idp
 
 @[hott]
 def diag_iso_cone_vertex {J₁ J₂ : Strict_Categories} {C : Type u} [is_cat.{v} C]
   (H : J₁ ≅ J₂) {F : J₂.obj ⥤ C} (cF : cone F) : 
   (cone_to_diag_iso_cone H cF).X = cF.X :=
-begin
-  revert J₁ J₂ H F cF, 
-  apply @iso_ind _ (λ {J₁ J₂ : Strict_Categories} H, Π {F : J₂.obj ⥤ C} {cF : cone F},
-                      (cone_to_diag_iso_cone H cF).X = cF.X),
-  intros J F cF, exact ap cone.X (diag_id_iso_cone cF)
-end  
+idp 
 
 @[hott]
 def diag_iso_cone_legs {J₁ J₂ : Strict_Categories} {C : Type u} [is_cat.{v} C]
   (H : J₁ ≅ J₂) {F : J₂.obj ⥤ C} (cF : cone F) : Π (j₁ : J₁.obj),
   (cone.leg (cone_to_diag_iso_cone H cF) j₁) = 
-  ((diag_iso_cone_vertex H cF)⁻¹ ▸[λ c : C, c ⟶ F.obj (H.hom.obj j₁)] 
-  cone.leg cF (H.hom.obj j₁)) :=
-begin
-  revert J₁ J₂ H F cF, 
-  apply @iso_ind _ (λ {J₁ J₂ : Strict_Categories} H, Π {F : J₂.obj ⥤ C} {cF : cone F},
-         Π (j₁ : J₁.obj), (cone.leg (cone_to_diag_iso_cone H cF) j₁) = 
-           ((diag_iso_cone_vertex H cF)⁻¹ ▸[λ c : C, c ⟶ F.obj (H.hom.obj j₁)] 
-           cone.leg cF (H.hom.obj j₁))),
-  intros J₁ F cF j₁, 
-  apply @eq_inv_tr_of_tr_eq _ (λ c : C, c ⟶ ((id_iso J₁).hom ⋙ F).obj j₁) _ _ 
-    ((diag_iso_cone_vertex (id_iso J₁) cF)) 
-    (cone.leg (cone_to_diag_iso_cone (id_iso J₁) cF) j₁) 
-    (cone.leg cF (functor.obj (id_iso J₁).hom j₁)), 
-  change _ = cone.leg cF j₁, 
-  change (@iso_ind _ (λ {J₁ J₂ : Strict_Categories} H, Π {F : J₂.obj ⥤ C} 
-    {cF : cone F}, (cone_to_diag_iso_cone H cF).X = cF.X) _ _ _ (id_iso J₁) F cF) ▸ _ = _, 
-  rwr iso_ind_id, rwr tr_ap, apply tr_eq_of_pathover, 
-  exact apd (λ cHF : cone ((id_iso J₁).hom ⋙ F), 
-               @cone.leg _ _ _ _ ((id_iso J₁).hom ⋙ F) cHF j₁) (diag_id_iso_cone cF)
-end
+  ((diag_iso_cone_vertex H cF)⁻¹ ▸[λ c : C, c ⟶ F.obj (H.hom.obj j₁)] cone.leg cF (H.hom.obj j₁)) :=
+begin intro j₁, exact idp end
 
 @[hott]
 def diag_iso_cone_legs_fac {J₁ J₂ : Strict_Categories} {C : Type u} [is_cat.{v} C]
   (H : J₁ ≅ J₂) {F : J₂.obj ⥤ C} (cF : cone F) : Π (j₁ : J₁.obj), 
   ((idtoiso (diag_iso_cone_vertex H cF)).hom ≫ cone.leg cF (H.hom.obj j₁)) = 
                                       cone.leg (cone_to_diag_iso_cone H cF) j₁ :=
-begin intro j₁, rwr diag_iso_cone_legs, rwr id_hom_tr_comp, rwr id_inv_iso_inv end
+begin intro j₁, rwr diag_iso_cone_legs, rwr id_hom_tr_comp end
 
 @[hott]
-def diag_iso_cone_is_lim {J₁ J₂ : strict_Category} {C : Type u} [is_cat.{v} C]
-  (H : J₁ ≅ J₂) {F : J₂.obj ⥤ C} {cF : cone F} (is_lim : is_limit cF) : 
+def diag_iso_cone_is_lim {J₁ J₂ : Strict_Categories} {C : Type u} [is_cat.{v} C]
+  (H : J₁ ≅ J₂) {F : J₂.obj ⥤ C} {cF : cone F} (lcF : is_limit cF) : 
   is_limit (cone_to_diag_iso_cone H cF) :=
 begin
-  revert J₁ J₂ H F cF, 
-  apply @iso_ind _ (λ {J₁ J₂ : Strict_Categories} H, Π {F : J₂.obj ⥤ C} {cF : cone F},
-                      is_limit cF → is_limit (cone_to_diag_iso_cone H cF)),
-  intros J₁ F cF lcF, rwr diag_id_iso_cone', apply transportD, exact lcF,
+  fapply is_limit.mk, 
+  { intro s, apply cone_to_diag_iso_cone_map, apply lcF.lift },
+  { intros s m, rwr <- cone_to_diag_iso_cone_map_vert, rwr cone_to_diag_iso_cone_map_vert_inv,
+    apply lcF.uniq }
 end
 
 @[hott, instance]
-def diag_iso_has_lim_to_has_lim {J₁ J₂ : strict_Category} {C : Type u} [is_cat.{v} C]
+def diag_iso_has_lim_to_has_lim {J₁ J₂ : Strict_Categories} {C : Type u} [is_cat.{v} C]
   (H : J₁ ≅ J₂) {F : J₂.obj ⥤ C} [hlF : has_limit F] : has_limit (H.hom ⋙ F) :=
 begin 
   apply has_limit.mk, fapply limit_cone.mk, 
@@ -341,18 +340,15 @@ begin
 end
 
 @[hott]
-def diag_iso_lim_eq_lim {J₁ J₂ : strict_Category} {C : Type u} [is_cat.{v} C]
+def diag_iso_lim_eq_lim {J₁ J₂ : Strict_Categories} {C : Type u} [is_cat.{v} C]
   (H : J₁ ≅ J₂) (F : J₂.obj ⥤ C) [hlF : has_limit F] : 
   @limit _ _ _ _ (H.hom ⋙ F) (diag_iso_has_lim_to_has_lim H) = limit F  :=
-begin
-  change (cone_to_diag_iso_cone H (limit.cone F)).X = (limit.cone F).X,
-  exact (diag_iso_cone_vertex H (limit.cone F))
-end
+begin exact (diag_iso_cone_vertex H (limit.cone F)) end
 
 @[hott]
-def diag_iso_lim_legs_eq {J₁ J₂ : strict_Category} {C : Type u} [is_cat.{v} C]
+def diag_iso_lim_legs_eq {J₁ J₂ : Strict_Categories} {C : Type u} [is_cat.{v} C]
   (H : J₁ ≅ J₂) (F : J₂.obj ⥤ C) [hlF : has_limit F] :
-  Π (j₁ : J₁), (idtoiso (diag_iso_lim_eq_lim H F)).hom ≫ limit_leg F (H.hom.obj j₁) =
+  Π (j₁ : J₁.obj), (idtoiso (diag_iso_lim_eq_lim H F)).hom ≫ limit_leg F (H.hom.obj j₁) =
                 limit_leg (H.hom ⋙ F) j₁ :=
 assume j₁, diag_iso_cone_legs_fac H (limit.cone F) j₁
 
@@ -686,8 +682,8 @@ has_equalizers.mk (@has_limits.has_limit_of_shape C _ H walking_parallel_pair _)
 
 /- An equalizer is a subobject of the domain of the parallel pair. -/
 @[hott]
-def equalizer_as_subobject {C : Category.{u v}} {a b : C} (f g : a ⟶ b) 
-  [H : has_equalizer f g] : @subobject C a :=
+def equalizer_as_subobject (C : Type u) [is_cat.{v} C] {a b : C} (f g : a ⟶ b) 
+  [H : has_equalizer f g] : @subobject C _ a :=
 begin
   let e := equalizer_map f g, let He : e ≫ f = e ≫ g := equalizer_eq f g,
   fapply subobject.mk,
@@ -812,14 +808,13 @@ begin
 end
 
 @[hott]
-def terminal_map_is_mono {C : Category} [H : has_terminal C] {c : C} :
+def terminal_map_is_mono (C : Type u) [is_cat.{v} C] [H : has_terminal C] {c : C} :
   Π (f : terminal_obj C ⟶ c), is_mono f :=
 begin intros f d g₁ g₂ p, exact H.str.uniq g₁ g₂ end
 
 @[hott]
-def term_subobj {C : Category} [H : has_terminal C] {c : C} (f : terminal_obj C ⟶ c) :
-  subobject c := (subobject.mk (terminal_obj C) f (terminal_map_is_mono f))
-
+def term_subobj (C : Type u) [is_cat.{v} C] [H : has_terminal C] {c : C} (f : terminal_obj C ⟶ c) :
+  subobject c := (subobject.mk (terminal_obj C) f (terminal_map_is_mono C f))
 
 end categories.limits
 
