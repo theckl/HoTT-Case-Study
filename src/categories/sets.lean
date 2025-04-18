@@ -143,7 +143,7 @@ def hom_from_One {A : Set} (a : A) : One_Set ⟶ A := λ s : One_Set, a
    
    We first show that monomorphisms of sets are injective maps, and vice versa. -/
 @[hott]
-def mono_is_set_inj {A B : Set_Category.{u}} (f : A ⟶ B) : is_mono f -> is_set_injective f :=
+def mono_is_set_inj {A B : Set.{u}} (f : A ⟶ B) : is_mono f -> is_set_injective f :=
 begin  
   intro mon, intros a₁ a₂ feq,  
   let h₁ := hom_from_One a₁, let h₂ := hom_from_One a₂,
@@ -153,7 +153,7 @@ begin
 end
 
 @[hott]
-def set_inj_is_mono {A B : Set_Category.{u}} (f : A ⟶ B) : 
+def set_inj_is_mono {A B : Set.{u}} (f : A ⟶ B) : 
   is_set_injective f -> is_mono f :=
 begin
   intro inj, intros C h₁ h₂ feq, apply eq_of_homotopy, intro c,  
@@ -161,7 +161,7 @@ begin
 end
 
 @[hott]
-def bij_subobj_to_subset (A : Set_Category.{u}) : 
+def bij_subobj_to_subset (A : Set.{u}) : 
   bijection (Subobject A) (Powerset A) :=
 begin 
   fapply has_inverse_to_bijection,
@@ -189,12 +189,12 @@ begin
 end
 
 @[hott, reducible]
-def subset_to_subobj {A : Set_Category.{u}} : Subset A -> subobject A :=
+def subset_to_subobj {A : Set.{u}} : Subset A -> subobject A :=
   λ B, (inv_bijection_of (bij_subobj_to_subset A)) B
 
 
 @[hott]
-def subset_to_subobj_eq {A : Set_Category.{u}} (B : Subset A) : 
+def subset_to_subobj_eq {A : Set.{u}} (B : Subset A) : 
   subset_to_subobj B = subobject.mk (pred_Set B) (pred_Set_map B)
                          (set_inj_is_mono (pred_Set_map B) (pred_Set_map_is_inj B)) :=
 begin
@@ -203,15 +203,15 @@ begin
 end 
 
 @[hott]
-def subset_is_subobj (A : Set_Category.{u}) : (Subobject A) = (Powerset.{u} A) :=
+def subset_is_subobj (A : Set.{u}) : (@Subobject Set.{u} _ A) = (Powerset A) :=
 begin 
-  apply @bij_to_set_eq.{u+1 u} (@Subobject Set_Category.{u} A) (Powerset A), 
+  apply @bij_to_set_eq.{u+1 u} (@Subobject Set.{u} _ A) (Powerset A), 
   exact bij_subobj_to_subset A
 end
 
 /- The bijection between subsets and subobjects respects inclusions. -/
 @[hott]
-def inc_so_inc {A : Set_Category.{u}} : Π (B C : Subset A), B ⊆ C -> 
+def inc_so_inc {A : Set.{u}} : Π (B C : Subset A), B ⊆ C -> 
   subset_to_subobj B ≼ subset_to_subobj C :=
 begin
   intros B C ss_inc, fapply hom_of_monos.mk,
@@ -221,7 +221,7 @@ begin
 end
 
 @[hott]
-def so_inc_inc {A : Set_Category.{u}} : Π (B C : Subset A), 
+def so_inc_inc {A : Set.{u}} : Π (B C : Subset A), 
   subset_to_subobj B ≼ subset_to_subobj C -> B ⊆ C :=
 begin
   intros B C so_inc a B_inc, 
@@ -232,7 +232,7 @@ end
 
 /- The category of sets has all images. -/
 @[hott]
-def set_cat_image {A B : Set_Category.{u}} (f : A ⟶ B) : cat_image f :=
+def set_cat_image {A B : Set.{u}} (f : A ⟶ B) : cat_image f :=
 begin
   fapply cat_image.mk, 
   { exact subset_to_subobj (λ b : B.carrier, image f b) },
@@ -257,11 +257,11 @@ begin
 end
 
 @[hott, instance]
-def set_has_image {A B : Set_Category.{u}} (f : A ⟶ B) : has_image f :=
+def set_has_image {A B : Set.{u}} (f : A ⟶ B) : has_image f :=
   has_image.mk (set_cat_image f) 
 
 @[hott, instance]
-def set_has_images : has_images Set_Category.{u} :=
+def set_has_images : has_images Set.{u} :=
   has_images.mk (λ (A B : Set_Category) (f : A ⟶ B), set_has_image f)  
 
 /- The category of sets has all limits. 
@@ -332,7 +332,7 @@ def set_has_limits_of_shape {J : Type u'} [H : is_strict_cat.{u' u'} J] :
   has_limits_of_shape J Set.{max u' u} := has_limits_of_shape.mk (λ F, set_has_limit F)     
 
 @[hott, instance]
-def set_has_limits : has_limits Set_Category.{max u' u} :=
+def set_has_limits : has_limits Set.{max u' u} :=
   has_limits.mk (λ {J : Type u'} [H : is_strict_cat.{u' u'} J], @set_has_limits_of_shape J H)
 
 @[hott, instance]
@@ -362,7 +362,7 @@ end
 
 /- The category of sets has `One_Set` as terminal object. -/
 @[hott, instance]
-def One_Set_is_terminal : has_terminal Set_Category.{u} :=
+def One_Set_is_terminal : has_terminal Set.{u} :=
 begin
   apply has_terminal.mk, fapply terminal.mk, 
   { exact One_Set.{u} },
@@ -475,7 +475,7 @@ def set_has_colimits_of_shape {J : Type u'} [is_strict_cat.{u' u'} J] :
 has_colimits_of_shape.mk (λ F, set_has_colimit F) 
 
 @[hott, instance]
-def set_has_colimits : has_colimits Set_Category.{max u' u} :=
+def set_has_colimits : has_colimits Set.{max u' u} :=
 begin 
   apply has_colimits.mk, intros J strict, exact @set_has_colimits_of_shape J strict 
 end
@@ -483,7 +483,7 @@ end
 /- From the existence of colimits and hence coproducts and images follows the existence 
    of unions. -/
 @[hott, instance]
-def set_has_unions : has_unions.{(max u' u)+1 (max u' u) u'} Set_Category.{max u' u} :=
+def set_has_unions : has_unions Set.{max u' u} :=
 begin 
   apply has_unions.mk, intros A J f, 
   exact has_subobj_union_of_has_coproducts_and_images f 
@@ -580,11 +580,11 @@ def set_pullback_homo_l_eq {A B C : Set} (f : A ⟶ C) (g : B ⟶ C) :
 rfl
 
 @[hott]
-def pb_subobj_set {A B : Set_Category.{u}} (f : A ⟶ B) (D : Subobject B) : Subobject A :=
+def pb_subobj_set {A B : Set.{u}} (f : A ⟶ B) (D : Subobject B) : Subobject A :=
   subset_to_subobj (λ a, f a ∈ (bij_subobj_to_subset B) D)
 
 @[hott]
-def pb_subobj_set_eq {A B : Set_Category.{u}} (D : Subobject B) (f : A ⟶ B) :
+def pb_subobj_set_eq {A B : Set.{u}} (D : Subobject B) (f : A ⟶ B) :
   pb_subobj_set f D = pullback_subobject f D :=
 begin
   rwr <- inv_bij_l_inv (bij_subobj_to_subset A) (pullback_subobject f D),
@@ -610,7 +610,7 @@ end
 
 /- Images are stable under pullbacks in the category of sets. -/
 @[hott, instance]
-def set_has_stable_images : has_stable_images Set_Category.{u} :=
+def set_has_stable_images : has_stable_images Set.{u} :=
 begin
   apply has_stable_images.mk,
   intros A B C f g, fapply subobj_antisymm,
@@ -639,19 +639,19 @@ end
    in the category of sets, the propositions in `Prop` must be in a lower universe.
    Therefore, we only consider sets of `Type u+1` and must resize propositions.  -/
 @[hott]
-def set_true : terminal_obj ↥Set_Category.{u+1} ⟶ Prop_Set.{u} :=
+def set_true : terminal_obj Set.{u+1} ⟶ Prop_Set.{u} :=
   assume t, True
 
 @[hott]
-def subset_class_map {A : Set_Category.{u+1}} (B : subobject A) :
+def subset_class_map {A : Set.{u+1}} (B : subobject A) :
   A ⟶ Prop_Set.{u} :=
 λ a, prop_resize.{u u+1} (a ∈ (bij_subobj_to_subset A) B) 
 
 @[hott]
-def subset_of_subset_class_map {A : Set_Category.{u+1}} (B : subobject A) :
-  B = pullback_subobject (subset_class_map B) (term_subobj set_true) :=
+def subset_of_subset_class_map {A : Set.{u+1}} (B : subobject A) :
+  B = pullback_subobject (subset_class_map B) (term_subobj _ set_true) :=
 begin
-  fapply @subobj_antisymm Set_Category.{u+1} A B _, 
+  fapply @subobj_antisymm Set.{u+1} _ A B _, 
     { fapply pb_subobj_lift, 
       { exact terminal_map B.obj },
       { apply eq_of_homotopy, intro b, change subset_class_map B (B.hom b) = True,
@@ -686,7 +686,7 @@ begin
 end
 
 @[hott, instance]
-def sets_have_so_classifier : has_so_classifier Set_Category.{u+1} :=
+def sets_have_so_classifier : has_so_classifier Set.{u+1} :=
 begin 
   apply has_so_classifier.mk, fapply subobject_classifier.mk,
   { exact Prop_Set.{u} }, 
@@ -695,18 +695,18 @@ begin
   { intros A B, exact subset_of_subset_class_map B },
   { intros A B cl cart_cl, apply eq_of_homotopy, intro a, 
     change _ = prop_resize.{u u+1} (image B.hom a), 
-    let T := terminal_obj.{u+1 u+2} Set_Category.{u+1},
+    let T := terminal_obj.{u+1 u+2} Set.{u+1},
     let g : ↥(T ⟶ Prop_Set.{u}) := λ (t : ↥T), True.{u},                      
     apply prop_iff_eq, 
     { intro p, apply prop_to_prop_resize, rwr cart_cl, 
-      have H : cl a = (λ (t : (terminal_obj Set_Category.{u+1}).carrier), True.{u}) 
+      have H : cl a = (λ (t : (terminal_obj Set.{u+1}).carrier), True.{u}) 
                           One.star, from inhabited_Prop_eq _ _ p true.intro,
       change ↥(image.{u+1 u+1} (pullback_homo_l.{u+2 u+1} cl g) a), 
       rwr set_pullback_homo_l_eq.{u+1} cl g, apply tr, fapply fiber.mk, 
       exact set_to_pullback.{u+1} cl g ⟨⟨a, One.star.{u+1}⟩, H⟩, 
       rwr pullback_to_set_rinv.{u+1 u+1} },
     { rwr cart_cl, intro p, let im := prop_resize_to_prop p,      
-      let B' := pullback_subobject cl (term_subobj g),
+      let B' := pullback_subobject cl (term_subobj _ g),
       let fib_b' := (@untrunc_of_is_trunc _ _ (set_inj_implies_unique_fib B'.hom 
                 (mono_is_set_inj B'.hom B'.is_mono) a) im),
       rwr <- fib_b'.point_eq, 
@@ -715,7 +715,7 @@ begin
 end
 
 @[hott]
-def subset_to_class_map {A : Set_Category.{u+1}} (B : Subset A) :
+def subset_to_class_map {A : Set.{u+1}} (B : Subset A) :
   subset_class_map (subset_to_subobj B) = 
                                      λ a : A.carrier, prop_resize.{u u+1} (B a) :=
 begin
@@ -727,7 +727,7 @@ begin
 end
 
 @[hott]
-def ss_so_inter {A : Set_Category} {B C : Subset A} :
+def ss_so_inter {A : Set} {B C : Subset A} :
   subset_to_subobj (B ∩ C) = (subset_to_subobj B) ∩ (subset_to_subobj C) :=
 begin             
   fapply subobj_antisymm,
@@ -743,7 +743,7 @@ begin
 end
 
 @[hott]
-def ss_so_union {A : Set_Category.{u}} {B C : Subset A} :
+def ss_so_union {A : Set.{u}} {B C : Subset A} :
   subset_to_subobj (B ∪ C) = (subset_to_subobj B) ∪ (subset_to_subobj C) :=
 begin             
   fapply subobj_antisymm,
@@ -759,7 +759,7 @@ begin
 end
 
 @[hott]
-def ss_so_iunion {A : Set_Category.{max u' u}} {J : Set.{u'}} (f : J -> Subset A) : 
+def ss_so_iunion {A : Set.{max u' u}} {J : Set.{u'}} (f : J -> Subset A) : 
   subset_to_subobj (iUnion f) = subobject.union (λ j : J, subset_to_subobj (f j)) :=
 begin
   fapply subobj_antisymm,
@@ -775,15 +775,15 @@ begin
 end
 
 @[hott]
-def so_union_ss {A : Set_Category.{max u' u}} {J : Set.{u'}} (f : J -> Subobject A) :
+def so_union_ss {A : Set.{max u' u}} {J : Set.{u'}} (f : J -> Subobject A) :
   Subset A := (bij_subobj_to_subset A) (subobject.union f)
 
 @[hott]
-def so_iunion_ss {A : Set_Category.{max u' u}} {J : Set.{u'}} (f : J -> Subobject A) :
+def so_iunion_ss {A : Set.{max u' u}} {J : Set.{u'}} (f : J -> Subobject A) :
   Subset A := iUnion (λ j : J, (bij_subobj_to_subset A) (f j))  
 
 @[hott]
-def so_ss_iunion {A : Set_Category.{max u' u}} {J : Set.{u'}} (f : J -> Subobject A) :
+def so_ss_iunion {A : Set.{max u' u}} {J : Set.{u'}} (f : J -> Subobject A) :
   so_union_ss f = so_iunion_ss f :=
 begin
   rwr <- inv_bij_r_inv (bij_subobj_to_subset A) (so_iunion_ss f),
@@ -804,7 +804,7 @@ begin
 end
 
 @[hott]
-def so_iunion_of_comp {A : Set_Category.{max u' u}} {J : Set.{u'}} (f : J -> Subobject A) : 
+def so_iunion_of_comp {A : Set.{max u' u}} {J : Set.{u'}} (f : J -> Subobject A) : 
   Π a : A.carrier, image (subobject.union f).hom a -> ∥Σ j : J, image (f j).hom a∥ :=
 begin
   intros a sou_im, 
@@ -815,7 +815,7 @@ begin
 end
 
 @[hott]
-def ss_so_top {A : Set_Category.{u}} : 
+def ss_so_top {A : Set.{u}} : 
   subset_to_subobj (total_Subset A) = top_subobject A :=
 begin             
   fapply subobj_antisymm,
@@ -826,7 +826,7 @@ begin
 end
 
 @[hott]
-def ss_so_bottom {A : Set_Category.{u}} : 
+def ss_so_bottom {A : Set.{u}} : 
   subset_to_subobj (empty_Subset A) = bottom_subobject A :=
 begin             
   fapply subobj_antisymm,
@@ -837,7 +837,7 @@ begin
 end
 
 @[hott]
-def set_compl_of {A : Set_Category.{u}} [H : has_dec_elem A] (B : subobject A) : 
+def set_compl_of {A : Set.{u}} [H : has_dec_elem A] (B : subobject A) : 
   complement B :=
 begin
   fapply complement.mk,
@@ -851,12 +851,12 @@ begin
 end
 
 @[hott, instance]
-def subobj_has_complements {A : Set_Category.{u}} [H : has_dec_elem A] : 
+def subobj_has_complements {A : Set.{u}} [H : has_dec_elem A] : 
   @has_complement (subobject A) :=
 has_complement.mk (λ B, (set_compl_of B).na)
 
 @[hott, instance]
-def set_has_stable_unions : has_stable_unions Set_Category.{max u' u} :=
+def set_has_stable_unions : has_stable_unions Set.{max u' u} :=
 begin
   apply has_stable_unions.mk, intros A B f J i,
   change _ = subobject.union (λ j : J, pullback_subobject f (i j)),
@@ -878,13 +878,13 @@ begin
 end
 
 @[hott, instance]
-def set_has_complements [H : Π A : Set_Category, has_dec_elem A] : 
-  has_complements Set_Category :=
+def set_has_complements [H : Π A : Set, has_dec_elem A] : 
+  has_complements Set :=
 begin apply has_complements.mk, intro A, exact set_compl_of end
 
 /- The category of sets has an all-of-fiber functor. -/
 @[hott]
-def set_all_fib {A B : Set_Category} (f : A ⟶ B) : subobject A ⥤ subobject B :=
+def set_all_fib {A B : Set} (f : A ⟶ B) : subobject A ⥤ subobject B :=
 begin
   fapply precategories.functor.mk, 
     { intro D, 
@@ -901,7 +901,7 @@ begin
 end
 
 @[hott, instance]
-def set_has_all_of_fibers : has_all_of_fibers Set_Category :=
+def set_has_all_of_fibers : has_all_of_fibers Set :=
 begin  
   apply has_all_of_fibers.mk, intros A B f, apply has_all_of_fiber.mk, 
   apply has_right_adjoint.mk, fapply is_left_adjoint.mk, 
@@ -923,24 +923,24 @@ begin
 end
 
 @[hott, instance] 
-def set_cat_is_Cartesian : is_Cartesian Set_Category.{max u' u} :=
+def set_cat_is_Cartesian : is_Cartesian Set.{max u' u} :=
 begin fapply is_Cartesian.mk, apply_instance end
 
 @[hott, instance] 
-def set_cat_is_regular : is_regular Set_Category.{max u' u} :=
+def set_cat_is_regular : is_regular Set.{max u' u} :=
 begin fapply is_regular.mk, apply_instance end
 
 @[hott, instance] 
-def set_cat_is_coherent : is_coherent Set_Category.{max u' u} :=
+def set_cat_is_coherent : is_coherent Set.{max u' u} :=
 begin fapply is_coherent.mk, apply_instance end
 
 @[hott, instance]
-def set_cat_is_Heyting : is_Heyting Set_Category.{max u' u} :=
-begin fapply @is_Heyting.mk Set_Category, apply_instance end
+def set_cat_is_Heyting : is_Heyting Set.{max u' u} :=
+begin fapply @is_Heyting.mk Set, apply_instance end
 
 @[hott]
-def set_cat_is_Boolean [H : Π A : Set_Category, has_dec_elem A] : 
-  is_Boolean Set_Category.{max u' u} :=
+def set_cat_is_Boolean [H : Π A : Set, has_dec_elem A] : 
+  is_Boolean Set.{max u' u} :=
 begin fapply is_Boolean.mk, exact set_has_complements end
 
 end categories.sets
