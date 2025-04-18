@@ -67,42 +67,42 @@ class has_inf_pullback {C : Type _} [is_cat C] {J : Set} {f : J -> C} {c : C}
   (leg : Π j : J, f j ⟶ c) := (has_limit : has_limit (orthogonal_tuple leg))
 
 @[hott, instance]
-def has_limit_of_has_inf_pb {C : Category.{u v}} {J : Set.{u'}} {f : J -> C} {c : C} 
+def has_limit_of_has_inf_pb {C : Type u} [is_cat.{v} C] {J : Set.{u'}} {f : J -> C} {c : C} 
   (leg : Π j : J, f j ⟶ c) [H : has_inf_pullback leg] : 
   has_limit (orthogonal_tuple leg) := H.has_limit
 
 @[hott]
-def inf_pullback {C : Category.{u v}} {J : Set.{u'}} {f : J -> C} {c : C} 
+def inf_pullback {C : Type u} [is_cat.{v} C] {J : Set.{u'}} {f : J -> C} {c : C} 
   (leg : Π j : J, f j ⟶ c) [H : has_inf_pullback leg] := limit (orthogonal_tuple leg) 
 
 @[hott]
-def inf_pullback_homo {C : Category.{u v}} {J : Set.{u'}} {f : J -> C} {c : C} 
+def inf_pullback_homo {C : Type u} [is_cat.{v} C] {J : Set.{u'}} {f : J -> C} {c : C} 
   (leg : Π j : J, f j ⟶ c) [has_inf_pullback leg] : Π j : J, inf_pullback leg ⟶ f j :=
 assume j, limit_leg (orthogonal_tuple leg) (inf_w_node.tip j)  
 
 @[hott]
-def inf_pullback_diag {C : Category.{u v}} {J : Set.{u'}} {f : J -> C} {c : C} 
+def inf_pullback_diag {C : Type u} [is_cat.{v} C] {J : Set.{u'}} {f : J -> C} {c : C} 
   (leg : Π j : J, f j ⟶ c) [has_inf_pullback leg] : inf_pullback leg ⟶ c :=
 limit_leg (orthogonal_tuple leg) inf_w_base
 
 @[hott]
-class has_inf_pullbacks (C : Category.{u v}) := 
+class has_inf_pullbacks (C : Type u) [is_cat.{v} C] := 
   (has_limit_of_shape : Π (A : Set), has_limits_of_shape (inf_wedge A) C)
 
 @[hott, instance]
-def has_inf_pb_of_has_inf_pullbacks {C : Category.{u v}} {J : Set.{u'}} {f : J -> C} 
+def has_inf_pb_of_has_inf_pullbacks {C : Type u} [is_cat.{v} C] {J : Set.{u'}} {f : J -> C} 
   {c : C} (leg : Π j : J, f j ⟶ c) [has_inf_pullbacks C] : has_inf_pullback leg := 
 ⟨@has_limits_of_shape.has_limit _ _ _ _ 
        (has_inf_pullbacks.has_limit_of_shape C J) (orthogonal_tuple leg)⟩
 
 @[hott, instance]
-def has_inf_pb_of_has_limits_of_shape {C : Category} {J : Set} {f : J -> C} 
+def has_inf_pb_of_has_limits_of_shape {C : Type u} [is_cat.{v} C] {J : Set} {f : J -> C} 
   {c : C} (leg : Π j : J, f j ⟶ c) [H : has_limits_of_shape (inf_wedge J) C] : 
   has_inf_pullback leg :=
 ⟨@has_limits_of_shape.has_limit _ _ _ _ H (orthogonal_tuple leg)⟩ 
 
 @[hott, instance]
-def has_inf_pullbacks_of_has_limits (C : Category) [H : has_limits C] : 
+def has_inf_pullbacks_of_has_limits (C : Type u) [is_cat.{v} C] [H : has_limits C] : 
   has_inf_pullbacks C :=
 has_inf_pullbacks.mk (λ J, @has_limits.has_limit_of_shape C _ H (inf_wedge J) _) 
 
@@ -147,32 +147,32 @@ calc (hsquare_edge S j) ≫ leg j = (S.π.app (inf_w_node.tip j)) ≫
      ... = S.π.app (inf_w_node.base J) : by rwr cone.fac S (inf_w_leg j) 
 
 @[hott] 
-def inf_pullback_eq {C : Category.{u v}} {J : Set.{u'}} {f : J -> C} 
+def inf_pullback_eq {C : Type u} [is_cat.{v} C] {J : Set.{u'}} {f : J -> C} 
   {c : C} {leg : Π j : J, f j ⟶ c} [has_inf_pullback leg] : 
   Π j : J, inf_pullback_homo leg j ≫ leg j = inf_pullback_diag leg :=
 assume j, hsquare_eq (limit.cone (orthogonal_tuple leg)) j 
 
 @[hott]
-def inf_pullback_lift {C : Category.{u v}} {J : Set.{u'}} {f : J -> C} 
+def inf_pullback_lift {C : Type u} [is_cat.{v} C] {J : Set.{u'}} {f : J -> C} 
   {c : C} {leg : Π j : J, f j ⟶ c} (S : hsquare leg) [has_inf_pullback leg] : 
   S.X ⟶ inf_pullback leg :=
 ((get_limit_cone (orthogonal_tuple leg)).is_limit.lift S).v_lift 
 
 @[hott]
-def inf_pb_lift_eq {C : Category.{u v}} {J : Set.{u'}} {f : J -> C} 
+def inf_pb_lift_eq {C : Type u} [is_cat.{v} C] {J : Set.{u'}} {f : J -> C} 
   {c : C} {leg : Π j : J, f j ⟶ c} (S : hsquare leg) [has_inf_pullback leg] : 
   Π j : J, inf_pullback_lift S ≫ inf_pullback_homo leg j = hsquare_edge S j :=
 λ j,  ((get_limit_cone (orthogonal_tuple leg)).is_limit.lift S).fac (inf_w_node.tip j)  
 
 
 @[hott]
-def inf_pb_lift_diag_eq {C : Category.{u v}} {J : Set.{u'}} {f : J -> C} 
+def inf_pb_lift_diag_eq {C : Type u} [is_cat.{v} C] {J : Set.{u'}} {f : J -> C} 
   {c : C} {leg : Π j : J, f j ⟶ c} (S : hsquare leg) [has_inf_pullback leg] : 
   inf_pullback_lift S ≫ inf_pullback_diag leg = hsquare_diag S :=
 ((get_limit_cone (orthogonal_tuple leg)).is_limit.lift S).fac inf_w_base
 
 @[hott]
-def inf_pullback_uniq {C : Category.{u v}} {J : Set.{u'}} {f : J -> C} 
+def inf_pullback_uniq {C : Type u} [is_cat.{v} C] {J : Set.{u'}} {f : J -> C} 
   {c : C} {leg : Π j : J, f j ⟶ c} (S : hsquare leg) [has_inf_pullback leg] : 
   Π (h : S.X ⟶ inf_pullback leg), (Π (j : J), h ≫ inf_pullback_homo leg j = 
                    hsquare_edge S j) -> h ≫ (inf_pullback_diag leg) = hsquare_diag S -> 
@@ -186,7 +186,7 @@ have w : Π (iw : inf_wedge J), h ≫ (limit.cone (orthogonal_tuple leg)).π.app
 
 /- Monomorphisms are stable under `inf_pullback`. -/
 @[hott]
-def mono_is_inf_stable {C : Category.{u v}} {J : Set.{u'}} {f : J -> C} 
+def mono_is_inf_stable {C : Type u} [is_cat.{v} C] {J : Set.{u'}} {f : J -> C} 
   {c : C} {leg : Π j : J, f j ⟶ c} (H : Π j : J, is_mono (leg j)) 
   [has_inf_pullback leg] : is_mono (inf_pullback_diag leg) :=
 begin
@@ -208,11 +208,11 @@ end
 
 /- The intersection of arbitrary many subobjects. -/
 @[hott]
-class has_subobj_iInter {C : Category.{u v}} {c : C} {J : Set.{u'}} (f : J -> subobject c) :=
+class has_subobj_iInter {C : Type u} [is_cat.{v} C] {c : C} {J : Set.{u'}} (f : J -> subobject c) :=
   (exists_inter : @has_product _ subobject_is_cat _ f)
 
 @[hott, instance]
-def has_iInter_of_has_inf_pullbacks {C : Category.{u v}} 
+def has_iInter_of_has_inf_pullbacks {C : Type u} [is_cat.{v} C] 
   [has_inf_pullbacks.{v u u'} C] {c : C} {J : Set.{u'}} 
   (f : J -> subobject.{u v} c) : has_subobj_iInter f :=
 begin 
@@ -239,11 +239,11 @@ begin
 end  
 
 @[hott, instance]
-def has_iInter_to_has_product {C : Category} {c : C} {J : Set} 
+def has_iInter_to_has_product {C : Type u} [is_cat.{v} C] {c : C} {J : Set} 
   (f : J -> subobject c) [H : has_subobj_iInter f] : has_product f := H.exists_inter
 
 @[hott]
-def subobject.iInter {C : Category.{u v}} {c : C} {J : Set.{u'}} (f : J -> subobject c)
+def subobject.iInter {C : Type u} [is_cat.{v} C] {c : C} {J : Set.{u'}} (f : J -> subobject c)
   [has_subobj_iInter f] : subobject c := ∏ f
 
 
