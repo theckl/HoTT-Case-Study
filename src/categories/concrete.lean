@@ -19,7 +19,7 @@ open hott.eq hott.set hott.subset hott.is_trunc
    entry `structured set` in [nLab]). -/
 
 @[hott]
-class concrete_hom_system {C : Type u} {X : Category.{u' v}} (f : C -> X) :=
+class concrete_hom_system {C : Type u} {X : Type u'} [is_cat.{v} X] (f : C -> X) :=
   (hom : Π c d : C, Subset (f c ⟶ f d))
   (id : ∀ c : C, 𝟙 (f c) ∈ hom c c)
   (comp : ∀ {c d e : C} {g : f c ⟶ f d} {h : f d ⟶ f e}, 
@@ -28,12 +28,12 @@ class concrete_hom_system {C : Type u} {X : Category.{u' v}} (f : C -> X) :=
                                                                (gih.inv ∈ hom d c))
 
 @[hott, instance]
-def concrete_has_hom {C : Type u} {X : Category.{u' v}} (f : C -> X) 
+def concrete_has_hom {C : Type u} {X : Type u'} [is_cat.{v} X] (f : C -> X) 
   [concrete_hom_system f] : has_hom C :=
 has_hom.mk (λ c d : C, pred_Set (concrete_hom_system.hom f c d)) 
 
 @[hott]
-def concrete_hom_eq_from_hom_eq {C : Type u} {X : Category.{u' v}} (f : C -> X) 
+def concrete_hom_eq_from_hom_eq {C : Type u} {X : Type u'} [is_cat.{v} X] (f : C -> X) 
   [concrete_hom_system f] {c d : C} : 
   ∀ (g h : c ⟶ d), ((g.1 : f c ⟶ f d) = h.1) -> (g = h) :=
 begin
@@ -42,14 +42,14 @@ begin
 end
 
 @[hott, instance, hsimp]
-def concrete_cat_struct {C : Type u} {X : Category.{u' v}} (f : C -> X) 
+def concrete_cat_struct {C : Type u} {X : Type u'} [is_cat.{v} X] (f : C -> X) 
   [concrete_hom_system f] : category_struct C :=
 category_struct.mk
   (λ a, ⟨𝟙 (f a), concrete_hom_system.id f a⟩)
   (λ c d e g h, ⟨g.1 ≫ h.1, concrete_hom_system.comp g.2 h.2⟩)
 
 @[hott, instance, hsimp]
-def concrete_is_precat {C : Type u} {X : Category.{u' v}} (f : C -> X) 
+def concrete_is_precat {C : Type u} {X : Type u'} [is_cat.{v} X] (f : C -> X) 
   [concrete_hom_system f] : is_precat C :=
 begin
   fapply is_precat.mk,
@@ -59,7 +59,7 @@ begin
 end 
 
 @[hott]
-def concrete_forget_functor {C : Type u} {X : Category.{u' v}} (f : C -> X) 
+def concrete_forget_functor {C : Type u} {X : Type u'} [is_cat.{v} X] (f : C -> X) 
   [concrete_hom_system f] : C ⥤ X :=
 begin 
   fapply precategories.functor.mk f,
@@ -69,7 +69,7 @@ begin
 end
 
 @[hott]
-def concrete_forget_functor_is_faithful {C : Type u} {X : Category.{u' v}} (f : C -> X) 
+def concrete_forget_functor_is_faithful {C : Type u} {X : Type u'} [is_cat.{v} X] (f : C -> X) 
   [concrete_hom_system f] : is_faithful_functor (concrete_forget_functor f) :=
 begin
   intros x y g₁ g₂, intro g_eq, fapply sigma.sigma_eq, 
@@ -80,13 +80,13 @@ end
 /- Fibers of the map from a concrete type to the underlying category inherit a 
    precategory structure. -/
 @[hott, instance]
-def concrete_fib_has_hom {C : Type u} {X : Category.{u' v}} (f : C -> X) 
+def concrete_fib_has_hom {C : Type u} {X : Type u'} [is_cat.{v} X] (f : C -> X) 
   [concrete_hom_system f] : Π (x : X), has_hom (fiber f x) :=
 λ x, has_hom.mk (λ c d, to_Set (Σ (h : c.1 ⟶ d.1), (h.1 : f c.1 ⟶ f d.1) = 
                                        (idtoiso c.2).hom ≫ (idtoiso d.2⁻¹).hom))
 
 @[hott]
-def concrete_fib_hom_eq_from_concrete_hom_eq {C : Type u} {X : Category.{u' v}} 
+def concrete_fib_hom_eq_from_concrete_hom_eq {C : Type u} {X : Type u'} [is_cat.{v} X] 
   {f : C -> X} [concrete_hom_system f] {x : X} {c d : fiber f x} : 
   ∀ (g h : c ⟶ d), ((g.1 : c.1 ⟶ d.1) = h.1) -> (g = h) :=
 begin
@@ -95,7 +95,7 @@ begin
 end
 
 @[hott, instance]
-def concrete_fib_cat_struct {C : Type u} {X : Category.{u' v}} (f : C -> X) 
+def concrete_fib_cat_struct {C : Type u} {X : Type u'} [is_cat.{v} X] (f : C -> X) 
   [concrete_hom_system f] : Π (x : X), category_struct (fiber f x) :=
 begin
   intro x, fapply category_struct.mk,
@@ -112,7 +112,7 @@ begin
 end
 
 @[hott, instance]
-def concrete_fib_is_precat {C : Type u} {X : Category.{u' v}} (f : C -> X) 
+def concrete_fib_is_precat {C : Type u} {X : Type u'} [is_cat.{v} X] (f : C -> X) 
   [concrete_hom_system f] : Π (x : X), is_precat (fiber f x) :=
 begin
   intro x, fapply is_precat.mk,
@@ -129,7 +129,7 @@ begin
 end
 
 @[hott, reducible]
-def concrete_fib_functor {C : Type u} {X : Category.{u' v}} (f : C -> X) 
+def concrete_fib_functor {C : Type u} {X : Type u'} [is_cat.{v} X] (f : C -> X) 
   [concrete_hom_system f] : Π (x : X), (fiber f x) ⥤ X :=
 begin
   intro x, fapply precategories.functor.mk,
@@ -142,7 +142,7 @@ end
 /- Homomorphisms in `fiber f x` are uniquely determined by source and target, and they 
    are automatically isomorphisms. -/
 @[hott]
-def concrete_fib_hom_is_unique {C : Type u} {X : Category.{u' v}} {f : C -> X} 
+def concrete_fib_hom_is_unique {C : Type u} {X : Type u'} [is_cat.{v} X] {f : C -> X} 
   [concrete_hom_system f] {x : X} {c d : fiber f x} : ∀ (g h : c ⟶ d), g = h :=
 begin
   intros g h, apply concrete_fib_hom_eq_from_concrete_hom_eq,
@@ -153,12 +153,12 @@ begin
 end 
 
 @[hott, instance]
-def concrete_fib_hom_is_prop {C : Type u} {X : Category.{u' v}} {f : C -> X} 
+def concrete_fib_hom_is_prop {C : Type u} {X : Type u'} [is_cat.{v} X] {f : C -> X} 
   [concrete_hom_system f] {x : X} {c d : fiber f x} : is_prop (c ⟶ d) :=
 is_prop.mk (λ g h, concrete_fib_hom_is_unique g h)
 
 @[hott]
-def concrete_fib_hom_inv {C : Type u} {X : Category.{u' v}} {f : C -> X} 
+def concrete_fib_hom_inv {C : Type u} {X : Type u'} [is_cat.{v} X] {f : C -> X} 
   [concrete_hom_system f] {x : X} {c d : fiber f x} : (c ⟶ d) -> (d ⟶ c) :=
 begin
   intro g,
@@ -174,7 +174,7 @@ begin
 end
 
 @[hott]
-def concrete_fib_hom_is_iso {C : Type u} {X : Category.{u' v}} {f : C -> X} 
+def concrete_fib_hom_is_iso {C : Type u} {X : Type u'} [is_cat.{v} X] {f : C -> X} 
   [concrete_hom_system f] : ∀ {x : X} {c d : fiber f x} (g : c ⟶ d), 
   is_iso g :=
 begin
@@ -185,7 +185,7 @@ begin
 end
 
 @[hott]
-def concrete_fib_hom_to_iso {C : Type u} {X : Category.{u' v}} {f : C -> X} 
+def concrete_fib_hom_to_iso {C : Type u} {X : Type u'} [is_cat.{v} X] {f : C -> X} 
   [concrete_hom_system f] : ∀ {x : X} {c d : fiber f x} (g : c ⟶ d), 
   f c.1 ≅ f d.1 :=
 λ x c d g, funct_iso_iso (concrete_fib_functor f x) (iso.mk g (concrete_fib_hom_is_iso g))
@@ -196,13 +196,13 @@ def concrete_fib_hom_to_iso {C : Type u} {X : Category.{u' v}} {f : C -> X}
    
    If the fibers are categories, they are also sets. -/
 @[hott]
-class concrete_fibs_are_cat {C : Type u} {X : Category.{u' v}} (f : C -> X) 
+class concrete_fibs_are_cat {C : Type u} {X : Type u'} [is_cat.{v} X] (f : C -> X) 
   [concrete_hom_system f] :=
 (homtoid : ∀ {x : X} {c d : fiber f x}, (c ⟶ d) -> (c = d))
 (idhom_to_idp : ∀ {x : X} (c : fiber f x), homtoid (𝟙 c) = idp)
 
 @[hott, instance]
-def concrete_fibs_cat {C : Type u} {X : Category.{u' v}} (f : C -> X) 
+def concrete_fibs_cat {C : Type u} {X : Type u'} [is_cat.{v} X] (f : C -> X) 
   [concrete_hom_system f] [concrete_fibs_are_cat f] :
   Π (x : X), is_cat (fiber f x) :=
 begin 
@@ -213,13 +213,13 @@ begin
 end 
 
 @[hott]
-def concrete_fibcat_fib_isotoid {C : Type u} {X : Category.{u' v}} {f : C -> X} 
+def concrete_fibcat_fib_isotoid {C : Type u} {X : Type u'} [is_cat.{v} X] {f : C -> X} 
   [concrete_hom_system f] [concrete_fibs_are_cat f] :
   Π {x : X} {c d : fiber f x}, (c ≅ d) -> (c = d) :=
 λ x c d, (is_cat.ideqviso c d).inv
 
 @[hott]
-def concrete_fibcat_fib_id_iso_to_idp {C : Type u} {X : Category.{u' v}} {f : C -> X} 
+def concrete_fibcat_fib_id_iso_to_idp {C : Type u} {X : Type u'} [is_cat.{v} X] {f : C -> X} 
   [concrete_hom_system f] [concrete_fibs_are_cat f] :
   Π {x : X} (c : fiber f x), concrete_fibcat_fib_isotoid (id_iso c) = idp :=
 begin
@@ -228,29 +228,29 @@ begin
 end
 
 @[hott]
-class concrete_fibs_are_set {C : Type u} {X : Category.{u' v}} (f : C -> X) :=
+class concrete_fibs_are_set {C : Type u} {X : Type u'} [is_cat.{v} X] (f : C -> X) :=
   (set : ∀ (x : X), is_set (fiber f x))
 
 @[hott, instance]
-def concrete_fibset_set {C : Type u} {X : Category.{u' v}} (f : C -> X) 
+def concrete_fibset_set {C : Type u} {X : Type u'} [is_cat.{v} X] (f : C -> X) 
   [concrete_fibs_are_set f] : Π {x : X}, is_set (fiber f x) :=
 λ x, concrete_fibs_are_set.set f x  
 
 @[hott, instance]
-def concrete_fibs_cat_are_set {C : Type u} {X : Category.{u' v}} {f : C -> X} 
+def concrete_fibs_cat_are_set {C : Type u} {X : Type u'} [is_cat.{v} X] {f : C -> X} 
   [concrete_hom_system f] [concrete_fibs_are_cat f] : concrete_fibs_are_set f :=
 begin
   apply concrete_fibs_are_set.mk, intro x, apply is_trunc_succ_intro, 
   intros c d, 
   apply is_trunc_equiv_closed_rev -1 
-          (@category.ideqviso (Category.mk (fiber f x) (concrete_fibs_cat f x)) c d), 
+          (@category.ideqviso (fiber f x) (concrete_fibs_cat f x) c d), 
   apply is_prop.mk, intros i j, apply hom_eq_to_iso_eq, 
   apply concrete_fib_hom_is_unique
 end
 
 /- We construct `isotoid`  and `idtoiso` in several steps which we show to be invertible. -/
 @[hott]
-def concrete_iso_fib_iso {C : Type u} {X : Category.{u' v}} {f : C -> X} 
+def concrete_iso_fib_iso {C : Type u} {X : Type u'} [is_cat.{v} X] {f : C -> X} 
   [concrete_hom_system f] : Π {c d : C}, (c ≅ d) -> 
   Σ (p : f c = f d), fiber.mk c p ≅ ⟨d, idp⟩ :=
 begin
@@ -263,7 +263,7 @@ begin
     { exact concrete_fib_hom_is_iso _ } } 
 end 
 
-def concrete_id_iso_fib_id_iso {C : Type u} {X : Category.{u' v}} (f : C -> X) 
+def concrete_id_iso_fib_id_iso {C : Type u} {X : Type u'} [is_cat.{v} X] (f : C -> X) 
   [concrete_hom_system f] [concrete_fibs_are_cat f] : 
   Π {c : C}, concrete_iso_fib_iso (id_iso c) = dpair idp (id_iso _) :=
 begin
@@ -281,7 +281,7 @@ begin
 end   
 
 @[hott]
-def concrete_fib_iso_iso {C : Type u} {X : Category.{u' v}} {f : C -> X} 
+def concrete_fib_iso_iso {C : Type u} {X : Type u'} [is_cat.{v} X] {f : C -> X} 
   [concrete_hom_system f] :  
   Π {c d : C}, (Σ (p : f c = f d), fiber.mk c p ≅ ⟨d, idp⟩) -> (c ≅ d) :=
 begin
@@ -295,13 +295,13 @@ begin
 end
 
 @[hott]
-def concrete_fib_id_iso_id_iso {C : Type u} {X : Category.{u' v}} (f : C -> X) 
+def concrete_fib_id_iso_id_iso {C : Type u} {X : Type u'} [is_cat.{v} X] (f : C -> X) 
   [concrete_hom_system f] :  
   Π {c : C}, concrete_fib_iso_iso (dpair (@idp _ (f c)) (id_iso _)) = id_iso c :=
 λ c, hom_eq_to_iso_eq idp   
 
 @[hott]
-def concrete_iso_fib_iso_rinv {C : Type u} {X : Category.{u' v}} {f : C -> X} 
+def concrete_iso_fib_iso_rinv {C : Type u} {X : Type u'} [is_cat.{v} X] {f : C -> X} 
   [hom_sys : concrete_hom_system f] : Π {c d : C} (i : c ≅ d),
   concrete_fib_iso_iso (concrete_iso_fib_iso i) = i :=
 begin
@@ -309,7 +309,7 @@ begin
 end
 
 @[hott]
-def concrete_fib_iso_fib_eq {C : Type u} {X : Category.{u' v}} {f : C -> X} 
+def concrete_fib_iso_fib_eq {C : Type u} {X : Type u'} [is_cat.{v} X] {f : C -> X} 
   [concrete_hom_system f] [concrete_fibs_are_cat f] :  
   Π {c d : C}, (Σ (p : f c = f d), fiber.mk c p ≅ ⟨d, idp⟩) ->
                (Σ (p : f c = f d), fiber.mk c p = ⟨d, idp⟩) :=
@@ -318,7 +318,7 @@ begin
 end
 
 @[hott]
-def concrete_fib_eq_fib_iso {C : Type u} {X : Category.{u' v}} {f : C -> X} 
+def concrete_fib_eq_fib_iso {C : Type u} {X : Type u'} [is_cat.{v} X] {f : C -> X} 
   [hom_sys : concrete_hom_system f] :  
   Π {c d : C}, (Σ (p : f c = f d), fiber.mk c p = ⟨d, idp⟩) ->
                (Σ (p : f c = f d), fiber.mk c p ≅ ⟨d, idp⟩) :=
@@ -327,14 +327,14 @@ begin
 end
 
 @[hott]
-def concrete_fib_idp_fib_id_iso {C : Type u} {X : Category.{u' v}} (f : C -> X) 
+def concrete_fib_idp_fib_id_iso {C : Type u} {X : Type u'} [is_cat.{v} X] (f : C -> X) 
   [concrete_hom_system f] : 
   Π {c : C}, concrete_fib_eq_fib_iso (dpair (@idp _ (f c)) idp) = 
              ⟨@idp _ (f c), id_iso _⟩ :=
 λ c, idp
 
 @[hott]
-def concrete_fib_id_iso_fib_idp {C : Type u} {X : Category.{u' v}} (f : C -> X) 
+def concrete_fib_id_iso_fib_idp {C : Type u} {X : Type u'} [is_cat.{v} X] (f : C -> X) 
   [concrete_hom_system f] [concrete_fibs_are_cat f] : 
   Π {c : C}, concrete_fib_iso_fib_eq ⟨@idp _ (f c), id_iso _⟩ =
               (dpair (@idp _ (f c)) idp):=
@@ -347,7 +347,7 @@ begin
 end
 
 @[hott]
-def concrete_fib_iso_fib_eq_rinv {C : Type u} {X : Category.{u' v}} {f : C -> X} 
+def concrete_fib_iso_fib_eq_rinv {C : Type u} {X : Type u'} [is_cat.{v} X] {f : C -> X} 
   [concrete_hom_system f] [concrete_fibs_are_cat f] :  
   Π {c d : C} (pi : Σ (p : f c = f d), fiber.mk c p ≅ ⟨d, idp⟩),
   concrete_fib_eq_fib_iso (concrete_fib_iso_fib_eq pi) = pi :=
@@ -358,13 +358,13 @@ begin
 end 
 
 @[hott, hsimp]
-def concrete_fib_eq_eq {C : Type u} {X : Category.{u' v}} {f : C -> X} 
+def concrete_fib_eq_eq {C : Type u} {X : Type u'} [is_cat.{v} X] {f : C -> X} 
   [concrete_hom_system f] :  
   Π {c d : C}, (Σ (p : f c = f d), fiber.mk c p = ⟨d, idp⟩) -> (c = d) :=
 λ c d pp, ap fiber.point pp.2 
 
 @[hott, hsimp]
-def concrete_eq_fib_eq {C : Type u} {X : Category.{u' v}} (f : C -> X) 
+def concrete_eq_fib_eq {C : Type u} {X : Type u'} [is_cat.{v} X] (f : C -> X) 
   [concrete_hom_system f] :  
   Π {c d : C}, (c = d) -> (Σ (p : f c = f d), fiber.mk c p = ⟨d, idp⟩) :=
 begin
@@ -373,7 +373,7 @@ begin
 end
 
 @[hott]
-def concrete_fib_eq_eq_rinv {C : Type u} {X : Category.{u' v}} {f : C -> X} 
+def concrete_fib_eq_eq_rinv {C : Type u} {X : Type u'} [is_cat.{v} X] {f : C -> X} 
   [concrete_hom_system f] [concrete_fibs_are_set f] :  
   Π {c d : C} (pp : Σ (p : f c = f d), fiber.mk c p = ⟨d, idp⟩),
     concrete_eq_fib_eq f (concrete_fib_eq_eq pp) = pp :=
@@ -385,13 +385,13 @@ begin
 end
 
 @[hott, hsimp]
-def concrete_fibcat_idtoiso {C : Type u} {X : Category.{u' v}} (f : C -> X) 
+def concrete_fibcat_idtoiso {C : Type u} {X : Type u'} [is_cat.{v} X] (f : C -> X) 
   [concrete_hom_system f] [concrete_fibs_are_cat f] : 
   Π {c d : C}, (c = d) -> (c ≅ d) :=
 λ c d i, concrete_fib_iso_iso (concrete_fib_eq_fib_iso (concrete_eq_fib_eq f i))
 
 @[hott]
-def concrete_fibcat_idtoiso_eq {C : Type u} {X : Category.{u' v}} (f : C -> X) 
+def concrete_fibcat_idtoiso_eq {C : Type u} {X : Type u'} [is_cat.{v} X] (f : C -> X) 
   [concrete_hom_system f] [concrete_fibs_are_cat f] : 
   Π {c d : C} (p : c = d), idtoiso p = concrete_fibcat_idtoiso f p :=
 begin
@@ -401,13 +401,13 @@ begin
 end 
 
 @[hott]
-def concrete_fibcat_isotoid {C : Type u} {X : Category.{u' v}} (f : C -> X) 
+def concrete_fibcat_isotoid {C : Type u} {X : Type u'} [is_cat.{v} X] (f : C -> X) 
   [concrete_hom_system f] [concrete_fibs_are_cat f] : 
   Π {c d : C}, (c ≅ d) -> (c = d) :=
 λ c d i, concrete_fib_eq_eq (concrete_fib_iso_fib_eq (concrete_iso_fib_iso i)) 
 
 @[hott, instance]
-def concrete_fib_cat_to_concrete_cat {C : Type u} {X : Category.{u' v}} (f : C -> X) 
+def concrete_fib_cat_to_concrete_cat {C : Type u} {X : Type u'} [is_cat.{v} X] (f : C -> X) 
   [concrete_hom_system f] [concrete_fibs_are_cat f] : 
   is_cat C :=
 begin
@@ -429,13 +429,13 @@ end
    a full subcategory of the underlying category, as in [categories.subcat], but we also
    want to use it in the framework of concrete categories. -/
 @[hott, reducible, instance]
-def full_subcat_hom_sys {C : Type u} {X : Category.{u' v}} (f : C -> X) [is_injective f] : 
+def full_subcat_hom_sys {C : Type u} {X : Type u'} [is_cat.{v} X] (f : C -> X) [is_injective f] : 
   concrete_hom_system f :=
 concrete_hom_system.mk (λ c d, total_Subset (f c ⟶ f d)) (λ c, true.intro) 
                        (λ c d e g h g_el h_el, true.intro) (λ c d g gih g_el, true.intro)
 
 @[hott, instance]
-def full_subcat_fibs_is_singleton {C : Type u} {X : Category.{u' v}} (f : C -> X) 
+def full_subcat_fibs_is_singleton {C : Type u} {X : Type u'} [is_cat.{v} X] (f : C -> X) 
   [inj : is_injective f] : Π (x : X), is_prop (fiber f x) :=
 begin
   intro x, apply is_prop.mk, intros c d, fapply fiber.fiber_eq,
@@ -451,7 +451,7 @@ begin
 end
 
 @[hott,instance]
-def full_subcat_fibs_are_cat {C : Type u} {X : Category.{u' v}} (f : C -> X) 
+def full_subcat_fibs_are_cat {C : Type u} {X : Type u'} [is_cat.{v} X] (f : C -> X) 
   [inj : is_injective f] : concrete_fibs_are_cat f :=
 begin 
   fapply concrete_fibs_are_cat.mk, 
@@ -460,7 +460,7 @@ begin
 end
 
 @[hott, instance]
-def full_subcat_is_cat {C : Type u} {X : Category.{u' v}} (f : C -> X) 
+def full_subcat_is_cat {C : Type u} {X : Type u'} [is_cat.{v} X] (f : C -> X) 
   [inj : is_injective f] : is_cat C :=
 concrete_fib_cat_to_concrete_cat f
 
@@ -468,57 +468,57 @@ concrete_fib_cat_to_concrete_cat f
    if we can characterize the fibers of the forgetful map as a category with only one 
    element in each homomorphism set. -/
 @[hott]
-class fib_hom_system {X : Category.{v+1 u}} (B : X -> Type u) :=
+class fib_hom_system {X : Type u} [is_cat.{v+1} X] (B : X -> Type u) :=
   (set : Π (x : X), is_set (B x))
   (hom : Π {x : X}, B x -> B x -> Set.{v})
   (unique : Π {x : X} (c d : B x), is_prop (hom c d))
 
 @[hott, instance]
-def fib_has_hom {X : Category.{v+1 u}} (B : X -> Type u) 
+def fib_has_hom {X : Type u} [is_cat.{v+1} X] (B : X -> Type u) 
   [H : fib_hom_system B] (x : X) : has_hom (B x) :=
 has_hom.mk (λ c d : B x, (fib_hom_system.hom X c d)) 
 
 /- Equivalences between a type over a category `X` and a type dependent on `X`. -/
 @[hott]
-class concrete_sigma_system {C : Type (u+1)} {X : Category.{v+1 u}} (f : C -> X)
+class concrete_sigma_system {C : Type (u+1)} {X : Type u} [is_cat.{v+1} X] (f : C -> X)
   [concrete_hom_system f] (B : X -> Type u) [fib_hom_system B] :=
 (fib_eqv : Π {x : X}, B x ≃ fiber f x) 
 (hom_eqv : Π {x : X} (c d : B x), (c ⟶ d) ≃ ((fib_eqv.to_fun c) ⟶ (fib_eqv.to_fun d)))
 
 @[hott, instance]
-def concrete_sigma_sys_fib_set {C : Type (u+1)} {X : Category.{v+1 u}} (f : C -> X)
+def concrete_sigma_sys_fib_set {C : Type (u+1)} {X : Type u} [is_cat.{v+1} X] (f : C -> X)
   [concrete_hom_system f] (B : X -> Type u) [H_fib : fib_hom_system B] 
   [H_sig : concrete_sigma_system f B] : Π (x : X), is_set (fiber f x) :=
 begin 
   intro x, 
-  apply is_trunc_equiv_closed 0 (@concrete_sigma_system.fib_eqv _ _ f _ B _ _ x), 
+  apply is_trunc_equiv_closed 0 (@concrete_sigma_system.fib_eqv _ _ _ f _ B _ _ x), 
   exact fib_hom_system.set B x
 end
 
 @[hott]
-class sigma_fibs_are_cat {X : Category.{v+1 u}} (B : X -> Type u) [fib_hom_system B] :=
+class sigma_fibs_are_cat {X : Type u} [is_cat.{v+1} X] (B : X -> Type u) [fib_hom_system B] :=
   (homtoid : ∀ {x : X} {b₁ b₂ : B x}, (b₁ ⟶ b₂) -> b₁ = b₂)
 
 @[hott, instance]
-def concrete_type_with_fib_sys_has_fib_cat {C : Type (u+1)} {X : Category.{v+1 u}} 
+def concrete_type_with_fib_sys_has_fib_cat {C : Type (u+1)} {X : Type u} [is_cat.{v+1} X] 
   (f : C -> X) (B : X -> Type u) [fib_hom_system B] [concrete_hom_system f] 
   [H_fB : concrete_sigma_system f B] [H_S : sigma_fibs_are_cat B] : 
   concrete_fibs_are_cat f :=
 begin
   fapply concrete_fibs_are_cat.mk,
   { intros x c d, 
-    rwr <- @is_equiv.right_inv _ _ _ (@concrete_sigma_system.fib_eqv _ _ 
+    rwr <- @is_equiv.right_inv _ _ _ (@concrete_sigma_system.fib_eqv _ _ _
                                                                f _ B _ _ x).to_is_equiv c,
-    rwr <- @is_equiv.right_inv _ _ _ (@concrete_sigma_system.fib_eqv _ _ 
+    rwr <- @is_equiv.right_inv _ _ _ (@concrete_sigma_system.fib_eqv _ _ _
                                                                f _ B _ _ x).to_is_equiv d,
     intro g, apply λ p, ap (concrete_sigma_system.fib_eqv f B).to_fun p, apply H_S.homtoid, 
-    exact @is_equiv.inv _ _ _ (@concrete_sigma_system.hom_eqv _ _ 
+    exact @is_equiv.inv _ _ _ (@concrete_sigma_system.hom_eqv _ _ _
                                                       f _ B _ _ x _ _).to_is_equiv g }, 
   { intros x c, exact is_set.elim _ _ }
 end
 
 @[hott, instance]
-def concrete_type_with_fib_sys_is_cat {C : Type (u+1)} {X : Category.{v+1 u}} 
+def concrete_type_with_fib_sys_is_cat {C : Type (u+1)} {X : Type u} [is_cat.{v+1} X] 
   (f : C -> X) (B : X -> Type u) [H_obj : fib_hom_system B] 
   [H_hom : concrete_hom_system f] [concrete_sigma_system f B] [sigma_fibs_are_cat B] : 
 is_cat C := by apply_instance
