@@ -106,7 +106,7 @@ begin
         change idtoiso⁻¹ᶠ (inv_iso lcp_iso.1) ▸[λ X : C, F.obj j ⟶ X] app₁ j = app₂ j,
         have r : idtoiso⁻¹ᶠ (inv_iso lcp_iso.1) ▸[λ X : C, F.obj j ⟶ X] app₁ j = 
                     app₁ j ≫ (inv_iso lcp_iso.1).hom, from
-          @iso_hom_tr_comp' (Category.mk C _) X₁ X₂ _ (inv_iso lcp_iso.1) (app₁ j), 
+          @iso_hom_tr_comp' C _ _ X₁ X₂ (inv_iso lcp_iso.1) (app₁ j), 
         rwr r, apply inverse, apply iso_move_rl, exact (is_colimit₂.fac _ j) },
       { apply pathover_of_tr_eq, apply eq_of_homotopy3, intros c c' f, 
         apply is_set.elim } }
@@ -176,10 +176,10 @@ def diag_iso_has_colim_to_has_colim {J₁ J₂ : Strict_Categories} {C : Type u}
   (H : J₁ ≅ J₂) {F : J₂.obj ⥤ C} [hlF : has_colimit F] : 
   has_colimit ((category.isotoid H)⁻¹ ▸[λ J : Strict_Categories, J.obj ⥤ C] F) :=
 begin
-  let phl : has_colimit F = has_colimit ((category.isotoid H)⁻¹ ▸[λ J : Strict_Categories, 
-                                        J.obj ⥤ C] F) := 
+  let phl : @has_colimit _ J₂.strict_cat _ _ F = @has_colimit _ J₁.strict_cat _ _ 
+                                      ((category.isotoid H)⁻¹ ▸[λ J : Strict_Categories, J.obj ⥤ C] F) := 
          fn2_ev_fn2_tr (category.isotoid H)⁻¹ F (λ (J : Strict_Categories) 
-                                                   (F : J.obj ⥤ C), has_colimit F),
+                                                   (F : J.obj ⥤ C), @has_colimit _ J.strict_cat _ _ F),
   exact phl ▸[id] hlF
 end
 
@@ -192,10 +192,10 @@ begin rwr <- diag_iso_on_cocone H F, exact @diag_iso_has_colim_to_has_colim _ _ 
 def diag_iso_colim_eq_colim {J₁ J₂ : Strict_Categories} {C : Type u} [is_cat.{v} C]
   (H : J₁ ≅ J₂) {F : J₂.obj ⥤ C} [hlF : has_colimit F] : colimit F = colimit (H.hom ⋙ F) :=
 begin
-  change (λ (J : Strict_Categories) (F : J.obj ⥤ C) (hlF : has_colimit F), 
-            @colimit _ _ _ _ F hlF) J₂ F hlF = _,
+  change (λ (J : Strict_Categories) (F : J.obj ⥤ C) (hlF : @has_colimit _ J.strict_cat _ _ F), 
+            @colimit _ J.strict_cat _ _ F hlF) J₂ F hlF = _,
   rwr fn3_ev_fn3_tr' (category.isotoid H)⁻¹ F hlF (λ (J : Strict_Categories) 
-                          (F : J.obj ⥤ C) (hlF : has_colimit F), @colimit _ _ _ _ F hlF),
+                (F : J.obj ⥤ C) (hlF : @has_colimit _ J.strict_cat _ _ F), @colimit _ J.strict_cat _ _ F hlF),
   exact diag_eq_colim_eq_colim (diag_iso_on_cocone H F)⁻¹⁻¹
 end
 
@@ -375,11 +375,11 @@ calc (⨿h i₁) ≫ (⨿h i₂) =
    We also separately exhibit finite unions, for use in categorical models, and we 
    introduce the union of two subobjects, to make use of the notation `∪`. -/
 @[hott]
-class has_subobj_union {C : Category.{u v}} {c : C} {J : Set.{u'}} (f : J -> subobject c) :=
+class has_subobj_union {C : Type u} [is_cat.{v} C] {c : C} {J : Set.{u'}} (f : J -> subobject c) :=
   (exists_union : @has_coproduct _ subobject_is_cat _ f) 
 
 @[hott, instance]
-def has_so_union_is_prop {C : Category.{u v}} {c : C} {J : Set.{u'}} 
+def has_so_union_is_prop {C : Type u} [is_cat.{v} C] {c : C} {J : Set.{u'}} 
   (f : J -> subobject c) : is_prop (has_subobj_union f) :=
 begin 
   apply is_prop.mk, intros hsu₁ hsu₂, hinduction hsu₁, hinduction hsu₂,
@@ -387,7 +387,7 @@ begin
 end
 
 @[hott, instance]
-def has_subobj_union_of_has_coproducts_and_images {C : Category.{u v}} 
+def has_subobj_union_of_has_coproducts_and_images {C : Type u} [is_cat.{v} C] 
   [has_coproducts.{v u u'} C] [has_images C] {c : C} {J : Set.{u'}} 
   (f : J -> subobject.{u v} c) : has_subobj_union f :=
 begin 
@@ -411,38 +411,38 @@ begin
 end
 
 @[hott, instance]
-def has_union_to_has_coproduct {C : Category} {c : C} {J : Set} 
+def has_union_to_has_coproduct {C : Type u} [is_cat.{v} C] {c : C} {J : Set} 
   (f : J -> subobject c) [H : has_subobj_union f] : has_coproduct f := H.exists_union
 
 @[hott]
-def subobject.union {C : Category} {c : C} {J : Set} (f : J -> subobject c)
+def subobject.union {C : Type u} [is_cat.{v} C] {c : C} {J : Set} (f : J -> subobject c)
   [has_subobj_union f] := ⨿ f
 
 @[hott]
-class has_unions (C : Category) :=
+class has_unions (C : Type u) [is_cat.{v} C] :=
   (has_union : Π {c : C} {J : Set} (f : J -> subobject c), has_subobj_union f)
 
 @[hott, instance]
-def has_union_of_has_unions {C : Category} {c : C} [has_unions C] 
+def has_union_of_has_unions {C : Type u} [is_cat.{v} C] {c : C} [has_unions C] 
   {J : Set} (f : J -> subobject c) : has_subobj_union f :=
 has_unions.has_union f 
 
 @[hott]
-def union_inc {C : Category} {c : C} {J : Set} (f : J -> subobject c)
+def union_inc {C : Type u} [is_cat.{v} C] {c : C} {J : Set} (f : J -> subobject c)
   [has_subobj_union f] : Π j : J, f j ≼ subobject.union f :=
 assume j, copi.π f j
 
 @[hott]
-def union_fac {C : Category} {c : C} {J : Set} (f : J -> subobject c)
+def union_fac {C : Type u} [is_cat.{v} C] {c : C} {J : Set} (f : J -> subobject c)
   [has_subobj_union f] {u : subobject c} (h : Π j, f j ≼ u) : subobject.union f ≼ u :=
 copi.desc h    
 
 @[hott]
-class has_fin_union {C : Category} {c : C} {n : ℕ} (f : fin_Set n -> subobject c) :=
+class has_fin_union {C : Type u} [is_cat.{v} C] {c : C} {n : ℕ} (f : fin_Set n -> subobject c) :=
 (exists_union : has_subobj_union f)
 
 @[hott, instance]
-def has_fin_union_is_prop {C : Category} {c : C} {n : ℕ} (f : fin_Set n -> subobject c) : 
+def has_fin_union_is_prop {C : Type u} [is_cat.{v} C] {c : C} {n : ℕ} (f : fin_Set n -> subobject c) : 
   is_prop (has_fin_union f) :=
 begin 
   apply is_prop.mk, intros hfu₁ hfu₂, hinduction hfu₁, hinduction hfu₂,
@@ -450,16 +450,16 @@ begin
 end
 
 @[hott, instance]
-def has_union_of_has_fin_union {C : Category} {c : C} {n : ℕ} 
+def has_union_of_has_fin_union {C : Type u} [is_cat.{v} C] {c : C} {n : ℕ} 
   (f : fin_Set n -> subobject c) [H : has_fin_union f] : has_subobj_union f :=
 H.exists_union
 
 @[hott]
-class has_fin_unions (C : Category) :=
+class has_fin_unions (C : Type u) [is_cat.{v} C] :=
   (has_fin_union : Π (c : C) {n : ℕ} (f : fin_Set n -> subobject c), has_fin_union f)
 
 @[hott, instance]
-def has_fin_unions_is_prop {C : Category} : 
+def has_fin_unions_is_prop {C : Type u} [is_cat.{v} C] : 
   is_prop (has_fin_unions C) :=
 begin 
   apply is_prop.mk, intros hfu₁ hfu₂, hinduction hfu₁, hinduction hfu₂,
@@ -467,34 +467,34 @@ begin
 end
 
 @[hott, instance]
-def has_fin_union_of_has_fin_unions {C : Category} [has_fin_unions C] {c : C} 
+def has_fin_union_of_has_fin_unions {C : Type u} [is_cat.{v} C] [has_fin_unions C] {c : C} 
   {n : ℕ} (f : fin_Set n -> subobject c) : has_fin_union f :=
 has_fin_unions.has_fin_union c f   
 
 @[hott, instance]
-def has_fin_unions_of_has_unions (C : Category) [H : has_unions C] : has_fin_unions C :=
-  has_fin_unions.mk (λ c n f, (has_fin_union.mk (@has_unions.has_union C H _ _ f)))
+def has_fin_unions_of_has_unions (C : Type u) [is_cat.{v} C] [H : has_unions C] : has_fin_unions C :=
+  has_fin_unions.mk (λ c n f, (has_fin_union.mk (@has_unions.has_union C _ H _ _ f)))
 
 @[hott, instance]
-def subobj_has_union {C : Category} {c : C} [has_fin_unions C] :
+def subobj_has_union {C : Type u} [is_cat.{v} C] {c : C} [has_fin_unions C] :
   has_union (subobject c) :=
 has_union.mk (λ a b, subobject.union (fin_map_of_list [a, b]))
 
 /- If finite unions exist every category of subobjects also has a bottom element, produced 
    as the empty union. -/
 @[hott]
-def bottom_subobject {C : Category} (c : C) [has_fin_unions C] : 
+def bottom_subobject {C : Type u} [is_cat.{v} C] (c : C) [has_fin_unions C] : 
   subobject c :=
 subobject.union (empty_fin_Set_map (subobject c))
 
 @[hott] 
-def bottom_subobj_prop {C : Category} {c : C} [has_fin_unions C] : 
+def bottom_subobj_prop {C : Type u} [is_cat.{v} C] {c : C} [has_fin_unions C] : 
   Π (a : subobject c), bottom_subobject c ≼ a :=
 begin intro a, fapply union_fac, intro j, hinduction hott.nat.not_lt_zero j.1 j.2 end   
 
 /- Universal property of unions of subobjects -/
 @[hott]
-def lift_to_union {C : Category} {d : C} [has_fin_unions C] : Π {a b c : subobject d},
+def lift_to_union {C : Type u} [is_cat.{v} C] {d : C} [has_fin_unions C] : Π {a b c : subobject d},
   a ≼ c -> b ≼ c -> a ∪ b ≼ c :=
 begin 
   intros a b c i₁ i₂, fapply union_fac (fin_map_of_list [a, b]), 
@@ -510,7 +510,7 @@ end
 
 /- The natural inclusions into the union -/
 @[hott]
-def subobj_union_rinc {C : Category} {c : C} [has_fin_unions C]
+def subobj_union_rinc {C : Type u} [is_cat.{v} C] {c : C} [has_fin_unions C]
   (a b : subobject c) : b ≼ a ∪ b :=
 begin
   have ineq1 : 1 < 2, from nat.lt.base 1,
@@ -519,7 +519,7 @@ begin
 end
 
 @[hott]
-def subobj_union_linc {C : Category} {c : C} [has_fin_unions C]
+def subobj_union_linc {C : Type u} [is_cat.{v} C] {c : C} [has_fin_unions C]
   (a b : subobject c) : a ≼ a ∪ b :=
 begin
   have ineq0 : 0 < 2, from nat.lt_trans (nat.lt.base 0) (nat.lt.base 1),
@@ -528,7 +528,7 @@ begin
 end
 
 @[hott]
-def univ_char_of_union {C : Category} {d : C} [has_fin_unions C] : 
+def univ_char_of_union {C : Type u} [is_cat.{v} C] {d : C} [has_fin_unions C] : 
   Π {a b c : subobject d}, (a ≼ c) -> (b ≼ c) -> 
        (Π c' : subobject d, (a ≼ c') -> (b ≼ c') -> c ≼ c') -> (c = a ∪ b) :=
 begin
@@ -539,7 +539,7 @@ begin
 end
 
 @[hott]
-def subobj_hom_union_absorb {C : Category} {c : C} [has_fin_unions C] {a b : subobject c} : 
+def subobj_hom_union_absorb {C : Type u} [is_cat.{v} C] {c : C} [has_fin_unions C] {a b : subobject c} : 
   a ≼ b -> a ∪ b = b :=
 begin
   intro ineq, fapply subobj_antisymm,
@@ -548,13 +548,13 @@ begin
 end 
 
 @[hott]
-def bottom_union_absorb {C : Category} {c : C} [has_fin_unions C] (a : subobject c) : 
+def bottom_union_absorb {C : Type u} [is_cat.{v} C] {c : C} [has_fin_unions C] (a : subobject c) : 
   (bottom_subobject c) ∪ a = a :=
 subobj_hom_union_absorb (bottom_subobj_prop a)
 
 /- Associativity of unions of subobjects -/
 @[hott]
-def union_assoc {C : Category} {d : C} [has_fin_unions C] : Π {a b c : subobject d},
+def union_assoc {C : Type u} [is_cat.{v} C] {d : C} [has_fin_unions C] : Π {a b c : subobject d},
   (a ∪ b) ∪ c = a ∪ (b ∪ c) :=
 begin
   intros a b c, fapply subobj_antisymm, 
@@ -572,7 +572,7 @@ end
 
 /- Commutativity of unions of subobjects -/
 @[hott]
-def union_comm {C : Category} {c : C} [has_fin_unions C] : Π (a b : subobject c),
+def union_comm {C : Type u} [is_cat.{v} C] {c : C} [has_fin_unions C] : Π (a b : subobject c),
   a ∪ b = b ∪ a :=
 begin
   intros a b, fapply subobj_antisymm,
