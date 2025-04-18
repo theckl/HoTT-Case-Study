@@ -538,7 +538,16 @@ begin
   { change _ =[eq_of_homotopy (λ c : C, idp); 
                     λ f : C -> B, Π (x y : C), (x ⟶ y) → (f x ⟶ f y)] _, 
     rwr eq_of_homotopy_idp }
-end  
+end 
+
+@[hott]
+def funct_comp_constant {C : Type u} [is_precat C] {D : Type u'} 
+  [is_precat D] (F : C ⥤ D) (d : D) : (F ⋙ constant_functor d) = constant_functor d :=
+begin 
+  fapply functor_eq, 
+  { exact idp },
+  { apply pathover_of_tr_eq, rwr idp_tr } 
+end 
 
 @[hott]
 def faithful_is_trans {C : Type u} [is_precat C] {D : Type u'} 
