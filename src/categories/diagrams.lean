@@ -316,10 +316,6 @@ def orthogonal_wedge_strict_cat : is_strict_cat orthogonal_wedge :=
 def Orthogonal_Wedge : strict_Category := 
   strict_Category.mk orthogonal_wedge.carrier orthogonal_wedge_strict_cat
 
-@[hott, instance]
-def Orthogonal_Wedge_is_strict_cat : 
-  is_strict_cat Orthogonal_Wedge := is_strict_cat.mk orthogonal_wedge.struct   
-
 /- The two legs of an orthogonal wedge can be interchanged. -/
 @[hott] 
 def orthogonal_wedge_iso_hom : Orthogonal_Wedge ⟶ Orthogonal_Wedge :=
@@ -381,20 +377,12 @@ def inf_cowedge (A : Set) : Set :=
 def Inf_Cowedge (A : Set) : Precategory := 
   Precategory.mk (inf_cowedge A) is_precat.opposite
 
-@[hott, instance]
-def Inf_Cowedge_is_strict_cat {A : Set} : is_strict_cat (Inf_Cowedge A) :=
-  is_strict_cat.mk (inf_cowedge A).struct
-
 @[hott]
 def orthogonal_cowedge := op_Set orthogonal_wedge
 
 @[hott]
 def Orthogonal_Cowedge : Precategory := 
   Precategory.mk orthogonal_cowedge is_precat.opposite
-
-@[hott]
-def Orthogonal_Cowedge_is_strict_cat : is_strict_cat Orthogonal_Cowedge :=
-  is_strict_cat.mk orthogonal_cowedge.struct
 
 
 /- [walking_parallel_pair] is the indexing category for (co-)equalizers.  -/
