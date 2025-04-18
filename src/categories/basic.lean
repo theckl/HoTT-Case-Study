@@ -296,6 +296,15 @@ def functor_map_eq {C : Type _} [is_precat C] {D : Type _}
             F.map f ≫ (idtoiso (ap10 (ap functor.obj p) y)).hom :=   
 begin intro f, hinduction p, hsimp end
 
+@[hott]
+def functor_eq_to_nat_trans {A : Type _} [is_precat A] {B : Type _} 
+  [is_precat B] {F G : A ⥤ B} : (F = G) -> (F ⟹ G) :=
+begin 
+  intro p, fapply nat_trans.mk,
+  { intro a, exact (idtoiso (ap (λ H : A ⥤ B, H.obj a) p)).hom },
+  { intros a a' f, hinduction p, change _ ≫ 𝟙 _ = 𝟙 _ ≫ _, rwr is_precat.id_comp, rwr is_precat.comp_id } 
+end
+
 /-- The structure of a category and the bundled category. -/
 @[hott]
 class is_cat (obj : Type u) extends is_precat.{v} obj :=
@@ -359,6 +368,15 @@ begin
   rwr category.idtoiso_linv (idtoiso⁻¹ᶠ i),
   exact id_hom_tr_comp (idtoiso⁻¹ᶠ i) h
 end 
+
+@[hott]
+def iso_hom_tr_comp' {C : Type _} [is_cat C] {c d₁ d₂ : C} (i : d₁ ≅ d₂)
+  (h : c ⟶ d₁) : (idtoiso⁻¹ᶠ i) ▸ h = h ≫ i.hom :=
+begin 
+  rwr <- (category.idtoiso_rinv i),  
+  rwr category.idtoiso_linv (idtoiso⁻¹ᶠ i),
+  exact id_hom_tr_comp' (idtoiso⁻¹ᶠ i) h
+end
 
 @[hott]
 def idtoiso_is_inj {C : Type _} [is_cat C] {c₁ c₂ : C} {p q : c₁ = c₂} :
