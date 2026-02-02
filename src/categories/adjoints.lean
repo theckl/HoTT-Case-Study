@@ -476,6 +476,47 @@ begin
 end 
 
 @[hott]
+def adjoint_subobjects_rinv {C : Type _} [is_cat C] {D : Type _} [is_cat D] {L : C ⥤ D} {R : D ⥤ C} : 
+  Π (adj : adjoint_functors_on_hom L R) (Rff : is_faithful_functor R)
+    (iso_adj_L : Π (d : D) (c : subobject (R.obj d)), 
+                                           is_iso ((adj.hom_bij c.obj (L.obj c.obj)).map (𝟙 (L.obj c.obj)))), 
+  Π (d : D) (c : subobject (R.obj d)), 
+    subobj_to_adjoint_subobj adj d (adjoint_subobj_to_subobj adj @Rff iso_adj_L d c) = c :=
+begin
+  intros adj Rff iso_adj_L d c, apply eq.inverse, fapply iso_mono_to_equal_subobj, fapply iso_of_monos.mk,
+  { change c.obj ≅ R.obj (L.obj c.obj), exact iso.mk _ (iso_adj_L d c) },
+  { change (adj.hom_bij c.obj (L.obj c.obj)) (𝟙 (L.obj c.obj)) ≫ 
+               R.map (inv_bijection_of (adj.hom_bij c.obj d) c.hom) = _, 
+    rwr <- adj.nat_R, rwr is_precat.id_comp, 
+    change (adj.hom_bij c.obj d).map ((inv_bijection_of (adj.hom_bij c.obj d)).map _) = _, 
+    rwr inv_bij_r_inv  }
+end
+
+@[hott]
+def adjoint_subobjects_linv {C : Type _} [is_cat C] {D : Type _} [is_cat D] {L : C ⥤ D} {R : D ⥤ C} : 
+  Π (adj : adjoint_functors_on_hom L R) (Rff : is_faithful_functor R)
+    (iso_adj_L : Π (d : D) (c : subobject (R.obj d)), 
+                     is_iso ((adj.hom_bij c.obj (L.obj c.obj)).map (𝟙 (L.obj c.obj)))) 
+    (iso_adj_R : Π (d : D), is_iso (inv_bijection_of (adj.hom_bij (R.obj d) d) (𝟙 (R.obj d)))),
+  Π (d : D) (d' : subobject d), 
+    adjoint_subobj_to_subobj adj @Rff iso_adj_L d (subobj_to_adjoint_subobj adj d d') = d' :=
+begin
+  intros adj Rff iso_adj_L iso_adj_R d d', fapply iso_mono_to_equal_subobj, fapply iso_of_monos.mk,
+  { change L.obj (R.obj d'.obj) ≅ d'.obj, exact iso.mk _ (iso_adj_R d'.obj) },
+  { change (inv_bijection_of (adj.hom_bij (R.obj d'.obj) d'.obj)) (𝟙 (R.obj d'.obj)) ≫ _ =
+               (inv_bijection_of (adj.hom_bij (R.obj d'.obj) d)) (R.map d'.hom),
+    apply (adj.hom_bij (R.obj d'.obj) d).bij.inj, 
+    change (adj.hom_bij (R.obj d'.obj) d) ((inv_bijection_of (adj.hom_bij (R.obj d'.obj) 
+                                                      d'.obj)) (𝟙 (R.obj d'.obj)) ≫ d'.hom) =
+               (adj.hom_bij (R.obj d'.obj) d).map ((inv_bijection_of (adj.hom_bij 
+                                                      (R.obj d'.obj) d)).map (R.map d'.hom)),
+    rwr inv_bij_r_inv, rwr adj.nat_R, 
+    change (adj.hom_bij (R.obj d'.obj) d'.obj).map 
+                     ((inv_bijection_of (adj.hom_bij (R.obj d'.obj) d'.obj)).map _) ≫ _ = _,
+    rwr inv_bij_r_inv, rwr is_precat.id_comp }
+end
+
+@[hott]
 def adjoint_subobjects {C : Type _} [is_cat C] {D : Type _} [is_cat D] {L : C ⥤ D} {R : D ⥤ C} : 
   Π (adj : adjoint_functors_on_hom L R), is_faithful_functor R ->
     (Π (d : D) (c : subobject (R.obj d)), 
@@ -485,30 +526,10 @@ def adjoint_subobjects {C : Type _} [is_cat C] {D : Type _} [is_cat D] {L : C �
 begin
   intros adj Rff iso_adj_L iso_adj_R d, fapply has_inverse_to_bijection,
   { exact subobj_to_adjoint_subobj adj d },
-  { apply adjoint_subobj_to_subobj adj, 
-    change Π (x y : D), is_set_injective (@precategories.functor.map D _ C _ R x y) at Rff,
-    exact Rff, exact iso_adj_L },
+  { apply adjoint_subobj_to_subobj adj @Rff iso_adj_L },
   { fapply is_set_inverse_of.mk,
-    { intro c, apply eq.inverse, fapply iso_mono_to_equal_subobj, fapply iso_of_monos.mk,
-      { change c.obj ≅ R.obj (L.obj c.obj), exact iso.mk _ (iso_adj_L d c) },
-      { change (adj.hom_bij c.obj (L.obj c.obj)) (𝟙 (L.obj c.obj)) ≫ 
-               R.map (inv_bijection_of (adj.hom_bij c.obj d) c.hom) = _, 
-        rwr <- adj.nat_R, rwr is_precat.id_comp, 
-        change (adj.hom_bij c.obj d).map ((inv_bijection_of (adj.hom_bij c.obj d)).map _) = _, 
-        rwr inv_bij_r_inv  } },
-    { intro d', fapply iso_mono_to_equal_subobj, fapply iso_of_monos.mk,
-      { change L.obj (R.obj d'.obj) ≅ d'.obj, exact iso.mk _ (iso_adj_R d'.obj) },
-      { change (inv_bijection_of (adj.hom_bij (R.obj d'.obj) d'.obj)) (𝟙 (R.obj d'.obj)) ≫ _ =
-               (inv_bijection_of (adj.hom_bij (R.obj d'.obj) d)) (R.map d'.hom),
-        apply (adj.hom_bij (R.obj d'.obj) d).bij.inj, 
-        change (adj.hom_bij (R.obj d'.obj) d) ((inv_bijection_of (adj.hom_bij (R.obj d'.obj) 
-                                                      d'.obj)) (𝟙 (R.obj d'.obj)) ≫ d'.hom) =
-               (adj.hom_bij (R.obj d'.obj) d).map ((inv_bijection_of (adj.hom_bij 
-                                                      (R.obj d'.obj) d)).map (R.map d'.hom)),
-        rwr inv_bij_r_inv, rwr adj.nat_R, 
-        change (adj.hom_bij (R.obj d'.obj) d'.obj).map 
-                     ((inv_bijection_of (adj.hom_bij (R.obj d'.obj) d'.obj)).map _) ≫ _ = _,
-        rwr inv_bij_r_inv, rwr is_precat.id_comp } } }
+    { exact adjoint_subobjects_rinv adj @Rff iso_adj_L d },
+    { exact adjoint_subobjects_linv adj @Rff iso_adj_L iso_adj_R d } }
 end
 
 end categories.adjoints
