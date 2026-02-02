@@ -24,7 +24,7 @@ def group_laws (G : Group) : group_str G :=
 
 /- Groups form a subcategory of the category of monoids. -/
 @[hott, reducible]
-def Group.to_Monoid : Group.{u} -> Monoid_Category :=
+def Group.to_Monoid : Group.{u} -> Monoid :=
   λ G, Monoid.mk G.carrier (monoid.mk G.struct.is_set_carrier G.struct.mul 
                      G.struct.mul_assoc G.struct.one G.struct.one_mul G.struct.mul_one)
 
@@ -237,6 +237,15 @@ begin
   { exact idp }
 end
 
+@[hott]  --[GEVE]
+def Group_to_Set_functor_is_faithful : is_faithful_functor (Group_to_Set_functor) :=
+begin 
+  fapply faithful_is_trans (concrete_forget_functor (Group.to_Monoid)), 
+  { apply @concrete_forget_functor_is_faithful _ _ _ Group.to_Monoid },
+  { apply Monoid_to_Set_functor_is_faithful }  
+end  
+
+/- The unit group is a zero object of the category of groups. -/
 @[hott]
 def init_group_hom (G : Group) : unit_Group ⟶ G :=
 begin
@@ -245,13 +254,25 @@ begin
   { exact idp }
 end
 
-@[hott]  --[GEVE]
-def Group_to_Set_functor_is_faithful : is_faithful_functor (Group_to_Set_functor) :=
-begin 
-  fapply faithful_is_trans (concrete_forget_functor (Group.to_Monoid)), 
-  { apply @concrete_forget_functor_is_faithful _ _ Group.to_Monoid },
-  { apply Monoid_to_Set_functor_is_faithful }  
-end  
+@[hott]
+def term_group_hom (G : Group) : G ⟶ unit_Group :=
+begin
+  fapply group_hom.mk (λ s, unit_Group.struct.one), fapply group_hom_str.mk,
+  { intros m₁ m₂, change _ = group.mul _ _, rwr group.mul_one unit_Group.struct.one },
+  { exact idp }
+end
+
+@[hott, instance]
+def unit_Group_is_zero : categories.colimits.zero Group :=
+begin
+  fapply categories.colimits.zero.mk unit_Group init_group_hom _ term_group_hom,
+  { intros G f g, apply Group_to_Set_functor_is_faithful, 
+    apply eq_of_homotopy, intro h, exact @is_prop.elim One _ _ _ },
+  { intros G f g, apply Group_to_Set_functor_is_faithful, 
+    apply eq_of_homotopy, intro h, 
+    have p : h = unit_Group.struct.one, from @is_prop.elim One _ _ _,
+    rwr p, exact (group_hom_laws f).one_comp ⬝ (group_hom_laws g).one_comp⁻¹ } 
+end
 
 /- We characterize free groups by their universal property. Then we construct
    a free group as the quotient of the type of lists over the set of generators and 
