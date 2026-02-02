@@ -101,7 +101,7 @@ structure is_product (A B P : Type _) :=
   (pair_exists : Π (a : A) (b : B), Σ (p : P), (fst p = a) × (snd p = b))
   (pair_unique : Π (p p' : P), fst p = fst p' -> snd p = snd p' -> p = p')
 
-@[hott]
+@[hott] --[GEVE]
 def cons_product_equiv_product (A B P : Type _) : 
   is_cons_product A B P <-> is_product A B P :=
 begin
