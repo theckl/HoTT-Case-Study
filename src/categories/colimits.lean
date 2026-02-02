@@ -6,7 +6,7 @@ hott_theory
 
 namespace hott
 open hott.eq hott.is_trunc hott.trunc hott.set hott.subset 
-     hott.precategories hott.categories hott.categories.strict 
+     hott.precategories hott.categories hott.categories.strict hott.categories.limits
 
 /- We introduce colimits of diagrams mapped to categories, by using cocones to 
    pick the universal object and encode the universal property.
@@ -584,6 +584,92 @@ begin
     { exact subobj_union_linc _ _ } }
 end
 
+/- We introduce the initial object in a category together with some of its properties; 
+  it exists if the category has colimits. -/
+@[hott]
+class initial (C : Type u) [is_cat.{v} C] := 
+  (init_obj : C)
+  (init_map : Π (c : C), init_obj ⟶ c)
+  (uniq : Π {c : C} (f g : init_obj ⟶ c), f = g)
+
+@[hott, instance]
+def has_initial_of_has_coproduct (C : Type u) [is_cat.{v} C] 
+  [H : has_coproduct (empty_map.{u u} C)] : initial C :=
+begin
+  fapply initial.mk,
+  { exact @copi_obj _ _ _ (empty_map C) H },
+  { intro c, apply copi.desc, intro j, hinduction j },
+  { intros c f g, 
+    let cc := @cofan.mk _ C _ (empty_map.{u u} C) c (λ j : false, false.rec _ j),
+    let lcc := (get_colimit_cocone (discrete.functor (empty_map.{u u} C))).cocone,
+    have mcf : Π j, lcc.π.app j ≫ f = cc.π.app j, from begin intro j, hinduction j end,
+    have mcg : Π j, lcc.π.app j ≫ g = cc.π.app j, from begin intro j, hinduction j end,
+    let p := (get_colimit_cocone (discrete.functor (empty_map.{u u} C))).is_colimit.uniq, 
+    rwr p cc f mcf, rwr p cc g mcg }
+end
+
+@[hott]
+def initial_map_is_epi (C : Type u) [is_cat.{v} C] [H : initial C] {c : C} :
+  Π (f : c ⟶ H.init_obj), is_epi f :=
+begin intros f d g₁ g₂ p, apply H.uniq end
+
+/- A zero object in a category is both initial and terminal, but it can happen that in a category 
+   (for example, the category of sets) there exist both initial and terminal object but they are not equal.
+   Therefore, existence of limits and colimits does not imply the existence of a zero object. -/
+@[hott]
+class zero (C : Type u) [is_cat.{v} C] := 
+  (obj : C)
+  (init_map : Π (c : C), obj ⟶ c)
+  (init_uniq : Π {c : C} (f g : obj ⟶ c), f = g)
+  (term_map : Π (c : C), c ⟶ obj)
+  (term_uniq : Π {c : C} (f g : c ⟶ obj), f = g)
+
+@[hott, instance]
+def zero_is_initial (C : Type u) [is_cat.{v} C] [H : zero C] : initial C :=
+  initial.mk H.obj zero.init_map (@zero.init_uniq _ _ H) 
+
+@[hott, instance]
+def zero_is_terminal (C : Type u) [is_cat.{v} C] [H : zero C] : terminal C :=
+  terminal.mk H.obj zero.term_map H.term_uniq 
+
+@[hott]
+def zero_init_map_is_epi (C : Type u) [is_cat.{v} C] [H : zero C] {c : C} :
+  Π (f : c ⟶ H.obj), is_epi f :=
+begin intros f d g₁ g₂ p, apply H.init_uniq end
+
+@[hott]
+def zero_term_map_is_mono (C : Type u) [is_cat.{v} C] [H : zero C] {c : C} :
+  Π (f : H.obj ⟶ c), is_mono f :=
+begin intros f d g₁ g₂ p, apply H.term_uniq end
+
+@[hott]
+def zero_subobj (C : Type u) [is_cat.{v} C] [H : zero C] {c : C} : subobject c := 
+  subobject.mk H.obj (zero.init_map c) (zero_term_map_is_mono C (zero.init_map c))
+
+@[hott]
+def zero_map {C : Type u} [is_cat.{v} C] [H : zero C] (c d : C) : c ⟶ d :=
+  zero.term_map c ≫ zero.init_map d 
+
 end categories.colimits
+
+open categories.colimits
+
+@[hott]
+class is_kernel {C : Type u} [is_cat.{v} C] [zero C] {c₁ c₂ : C} (f : c₁ ⟶ c₂) (ker : C) :=
+  (equal : is_equalizer f (zero_map c₁ c₂) ker) 
+
+@[hott]
+class is_ker_subobj {C : Type u} [is_cat.{v} C] [zero C] {c₁ c₂ : C} (f : c₁ ⟶ c₂) (ker : subobject c₁) :=
+  (is_ker : is_kernel f ker.obj)
+
+@[hott]
+def ker_subobject {C : Type u} [is_cat.{v} C] [zero C] {c₁ c₂ : C} (f : c₁ ⟶ c₂) {ker : C}
+  [H : is_kernel f ker] : subobject c₁ :=
+@equalizer_as_subobject C _ _ _ _ _ _ H.equal 
+
+@[hott, instance]
+def ker_subobj_is_ker_subobj {C : Type u} [is_cat.{v} C] [zero C] {c₁ c₂ : C} (f : c₁ ⟶ c₂) {ker : C}
+  [H : is_kernel f ker] : is_ker_subobj f (@ker_subobject _ _ _ _ _ f ker H) :=
+begin fapply is_ker_subobj.mk, exact H end
 
 end hott
