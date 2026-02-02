@@ -14,25 +14,24 @@ namespace algebra
    a monomorphism of the underlying sets. So we can construct a subgroup as a subset of a 
    group inheriting the group structure. -/
 @[hott]  --[GEVE]
-def Subgroup (G : Group) := @subobject Group_Category G
+def Subgroup (G : Group) := subobject G
 
 @[hott, instance]
 def subgroup_has_hom (G : Group) : has_hom (Subgroup G) :=
-  by change has_hom (@subobject Group_Category G); apply_instance
+  by change has_hom (subobject G); apply_instance
 
 @[hott, instance]
 def subgroup_has_order (G : Group) : has_order (Subgroup G) :=
-  by change has_order (@subobject Group_Category G); apply_instance
+  by change has_order (subobject G); apply_instance
 
 @[hott, instance]
 def subgroup_is_set (G : Group) : is_set (Subgroup G) :=
-  by change is_set (@subobject Group_Category G); apply_instance
+  by change is_set (subobject G); apply_instance
 
 @[hott]  --[GEVE]
 def group_mon_is_inj {G H : Group.{u}} : Π (f : G ⟶ H), 
-  @is_mono Group_Category _ _ f <-> 
-  @set.is_set_injective (Group_to_Set_functor.obj H) (Group_to_Set_functor.obj G) 
-                        (Group_to_Set_functor.map f) :=
+  is_mono f <-> @set.is_set_injective (Group_to_Set_functor.obj H) (Group_to_Set_functor.obj G) 
+                                      (Group_to_Set_functor.map f) :=
 begin 
   intro f, fapply prod.mk,
   { intro mono_f, apply mono_is_set_inj, intros A g₁ g₂ g_eq, 
@@ -64,9 +63,22 @@ begin
     rwr ((word_quot_Group_is_ind_free_group A).map g₂).2 a,
     change Group_to_Set_functor.map g₁' _ = Group_to_Set_functor.map g₂' _,
     rwr hom_eq₂ },
-  { intro set_inj, 
-    fapply λ H, @mono_is_faithful Group_Category Set_Category Group_to_Set_functor H _ _ f, 
+  { intro set_inj, fapply λ H, @mono_is_faithful _ _ _ _ Group_to_Set_functor H _ _ f, 
     apply Group_to_Set_functor_is_faithful, apply set_inj_is_mono _ set_inj }
+end
+
+@[hott]
+def group_hom_of_fac_mono  {G H K : Group.{u}} (f : G ⟶ H) (i : K ⟶ H) :
+  Π (fac : Σ (g : Group_to_Set_functor.obj G ⟶ Group_to_Set_functor.obj K), 
+       g ≫ Group_to_Set_functor.map i = Group_to_Set_functor.map f), is_mono i -> group_hom_str fac.1 :=
+begin
+  intros fac mono_i, fapply group_hom_str.mk,
+  { intros g₁ g₂, apply (group_mon_is_inj i).1 mono_i,
+    rwr (group_hom_laws _).mul_comp, change (fac.fst ≫ Group_to_Set_functor.map i) _ = 
+                        (fac.fst ≫ Group_to_Set_functor.map i) _ * (fac.fst ≫ Group_to_Set_functor.map i) _, 
+    rwr ap10 fac.2, rwr ap10 fac.2, rwr ap10 fac.2, apply (group_hom_laws _).mul_comp },
+  { apply (group_mon_is_inj i).1 mono_i, change (fac.fst ≫ Group_to_Set_functor.map i) _ = _, rwr ap10 fac.2, 
+    rwr (group_hom_laws _).one_comp, rwr (group_hom_laws _).one_comp }  
 end
 
 @[hott]
@@ -182,7 +194,7 @@ end
 /- Group homomorphisms have images. -/
 @[hott, instance]  --[GEVE]
 def group_hom_has_image {G H : Group.{u}} (f : G ⟶ H) : 
-  @has_image Group_Category _ _ f :=
+  has_image f :=
 begin
   fapply has_image.mk, fapply cat_image.mk, 
   { fapply Subgroup_of_Subset,
@@ -220,9 +232,7 @@ end
 @[hott]  --[GEVE]
 def gen_subgroup {G : Group} (L : Subset (Group_to_Set_functor.obj G)) :
   Subgroup G :=
-@hom.image Group_Category _ _ (is_ind_free_group_of.map 
-            (word_quot_Group_is_ind_free_group _) (pred_Set_map L)).1 
-                               (group_hom_has_image _)
+hom.image (is_ind_free_group_of.map (word_quot_Group_is_ind_free_group _) (pred_Set_map L)).1                                
 
 @[hott]
 def gen_subgroup_subset {G : Group} (L : Subset (Group_to_Set_functor.obj G)) :
@@ -291,9 +301,30 @@ begin
                                                                exact group.one_mul _ end } }
 end
 
-@[hott]  --[GEVE]
+@[hott]
+def group_hom_kernel_subset_is_equalizer {G H : Group} (f : G ⟶ H) :
+  limits.is_equalizer (Group_to_Set_functor.map f) (Group_to_Set_functor.map (trivial_group_hom G H)) 
+                      (pred_Set (λ g : G, to_Prop (Group_to_Set_functor.map f g = 1))) :=
+sorry
+
+@[hott]
+def kernel_subgroup_is_kernel {G H : Group.{u}} (f : G ⟶ H) : 
+  @is_kernel.{u u+1} _ _ unit_Group_is_zero.{u u} _ _ f (kernel_subgroup f).obj :=
+begin
+  fapply is_kernel.mk, fapply limits.is_equalizer.mk (kernel_subgroup f).hom,
+  { apply Group_to_Set_functor_is_faithful, apply eq_of_homotopy, intro a, exact a.2 },
+  { fapply limits.is_limit.mk, 
+    { intro fk, fapply limits.map_of_forks,
+      { fapply group_hom.mk,
+        { sorry },
+        { sorry } },
+      { sorry } },
+    { intros fk fk_map, sorry } }
+end
+
+/-@[hott]  --[GEVE]
 def trivial_kernel_is_mono {G H : Group} (f : G ⟶ H) : 
-  kernel_subgroup f = unit_subgroup G <-> @is_mono Group_Category _ _ f :=
+  kernel_subgroup f = unit_subgroup G <-> is_mono f :=
 begin
   fapply prod.mk,
   { intro ker_eq, apply (group_mon_is_inj _).2, 
@@ -360,7 +391,7 @@ begin
   intros g el, change ↥(g ∈ subset_of_subgroup (Subgroup_of_Subset _ _)), 
   rwr Subgroup_Subset_str, apply prop_to_prop_resize,
   intro i, exact subset_of_subgroup_hom (H_inc i) g el
-end
+end-/
 
 end algebra
 
