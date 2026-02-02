@@ -1,4 +1,4 @@
-import sets.subset hott.types.nat.default hott.types.sigma tuple
+import sets.subset hott.types.nat.default hott.types.sigma types.list
 
 universes u u' v w
 hott_theory
