@@ -1,5 +1,4 @@
-import hott.prop_trunc hott.init hott.types.trunc hott.homotopy.susp prop_logic 
-       sets.subset
+import hott.prop_trunc hott.init hott.types.trunc hott.homotopy.susp sets.subset
 
 universes u v w
 hott_theory
