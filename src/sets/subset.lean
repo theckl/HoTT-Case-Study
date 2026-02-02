@@ -1,4 +1,4 @@
-import prop_logic types2 sets.basic 
+import types.prop_logic sets.basic 
 
 universes u v w
 hott_theory
