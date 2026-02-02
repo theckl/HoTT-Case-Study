@@ -579,8 +579,6 @@ precategories.functor.mk (parallel_pair_obj f g)
 abbreviation fork {C : Type _} [is_cat C] {a b : C} (f g : a ⟶ b) := 
   @cone walking_parallel_pair _ _ _ (parallel_pair f g) 
 
-set_option trace.class_instances false
-
 @[hott] 
 def fork_map {C : Type u} [is_cat.{v} C] {a b : C} {f g : a ⟶ b} (fk : fork f g) :
   ↥(fk.X ⟶ a) := fk.π.app wp_up
@@ -613,7 +611,117 @@ have π : @constant_functor ↥walking_parallel_pair _ C _ c ⟹ parallel_pair f
   nat_trans.mk app naturality,   
 cone.mk c π 
 
+@[hott]
+def fork_of_i_is_fork {C : Type u} [is_cat.{v} C] {a b : C} {f g : a ⟶ b} (fk : fork f g) : 
+  fork.of_i (fork_map fk) (fork_eq fk) = fk :=
+begin
+  hinduction fk, fapply apd011 cone.mk,
+  { exact idp },
+  { apply pathover_of_tr_eq, rwr idp_tr, apply nat_trans_eq,
+    change @wp_pair.rec (λ x, X ⟶ (parallel_pair f g).obj x) _ _ = _,
+    apply eq_of_homotopy, intro wpp, hinduction wpp, exact idp, 
+    change π.app wp_up ≫ f = (cone.mk X π).π.app wp_down, 
+    rwr <- cone.fac _ wp_left }
+end
+
+@[hott] 
+def map_of_forks {C : Type u} [is_cat.{v} C] {a b : C} {f g : a ⟶ b} {fk₁ fk₂ : fork f g} :
+  Π (vmap : fk₁.X ⟶ fk₂.X), vmap ≫ fork_map fk₂ = fork_map fk₁ -> cone_map fk₁ fk₂ :=
+begin
+  intros vmap eq, fapply cone_map.mk vmap,
+  intro j, hinduction j,
+  { exact eq },
+  { change _ ≫ fk₂.π.app wp_down = fk₁.π.app wp_down, rwr <- cone.fac fk₂ wp_left, 
+    rwr <- is_precat.assoc, change (_ ≫ fork_map fk₂) ≫ _ = _, rwr eq, exact cone.fac fk₁ _ } 
+end
+
 /- Limits of parallel pairs are `equalizers`. -/
+@[hott]
+class is_equalizer {C : Type u} [is_cat.{v} C] {a b : C} (f g : a ⟶ b) {c : C} (h : c ⟶ a) :=
+  (eq : h ≫ f = h ≫ g)
+  (limit : is_limit (fork.of_i h eq))
+
+@[hott]
+def fork_lift {C : Type u} [is_cat.{v} C] {a b c : C} {f g : a ⟶ b} (h : c ⟶ a) [H : is_equalizer f g h] 
+  (fk : fork f g) : fk.X ⟶ c := 
+(H.limit.lift fk).v_lift  
+
+@[hott]
+def fork_lift_uniq {C : Type u} [is_cat.{v} C] {a b c : C} {f g : a ⟶ b} {h : c ⟶ a} [H : is_equalizer f g h] 
+  (fk : fork f g) (m : fk.X ⟶ c) : 
+  m ≫ h = fk.π.app wp_up -> m = fork_lift h fk :=
+begin 
+  let equ_cone := fork.of_i h H.eq, 
+  intro p,
+  have m_fac : Π j : walking_parallel_pair, m ≫ equ_cone.π.app j = fk.π.app j, from 
+  begin
+    intro j, hinduction j, 
+    { exact p }, 
+    { change m ≫ equ_cone.π.app wp_down = fk.π.app wp_down,
+      rwr <- cone.fac equ_cone wp_left, 
+      rwr <- cone.fac fk wp_left, rwr <- is_precat.assoc m _ _, 
+      change (m ≫ h) ≫ _ = _, rwr p }
+  end,
+  exact H.limit.uniq fk (cone_map.mk m m_fac),
+end  
+
+@[hott]
+def fork_of_i_is_limit {C : Type u} [is_cat.{v} C] {a b c : C}  {f g : a ⟶ b} (i : c ⟶ a) (w : i ≫ f = i ≫ g)
+  (fac : Π (fk : fork f g), Σ (h : fk.X ⟶ c), h ≫ i = fork_map fk) 
+  (uniq : Π {fk : fork f g} (h₁ h₂ : fk.X ⟶ c) (eq₁ : h₁ ≫ i = fork_map fk) (eq₂ : h₂ ≫ i = fork_map fk), 
+          h₁ = h₂) : is_limit (fork.of_i i w) :=
+begin
+  fapply is_limit.mk,
+  { intro fk, fapply cone_map.mk,
+    { exact (fac fk).1 },
+    { intro j, hinduction j,
+      { exact (fac fk).2 },
+      { change _ ≫ (i ≫ f) = _, rwr <- is_precat.assoc, change _ = fk.π.app wp_down, 
+        rwr <- cone.fac fk wp_left, exact ap (λ h, h ≫ f) (fac fk).2 } } },
+  { intros fk m, fapply uniq,
+    { exact m.fac wp_up },
+    { exact (fac fk).2 } }
+end
+
+/- An equalizer is a subobject of the domain of the parallel pair. -/
+@[hott]
+def equalizer_as_subobject (C : Type u) [is_cat.{v} C] {a b c : C} (f g : a ⟶ b) (h : c ⟶ a)
+  [H : is_equalizer f g h] : @subobject C _ a :=
+begin
+  fapply subobject.mk c h,
+  { intros d e e' Hm, 
+    have Hhe : (e ≫ h) ≫ f = (e ≫ h) ≫ g, from 
+      (is_precat.assoc e h f) ⬝ ap (category_struct.comp e) H.eq ⬝ (is_precat.assoc e h g)⁻¹,
+    have Hhf : e = fork_lift h (fork.of_i (e ≫ h) Hhe), from 
+      fork_lift_uniq (fork.of_i (e ≫ h) Hhe) e rfl,  
+    have Hh'e : (e' ≫ h) ≫ f = (e' ≫ h) ≫ g, from
+      (is_precat.assoc e' h f) ⬝ ap (category_struct.comp e') H.eq ⬝ (is_precat.assoc e' h g)⁻¹,
+    have Hh'f : e' = fork_lift h (fork.of_i (e' ≫ h) Hh'e), from 
+      fork_lift_uniq (fork.of_i (e' ≫ h) Hh'e) e' rfl,
+    rwr Hhf, rwr Hh'f, 
+    let F : Π (h'': d ⟶ a), (h'' ≫ f = h'' ≫ g) -> (d ⟶ c) := 
+                                                     (λ h'' p, fork_lift h (fork.of_i h'' p)),
+    change F (e ≫ h) Hhe = F (e' ≫ h) Hh'e, fapply apd011 F, 
+    exact Hm, apply pathover_of_tr_eq, exact is_set.elim _ _ }
+end  
+
+/- If `F : C ⥤ D` is faithful functors, and if factorisations of a homomorphism in `D` underlying a mono is
+   underlying a homomorphism in `C`, then an object in `C` is an equalizer, if the underlying object in `D` is
+   an equalizer of the underlying homomorphisms. -/
+@[hott]
+def is_equalizer_to_is_equalizer {C : Type _} [is_cat C] {D : Type _} [is_cat D] (F : C ⥤ D) 
+  (ffF : is_faithful_functor F) (mono_fac : Π {c₁ c₂ c : C} (f₁ : c₁ ⟶ c) (f₂ : c₂ ⟶ c) 
+    (g : F.obj c₁ ⟶ F.obj c₂) (mon_f₂ : is_mono f₂), g ≫ F.map f₂ = F.map f₁ -> Σ (h : c₁ ⟶ c₂), F.map h = g) :    
+  Π {e c c' : C} (h₁ h₂ : c ⟶ c') (h : e ⟶ c), is_equalizer (F.map h₁) (F.map h₂) (F.map h) -> 
+                                                 is_equalizer h₁ h₂ h :=
+begin
+  intros e c c' h₁ h₂ h equal, fapply is_equalizer.mk,
+  { apply ffF, rwr functor.map_comp, rwr functor.map_comp, apply equal.eq },
+  { fapply fork_of_i_is_limit,
+    { sorry },
+    { sorry } }  
+end
+
 @[hott]
 class has_equalizer {C : Type u} [is_cat.{v} C] {a b : C} (f g : a ⟶ b) := 
   (has_limit : has_limit (parallel_pair f g))
@@ -623,42 +731,15 @@ instance has_limit_of_has_equalizer {C : Type u} [is_cat.{v} C] {a b : C} (f g :
   [has_equalizer f g] : has_limit (parallel_pair f g) := 
 has_equalizer.has_limit f g 
 
-@[hott]
-def equalizer {C : Type u} [is_cat.{v} C] {a b : C} (f g : a ⟶ b) [has_equalizer f g] :=
-  limit (parallel_pair f g) 
+@[hott, instance]
+def is_equalizer_of_has_equalizer {C : Type u} [is_cat.{v} C] {a b : C} (f g : a ⟶ b)
+  [has_equalizer f g] : is_equalizer f g (fork_map (limit.cone (parallel_pair f g))) :=
+begin
+  fapply is_equalizer.mk, 
+  { exact fork_eq (limit.cone (parallel_pair f g)) },
+  { rwr fork_of_i_is_fork (limit.cone (parallel_pair f g)), exact limitcone_is_limit _ }
+end
 
-@[hott, reducible] 
-def equalizer_map {C : Type u} [is_cat.{v} C] {a b : C} (f g : a ⟶ b) [has_equalizer f g] :
-  equalizer f g ⟶ a := fork_map (limit.cone (parallel_pair f g))    
-
-@[hott] 
-def equalizer_eq {C : Type u} [is_cat.{v} C] {a b : C} (f g : a ⟶ b) [has_equalizer f g] :
-  equalizer_map f g ≫ f = equalizer_map f g ≫ g := fork_eq (limit.cone (parallel_pair f g)) 
-
-@[hott]
-def fork_lift {C : Type u} [is_cat.{v} C] {a b : C} {f g : a ⟶ b} [has_equalizer f g] 
-  (fk : fork f g) : fk.X ⟶ equalizer f g := 
-((get_limit_cone (parallel_pair f g)).is_limit.lift fk).v_lift  
-
-@[hott]
-def fork_lift_uniq {C : Type u} [is_cat.{v} C] {a b : C} {f g : a ⟶ b} [has_equalizer f g] 
-  (fk : fork f g) (m : fk.X ⟶ equalizer f g) : 
-  m ≫ (equalizer_map f g) = fk.π.app wp_up -> m = fork_lift fk :=
-begin 
-  let equ := limit.cone (parallel_pair f g), 
-  intro H,
-  have m_fac : Π j : walking_parallel_pair, m ≫ equ.π.app j = fk.π.app j, from 
-  begin
-    intro j, hinduction j, 
-    { exact H }, 
-    { change m ≫ (limit.cone (parallel_pair f g)).π.app wp_down = fk.π.app wp_down,
-      rwr <- cone.fac (limit.cone (parallel_pair f g)) wp_left, 
-      rwr <- cone.fac fk wp_left, rwr <- is_precat.assoc m _ _, 
-      change (m ≫ equalizer_map f g) ≫ _ = _, rwr H }
-  end,
-  exact (get_limit_cone (parallel_pair f g)).is_limit.uniq fk (cone_map.mk m m_fac),
-end  
-    
 @[hott]
 class has_equalizers (C : Type u) [is_cat.{v} C] := 
   (has_limit_of_shape : has_limits_of_shape walking_parallel_pair C)
@@ -679,31 +760,6 @@ def has_equalizer_of_has_limits_of_shape {C : Type u} [is_cat.{v} C]
 def has_equalizers_of_has_limits (C : Type u) [is_cat.{v} C] [H : has_limits C] : 
   has_equalizers C :=
 has_equalizers.mk (@has_limits.has_limit_of_shape C _ H walking_parallel_pair _)
-
-/- An equalizer is a subobject of the domain of the parallel pair. -/
-@[hott]
-def equalizer_as_subobject (C : Type u) [is_cat.{v} C] {a b : C} (f g : a ⟶ b) 
-  [H : has_equalizer f g] : @subobject C _ a :=
-begin
-  let e := equalizer_map f g, let He : e ≫ f = e ≫ g := equalizer_eq f g,
-  fapply subobject.mk,
-  { exact @equalizer _ _ _ _ f g H},
-  { exact e },
-  { intros d h h' Hm, 
-    have Hhe : (h ≫ e) ≫ f = (h ≫ e) ≫ g, from 
-      (is_precat.assoc h e f) ⬝ ap (category_struct.comp h) He ⬝ (is_precat.assoc h e g)⁻¹,
-    have Hhf : h = fork_lift (fork.of_i (h ≫ e) Hhe), from 
-      fork_lift_uniq (fork.of_i (h ≫ e) Hhe) h rfl,  
-    have Hh'e : (h' ≫ e) ≫ f = (h' ≫ e) ≫ g, from
-      (is_precat.assoc h' e f) ⬝ ap (category_struct.comp h') He ⬝ (is_precat.assoc h' e g)⁻¹,
-    have Hh'f : h' = fork_lift (fork.of_i (h' ≫ e) Hh'e), from 
-      fork_lift_uniq (fork.of_i (h' ≫ e) Hh'e) h' rfl,
-    rwr Hhf, rwr Hh'f, 
-    let F : Π (h'': d ⟶ a), (h'' ≫ f = h'' ≫ g) -> (d ⟶ equalizer f g) := 
-                                                     (λ h'' p, fork_lift (fork.of_i h'' p)),
-    change F (h ≫ e) Hhe = F (h' ≫ e) Hh'e, fapply apd011 F, 
-    exact Hm, apply pathover_of_tr_eq, exact is_set.elim _ _ }
-end  
 
 
 /- The full subcategory on a subtype of a category with limits has limits if the limit
@@ -772,28 +828,16 @@ def subcat_has_products {C : Type u} [is_cat.{v} C] {P : C -> trunctype.{0} -1}
 /- We introduce the terminal object in a category together with some of its properties; 
   it exists if the category has limits. -/
 @[hott]
-structure terminal (C : Type u) [is_cat.{v} C] := 
-  (star : C)
-  (map : Π (c : C), c ⟶ star)
-  (uniq : Π {c : C} (f g : c ⟶ star), f = g)
-
-@[hott]
-class has_terminal (C : Type u) [is_cat.{v} C] := 
-  (str : terminal C) 
-
-@[hott] 
-def terminal_obj (C : Type u) [is_cat.{v} C] [H : has_terminal C] : C :=
-  H.str.star
-
-@[hott]
-def terminal_map {C : Type u} [is_cat.{v} C] [H : has_terminal C] (c : C) :=
-  H.str.map c
+class terminal (C : Type u) [is_cat.{v} C] := 
+  (term_obj : C)
+  (term_map : Π (c : C), c ⟶ term_obj)
+  (uniq : Π {c : C} (f g : c ⟶ term_obj), f = g)
 
 @[hott, instance]
-def has_terminal_of_has_product (C : Type u) [is_cat.{v} C] 
-  [H : has_product (empty_map.{u u} C)] : has_terminal C :=
+def terminal_of_has_product (C : Type u) [is_cat.{v} C] 
+  [H : has_product (empty_map.{u u} C)] : terminal C :=
 begin
-  apply has_terminal.mk, fapply terminal.mk,
+  fapply terminal.mk,
   { exact @pi_obj _ _ _ (empty_map C) H },
   { intro c, apply pi.lift, intro j, hinduction j },
   { intros c f g, 
@@ -808,13 +852,13 @@ begin
 end
 
 @[hott]
-def terminal_map_is_mono (C : Type u) [is_cat.{v} C] [H : has_terminal C] {c : C} :
-  Π (f : terminal_obj C ⟶ c), is_mono f :=
-begin intros f d g₁ g₂ p, exact H.str.uniq g₁ g₂ end
+def terminal_map_is_mono (C : Type u) [is_cat.{v} C] [H : terminal C] {c : C} :
+  Π (f : H.term_obj ⟶ c), is_mono f :=
+begin intros f d g₁ g₂ p, apply H.uniq end
 
 @[hott]
-def term_subobj (C : Type u) [is_cat.{v} C] [H : has_terminal C] {c : C} (f : terminal_obj C ⟶ c) :
-  subobject c := (subobject.mk (terminal_obj C) f (terminal_map_is_mono C f))
+def term_subobj (C : Type u) [is_cat.{v} C] [H : terminal C] {c : C} (f : H.term_obj ⟶ c) :
+  subobject c := (subobject.mk H.term_obj f (terminal_map_is_mono C f))
 
 end categories.limits
 
