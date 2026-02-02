@@ -41,7 +41,7 @@ def Magma_has_mul (M : Magma.{u}) : has_mul M :=
 
 /- The projection map. -/
 @[hott, reducible]
-def Magma.to_Set : Magma.{u} -> Set_Category.{u} :=
+def Magma.to_Set : Magma.{u} -> Set.{u} :=
   λ M : Magma, trunctype.mk M.carrier M.is_set_carrier
 
 /- The homomorphism system over the projection map. -/
@@ -64,11 +64,11 @@ end
 
 /- Descriptions of the fibers of `Magma.to_Set` as a Σ-type: the object system. -/
 @[hott]
-def Set_Magma_str : Set_Category.{u} -> Type u := 
+def Set_Magma_str : Set.{u} -> Type u := 
   λ (carrier : Set.{u}), carrier -> carrier -> carrier
 
 @[hott, instance]
-def Set_Magma_str_is_set : Π (M : Set_Category.{u}), is_set (Set_Magma_str M) :=
+def Set_Magma_str_is_set : Π (M : Set.{u}), is_set (Set_Magma_str M) :=
 begin 
   intro M, change is_set (M.carrier -> M.carrier -> M.carrier), apply_instance
 end
@@ -89,7 +89,7 @@ def Magma_fibs_are_cat : sigma_fibs_are_cat Set_Magma_str :=
 /- To construct a `concrete_sigma_system` on magmas, we need an equivalence with the 
    dependent type given by `Set_Magma_str`, factorizing the forgetful map to `Set`. -/
 @[hott]
-def Magma_eqv_Magma_str : (Σ (M : Set_Category.{u}), Set_Magma_str M) ≃ Magma :=
+def Magma_eqv_Magma_str : (Σ (M : Set.{u}), Set_Magma_str M) ≃ Magma :=
 begin
   fapply equiv.mk,
   { intro M_str, hinduction M_str with M M_str, hinduction M with M is_set_M, 
@@ -102,7 +102,7 @@ begin
 end
 
 @[hott]
-def Magma_Set_proj_homotopy : Π (M_str : Σ (M : Set_Category.{u}), Set_Magma_str M),
+def Magma_Set_proj_homotopy : Π (M_str : Σ (M : Set.{u}), Set_Magma_str M),
   sigma.fst M_str = Magma.to_Set (Magma_eqv_Magma_str M_str) :=
 begin
   intro M_str, hinduction M_str with M str, hinduction M with M is_set_M,
@@ -145,7 +145,7 @@ def Magma_Category : Category :=
    as a full subcategory. We show the injectivity of the projection from semigroups to 
    magmas via a characterisation of semigroups as a Σ-type over magmas. -/
 @[hott, reducible]
-def Semigroup.to_Magma : Semigroup.{u} -> Magma_Category :=
+def Semigroup.to_Magma : Semigroup.{u} -> Magma :=
   λ SG, Magma.mk SG.carrier SG.struct.is_set_carrier SG.struct.mul
 
 @[hott, reducible]
@@ -183,7 +183,7 @@ def Semigroup_Category : Category :=
 
 /- Monoids extend semigroups by a one-element satisfying the usual laws. -/
 @[hott, reducible, hsimp]
-def Monoid.to_Semigroup : Monoid.{u} -> Semigroup_Category.{u} :=
+def Monoid.to_Semigroup : Monoid.{u} -> Semigroup.{u} :=
   λ M, Semigroup.mk M (monoid.to_semigroup M)
 
 @[hott, reducible, instance]
@@ -200,13 +200,13 @@ begin
 end
 
 @[hott]
-def Semigroup_Monoid_str : Semigroup_Category.{u} -> Type u := 
+def Semigroup_Monoid_str : Semigroup.{u} -> Type u := 
   λ SG, Σ (one : SG.carrier), (Π (m : SG.carrier), (one * m = m)) × 
                                                     (Π (m : SG.carrier), (m * one = m))
 
 @[hott, instance]
 def Semigroup_Monoid_str_is_set : 
-  Π SG : Semigroup_Category.{u}, is_set (Semigroup_Monoid_str SG) := 
+  Π SG : Semigroup.{u}, is_set (Semigroup_Monoid_str SG) := 
 begin 
   intro SG, change is_set Σ (one : SG.carrier), (Π (m : SG.carrier), (one * m = m)) × 
                                                 (Π (m : SG.carrier), (m * one = m)),
@@ -244,7 +244,7 @@ begin
 end
 
 @[hott]
-def Monoid_Semigroup_proj_homotopy : Π (M_str : Σ (M : Semigroup_Category.{u}), 
+def Monoid_Semigroup_proj_homotopy : Π (M_str : Σ (M : Semigroup.{u}), 
   Semigroup_Monoid_str M), sigma.fst M_str = 
                           Monoid.to_Semigroup (Semigroup_Monoid_str_eqv_Monoid M_str) :=
 begin
@@ -354,10 +354,10 @@ end
 def Monoid_to_Set_functor_is_faithful : is_faithful_functor (Monoid_to_Set_functor) :=
 begin 
   fapply faithful_is_trans (concrete_forget_functor (Monoid.to_Semigroup)), 
-  { apply @concrete_forget_functor_is_faithful _ _ Monoid.to_Semigroup },
+  { apply @concrete_forget_functor_is_faithful _ _ _ Monoid.to_Semigroup },
   { fapply faithful_is_trans, 
-    { apply @concrete_forget_functor_is_faithful _ _ Semigroup.to_Magma },
-    { apply @concrete_forget_functor_is_faithful _ _ Magma.to_Set } }  
+    { apply @concrete_forget_functor_is_faithful _ _ _ Semigroup.to_Magma },
+    { apply @concrete_forget_functor_is_faithful _ _ _ Magma.to_Set } }  
 end  
 
 /- We show that commutative monoids form a concrete category over the concrete category 
@@ -365,7 +365,7 @@ end
    commutative monoids to monoids via a characterisation of commutative monoids as a 
    Σ-type over monoids. -/
 @[hott, reducible]
-def CommMonoid.to_Monoid : CommMonoid.{u} -> Monoid_Category :=
+def CommMonoid.to_Monoid : CommMonoid.{u} -> Monoid :=
   λ CM, Monoid.mk CM (comm_monoid.to_monoid CM)
 
 @[hott, reducible]
