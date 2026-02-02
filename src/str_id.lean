@@ -1,0 +1,352 @@
+import hott.init hott.hit.trunc hott.types.trunc hott.types.nat.order init2 
+
+universes u v w
+hott_theory
+
+namespace hott
+open hott.is_equiv hott.is_trunc hott.trunc 
+
+/- We use Egbert Rijke's insight that the main tool to deal with identity types in 
+   HoTT is the Structure Identity Principle for Σ-types [Rijke-Book, Thm.11.6.2]. 
+   It is the dependent version of the Fundamental Theorem of identity types
+   [Thm.11.2.2] which characterizes the identity types of a type by identity
+   systems which are type families with the same inductive properties as identity: 
+   The fibers of such a type family are equivalent to the identity types if the 
+   total space of the type family is contractible. See also [HoTT-Book, Ch.5.8]. -/
+@[hott]
+structure ppred {A : Type _} (a₀ : A) := 
+  (fam : A -> Type _)
+  (base : fam a₀)
+
+attribute [reducible] ppred.fam
+
+@[hott]
+def id_ppred {A : Type _} (a₀ : A) : ppred a₀ :=
+  @ppred.mk A a₀ (λ a : A, a₀ = a) (idpath a₀) 
+
+@[hott] 
+structure ppmap {A : Type _} {a₀ : A} (R S : ppred a₀) := 
+  (fam_map : Π (a : A), R.fam a -> S.fam a)
+  (base_map : fam_map a₀ R.base = S.base) 
+
+@[hott]
+def is_id_system {A : Type _} {a₀ : A} (R : ppred a₀) := 
+  Π (D : Π (a : A), R.fam a -> Type _) (d₀ : D a₀ R.base),
+      Σ (f : Π (a : A) (r : R.fam a), D a r), (f a₀ R.base = d₀) 
+
+@[hott]
+def id_type_fam_is_id_sys {A : Type _} {a₀ : A} : is_id_system (id_ppred a₀) :=
+begin 
+  intros D d, fapply dpair, 
+  { intros a p, hinduction p, exact d },
+  { refl }
+end
+
+@[hott]
+def is_prop_is_id_sys {A : Type _} {a₀ : A} (R : ppred a₀) :
+  is_prop (is_id_system R) :=
+begin
+  fapply is_prop.mk, intros is_id_sys_R is_id_sys_R',
+  fapply eq_of_homotopy2, intros D d, 
+  let D_eq := λ a r, (is_id_sys_R D d).1 a r = (is_id_sys_R' D d).1 a r,
+  let d_eq := (is_id_sys_R D d).2 ⬝ (is_id_sys_R' D d).2⁻¹,                                     
+  fapply sigma.sigma_eq, 
+  { fapply eq_of_homotopy2, intros a r,
+    exact (is_id_sys_R D_eq d_eq).1 a r },
+  { apply @po_of_po_apd100 _ _ D _ _ (λ d' : D a₀ R.2, d' = d), 
+    let H : (is_id_sys_R D d).1 ~2 (is_id_sys_R' D d).1 
+          := λ (a : A) (r : R.fam a), (is_id_sys_R D_eq d_eq).1 a r,
+    change _ =[apd100 (eq_of_homotopy2 H) a₀ R.base] _,
+    rwr apd100_eq_of_hty2_inv H a₀ R.base, apply eq_con_po_eq,
+    have q : (is_id_sys_R D_eq d_eq).1 a₀ R.base = d_eq, from
+      (is_id_sys_R D_eq d_eq).2,      
+    have p : H a₀ R.base = d_eq, by 
+      change (is_id_sys_R _ _).1 a₀ R.base = _; rwr q,
+    rwr p, hsimp }
+end  
+
+@[hott]
+structure id_system {A : Type _} (a₀ : A) := 
+  (ppred : ppred a₀) 
+  (is_id_sys : is_id_system ppred)
+
+/- We split up the implications between the properties of the Fundamental 
+   Theorem of Identity as in the proof of [Rijke-Book, Thm.11.2.2].
+   The properties are all propositions, hence equivalent, but this 
+   seems not needed in the applications. -/
+@[hott]
+def tot_space_contr_id_sys {A : Type _} {a₀ : A} (R : ppred a₀) : 
+  is_contr (Σ (a : A), R.fam a) -> is_id_system R :=
+begin 
+  intros contr D d, 
+  let D' : (Σ (a : A), R.fam a) -> Type _ := λ (ar : Σ (a : A), R.fam a), D ar.1 ar.2,
+  have p : Π (u : Σ (a : A), R.fam a), u = ⟨a₀, R.base⟩, from 
+    assume u, @eq_of_is_contr _ contr _ _,
+  have q : p ⟨a₀, R.base⟩ = idp, from @prop_eq_of_is_contr _ contr _ _ _ _,  
+  fapply dpair, 
+  { exact λ (a : A) (r : R.fam a), (p ⟨a, r⟩)⁻¹ ▸[D'] d },
+  { apply inv_tr_eq_of_eq_tr, rwr q }
+end  
+
+@[hott]
+def id_sys_tot_space_contr {A : Type _} {a₀ : A} (R : ppred a₀) : 
+  is_id_system R -> is_contr (Σ (a : A), R.1 a) :=
+begin 
+  intro is_id_sys_R, fapply is_contr.mk,
+  { exact ⟨a₀, R.base⟩ },
+  { let D : Π (a : A), R.fam a -> Type _ := λ a r, 
+                            @dpair A R.fam a₀ R.base = ⟨a, r⟩, 
+    intro dp, hinduction dp with a r, 
+    exact (is_id_sys_R D idp).1 a r }
+end
+
+/- We need some facts on families of equivalences, see [Rijke-Book, 11.1]. -/
+@[hott] --[Rijke-Book, Thm.11.1.3.(i)=>(ii)] = [HoTT-Book, Thm.4.7.7]
+def fam_eqv_tot_map_eqv {A : Type _} {B C : A -> Type _} 
+  (f : Π a : A, B a -> C a) : 
+  (Π a : A, is_equiv (f a)) -> is_equiv (sigma.total f) :=
+λ fib_eqv, @is_equiv_total_of_is_fiberwise_equiv _ _ _ f fib_eqv
+
+@[hott] --[Rijke-Book, Thm.11.1.3.(ii)=>(i)] = [HoTT-Book, Thm.4.7.7]
+def tot_map_eqv_fam_eqv {A : Type _} {B C : A -> Type _} 
+  (f : Π a : A, B a -> C a) : 
+  is_equiv (sigma.total f) -> (Π a : A, is_equiv (f a)) :=
+λ tot_eqv, @is_fiberwise_equiv_of_is_equiv_total _ _ _ f tot_eqv 
+
+/- Now we can show the second pair of implications in [Rijke-Book, Thm.11.2.2]. 
+   In particular, we can apply them to the canonical maps from the identity
+   pointed predicate to arbitrary pointed predicates. -/
+@[hott, reducible]
+def can_ppmap {A : Type _} {a₀ : A} (R : ppred a₀) : 
+  ppmap (id_ppred a₀) R :=
+⟨λ (a : A) (p : a₀ = a), p ▸[λ a : A, R.fam a] R.base, idp⟩  
+
+@[hott]
+def ppmap_id_eqv_tot_space_contr {A : Type _} {a₀ : A} (R : ppred a₀) : 
+  Π (f : ppmap (id_ppred a₀) R), (Π (a : A), is_equiv (f.fam_map a)) ->
+  is_contr (Σ (a : A), R.fam a) := 
+begin
+  intros f f_eqv, 
+  have F : (Σ (a : A), a₀ = a) ≃ (Σ (a : A), R.fam a), from
+    equiv.mk (sigma.total f.fam_map) (fam_eqv_tot_map_eqv f.fam_map f_eqv),
+  exact is_trunc_equiv_closed -2 F (is_contr_tot_peq a₀)  
+end
+
+@[hott]
+def ppmap_id_eqv_tot_space_contr' {A : Type _} {a₀ : A} (R : ppred a₀) : 
+  Π eqv_fam : Π (a : A), (a₀ = a) ≃ (R.fam a), eqv_fam a₀ idp = R.base -> 
+    is_contr (Σ (a : A), R.fam a) := 
+begin
+  intros eqv_fam base_eq,
+  fapply ppmap_id_eqv_tot_space_contr R, 
+  { fapply ppmap.mk,
+    { intro a, exact eqv_fam a },
+    { exact base_eq } },
+  { intro a, exact (eqv_fam a).to_is_equiv }
+end
+
+@[hott]
+def tot_space_contr_ppmap_id_eqv {A : Type _} {a₀ : A} (R : ppred a₀) : 
+  Π (f : ppmap (id_ppred a₀) R), is_contr (Σ (a : A), R.fam a) -> 
+  Π (a : A), is_equiv (f.fam_map a) := 
+begin
+  intros f contr_tot_R, apply tot_map_eqv_fam_eqv, 
+  apply @is_equiv_of_is_contr _ _ (is_contr_tot_peq a₀) contr_tot_R
+end
+
+@[hott]
+def tot_space_contr_ppmap_id_eqv' {A : Type _} {a₀ : A} (R : ppred a₀) : 
+  (ppmap (id_ppred a₀) R) -> is_contr (Σ (a : A), R.fam a) -> 
+  Π (a : A), (a₀ = a) ≃ (R.fam a) :=
+begin
+  intros f contr_tot_R, intro a, 
+  exact equiv.mk (f.fam_map a) (tot_space_contr_ppmap_id_eqv R f contr_tot_R a)
+end
+
+/- In HoTT3, types with structures are usually defined as `structure`, 
+   not Σ-types. Therefore, we need to provide equivalences of structures 
+   with Σ-types before we can apply the Structure Identity Principle 
+   on types with structure. The proof follows that of [Rijke-Book, Thm.11.6.2], 
+   splitting up the Fundamental Identity Theorem for Σ-Types into 
+   checks for pointed predicates over objects of the Σ-type with 
+   fixed first component and over objects of the first component. -/
+@[hott]
+structure dep_ppred {A : Type _} (a₀ : A) {B : A -> Type _} (b₀ : B a₀) :=
+  (ppred_fst : ppred a₀)
+  (dep_fam : Π (a : A), B a -> ppred_fst.fam a -> Type _) 
+  (dep_base : dep_fam a₀ b₀ ppred_fst.base) 
+
+attribute [reducible] dep_ppred.dep_fam
+
+@[hott]
+def is_dep_id_system {A : Type _} {a₀ : A} {B : A -> Type _} 
+  {b₀ : B a₀} (R : dep_ppred a₀ b₀) := 
+is_id_system (@ppred.mk _ b₀ (λ (b : B a₀), 
+               R.dep_fam a₀ b R.ppred_fst.base) R.dep_base)  
+
+@[hott]
+structure dep_id_system {A : Type _} {a₀ : A} {B : A -> Type _} 
+  {b₀ : B a₀} :=
+(dep_ppred : dep_ppred a₀ b₀)
+(id_sys_fst : is_id_system dep_ppred.ppred_fst)  
+(is_dep_id_sys : is_dep_id_system dep_ppred)
+
+/- We only need to show one equivalence between characterizations of 
+   the identities in Σ-Types and identities of objects of the Σ-type 
+   with fixed first component: the contractibility of the total space
+   of the pairs with fixed first component and the contractibility of 
+   the total space of the associated pointed predicate on the Σ-type. 
+   
+   The other equivalences are consequences of the equivalences in the 
+   Fundamental Identity Theorem: We just include that dependent 
+   identity systems give rise to identity systems on the Σ-type and
+   vice versa, and state the criterion to produce equivalences from
+   contractibility. -/
+@[hott]
+def struct_id_eqv₁ {A : Type _} {a₀ : A} {B : A -> Type _} 
+  {b₀ : B a₀} (R : dep_ppred a₀ b₀) 
+  (id_sys_fst : is_id_system R.ppred_fst) :
+  (Σ (b : B a₀), R.dep_fam a₀ b R.ppred_fst.base) ≃
+              (Σ (dp : Σ (a : A), R.ppred_fst.fam a), 
+                 Σ (b : B dp.1), R.dep_fam dp.1 b dp.2) :=
+begin
+  let ceq : @center _ (id_sys_tot_space_contr R.ppred_fst id_sys_fst) =
+             ⟨a₀, R.ppred_fst.base⟩ := idp,
+  let ppred_fst_eq : Π (ac : Σ (a : A), R.ppred_fst.fam a),
+        ac = ⟨a₀, R.ppred_fst.base⟩, by intro ac; 
+    exact @eq_of_is_contr _ (id_sys_tot_space_contr R.ppred_fst 
+                             id_sys_fst) _ _,
+  have p : ppred_fst_eq ⟨a₀, R.ppred_fst.base⟩ = idp, from 
+    @prop_eq_of_is_contr _ (id_sys_tot_space_contr R.ppred_fst 
+                            id_sys_fst) _ _ _ _,                         
+  let f := λ (ac : Σ (a : A), R.ppred_fst.fam a) 
+             (bd : Σ (b : B ac.1), R.dep_fam ac.1 b ac.2),
+             (ppred_fst_eq ac) ▸[λ (ac : Σ (a : A), R.ppred_fst.fam a), 
+                        (Σ (b : B ac.1), R.dep_fam ac.1 b ac.2)] bd,              
+  fapply equiv.mk,
+    { intro dpB, exact ⟨⟨a₀, R.ppred_fst.base⟩, dpB⟩ },
+    { fapply adjointify, 
+      { intro dpR1, exact f dpR1.1 dpR1.2 },
+      { intro ptR, hinduction ptR with ptd ptB, 
+        hinduction ptd with a ca, 
+        hinduction ptB with b bR, hsimp, fapply sigma.sigma_eq,
+        exact (ppred_fst_eq ⟨a, ca⟩)⁻¹, hsimp, 
+        apply pathover_of_tr_eq, apply inv_tr_eq_of_eq_tr, refl }, 
+      { intro ptB, hinduction ptB with b bR, hsimp, 
+        change (ppred_fst_eq ⟨a₀, R.ppred_fst.base⟩) ▸ _ = _, 
+        rwr p } }
+end
+
+@[hott]
+def struct_id_eqv₂ {A : Type _} {a₀ : A} {B : A -> Type _} 
+  {b₀ : B a₀} (R : dep_ppred a₀ b₀) :
+  (Σ (dp : Σ (a : A), R.ppred_fst.fam a), 
+                 Σ (y : B dp.1), R.dep_fam dp.1 y dp.2) ≃
+           (Σ (dp : Σ (a : A), B a), 
+            Σ (c : R.ppred_fst.fam dp.1), R.dep_fam dp.1 dp.2 c) :=
+begin
+  fapply equiv.mk,
+  { intro tup, exact ⟨⟨tup.1.1, tup.2.1⟩, ⟨tup.1.2, tup.2.2⟩⟩ },
+  { fapply adjointify, 
+    { intro tup, exact ⟨⟨tup.1.1, tup.2.1⟩, ⟨tup.1.2, tup.2.2⟩⟩ },
+    { intro tup, hsimp, hinduction tup with tup₁ tup₂, 
+      hinduction tup₁ with a c, hinduction tup₂ with b d, hsimp },
+    { intro tup, hsimp, hinduction tup with tup₁ tup₂, 
+      hinduction tup₁ with a b, hinduction tup₂ with c d, hsimp } }
+end
+
+@[hott]
+def struct_id_dep_contr_to_contr {A : Type _} {a₀ : A} {B : A -> Type _} 
+  {b₀ : B a₀} (R : dep_ppred a₀ b₀) 
+  (id_sys_fst : is_id_system R.ppred_fst) : 
+  is_contr (Σ (b : B a₀), R.dep_fam a₀ b R.ppred_fst.base) ->
+  is_contr (Σ (dp : Σ (a : A), B a), 
+            Σ (c : R.ppred_fst.fam dp.1), R.dep_fam dp.1 dp.2 c) :=
+begin
+  intro contr₁, fapply @is_trunc_equiv_closed (Σ (b : B a₀), R.dep_fam a₀ b R.ppred_fst.base), 
+  exact (struct_id_eqv₁ R id_sys_fst) ⬝e (struct_id_eqv₂ R), 
+  exact contr₁
+end  
+
+@[hott]
+def struct_id_contr_to_dep_contr {A : Type _} {a₀ : A} {B : A -> Type _} 
+  {b₀ : B a₀} (R : dep_ppred a₀ b₀) 
+  (id_sys_fst : is_id_system R.ppred_fst) : 
+  is_contr (Σ (dp : Σ (a : A), B a), 
+            Σ (c : R.ppred_fst.fam dp.1), R.dep_fam dp.1 dp.2 c) ->
+  is_contr (Σ (b : B a₀), R.dep_fam a₀ b R.ppred_fst.base)
+  :=
+begin
+  intro contr₂, 
+  exact is_trunc_equiv_closed_rev -2 ((struct_id_eqv₁ R id_sys_fst) ⬝e 
+                                  (struct_id_eqv₂ R)) contr₂
+end 
+
+@[hott]
+def struct_id_dep_id_sys_eqv {A : Type _} {a₀ : A} {B : A -> Type _} 
+  {b₀ : B a₀} (R : dep_ppred a₀ b₀) 
+  (id_sys_fst : is_id_system R.ppred_fst) : (is_dep_id_system R) ↔
+  (is_id_system (@ppred.mk (Σ (a : A), B a) ⟨a₀, b₀⟩ 
+    (λ dp, Σ (c : R.ppred_fst.fam dp.1), R.dep_fam dp.1 dp.2 c) 
+    ⟨R.ppred_fst.base, R.dep_base⟩)) :=
+begin
+  apply pair, 
+  { intro dep_id_sys, apply tot_space_contr_id_sys,
+    apply struct_id_dep_contr_to_contr R id_sys_fst, 
+    exact id_sys_tot_space_contr (@ppred.mk _ b₀ (λ (b : B a₀), 
+      R.dep_fam a₀ b R.ppred_fst.base) R.dep_base) dep_id_sys },
+  { intro id_sys, apply tot_space_contr_id_sys, 
+    apply struct_id_contr_to_dep_contr R id_sys_fst, 
+    exact id_sys_tot_space_contr _ id_sys }
+end    
+
+@[hott,reducible] --[GEVE]
+def struct_id_char_of_contr {A : Type _} {a₀ : A} {B : A -> Type _} 
+  (b₀ : B a₀) (D : dep_ppred a₀ b₀) : 
+  is_contr (Σ (a : A), D.ppred_fst.fam a) -> 
+  is_contr (Σ (b : B a₀), D.dep_fam a₀ b D.ppred_fst.base) ->
+  Π (ab : Σ (a : A), B a), (dpair a₀ b₀ = ab) ≃ 
+       Σ (c : D.ppred_fst.fam ab.1), D.dep_fam ab.1 ab.2 c :=
+begin
+  intros is_contr_fst is_contr_dep ab, fapply equiv.mk,
+  let R := @ppred.mk _ (dpair a₀ b₀) 
+              (λ ab, Σ (c : D.ppred_fst.fam ab.fst), 
+                            D.dep_fam ab.fst ab.snd c) 
+              ⟨D.ppred_fst.base, D.dep_base⟩,
+  { exact (can_ppmap R).fam_map ab },
+  { apply tot_space_contr_ppmap_id_eqv, hsimp,
+    have id_sys_fst : is_id_system D.ppred_fst, from 
+      tot_space_contr_id_sys D.ppred_fst is_contr_fst, 
+    apply struct_id_dep_contr_to_contr D id_sys_fst is_contr_dep }
+end 
+
+@[hott,reducible]
+def struct_id_char_of_contr_idp {A : Type _} {a₀ : A} {B : A -> Type _} 
+  (b₀ : B a₀) (D : dep_ppred a₀ b₀)  
+  (contr : is_contr (Σ (a : A), D.ppred_fst.fam a)) 
+  (contr_dep : is_contr (Σ (b : B a₀), D.dep_fam a₀ b D.ppred_fst.base)) :
+  struct_id_char_of_contr b₀ D contr contr_dep ⟨a₀, b₀⟩ idp = 
+  ⟨D.ppred_fst.base, D.dep_base⟩ :=
+begin 
+  change ((can_ppmap (@ppred.mk _ (dpair a₀ b₀) 
+              (λ ab, Σ (c : D.ppred_fst.fam ab.fst), 
+                            D.dep_fam ab.fst ab.snd c) 
+       ⟨D.ppred_fst.base, D.dep_base⟩)).fam_map ⟨a₀, b₀⟩) idp = _, 
+  hsimp 
+end
+
+/- A useful fact when we want to apply characterizations of identity types -/
+@[hott]
+def obj_char_id_eq {A : Type _} {a₀ : A} {B : A -> Type _}
+  (f : Π {a : A}, (a₀ = a) ≃ B a) : 
+  Π (a : A) (Ha : B a), @f a₀ (refl a₀) =[(@f a)⁻¹ᶠ Ha] Ha :=
+begin
+  intros a Ha, 
+  have Hp : Π (p : a₀ = a), @f a₀ (refl a₀) =[p] @f a p, by
+    intro p; hinduction p; exact idpo, 
+  have HHa : Ha = @f a ((@f a)⁻¹ᶠ Ha), by 
+    rwr is_equiv.right_inv (@f a) Ha,
+  exact concato_eq (Hp ((@f a)⁻¹ᶠ Ha)) HHa⁻¹
+end  
+
+end hott
