@@ -1,53 +1,60 @@
 Compiling files, in order of dependencies:
 ------------------------------------------
-init2       :  1051
-nat2        :   533
-int2        :   347
-types2      :   918 
-nattype     :   327
-prop_axioms :   556         
-prop_logic  :   241  
-tuple       :   164  4137
+hott_def    :    20 Y
+init2       :   443 Y
+types2      :   339 Y
+str_id      :   352 Y 1154
+types
+ nat2       :   363 Y
+ unival_ex  :   194 Y
+ int2       :   347 
+ one_two    :   151 Y
+ nattype    :   327 Y
+ prop_axioms:   556 Y        
+ prop_logic :   241 Y 
+ tuple      :   164 Y
+ list       :   104   2447
 sets
-  basic     :   955         
-  subset    :   819         
+  basic     :   802 Y 
+  examples  :   152 Y       
+  subset    :   819 Y        
   finite    :   481         
-  axioms    :   355         
+  axioms    :   355 Y         
   algebra   :   362         
   quotients :   799  
-  product   :   549  4320   
+  product   :   549 Y 4319   
 categories
-  precat    :   760          
-  basic     :   588         
+  precat    :   760 Y         
+  basic     :   595 Y        
   examples  :   559         
   subobj    :   585
   subcat    :   125         
   adjoints  :   516         
   strict_cat:   399         
   diagrams  :   605         
-  limits    :   821         
-  colimits  :   589         
+  limits    :   863         
+  colimits  :   667         
   pullback  :   907         
   inf_pb    :   252         
   boolean   :   370         
-  sets      :   948  
-  concrete  :   526  8550
+  sets      :   953  
+  concrete  :   526  8672
 algebra
   monoid
    basic    :   432
-   quotient :   726    
+   quotient :   723    
   group        
-   basic    :   569
-   subgroup :   367  
-   quotient :   708 
+   basic    :   590
+   subgroup :   363  
+   quotient :   740 
    abelian  :   465 
   ring
    basic    :   579  
    module   :   480  
    examples :   863
-   submod   :   343  5532
+   submod   :   343  5578
                     -----
-                    22539               
+                    22145               
 
 
 Planned changes in Files, from bottom to top: 
