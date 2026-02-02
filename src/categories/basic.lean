@@ -1,4 +1,4 @@
-import sets.algebra init2 types2 sets.axioms categories.precat
+import categories.precat
 
 universes v v' v'' v''' u u' u'' u''' w 
 hott_theory
@@ -229,6 +229,13 @@ begin
     begin fapply iso_move_lr, exact comp⁻¹ end,
   rwr q, fapply iso_comp_is_iso (iso.mk g_iso.inv _) (iso.mk f f_iso), exact (inv_iso (iso.mk g g_iso)).ih
 end 
+
+@[hott]
+def id_iso_comp_iso {C : Type u} [is_precat.{v} C] {c₁ c₂ : C} : 
+  Π {f : c₁ ⟶ c₂} (g : c₂ ⟶ c₁), is_iso f -> 𝟙 c₁ = f ≫ g -> is_iso g :=
+begin
+  intros f g f_iso comp, fapply @iso_comp_snd_is_iso _ _ _ _ _ (𝟙 c₁) f _ _ f_iso comp, exact (id_iso c₁).ih
+end
 
 /- `idtoiso` commutes with functors -/
 @[hott]
