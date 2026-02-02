@@ -449,16 +449,16 @@ end
 /- We introduce the structure of a subobject classifier and the class of categories with
    such a structure. -/
 @[hott]
-structure subobject_classifier (C : Type u) [is_cat.{v} C] [has_pullbacks C] [has_terminal C] :=
+structure subobject_classifier (C : Type u) [is_cat.{v} C] [has_pullbacks C] [H : terminal C] :=
   (truth_val : C)
-  (true : terminal_obj C ⟶ truth_val)
+  (true : H.term_obj ⟶ truth_val)
   (class_map : Π {c : C} (b : subobject c), c ⟶ truth_val)
   (cart : Π {c : C} (b : subobject c), b = pullback_subobject (class_map b) (term_subobj _ true))
   (uniq : Π {c : C} (b : subobject c) (cl : c ⟶ truth_val),  
             b = pullback_subobject cl (term_subobj _ true) -> cl = class_map b)
 
 @[hott]
-class has_so_classifier (C : Type u) [is_cat.{v} C] [has_pullbacks C] [has_terminal C] :=
+class has_so_classifier (C : Type u) [is_cat.{v} C] [has_pullbacks C] [terminal C] :=
   (so_class : subobject_classifier C)
 
 
