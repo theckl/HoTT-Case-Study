@@ -468,25 +468,25 @@ concrete_fib_cat_to_concrete_cat f
    if we can characterize the fibers of the forgetful map as a category with only one 
    element in each homomorphism set. -/
 @[hott]
-class fib_hom_system {X : Type u} [is_cat.{v+1} X] (B : X -> Type u) :=
+class fib_hom_system {X : Type (u+1)} [is_cat.{v} X] (B : X -> Type u) :=
   (set : Π (x : X), is_set (B x))
   (hom : Π {x : X}, B x -> B x -> Set.{v})
   (unique : Π {x : X} (c d : B x), is_prop (hom c d))
 
 @[hott, instance]
-def fib_has_hom {X : Type u} [is_cat.{v+1} X] (B : X -> Type u) 
+def fib_has_hom {X : Type (u+1)} [is_cat.{v} X] (B : X -> Type u) 
   [H : fib_hom_system B] (x : X) : has_hom (B x) :=
 has_hom.mk (λ c d : B x, (fib_hom_system.hom X c d)) 
 
 /- Equivalences between a type over a category `X` and a type dependent on `X`. -/
 @[hott]
-class concrete_sigma_system {C : Type (u+1)} {X : Type u} [is_cat.{v+1} X] (f : C -> X)
+class concrete_sigma_system {C : Type (u+1)} {X : Type (u+1)} [is_cat.{v} X] (f : C -> X)
   [concrete_hom_system f] (B : X -> Type u) [fib_hom_system B] :=
 (fib_eqv : Π {x : X}, B x ≃ fiber f x) 
 (hom_eqv : Π {x : X} (c d : B x), (c ⟶ d) ≃ ((fib_eqv.to_fun c) ⟶ (fib_eqv.to_fun d)))
 
 @[hott, instance]
-def concrete_sigma_sys_fib_set {C : Type (u+1)} {X : Type u} [is_cat.{v+1} X] (f : C -> X)
+def concrete_sigma_sys_fib_set {C : Type (u+1)} {X : Type (u+1)} [is_cat.{v} X] (f : C -> X)
   [concrete_hom_system f] (B : X -> Type u) [H_fib : fib_hom_system B] 
   [H_sig : concrete_sigma_system f B] : Π (x : X), is_set (fiber f x) :=
 begin 
@@ -496,11 +496,11 @@ begin
 end
 
 @[hott]
-class sigma_fibs_are_cat {X : Type u} [is_cat.{v+1} X] (B : X -> Type u) [fib_hom_system B] :=
+class sigma_fibs_are_cat {X : Type (u+1)} [is_cat.{v} X] (B : X -> Type u) [fib_hom_system B] :=
   (homtoid : ∀ {x : X} {b₁ b₂ : B x}, (b₁ ⟶ b₂) -> b₁ = b₂)
 
 @[hott, instance]
-def concrete_type_with_fib_sys_has_fib_cat {C : Type (u+1)} {X : Type u} [is_cat.{v+1} X] 
+def concrete_type_with_fib_sys_has_fib_cat {C : Type (u+1)} {X : Type (u+1)} [is_cat.{v} X] 
   (f : C -> X) (B : X -> Type u) [fib_hom_system B] [concrete_hom_system f] 
   [H_fB : concrete_sigma_system f B] [H_S : sigma_fibs_are_cat B] : 
   concrete_fibs_are_cat f :=
@@ -518,7 +518,7 @@ begin
 end
 
 @[hott, instance]
-def concrete_type_with_fib_sys_is_cat {C : Type (u+1)} {X : Type u} [is_cat.{v+1} X] 
+def concrete_type_with_fib_sys_is_cat {C : Type (u+1)} {X : Type (u+1)} [is_cat.{v} X] 
   (f : C -> X) (B : X -> Type u) [H_obj : fib_hom_system B] 
   [H_hom : concrete_hom_system f] [concrete_sigma_system f B] [sigma_fibs_are_cat B] : 
 is_cat C := by apply_instance
