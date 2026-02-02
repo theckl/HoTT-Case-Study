@@ -263,17 +263,16 @@ end
    a monomorphism, that is, injective. So we can construct a submonoid as a subset of a 
    monoid inheriting the monoid structure. -/
 @[hott]  --[GEVE]
-def Submonoid (M : Monoid) := @subobject Monoid_Category M
+def Submonoid (M : Monoid) := subobject M
 
 @[hott, instance]
 def submonoid_has_hom (M : Monoid) : has_hom (Submonoid M) :=
-  by change has_hom (@subobject Monoid_Category M); apply_instance
+  by change has_hom (subobject M); apply_instance
 
 @[hott]  --[GEVE]
 def monoid_mon_is_inj {N M : Monoid} : Π (f : N ⟶ M), 
-  @is_mono Monoid_Category _ _ f <-> 
-  @set.is_set_injective (Monoid_to_Set_functor.obj M) (Monoid_to_Set_functor.obj N) 
-                        (Monoid_to_Set_functor.map f) :=
+  is_mono f <-> @set.is_set_injective (Monoid_to_Set_functor.obj M) (Monoid_to_Set_functor.obj N) 
+                                      (Monoid_to_Set_functor.map f) :=
 begin                        
   intro f, apply prod.mk,
   { intro mono_f, intros n₁ n₂ p, 
@@ -291,8 +290,7 @@ begin
                     Monoid_to_Set_functor.map f (Monoid_to_Set_functor.map g₂ [One.star]),
     rwr p₁, rwr p₂, rwr p },
   { intro set_inj, 
-    fapply λ H, @mono_is_faithful Monoid_Category Set_Category Monoid_to_Set_functor H 
-                                  _ _ f, 
+    fapply λ H, @mono_is_faithful _ _ _ _ Monoid_to_Set_functor H _ _ f, 
     apply Monoid_to_Set_functor_is_faithful, apply set_inj_is_mono _ set_inj }
 end 
 
@@ -350,7 +348,7 @@ end
 /- Monoid homomorphisms have images. -/
 @[hott, instance]  --[GEVE]
 def monoid_hom_has_image {M N : Monoid.{u}} (f : M ⟶ N) : 
-  @has_image Monoid_Category.{u} _ _ f :=
+  has_image f :=
 begin  
   fapply has_image.mk, fapply cat_image.mk,
   { fapply Submonoid_of_Subset.{u},
@@ -385,8 +383,7 @@ end
 @[hott]  --[GEVE]
 def gen_submonoid {M : Monoid} (L : Subset (Monoid_to_Set_functor.obj M)) :
   Submonoid M :=
-@hom.image Monoid_Category _ _ (lists_are_free_monoid.map (pred_Set_map L)).1 
-                               (monoid_hom_has_image _)
+hom.image (lists_are_free_monoid.map (pred_Set_map L)).1                                
 
 @[hott]
 def gen_submonoid_min {M : Monoid} (L : Subset (Monoid_to_Set_functor.obj M)) :
