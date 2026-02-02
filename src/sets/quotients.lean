@@ -1,4 +1,4 @@
-import hott.init hott.types.trunc prop_logic hott.types.prod hott.hit.quotient 
+import hott.init hott.types.trunc hott.types.prod hott.hit.quotient 
        hott.algebra.relation sets.axioms
 
 universes u u' v w
