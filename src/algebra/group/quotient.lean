@@ -178,6 +178,19 @@ begin
   { exact idp }
 end
 
+@[hott]
+def subgroup_of_comm_group_is_normal {G : Group} (G_comm : Π (a b : G), a * b = b * a) (H : Subgroup G) :
+  is_normal H :=
+begin
+  fapply conj_el_to_normal, intros h g h_el,
+  have p : g * h * g⁻¹ = h, from 
+    calc g * h * g⁻¹ = h * g * g⁻¹ : by rwr G_comm g h
+         ... = h * (g * g⁻¹) : (group_laws G).mul_assoc _ _ _
+         ... = h * 1 : by rwr Group_left_inv_is_right_inv
+         ... = h : (group_laws G).mul_one h, 
+  rwr p, exact h_el
+end
+
 @[hott, instance]
 def unit_subgroup_is_normal (G : Group) : is_normal (unit_subgroup G) :=
 begin  
@@ -415,17 +428,16 @@ end
 
 @[hott]
 def group_image_is_quot {G H : Group.{u}} (f : G ⟶ H) : 
-  is_group_quotient (@kernel_subgroup G H f) (@hom.image Group_Category _ _ f _).obj :=
+  is_group_quotient (@kernel_subgroup G H f) (hom.image f).obj :=
 begin
   fapply is_group_quotient.mk,
-  { exact @hom_to_image Group_Category _ _ f _ },
+  { exact hom_to_image f },
   { intro h, hinduction h with h im_h, hinduction im_h with fib, 
     apply tr, fapply fiber.mk fib.1, fapply sigma.sigma_eq, 
-    { change (Group_to_Set_functor.map (@hom_to_image Group_Category _ _ f _) ≫
-              Group_to_Set_functor.map (@hom.image Group_Category _ _ f _).hom) 
-                                                                    fib.point = h,
+    { change (Group_to_Set_functor.map (hom_to_image f) ≫ Group_to_Set_functor.map (hom.image f ).hom) 
+                                                                                               fib.point = h,
       rwr <- Group_to_Set_functor.map_comp, 
-      rwr @hom_to_image_eq Group_Category _ _ f _, exact fib.2 },
+      rwr hom_to_image_eq f, exact fib.2 },
     { apply pathover_of_tr_eq, exact is_prop.elim _ _ } },
   { fapply subobj_antisymm,
     { apply subgroup_hom_of_subset, intros h h_el, hinduction h_el with fib,
@@ -434,10 +446,9 @@ begin
       change Group_to_Set_functor.map _ _ = _ at h_eq,
       apply tr, fapply fiber.mk,
       { fapply dpair, exact h', change Group_to_Set_functor.map _ _ = _,
-        rwr <- @hom_to_image_eq Group_Category _ _ f _,
+        rwr <- hom_to_image_eq f,
         rwr Group_to_Set_functor.map_comp,
-        change Group_to_Set_functor.map (@hom.image Group_Category _ _ f _).hom
-               (Group_to_Set_functor.map (@hom_to_image Group_Category _ _ f _) h') = 1,
+        change Group_to_Set_functor.map (hom.image f).hom (Group_to_Set_functor.map (hom_to_image f) h') = 1,
         rwr h_eq },
       { exact idp } },
     { apply subgroup_hom_of_subset, intros h h_el, hinduction h_el with fib,
@@ -446,17 +457,14 @@ begin
       change Group_to_Set_functor.map _ _ = _ at h_eq,
       apply tr, fapply fiber.mk,
       { fapply dpair, exact h', change Group_to_Set_functor.map _ _ = _,
-        rwr <- @hom_to_image_eq Group_Category _ _ f _ at h_eq,
+        rwr <- hom_to_image_eq f at h_eq,
         rwr Group_to_Set_functor.map_comp at h_eq,
-        change Group_to_Set_functor.map (@hom.image Group_Category _ _ f _).hom
-          (Group_to_Set_functor.map (@hom_to_image Group_Category _ _ f _) h') 
-                                                                        = 1 at h_eq,
-        have inj : set.is_set_injective (Group_to_Set_functor.map 
-                                    (@hom.image Group_Category _ _ f _).hom), from
+        change Group_to_Set_functor.map (hom.image f).hom
+                                         (Group_to_Set_functor.map (hom_to_image f) h') = 1 at h_eq,
+        have inj : set.is_set_injective (Group_to_Set_functor.map (hom.image f).hom), from
           begin apply (group_mon_is_inj _).1, exact subobject.is_mono _ end,
         apply inj, 
-        have p : Group_to_Set_functor.map 
-                               (@hom.image Group_Category _ _ f _).hom 1 = 1, from
+        have p : Group_to_Set_functor.map (hom.image f).hom 1 = 1, from
           (group_hom_laws _).one_comp, 
         rwr p, exact h_eq },
       { exact idp } } }
@@ -469,7 +477,7 @@ begin
   { exact 𝟙 G },
   { intro g, apply tr, apply fiber.mk g, exact idp },
   { fapply (trivial_kernel_is_mono _).2,  
-    change @is_mono Group_Category G G (id_iso G).hom, exact isos_are_mono (id_iso _) }
+    change is_mono (id_iso G).hom, exact isos_are_mono (id_iso _) }
 end
 
 /- We define the universal property of a quotient by a normal subgroup and show the
@@ -515,7 +523,7 @@ def group_quotient_factors {G : Group} {H : Subgroup G} [is_normal H]
 begin 
   intros P f H_ker, fapply dpair,
   { apply group_of_monoid_hom, exact (group_mon_quot_fac is_quot f H_ker).1 },
-  { apply @concrete_forget_functor_is_faithful _ _ Group.to_Monoid,
+  { apply concrete_forget_functor_is_faithful Group.to_Monoid,
     rwr (concrete_forget_functor (Group.to_Monoid)).map_comp, 
     change _ = _ ≫ (group_mon_quot_fac is_quot f H_ker).fst,
     let p := (group_mon_quot_fac is_quot f H_ker).2, apply λ q, p ⬝ q, 
@@ -531,8 +539,7 @@ begin
   { exact is_quot.proj },
   { exact is_quot.ker },
   { intros P f H_ker, exact group_quotient_factors is_quot f H_ker },
-  { intros P f₁ f₂ comp_eq, 
-    apply @concrete_forget_functor_is_faithful _ _ Group.to_Monoid,
+  { intros P f₁ f₂ comp_eq, apply concrete_forget_functor_is_faithful Group.to_Monoid,
     have mon_quot_unique : Π (g₁ g₂ : Group.to_Monoid Q ⟶ Group.to_Monoid P), 
       (monoid_to_univ_quotient 
                         _ _ (group_quot_is_monoid_quot H Q is_quot)).proj ≫ g₁ = 
