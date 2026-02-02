@@ -362,15 +362,20 @@ end
 
 /- The category of sets has `One_Set` as terminal object. -/
 @[hott, instance]
-def One_Set_is_terminal : has_terminal Set.{u} :=
+def One_Set_is_terminal : terminal Set.{u} :=
 begin
-  apply has_terminal.mk, fapply terminal.mk, 
+  fapply terminal.mk, 
   { exact One_Set.{u} },
   { intro A, exact λ a : A.carrier, One.star  },
   { intros A f g, apply eq_of_homotopy, intro a, 
     exact @is_prop.elim _ (One_is_prop) _ _ }
 end 
 
+@[hott]
+def term_Set : Set := One_Set_is_terminal.term_obj
+
+@[hott]
+def term_Set_map (A : Set) : A ⟶ term_Set := terminal.term_map A
 
 /- The category of sets has all colimits. 
 
@@ -639,7 +644,7 @@ end
    in the category of sets, the propositions in `Prop` must be in a lower universe.
    Therefore, we only consider sets of `Type u+1` and must resize propositions.  -/
 @[hott]
-def set_true : terminal_obj Set.{u+1} ⟶ Prop_Set.{u} :=
+def set_true : term_Set.{u+1} ⟶ Prop_Set.{u} :=
   assume t, True
 
 @[hott]
@@ -653,7 +658,7 @@ def subset_of_subset_class_map {A : Set.{u+1}} (B : subobject A) :
 begin
   fapply @subobj_antisymm Set.{u+1} _ A B _, 
     { fapply pb_subobj_lift, 
-      { exact terminal_map B.obj },
+      { exact term_Set_map B.obj },
       { apply eq_of_homotopy, intro b, change subset_class_map B (B.hom b) = True,
         fapply inhabited_Prop_eq, 
         { apply prop_to_prop_resize, change ↥(image B.hom (B.hom b)), exact tr ⟨b, idp⟩ },
@@ -695,11 +700,11 @@ begin
   { intros A B, exact subset_of_subset_class_map B },
   { intros A B cl cart_cl, apply eq_of_homotopy, intro a, 
     change _ = prop_resize.{u u+1} (image B.hom a), 
-    let T := terminal_obj.{u+1 u+2} Set.{u+1},
+    let T := term_Set.{u+1},
     let g : ↥(T ⟶ Prop_Set.{u}) := λ (t : ↥T), True.{u},                      
     apply prop_iff_eq, 
     { intro p, apply prop_to_prop_resize, rwr cart_cl, 
-      have H : cl a = (λ (t : (terminal_obj Set.{u+1}).carrier), True.{u}) 
+      have H : cl a = (λ (t : (term_Set.{u+1}).carrier), True.{u}) 
                           One.star, from inhabited_Prop_eq _ _ p true.intro,
       change ↥(image.{u+1 u+1} (pullback_homo_l.{u+2 u+1} cl g) a), 
       rwr set_pullback_homo_l_eq.{u+1} cl g, apply tr, fapply fiber.mk, 
