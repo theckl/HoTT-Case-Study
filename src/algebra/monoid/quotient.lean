@@ -1,4 +1,4 @@
-import sets.product sets.quotients algebra.monoid.basic
+import sets.product algebra.monoid.basic  
 
 universes u u' v w
 hott_theory
@@ -20,11 +20,50 @@ structure is_ind_free_monoid_of (A : Set.{u}) (F : Monoid.{u}) :=
   (unique : Π {M : Monoid.{u}} (g₁ g₂ : F ⟶ M), (Π (a : A), 
       Monoid_to_Set_functor.map g₁ (h a) = Monoid_to_Set_functor.map g₂ (h a)) -> g₁ = g₂)
 
+/- Lists of elements in a set form a set. (Also is in [sets.examples], but import fails.) -/
+@[hott]
+def list_code {A : Set.{u}} : list A -> list A -> Type u
+| []     []      := One
+| []     (a::l)  := Zero
+| (a::l) []      := Zero
+| (a::l) (b::l') := (a = b) × (list_code l l') 
+
+@[hott, instance]
+def list_code_is_prop {A : Set} : Π (l₁ l₂ : list A), is_prop (list_code l₁ l₂)
+| []     []      := by change is_prop One; apply_instance
+| []     (a::l)  := by change is_prop Zero; apply_instance
+| (a::l) []      := by change is_prop Zero; apply_instance
+| (a::l) (b::l') := @prod.is_trunc_prod (a = b) (list_code l l') -1 _ 
+                                        (list_code_is_prop l l')
+
+@[hott]
+def list_refl {A : Set} : Π (l : list A), list_code l l
+| []     := One.star
+| (a::l) := ⟨idp, list_refl l⟩
+
+@[hott]
+def list_decode {A : Set} : Π (l₁ l₂ : list A), list_code l₁ l₂ -> l₁ = l₂
+| []     []      := λ lc, idp 
+| []     (a::l)  := λ lc, by hinduction lc
+| (a::l) []      := λ lc, by hinduction lc
+| (a::l) (b::l') := begin 
+                      intro lc, hinduction lc, 
+                      exact eq.concat (ap (λ a : A, list.cons a l) fst) 
+                               (ap (λ l : list A, list.cons b l) (list_decode l l' snd)) 
+                    end
+
+@[hott, instance]
+def lists_are_set (A : Set) : is_set (list A) :=
+begin 
+  fapply @set.encode_decode_set _ list_code list_refl list_code_is_prop, 
+  intros a b cd, exact list_decode _ _ cd 
+end
+
 @[hott, reducible, instance]
 def lists_are_monoid (A : Set.{u}) : monoid (list A) :=
 begin
   fapply monoid.mk,
-    { exact set.lists_are_set A },
+    { exact lists_are_set A },
     { exact list.append },
     { exact list_append_is_assoc },
     { exact [] },
@@ -48,7 +87,7 @@ begin
   intros l₁ l₂, exact l₁ * l₂ 
 end
 
-@[hott]
+@[hott]  --[GEVE]
 def lists_are_free_monoid {A : Set.{u}} : is_ind_free_monoid_of A (List_Monoid A) :=
 begin 
   fapply is_ind_free_monoid_of.mk,
@@ -385,7 +424,7 @@ def gen_submonoid {M : Monoid} (L : Subset (Monoid_to_Set_functor.obj M)) :
   Submonoid M :=
 hom.image (lists_are_free_monoid.map (pred_Set_map L)).1                                
 
-@[hott]
+@[hott]  --[GEVE]
 def gen_submonoid_min {M : Monoid} (L : Subset (Monoid_to_Set_functor.obj M)) :
   Π (N : Submonoid M), (L ⊆ (subset_of_submonoid N)) -> (gen_submonoid L ⟶ N) :=
 begin
