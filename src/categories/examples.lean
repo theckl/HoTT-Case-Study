@@ -1,4 +1,4 @@
-import sets.algebra init2 sets.axioms categories.basic
+import sets.algebra categories.basic
 
 universes v v' v'' v''' u u' u'' u''' w 
 hott_theory
