@@ -301,7 +301,7 @@ begin
                                                                exact group.one_mul _ end } }
 end
 
-@[hott]
+/-@[hott]
 def group_hom_kernel_subset_is_equalizer {G H : Group} (f : G ⟶ H) :
   limits.is_equalizer (Group_to_Set_functor.map f) (Group_to_Set_functor.map (trivial_group_hom G H)) 
                       (pred_Set (λ g : G, to_Prop (Group_to_Set_functor.map f g = 1))) :=
@@ -322,7 +322,7 @@ begin
     { intros fk fk_map, sorry } }
 end
 
-/-@[hott]  --[GEVE]
+@[hott]  --[GEVE]
 def trivial_kernel_is_mono {G H : Group} (f : G ⟶ H) : 
   kernel_subgroup f = unit_subgroup G <-> is_mono f :=
 begin
