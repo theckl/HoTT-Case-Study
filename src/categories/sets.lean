@@ -1,5 +1,4 @@
-import sets.subset categories.colimits categories.pullback categories.strict_cat
-       categories.boolean
+import sets.quotients categories.strict_cat categories.boolean
 
 universes v v' u u' w
 hott_theory
