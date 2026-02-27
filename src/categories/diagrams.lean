@@ -1,13 +1,11 @@
-import sets.algebra init2 sets.axioms categories.basic 
-       categories.adjoints categories.strict_cat 
+import categories.strict_cat          
 
 universes v v' u u' w 
 hott_theory
 
 namespace hott
 open hott.eq hott.set hott.subset hott.is_trunc hott.is_equiv hott.equiv 
-     hott.precategories hott.categories hott.categories.adjoints
-     hott.categories.strict
+     hott.precategories hott.categories hott.categories.strict
 
 namespace categories                
 
