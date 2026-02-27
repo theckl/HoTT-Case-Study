@@ -1,4 +1,4 @@
-import sets.subset sets.finite sets.axioms hott.types.prod hott.types.nat.sub
+import sets.subset
 
 universes u v w
 hott_theory
@@ -353,10 +353,11 @@ def inc_setminus_inc {A : Set.{u}} (U V W : Subset A) :
 begin intros ss a inc, fapply prod.mk, exact ss a inc.1, exact inc.2 end 
 
 /- Lists of elements of a set define subsets. -/
-@[hott]
+
+/-@[hott]
 def list_to_Subset {S : Set} (l : list S) : Subset S :=
 begin hinduction l with hd tl S', exact empty_Subset S, exact S' ∪ (singleton_sset hd) end
-
+-/
 end subset
 
 end hott
