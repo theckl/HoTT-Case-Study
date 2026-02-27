@@ -1,4 +1,4 @@
-import hott.init hott.types.trunc hott.types.prod init2 types.one_two
+import types.one_two
 
 universes u v w
 hott_theory
