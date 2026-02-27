@@ -28,7 +28,7 @@ def Group.to_Monoid : Group.{u} -> Monoid :=
   λ G, Monoid.mk G.carrier (monoid.mk G.struct.is_set_carrier G.struct.mul 
                      G.struct.mul_assoc G.struct.one G.struct.one_mul G.struct.mul_one)
 
-@[hott, reducible]
+@[hott, reducible]  --[GEVE]
 def Group_eqv_Monoid_inv_law : 
   Group ≃ Σ (M : Monoid.{u}) (inv : M -> M), Π (a : M), (inv a * a) = 1 :=
 begin
@@ -208,7 +208,7 @@ begin
   hinduction f with f mul, exact group_hom_str.mk mul one 
 end  
 
-@[hott]
+@[hott]  --[GEVE]
 def group_hom_inv {G H : Group} (f : G ⟶ H) : 
   Π (g : G), Group_to_Set_functor.map f g⁻¹ = (Group_to_Set_functor.map f g)⁻¹ := 
 begin
@@ -237,7 +237,7 @@ begin
   { exact idp }
 end
 
-@[hott]  --[GEVE]
+@[hott] 
 def Group_to_Set_functor_is_faithful : is_faithful_functor (Group_to_Set_functor) :=
 begin 
   fapply faithful_is_trans (concrete_forget_functor (Group.to_Monoid)), 
