@@ -1,4 +1,4 @@
-import hott.init hott.hit.trunc hott.types.trunc hott.types.nat.order str_id 
+import str_id 
 
 universes u v w
 hott_theory
