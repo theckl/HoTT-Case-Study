@@ -1,6 +1,5 @@
-import sets.algebra categories.examples categories.strict_cat categories.limits 
-       sets.quotients sets.finite
-
+import sets.finite categories.equalize 
+       
 universes v u v' u' w
 hott_theory
 
@@ -655,21 +654,13 @@ end categories.colimits
 open categories.colimits
 
 @[hott]
+class is_ker_subobject {C : Type u} [is_cat.{v} C] [zero C] {c₁ c₂ : C} (f : c₁ ⟶ c₂) (ker : subobject c₁) :=
+  (equal : is_equalizer f (zero_map c₁ c₂) ker.hom) 
+
+@[hott]
 class is_kernel {C : Type u} [is_cat.{v} C] [zero C] {c₁ c₂ : C} (f : c₁ ⟶ c₂) (ker : C) :=
-  (equal : is_equalizer f (zero_map c₁ c₂) ker) 
-
-@[hott]
-class is_ker_subobj {C : Type u} [is_cat.{v} C] [zero C] {c₁ c₂ : C} (f : c₁ ⟶ c₂) (ker : subobject c₁) :=
-  (is_ker : is_kernel f ker.obj)
-
-@[hott]
-def ker_subobject {C : Type u} [is_cat.{v} C] [zero C] {c₁ c₂ : C} (f : c₁ ⟶ c₂) {ker : C}
-  [H : is_kernel f ker] : subobject c₁ :=
-@equalizer_as_subobject C _ _ _ _ _ _ H.equal 
-
-@[hott, instance]
-def ker_subobj_is_ker_subobj {C : Type u} [is_cat.{v} C] [zero C] {c₁ c₂ : C} (f : c₁ ⟶ c₂) {ker : C}
-  [H : is_kernel f ker] : is_ker_subobj f (@ker_subobject _ _ _ _ _ f ker H) :=
-begin fapply is_ker_subobj.mk, exact H end
+  (hom : ker ⟶ c₁)
+  (mon : is_mono hom)
+  (is_ker : is_ker_subobject f (subobject.mk ker hom mon))
 
 end hott
