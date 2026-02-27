@@ -1,4 +1,4 @@
-import categories.limits categories.adjoints
+import categories.limits 
 
 universes v v' u u' w
 hott_theory
