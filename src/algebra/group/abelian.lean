@@ -1,4 +1,4 @@
-import categories.adjoints algebra.group.quotient algebra.group.subgroup
+import algebra.group.quotient 
        
 universes u u' v w
 hott_theory
@@ -48,7 +48,7 @@ begin
     { apply_instance } }
 end
 
-@[hott, instance]
+@[hott, instance]  --[GEVE]
 def AbGroup_is_cat : is_cat AbGroup := 
   full_subcat_is_cat AbGroup.to_Group
 
