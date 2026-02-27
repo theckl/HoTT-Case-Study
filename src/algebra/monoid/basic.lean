@@ -1,11 +1,11 @@
-import hott.algebra.bundled hott.algebra.relation categories.sets categories.concrete
+import hott.algebra.bundled hott.algebra.relation categories.concrete categories.sets
 
 universes u u' v w
 hott_theory
 
 namespace hott
-open trunc is_trunc hott.algebra hott.eq precategories categories hott.is_equiv 
-     categories.sets subset hott.relation
+open trunc is_trunc hott.algebra hott.eq subset precategories categories hott.is_equiv 
+     categories.sets  hott.relation
 
 namespace algebra
 
@@ -321,7 +321,7 @@ structure monoid_hom_str {M N : Monoid} (f : M.carrier -> N.carrier) :=
   (mul_comp : Π (m₁ m₂ : M), f (m₁ * m₂) = f m₁ * f m₂)
   (one_comp : f M.struct.one = N.struct.one) 
 
-@[hott]
+@[hott]  --[GEVE]
 def monoid_hom_laws {M N : Monoid} (f : M ⟶ N) : 
   monoid_hom_str (Monoid_to_Set_functor.map f) :=
 begin
