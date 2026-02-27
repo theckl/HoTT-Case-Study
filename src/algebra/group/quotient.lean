@@ -470,6 +470,7 @@ begin
       { exact idp } } }
 end 
 
+/-
 @[hott]
 def quotient_by_unit_subgroup (G : Group) : is_group_quotient (unit_subgroup G) G :=
 begin  
@@ -479,6 +480,7 @@ begin
   { fapply (trivial_kernel_is_mono _).2,  
     change is_mono (id_iso G).hom, exact isos_are_mono (id_iso _) }
 end
+-/
 
 /- We define the universal property of a quotient by a normal subgroup and show the
    equivalence with the direct definition. -/
@@ -663,6 +665,7 @@ begin
       apply subset_of_subgroup_hom, exact norm_clos.inc } }
 end
 
+/-
 @[hott]
 def normal_inter_closure {G : Group} (H : Subgroup G) : Subgroup G :=
 begin
@@ -690,6 +693,7 @@ begin
     change @iInter_subgroups G I (λ i : I, i.1) ≼ i.1, 
     apply subgroup_iInter }
 end
+-/
 
 @[hott]
 def normal_gen_closure {G : Group} (H : Subgroup G) : Subgroup G :=
