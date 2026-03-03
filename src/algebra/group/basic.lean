@@ -14,7 +14,7 @@ namespace algebra
 @[hott]
 structure group_str (G : Group) :=
   (mul_assoc : Π (g₁ g₂ g₃ : G), (g₁ * g₂) * g₃ = g₁ * (g₂ * g₃))
-  (mul_one : Π g : G, g * 1 = g)
+  (mul_one : Π g : G, g * G.struct.one = g)
   (one_mul : Π g : G, 1 * g = g)
   (mul_left_inv : Π g : G, g⁻¹ * g = 1)
 
@@ -244,6 +244,18 @@ begin
   { apply @concrete_forget_functor_is_faithful _ _ _ Group.to_Monoid },
   { apply Monoid_to_Set_functor_is_faithful }  
 end  
+
+@[hott]
+def conjugate (G : Group) (g : G) : G ⟶ G :=
+begin
+  fapply group_hom.mk (λ h, g * h * g⁻¹), fapply group_hom_str.mk,
+  { intros h₁ h₂, 
+    rwr <- (group_laws _).mul_assoc, rwr <- (group_laws _).one_mul h₂,
+    rwr <- (group_laws _).mul_assoc (g * h₁) 1, rwr (group_laws _).one_mul h₂,
+    rwr <- (group_laws _).mul_left_inv g, rwr <- (group_laws _).mul_assoc (g * h₁) g⁻¹ g,
+    rwr (group_laws _).mul_assoc _ g h₂, rwr (group_laws _).mul_assoc _ _ g⁻¹ },
+  { change g * G.struct.one * g⁻¹ = 1, rwr (group_laws _).mul_one g, apply Group_left_inv_is_right_inv }
+end
 
 /- The unit group is a zero object of the category of groups. -/
 @[hott]
@@ -583,7 +595,7 @@ begin
       rwr <- ql, 
       rwr <- (@is_ind_free_monoid_of.map _ _ (@lists_are_free_monoid _) _ _).2 } },
   { intro H, apply word_quot_Group_unique }
-end 
+end
 
 end algebra
 
