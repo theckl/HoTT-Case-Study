@@ -229,6 +229,10 @@ begin
       rwr q, exact m_fib.2 } } 
 end
 
+@[hott]
+def conjugated_Subgroup {G : Group} (H : Subgroup G) (g : G) : Subgroup G :=
+  hom.image (conjugate G g)
+
 @[hott]  --[GEVE]
 def gen_subgroup {G : Group} (L : Subset (Group_to_Set_functor.obj G)) :
   Subgroup G :=
@@ -301,25 +305,38 @@ begin
                                                                exact group.one_mul _ end } }
 end
 
-/-@[hott]
-def group_hom_kernel_subset_is_equalizer {G H : Group} (f : G ⟶ H) :
-  limits.is_equalizer (Group_to_Set_functor.map f) (Group_to_Set_functor.map (trivial_group_hom G H)) 
-                      (pred_Set (λ g : G, to_Prop (Group_to_Set_functor.map f g = 1))) :=
-sorry
-
-@[hott]
-def kernel_subgroup_is_kernel {G H : Group.{u}} (f : G ⟶ H) : 
-  @is_kernel.{u u+1} _ _ unit_Group_is_zero.{u u} _ _ f (kernel_subgroup f).obj :=
+@[hott]  --[GEVE]
+def kernel_subgroup_is_kernel {G H : Group} (f : G ⟶ H) : 
+  @is_kernel _ _ unit_Group_is_zero _ _ f (kernel_subgroup f).obj :=
 begin
-  fapply is_kernel.mk, fapply limits.is_equalizer.mk (kernel_subgroup f).hom,
-  { apply Group_to_Set_functor_is_faithful, apply eq_of_homotopy, intro a, exact a.2 },
-  { fapply limits.is_limit.mk, 
+  fapply is_kernel.mk, 
+  { exact (kernel_subgroup f).hom }, 
+  { exact (kernel_subgroup f).is_mono }, 
+  { fapply is_ker_subobject.mk, 
+    have eq_eq : (kernel_subgroup f).hom ≫ f = (kernel_subgroup f).hom ≫ colimits.zero_map G H, from 
+    begin 
+      apply Group_to_Set_functor_is_faithful, apply eq_of_homotopy, intro a,
+      rwr Group_to_Set_functor.map_comp, rwr Group_to_Set_functor.map_comp, 
+      change (Group_to_Set_functor.map f) (Group_to_Set_functor.map (kernel_subgroup f).hom a) = 1,
+      exact a.2
+    end,
+    fapply limits.is_equalizer.mk eq_eq, fapply limits.is_limit.mk, 
     { intro fk, fapply limits.map_of_forks,
       { fapply group_hom.mk,
-        { sorry },
-        { sorry } },
-      { sorry } },
-    { intros fk fk_map, sorry } }
+        { intro k, fapply dpair, exact Group_to_Set_functor.map (limits.fork_map fk) k, 
+          change (Group_to_Set_functor.map (limits.fork_map fk) ≫ Group_to_Set_functor.map f) k = 1,
+          rwr <- Group_to_Set_functor.map_comp, rwr limits.fork_eq },
+        { fapply group_hom_str.mk,
+          { intros g₁ g₂, fapply sigma.sigma_eq, 
+            { apply (group_hom_laws _).mul_comp },
+            { apply pathover_of_tr_eq, exact is_set.elim _ _ } },
+          { fapply sigma.sigma_eq, apply (group_hom_laws _).one_comp, 
+            apply pathover_of_tr_eq, exact is_set.elim _ _ } } },
+      { apply Group_to_Set_functor_is_faithful, apply eq_of_homotopy, intro a, exact idp } },
+    { intros fk fk_map, apply (kernel_subgroup f).is_mono, 
+      change _ ≫ (limits.fork.of_i (kernel_subgroup f).hom eq_eq).π.app wp_up = _, rwr fk_map.fac, 
+      change _ = _ ≫ (limits.fork.of_i (kernel_subgroup f).hom eq_eq).π.app wp_up,
+      rwr (limits.map_of_forks _ _).fac } }
 end
 
 @[hott]  --[GEVE]
@@ -352,6 +369,18 @@ begin
     { exact unit_subgroup_is_initial (kernel_subgroup f) } }
 end
 
+
+@[hott]
+def hom_gen_im_subgroup {G G' : Group} (f : G ⟶ G') {H : Subgroup G} 
+  {L : Subset (Group_to_Set_functor.obj G)} : gen_subgroup L = H -> 
+  gen_subgroup (ss_Image (Group_to_Set_functor.map f) L) = hom.image f :=
+begin
+  intro genH, fapply subobj_antisymm, 
+  { apply gen_subgroup_min, intros h himf, hinduction himf with fibh, apply tr,sorry },
+  { sorry }
+end
+
+/-
 @[hott]
 def iInter_subgroups {G : Group.{u}} {I : Set.{v}} (f : I -> Subgroup G) :
   Subgroup G :=
@@ -391,7 +420,7 @@ begin
   intros g el, change ↥(g ∈ subset_of_subgroup (Subgroup_of_Subset _ _)), 
   rwr Subgroup_Subset_str, apply prop_to_prop_resize,
   intro i, exact subset_of_subgroup_hom (H_inc i) g el
-end-/
+end -/
 
 end algebra
 
