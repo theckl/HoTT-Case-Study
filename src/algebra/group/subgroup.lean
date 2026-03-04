@@ -369,15 +369,33 @@ begin
     { exact unit_subgroup_is_initial (kernel_subgroup f) } }
 end
 
+@[hott]
+def fiber_hom_im_hom {G G' : Group} (f : G ⟶ G') (g' : G') : 
+  fiber (Group_to_Set_functor.map (hom.image f).hom) g' -> image (Group_to_Set_functor.map f) g' :=
+begin
+  intro fib, hinduction fib with g_im g_im_eq, hinduction g_im with imf, hinduction snd with fibf,
+  apply tr, rwr <- g_im_eq, exact fibf
+end
 
 @[hott]
 def hom_gen_im_subgroup {G G' : Group} (f : G ⟶ G') {H : Subgroup G} 
   {L : Subset (Group_to_Set_functor.obj G)} : gen_subgroup L = H -> 
-  gen_subgroup (ss_Image (Group_to_Set_functor.map f) L) = hom.image f :=
+  gen_subgroup (ss_Image (Group_to_Set_functor.map f) L) = hom.image (H.hom ≫ f) :=
 begin
-  intro genH, fapply subobj_antisymm, 
-  { apply gen_subgroup_min, intros h himf, hinduction himf with fibh, apply tr,sorry },
-  { sorry }
+  intro genH, 
+  have LssH : ↥(L ⊆ subset_of_subgroup H), from begin rwr <- genH, apply gen_inc_gen_subgroup end,
+  fapply subobj_antisymm, 
+  { apply gen_subgroup_min, intros g' g'imfL, hinduction g'imfL with fibg', apply tr, fapply fiber.mk, 
+    { fapply dpair g', apply tr, rwr Group_to_Set_functor.map_comp, fapply comp_fiber,
+      { exact (fiber_comp fibg').1 },
+      { fapply set.set_inj_image_to_fiber, exact (group_mon_is_inj _).1 H.is_mono, 
+        apply LssH, exact fibg'.1.2 } },
+    { exact idp } },
+  { fapply subgroup_hom_of_subset, intros g' imf_el, hinduction imf_el with fibg', 
+    hinduction fiber_hom_im_hom _ _ fibg' with fg_eq fibg'', 
+    apply tr, fapply fiber.mk, 
+    { sorry },
+    { sorry } }
 end
 
 /-
