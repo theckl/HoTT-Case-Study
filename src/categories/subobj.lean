@@ -422,6 +422,15 @@ begin
     { rwr is_precat.id_comp } } 
 end
 
+@[hott]
+def subobj_trans_hom_to_hom {C : Type _} [is_cat C] {c : C} (a : subobject c) (b b' : subobject a.obj) :
+  (subobj_subobj_trans a b) ≼ (subobj_subobj_trans a b') -> b ≼ b' :=
+begin
+  intro trans_inc, fapply hom_of_monos.mk,
+  { exact trans_inc.hom_obj },
+  { apply a.is_mono, rwr is_precat.assoc, exact trans_inc.fac } 
+end
+
 /- The category of subobjects always has a top element. -/
 @[hott]
 def top_subobject {C : Type _} [is_cat C] (c : C) : subobject c := 
@@ -436,16 +445,31 @@ begin intro a, fapply hom_of_monos.mk, exact a.hom, hsimp end
 def top_subobj_unique {C : Type _} [is_cat C] {c : C} (d : subobject c) :
   (Π (a : subobject c), a ≼ d) -> d = top_subobject c :=
 begin intro max, fapply subobj_antisymm, exact top_subobj_prop d, exact max _ end
- 
+
+@[hott]
+def top_subobj_is_top {C : Type _} [is_cat C] {c : C} (b : subobject c) : b ≼ top_subobject c :=
+begin
+  fapply hom_of_monos.mk b.is_mono (top_subobject c).is_mono b.hom, 
+  change _ ≫ 𝟙 c = _, rwr is_precat.comp_id
+end 
+
+@[hott]
+def trans_top_subobj_subobj {C : Type _} [is_cat C] {c : C} (b : subobject c) :
+  subobj_subobj_trans b (top_subobject b.obj) = b :=
+begin
+  fapply subobj_antisymm, 
+  { fapply hom_of_monos.mk, exact 𝟙 b.obj, change _ = 𝟙 b.obj ≫ _, exact idp },
+  { fapply hom_of_monos.mk, exact 𝟙 b.obj, change _ ≫ (𝟙 b.obj ≫ _) = _, 
+    rwr is_precat.id_comp, rwr is_precat.id_comp }
+end
 
 /- We can define images of homomorphisms as subobjects of their codomain satisfying a 
    minimality property. Note that the factoring homomorphism is unique as the inclusion 
    homomorphism is a monomorphism. -/
 @[hott]
-structure cat_image {C : Type _} [is_cat C] {c d : C} (f : c ⟶ d) :=
-  (subobj : subobject d)
-  (fac : Σ f' : c ⟶ subobj.obj, f' ≫ subobj.hom = f)
-  (univ : Π (a : subobject d), (Σ f' : c ⟶ a.obj, f' ≫ a.hom = f) -> (subobj ≼ a))
+structure is_image {C : Type _} [is_cat C] {c d : C} (f : c ⟶ d) (d' : subobject d) :=
+  (fac : Σ f' : c ⟶ d'.obj, f' ≫ d'.hom = f)
+  (univ : Π (a : subobject d), (Σ f' : c ⟶ a.obj, f' ≫ a.hom = f) -> (d' ≼ a))
 
 @[hott] 
 def subobject_fac_is_unique {C : Type u} [is_cat.{v} C] {c d : C} (f : c ⟶ d) 
@@ -461,61 +485,65 @@ def subobject_fac_is_prop {C : Type u} [is_cat.{v} C] {c d : C} (f : c ⟶ d)
   (a : subobject d) : is_prop (Σ f' : c ⟶ a.obj, f' ≫ a.hom = f) :=
 is_prop.mk (subobject_fac_is_unique f a)  
 
+
 @[hott]
-def cat_image_is_unique {C : Type u} [is_cat.{v} C] {c d : C} (f : c ⟶ d) :
-  Π im₁ im₂ : cat_image f, im₁ = im₂ :=
+def image_is_unique {C : Type u} [is_cat.{v} C] {c d : C} (f : c ⟶ d) {d₁ d₂ : subobject d} :
+  is_image f d₁ -> is_image f d₂ -> d₁ = d₂ :=
 begin
   intros im₁ im₂, 
-  hinduction im₁ with subobj₁ fac₁ univ₁, hinduction im₂ with subobj₂ fac₂ univ₂, 
-  fapply apdd2 cat_image.mk, 
-  { fapply subobj_antisymm, exact univ₁ subobj₂ fac₂, exact univ₂ subobj₁ fac₁ },
-  { apply pathover_of_tr_eq, exact is_prop.elim _ _ },
-  { apply pathover_of_tr_eq, exact is_prop.elim _ _ }
+  hinduction im₁ with fac₁ univ₁, hinduction im₂ with fac₂ univ₂, 
+  fapply subobj_antisymm, exact univ₁ d₂ fac₂, exact univ₂ d₁ fac₁
 end  
 
 @[hott, instance]
-def cat_image_is_prop {C : Type u} [is_cat.{v} C] {c d : C} (f : c ⟶ d) : 
-  is_prop (cat_image f) :=
-is_prop.mk (cat_image_is_unique f)  
+def is_image_is_prop {C : Type u} [is_cat.{v} C] {c d : C} (f : c ⟶ d) (d' : subobject d) : 
+  is_prop (is_image f d') :=
+begin 
+  fapply is_prop.mk, intros is_im₁ is_im₂,
+  hinduction is_im₁ with fac₁ univ₁, hinduction is_im₂ with fac₂ univ₂, 
+  fapply ap011 is_image.mk, apply subobject_fac_is_unique, exact is_prop.elim _ _ 
+end  
 
 @[hott]
 class has_image {C : Type _} [is_cat C] {c d : C} (f : c ⟶ d) :=
-  (exists_im : cat_image f)
+  (im : subobject d)
+  (is_im : is_image f im)
 
 @[hott, instance]
 def has_im_is_prop {C : Type u} [is_cat.{v} C] {c d : C} (f : c ⟶ d) : is_prop (has_image f) :=
 begin 
-  apply is_prop.mk, intros hi₁ hi₂, hinduction hi₁, hinduction hi₂,
-  apply ap has_image.mk, exact is_prop.elim _ _ 
+  apply is_prop.mk, intros hi₁ hi₂, hinduction hi₁ with im₁ is_im₁, hinduction hi₂ with im₂ is_im₂,
+  fapply apd011 has_image.mk, exact image_is_unique f is_im₁ is_im₂, apply pathover_of_tr_eq,
+  exact is_prop.elim _ _ 
 end
 
 @[hott, reducible]
 def hom.image {C : Type u} [is_cat.{v} C] {c d : C} (f : c ⟶ d) [has_image f] : 
   subobject d :=  
-(has_image.exists_im f).subobj
+has_image.im f
 
 @[hott, reducible]
 def hom_to_image {C : Type u} [is_cat.{v} C] {c d : C} (f : c ⟶ d) [has_image f] :
   c ⟶ (hom.image f).obj := 
-(has_image.exists_im f).fac.1  
+(has_image.is_im f).fac.1  
 
 @[hott]
 def hom_to_image_eq {C : Type u} [is_cat.{v} C] {c d : C} (f : c ⟶ d) [has_image f] :
   hom_to_image f ≫ (hom.image f).hom = f := 
-(has_image.exists_im f).fac.2 
+(has_image.is_im f).fac.2 
 
 @[hott]
 def hom_image_univ {C : Type u} [is_cat.{v} C] {c d : C} (f : c ⟶ d) [has_image f] :
   Π (a : subobject d) (f' : c ⟶ a.obj), f' ≫ a.hom = f -> (hom.image f ≼ a) :=
-assume a f' p, (has_image.exists_im f).univ a ⟨f', p⟩ 
+assume a f' p, (has_image.is_im f).univ a ⟨f', p⟩ 
 
 @[hott, instance]
 def subobj_has_im {C : Type u} [is_cat.{v} C] {c : C} (b : subobject c) :
   has_image b.hom :=
-have im_b : cat_image b.hom, from 
-  cat_image.mk b (sigma.mk (𝟙 b.obj) (is_precat.id_comp b.hom)) 
+have im_b : is_image b.hom b, from 
+  is_image.mk (sigma.mk (𝟙 b.obj) (is_precat.id_comp b.hom)) 
                (λ a m, hom_of_monos.mk _ _ m.1 m.2),  
-has_image.mk im_b
+has_image.mk b im_b
 
 @[hott]
 def subobj_is_im {C : Type u} [is_cat.{v} C] {c : C} (b : subobject c) :
@@ -525,7 +553,7 @@ def subobj_is_im {C : Type u} [is_cat.{v} C] {c : C} (b : subobject c) :
 def im_incl {C : Type u} [is_cat.{v} C] {a b c : C} (f : a ⟶ b) (g : b ⟶ c) 
   [has_image (f ≫ g)] [has_image g] : hom.image (f ≫ g) ≼ hom.image g :=
 begin 
-  fapply cat_image.univ, fapply sigma.mk, 
+  fapply is_image.univ (has_image.is_im (f ≫ g)), fapply sigma.mk, 
   { exact f ≫ hom_to_image g }, 
   { rwr is_precat.assoc, rwr hom_to_image_eq g }
 end  
@@ -581,5 +609,58 @@ end
 def has_image_of_has_images {C : Type u} [is_cat.{v} C] [has_images C] {c d : C} 
   (f : c ⟶ d) : has_image f :=
 has_images.has_im f
+
+@[hott]
+def mono_is_image {C : Type u} [is_cat.{v} C] {c d : C} 
+  (f : c ⟶ d) [has_image f] (mon_f : is_mono f) : hom.image f ≅ subobject.mk c f mon_f :=
+begin
+  fapply iso.mk,
+  { apply is_image.univ (has_image.is_im f), apply dpair (𝟙 c), apply is_precat.id_comp },
+  { fapply is_iso.mk,
+    { fapply hom_of_monos.mk, apply hom_to_image, apply hom_to_image_eq },
+    { apply @is_prop.elim _ (is_prop_hom_of_monos _ _) _ _ },
+    { apply @is_prop.elim _ (is_prop_hom_of_monos _ _) _ _ } }
+end  
+
+@[hott]
+def is_surj {C : Type u} [is_cat.{v} C] {c d : C} (f : c ⟶ d) [has_image f] := 
+  hom.image f ≅ top_subobject d 
+
+@[hott]
+def mor_to_im_is_surj {C : Type u} [is_cat.{v} C] {c d : C} (f : c ⟶ d) [has_images C] :
+  is_surj (hom_to_image f) :=
+begin
+  fapply iso.mk,
+  { apply top_subobj_is_top },
+  { fapply is_iso.mk,
+    { apply subobj_trans_hom_to_hom, rwr trans_top_subobj_subobj, fapply hom_image_univ,
+      { apply hom_to_image },
+      { change _ ≫ _ ≫ _ = _, rwr <- is_precat.assoc, rwr hom_to_image_eq, rwr hom_to_image_eq } },
+    { apply @is_prop.elim _ (is_prop_hom_of_monos _ _) _ _ },
+    { apply @is_prop.elim _ (is_prop_hom_of_monos _ _) _ _ } }  
+end
+
+@[hott]
+def surj_mono_surj_iso  {C : Type u} [is_cat.{v} C] [has_images C] {c d e : C} 
+  (f : c ⟶ d) (i : d ⟶ e) : is_surj f -> is_mono i -> is_surj (f ≫ i) -> is_iso i :=
+begin
+  intros surj_f mono_i surj_fi, fapply is_iso.mk,
+  { apply category_struct.comp (is_iso.inv surj_fi.ih).hom_obj, 
+    apply category_struct.comp (im_incl f i).hom_obj, 
+    exact (mono_is_image i mono_i).hom.hom_obj },
+  { rwr is_precat.assoc, rwr is_precat.assoc _ _ i, rwr (mono_is_image i mono_i).hom.fac, 
+    rwr (im_incl f i).fac, rwr surj_fi.ih.inv.fac },
+  { apply mono_i, rwr is_precat.assoc i, rwr is_precat.assoc _ _ i, rwr is_precat.assoc _ _ i,
+    rwr (mono_is_image i mono_i).hom.fac, rwr (im_incl f i).fac, rwr surj_fi.ih.inv.fac, 
+    change i ≫ 𝟙 e = _, rwr is_precat.comp_id, rwr is_precat.id_comp }
+end
+
+@[hott]
+def hom_obj_iso_subobj_eq {C : Type u} [is_cat.{v} C] {c : C} {b b' : subobject c} (i : b ≼ b') :
+  is_iso i.hom_obj -> b = b' :=
+begin
+  intro ih, fapply subobj_antisymm, exact i, fapply hom_of_monos.mk, exact ih.inv,
+  rwr <- i.fac, rwr <- is_precat.assoc, rwr ih.r_inv, exact is_precat.id_comp _
+end
 
 end hott
