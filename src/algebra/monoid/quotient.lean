@@ -1,4 +1,4 @@
-import sets.product algebra.monoid.basic  
+import sets.product algebra.monoid.submonoid  
 
 universes u u' v w
 hott_theory
@@ -8,106 +8,6 @@ open trunc is_trunc hott.algebra hott.eq precategories categories hott.is_equiv
      categories.sets subset hott.relation categories.sets
 
 namespace algebra
-
-/- We characterize free monoids by the recursion principle and by their freely generating
-   constructors, and show that these characterisations imply each other. Then we construct
-   a free monoid as a HIT and as the type of lists over the set of generators. -/
-@[hott]
-structure is_ind_free_monoid_of (A : Set.{u}) (F : Monoid.{u}) :=
-  (h : A -> F)
-  (map : Π {M : Monoid.{u}} (f : A -> M), Σ (g : F ⟶ M), 
-                                     Π (a : A), f a = Monoid_to_Set_functor.map g (h a))
-  (unique : Π {M : Monoid.{u}} (g₁ g₂ : F ⟶ M), (Π (a : A), 
-      Monoid_to_Set_functor.map g₁ (h a) = Monoid_to_Set_functor.map g₂ (h a)) -> g₁ = g₂)
-
-/- Lists of elements in a set form a set. (Also is in [sets.examples], but import fails.) -/
-@[hott]
-def list_code {A : Set.{u}} : list A -> list A -> Type u
-| []     []      := One
-| []     (a::l)  := Zero
-| (a::l) []      := Zero
-| (a::l) (b::l') := (a = b) × (list_code l l') 
-
-@[hott, instance]
-def list_code_is_prop {A : Set} : Π (l₁ l₂ : list A), is_prop (list_code l₁ l₂)
-| []     []      := by change is_prop One; apply_instance
-| []     (a::l)  := by change is_prop Zero; apply_instance
-| (a::l) []      := by change is_prop Zero; apply_instance
-| (a::l) (b::l') := @prod.is_trunc_prod (a = b) (list_code l l') -1 _ 
-                                        (list_code_is_prop l l')
-
-@[hott]
-def list_refl {A : Set} : Π (l : list A), list_code l l
-| []     := One.star
-| (a::l) := ⟨idp, list_refl l⟩
-
-@[hott]
-def list_decode {A : Set} : Π (l₁ l₂ : list A), list_code l₁ l₂ -> l₁ = l₂
-| []     []      := λ lc, idp 
-| []     (a::l)  := λ lc, by hinduction lc
-| (a::l) []      := λ lc, by hinduction lc
-| (a::l) (b::l') := begin 
-                      intro lc, hinduction lc, 
-                      exact eq.concat (ap (λ a : A, list.cons a l) fst) 
-                               (ap (λ l : list A, list.cons b l) (list_decode l l' snd)) 
-                    end
-
-@[hott, instance]
-def lists_are_set (A : Set) : is_set (list A) :=
-begin 
-  fapply @set.encode_decode_set _ list_code list_refl list_code_is_prop, 
-  intros a b cd, exact list_decode _ _ cd 
-end
-
-@[hott, reducible, instance]
-def lists_are_monoid (A : Set.{u}) : monoid (list A) :=
-begin
-  fapply monoid.mk,
-    { exact lists_are_set A },
-    { exact list.append },
-    { exact list_append_is_assoc },
-    { exact [] },
-    { intro l, exact idp },
-    { exact list_append_nil }
-end
-
-@[hott, reducible]
-def List_Monoid (A : Set.{u}) : Monoid :=
-begin  
-  fapply Monoid.mk,
-  { exact list A },
-  { exact lists_are_monoid A }
-end
-
-@[hott, instance]
-def list_has_mul (A : Type u) [is_set A] : has_mul (list A) :=
-begin 
-  apply has_mul.mk, change List_Monoid (set.to_Set A) -> 
-                           List_Monoid (set.to_Set A) -> List_Monoid (set.to_Set A),
-  intros l₁ l₂, exact l₁ * l₂ 
-end
-
-@[hott]  --[GEVE]
-def lists_are_free_monoid {A : Set.{u}} : is_ind_free_monoid_of A (List_Monoid A) :=
-begin 
-  fapply is_ind_free_monoid_of.mk,
-  { intro a, exact [a] },
-  { intros M f, fapply dpair,
-    { fapply monoid_hom.mk,  
-      { intro l, hinduction l, exact M.struct.one, exact f (hd) * ih },
-      { fapply monoid_hom_str.mk,
-        { intros l₁ l₂, hinduction l₁, 
-          { hsimp, change _ = monoid.mul _ _, rwr monoid.one_mul },
-          { hsimp, change _ = monoid.mul (monoid.mul _ _) _, rwr monoid.mul_assoc,
-            change _ = _ * (_ * _), rwr <- ih } },
-        { exact idp } } },
-    { intro a, change f a = monoid.mul (f a) (monoid.one _), rwr monoid.mul_one } },
-  { intros M g₁ g₂ p, fapply Monoid_to_Set_functor_is_faithful,
-    apply eq_of_homotopy, intro l, hinduction l,
-    { rwr (monoid_hom_laws g₁).one_comp, rwr (monoid_hom_laws g₂).one_comp },
-    { change Monoid_to_Set_functor.map g₁ ([hd] * tl) = Monoid_to_Set_functor.map g₂ ([hd] * tl),
-      rwr (monoid_hom_laws g₁).mul_comp, rwr (monoid_hom_laws g₂).mul_comp, rwr ih, rwr p } }
-end 
 
 /- We characterize and construct products of two monoids using products of the 
    underlying sets. This implies and is implied by the standard universal property. -/
@@ -297,164 +197,21 @@ begin
   { fapply dpair is_mon_prod.snd, exact idp }
 end
 
-/- A submonoid is a subobject in the category of monoids, but because of the faithful 
-   forgetful functor to sets, the set map underlying the embedding monomorphism is also
-   a monomorphism, that is, injective. So we can construct a submonoid as a subset of a 
-   monoid inheriting the monoid structure. -/
-@[hott]  --[GEVE]
-def Submonoid (M : Monoid) := subobject M
-
-@[hott, instance]
-def submonoid_has_hom (M : Monoid) : has_hom (Submonoid M) :=
-  by change has_hom (subobject M); apply_instance
-
-@[hott]  --[GEVE]
-def monoid_mon_is_inj {N M : Monoid} : Π (f : N ⟶ M), 
-  is_mono f <-> @set.is_set_injective (Monoid_to_Set_functor.obj M) (Monoid_to_Set_functor.obj N) 
-                                      (Monoid_to_Set_functor.map f) :=
-begin                        
-  intro f, apply prod.mk,
-  { intro mono_f, intros n₁ n₂ p, 
-    let g₁ : ↥(List_Monoid One_Set ⟶ N), from (lists_are_free_monoid.map (λ s, n₁)).1,
-    let g₂ : ↥(List_Monoid One_Set ⟶ N), from (lists_are_free_monoid.map (λ s, n₂)).1,
-    have p₁ : Monoid_to_Set_functor.map g₁ [One.star] = n₁, from 
-                                    ((lists_are_free_monoid.map (λ s, n₁)).2 _)⁻¹,
-    have p₂ : Monoid_to_Set_functor.map g₂ [One.star] = n₂, from 
-                                    ((lists_are_free_monoid.map (λ s, n₂)).2 _)⁻¹,
-    rwr <- p₁, rwr <- p₂, apply λ q, ap10 q [One.star], 
-    apply ap (λ f, Monoid_to_Set_functor.map f),
-    apply mono_f, apply lists_are_free_monoid.unique, intro s, hinduction s, 
-    rwr Monoid_to_Set_functor.map_comp, rwr Monoid_to_Set_functor.map_comp,
-    change Monoid_to_Set_functor.map f (Monoid_to_Set_functor.map g₁ [One.star]) = 
-                    Monoid_to_Set_functor.map f (Monoid_to_Set_functor.map g₂ [One.star]),
-    rwr p₁, rwr p₂, rwr p },
-  { intro set_inj, 
-    fapply λ H, @mono_is_faithful _ _ _ _ Monoid_to_Set_functor H _ _ f, 
-    apply Monoid_to_Set_functor_is_faithful, apply set_inj_is_mono _ set_inj }
-end 
-
-@[hott]  --[GEVE]
-def Submonoid_of_Subset {M : Monoid} (N : Subset (Monoid_to_Set_functor.obj M)) : 
-  @subset.elem (Monoid_to_Set_functor.obj M) M.struct.one N -> 
-  (Π n₁ n₂ : N, @subset.elem (Monoid_to_Set_functor.obj M) 
-                             (@monoid.mul M M.struct n₁.1 n₂.1) N) -> Submonoid M :=
-begin  
-  intros one_in prod_in, fapply subobject.mk,
-  { apply Monoid.mk N, fapply monoid.mk,
-    { apply_instance },
-    { intros n₁ n₂, exact ⟨@monoid.mul M M.struct n₁.1 n₂.1, prod_in n₁ n₂⟩ },
-    { intros n₁ n₂ n₃, apply pred_Set_eq, apply monoid.mul_assoc },
-    { exact ⟨M.struct.one, one_in⟩ },
-    { intros n, apply pred_Set_eq, apply monoid.one_mul },
-    { intros n, apply pred_Set_eq, apply monoid.mul_one } },
-  { fapply monoid_hom.mk, 
-    { exact pred_Set_map _ },
-    { fapply monoid_hom_str.mk,
-      { intros n₁ n₂, exact idp },
-      { exact idp } } },
-  { apply (monoid_mon_is_inj _).2, exact pred_Set_map_is_inj _ }
-end
-
-@[hott]
-def subset_of_submonoid {M : Monoid} (N : Submonoid M) : 
-  Subset (Monoid_to_Set_functor.obj M) :=
-λ m, image (Monoid_to_Set_functor.map N.hom) m 
-
-@[hott]
-def submonoid_hom_of_subset {M : Monoid.{u}} (N₁ N₂ : Submonoid.{u} M) :
-  (subset_of_submonoid N₁ ⊆ subset_of_submonoid N₂) -> (N₁ ⟶ N₂) :=
-begin
-  intro sset, 
-  have fib_n : Π n, fiber (Monoid_to_Set_functor.map N₂.hom) (Monoid_to_Set_functor.map N₁.hom n), from 
-      λ n, set.set_inj_image_to_fiber _ ((monoid_mon_is_inj _).1 N₂.is_mono)  
-          (Monoid_to_Set_functor.map N₁.hom n) (sset _ (tr (fiber.mk n idp))), 
-  fapply hom_of_monos.mk, 
-  { fapply monoid_hom.mk,  
-    { intro n₁, exact (fib_n n₁).1 },
-    { fapply monoid_hom_str.mk,
-      { intros n₁ n₁', apply (monoid_mon_is_inj.{u} _).1 N₂.is_mono, rwr (fib_n _).2, 
-        rwr (monoid_hom_laws _).mul_comp, rwr (monoid_hom_laws _).mul_comp,
-        rwr (fib_n _).2, rwr (fib_n _).2 },
-      { apply (monoid_mon_is_inj.{u} _).1 N₂.is_mono, rwr (fib_n _).2,
-        rwr (monoid_hom_laws _).one_comp, rwr (monoid_hom_laws _).one_comp } } },
-  { apply Monoid_to_Set_functor_is_faithful, rwr Monoid_to_Set_functor.map_comp,
-    apply eq_of_homotopy, intro n, 
-    change Monoid_to_Set_functor.map _ (Monoid_to_Set_functor.map _ n) = 
-                                                           Monoid_to_Set_functor.map _ n, 
-    exact (fib_n _).2 }
-end
-
-/- Monoid homomorphisms have images. -/
-@[hott, instance]  --[GEVE]
-def monoid_hom_has_image {M N : Monoid.{u}} (f : M ⟶ N) : 
-  has_image f :=
-begin  
-  fapply has_image.mk, fapply cat_image.mk,
-  { fapply Submonoid_of_Subset.{u},
-    { exact (λ b : N.carrier, image (Monoid_to_Set_functor.map f) b) },
-    { apply tr, apply fiber.mk M.struct.one, exact (monoid_hom_laws f).one_comp },
-    { intros n₁ n₂, hinduction n₁ with n₁ im₁, hinduction n₂ with n₂ im₂,
-      hinduction im₁ with fib₁, hinduction im₂ with fib₂, 
-      apply tr, apply fiber.mk (fib₁.1 * fib₂.1), 
-      rwr (monoid_hom_laws f).mul_comp, rwr fib₁.2, rwr fib₂.2 } },
-  { fapply dpair,  
-    { fapply monoid_hom.mk, 
-      { intro m, fapply dpair, exact Monoid_to_Set_functor.map f m, 
-        exact tr (fiber.mk m (@idp _ (Monoid_to_Set_functor.map f m))) },
-      { fapply monoid_hom_str.mk,
-        { intros m₁ m₂, apply pred_Set_eq, exact (monoid_hom_laws f).mul_comp _ _ },
-        { apply pred_Set_eq, exact (monoid_hom_laws f).one_comp } } },
-    { apply Monoid_to_Set_functor_is_faithful, exact idp } },
-  { intros N' fac, fapply submonoid_hom_of_subset.{u},
-    intros n el_im, change ↥(image _ _), change ↥(image _ _) at el_im,
-    hinduction el_im with fib, change fiber (pred_Set_map _) n at fib,
-    let p : fib.1.1 = n := fib.2,
-    hinduction fib.1.2 with tr_eq m_fib, rwr <- p,
-    apply tr, fapply fiber.mk, 
-    { exact (Monoid_to_Set_functor.map fac.1) m_fib.1 }, 
-    { change ((Monoid_to_Set_functor.map fac.fst) ≫ 
-                             Monoid_to_Set_functor.map N'.hom) m_fib.1 = _, 
-      rwr <- Monoid_to_Set_functor.map_comp, 
-      have q : fac.1 ≫ N'.hom = f, from fac.2,
-      rwr q, exact m_fib.2 } }
-end
-
-@[hott]  --[GEVE]
-def gen_submonoid {M : Monoid} (L : Subset (Monoid_to_Set_functor.obj M)) :
-  Submonoid M :=
-hom.image (lists_are_free_monoid.map (pred_Set_map L)).1                                
-
-@[hott]  --[GEVE]
-def gen_submonoid_min {M : Monoid} (L : Subset (Monoid_to_Set_functor.obj M)) :
-  Π (N : Submonoid M), (L ⊆ (subset_of_submonoid N)) -> (gen_submonoid L ⟶ N) :=
-begin
-  intros N sset, fapply cat_image.univ, fapply dpair,
-  { apply λ f, (lists_are_free_monoid.map f).1, intro m, 
-    exact (set.set_inj_image_to_fiber _ ((monoid_mon_is_inj _).1 N.is_mono) m.1 
-                                                                  (sset m.1 m.2)).1 },
-  { fapply lists_are_free_monoid.unique, intro n, 
-    rwr Monoid_to_Set_functor.map_comp, 
-    change Monoid_to_Set_functor.map N.hom (Monoid_to_Set_functor.map 
-              (lists_are_free_monoid.map _).fst (lists_are_free_monoid.h n)) = _,
-    rwr <- (lists_are_free_monoid.map _).2 n, rwr <- (lists_are_free_monoid.map _).2 n,
-    rwr (set.set_inj_image_to_fiber _ ((monoid_mon_is_inj _).1 N.is_mono) n.1 
-                                                                  (sset n.1 n.2)).2 }
-end 
-
 @[hott]  --[GEVE]
 def kernel_pair_submon {M N : Monoid} (f : M ⟶ N) : Submonoid (product_monoid M M) :=
 begin
   let f' := Monoid_to_Set_functor.map f,
   fapply Submonoid_of_Subset,
   { intro m, exact to_Prop (f' m.1 = f' m.2) },
-  { exact idp },
-  { intros m₁ m₂, change Monoid_to_Set_functor.map f (m₁.1.1 * m₂.1.1) = 
-                         Monoid_to_Set_functor.map f (m₁.1.2 * m₂.1.2), 
-    rwr (monoid_hom_laws _).mul_comp, rwr (monoid_hom_laws _).mul_comp,
-    change f' _ * f' _ = f' _ * f' _,
-    have fst_eq : f' m₁.1.1 = f' m₁.1.2, from m₁.2,
-    have snd_eq : f' m₂.1.1 = f' m₂.1.2, from m₂.2,
-    rwr fst_eq, rwr snd_eq }
+  { fapply submonoid_str.mk,
+    { exact idp },
+    { intros m₁ m₂ m₁_el m₂_el, 
+      change Monoid_to_Set_functor.map f (m₁.1 * m₂.1) = Monoid_to_Set_functor.map f (m₁.2 * m₂.2), 
+      rwr (monoid_hom_laws _).mul_comp, rwr (monoid_hom_laws _).mul_comp,
+      change f' _ * f' _ = f' _ * f' _,
+      have fst_eq : f' m₁.1 = f' m₁.2, from m₁_el,
+      have snd_eq : f' m₂.1 = f' m₂.2, from m₂_el,
+      rwr fst_eq, rwr snd_eq } }
 end
 
 /- We construct quotients of monoids as quotients of the underlying set by a congruence,
