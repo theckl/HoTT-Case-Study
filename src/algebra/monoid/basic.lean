@@ -334,6 +334,11 @@ def monoid_hom.mk {M N : Monoid} (f : M -> N) :
   monoid_hom_str f -> (M ⟶ N) :=
 λ mon_hom_str, ⟨⟨⟨f, mon_hom_str.mul_comp⟩, true.intro⟩, mon_hom_str.one_comp⟩
 
+@[hott]
+def monoid_hom_mk_set_map {M N : Monoid} (f : M -> N) (str : monoid_hom_str f) :
+  Monoid_to_Set_functor.map (monoid_hom.mk f str) = f :=
+idp
+
 @[hott]  --[GEVE]
 def trivial_monoid_hom (M N : Monoid) : M ⟶ N :=
 begin  
@@ -426,6 +431,117 @@ begin
       { exact idp } } },
   { exact true.intro }
 end
+
+/- We characterize free monoids by the recursion principle and by their freely generating
+   constructors, and show that these characterisations imply each other. Then we construct
+   a free monoid as the type of lists over the set of generators. -/
+@[hott]
+structure is_ind_free_monoid_of (A : Set.{u}) (F : Monoid.{u}) :=
+  (h : A -> F)
+  (map : Π {M : Monoid.{u}} (f : A -> M), Σ (g : F ⟶ M), 
+                                     Π (a : A), f a = Monoid_to_Set_functor.map g (h a))
+  (unique : Π {M : Monoid.{u}} (g₁ g₂ : F ⟶ M), (Π (a : A), 
+      Monoid_to_Set_functor.map g₁ (h a) = Monoid_to_Set_functor.map g₂ (h a)) -> g₁ = g₂)
+
+/- Composing the induced map from a free monoid with a monoid homomorphism. -/
+@[hott]
+def free_monoid_comp_hom {A : Set.{u}} {F : Monoid.{u}} {free : is_ind_free_monoid_of A F}
+  {M M' : Monoid} (f : A -> M) (g : M ⟶ M') : 
+  (free.map (Monoid_to_Set_functor.map g ∘ f)).1 = (free.map f).1 ≫ g :=
+begin
+  fapply free.unique, intro a, rwr <- (free.map (Monoid_to_Set_functor.map g ∘ f)).2, 
+  rwr Monoid_to_Set_functor.map_comp, change _ = Monoid_to_Set_functor.map g _, 
+  rwr <- (free.map f).2 a
+end 
+
+/- Lists of elements in a set form a set. (Also is in [sets.examples], but import fails.) -/
+@[hott]
+def list_code {A : Set.{u}} : list A -> list A -> Type u
+| []     []      := One
+| []     (a::l)  := Zero
+| (a::l) []      := Zero
+| (a::l) (b::l') := (a = b) × (list_code l l') 
+
+@[hott, instance]
+def list_code_is_prop {A : Set} : Π (l₁ l₂ : list A), is_prop (list_code l₁ l₂)
+| []     []      := by change is_prop One; apply_instance
+| []     (a::l)  := by change is_prop Zero; apply_instance
+| (a::l) []      := by change is_prop Zero; apply_instance
+| (a::l) (b::l') := @prod.is_trunc_prod (a = b) (list_code l l') -1 _ 
+                                        (list_code_is_prop l l')
+
+@[hott]
+def list_refl {A : Set} : Π (l : list A), list_code l l
+| []     := One.star
+| (a::l) := ⟨idp, list_refl l⟩
+
+@[hott]
+def list_decode {A : Set} : Π (l₁ l₂ : list A), list_code l₁ l₂ -> l₁ = l₂
+| []     []      := λ lc, idp 
+| []     (a::l)  := λ lc, by hinduction lc
+| (a::l) []      := λ lc, by hinduction lc
+| (a::l) (b::l') := begin 
+                      intro lc, hinduction lc, 
+                      exact eq.concat (ap (λ a : A, list.cons a l) fst) 
+                               (ap (λ l : list A, list.cons b l) (list_decode l l' snd)) 
+                    end
+
+@[hott, instance]
+def lists_are_set (A : Set) : is_set (list A) :=
+begin 
+  fapply @set.encode_decode_set _ list_code list_refl list_code_is_prop, 
+  intros a b cd, exact list_decode _ _ cd 
+end
+
+@[hott, reducible, instance]
+def lists_are_monoid (A : Set.{u}) : monoid (list A) :=
+begin
+  fapply monoid.mk,
+    { exact lists_are_set A },
+    { exact list.append },
+    { exact list_append_is_assoc },
+    { exact [] },
+    { intro l, exact idp },
+    { exact list_append_nil }
+end
+
+@[hott, reducible]
+def List_Monoid (A : Set.{u}) : Monoid :=
+begin  
+  fapply Monoid.mk,
+  { exact list A },
+  { exact lists_are_monoid A }
+end
+
+@[hott, instance]
+def list_has_mul (A : Type u) [is_set A] : has_mul (list A) :=
+begin 
+  apply has_mul.mk, change List_Monoid (set.to_Set A) -> 
+                           List_Monoid (set.to_Set A) -> List_Monoid (set.to_Set A),
+  intros l₁ l₂, exact l₁ * l₂ 
+end
+
+@[hott]  --[GEVE]
+def lists_are_free_monoid {A : Set.{u}} : is_ind_free_monoid_of A (List_Monoid A) :=
+begin 
+  fapply is_ind_free_monoid_of.mk,
+  { intro a, exact [a] },
+  { intros M f, fapply dpair,
+    { fapply monoid_hom.mk,  
+      { intro l, hinduction l, exact M.struct.one, exact f (hd) * ih },
+      { fapply monoid_hom_str.mk,
+        { intros l₁ l₂, hinduction l₁, 
+          { hsimp, change _ = monoid.mul _ _, rwr monoid.one_mul },
+          { hsimp, change _ = monoid.mul (monoid.mul _ _) _, rwr monoid.mul_assoc,
+            change _ = _ * (_ * _), rwr <- ih } },
+        { exact idp } } },
+    { intro a, change f a = monoid.mul (f a) (monoid.one _), rwr monoid.mul_one } },
+  { intros M g₁ g₂ p, fapply Monoid_to_Set_functor_is_faithful,
+    apply eq_of_homotopy, intro l, hinduction l,
+    { rwr (monoid_hom_laws g₁).one_comp, rwr (monoid_hom_laws g₂).one_comp },
+    { change Monoid_to_Set_functor.map g₁ ([hd] * tl) = Monoid_to_Set_functor.map g₂ ([hd] * tl),
+      rwr (monoid_hom_laws g₁).mul_comp, rwr (monoid_hom_laws g₂).mul_comp, rwr ih, rwr p } }
+end 
 
 end algebra
 
