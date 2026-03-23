@@ -231,10 +231,10 @@ end
 
 /- The category of sets has all images. -/
 @[hott]
-def set_cat_image {A B : Set.{u}} (f : A ⟶ B) : cat_image f :=
+def set_im_is_image {A B : Set.{u}} (f : A ⟶ B) : 
+  is_image f (subset_to_subobj (λ b : B.carrier, image f b)) :=
 begin
-  fapply cat_image.mk, 
-  { exact subset_to_subobj (λ b : B.carrier, image f b) },
+  fapply is_image.mk, 
   { fapply sigma.mk, 
       intro a, exact ⟨f a, tr (fiber.mk a idp)⟩, 
       apply eq_of_homotopy, refl },
@@ -257,7 +257,7 @@ end
 
 @[hott, instance]
 def set_has_image {A B : Set.{u}} (f : A ⟶ B) : has_image f :=
-  has_image.mk (set_cat_image f) 
+  has_image.mk (subset_to_subobj (λ b : B.carrier, image f b)) (set_im_is_image f) 
 
 @[hott, instance]
 def set_has_images : has_images Set.{u} :=
