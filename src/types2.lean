@@ -126,6 +126,9 @@ begin
   exact sum.inl ⟨a, idp⟩, exact sum.inr ⟨b, idp⟩
 end
 
+@[hott] def sum.swap {A : Type.{u}} : A ⊎ A -> A ⊎ A :=
+  begin intro s, hinduction s with a a, exact sum.inr a, exact sum.inl a end
+
 /- The injectivity of a map of types is only useful if it also implies relations between
    equalities of objects of domain and codomain, in particular that `rfl` is mapped to 
    `rfl`. For sets, this is automatic and shown in [sets.basic]. We also show a criterion
