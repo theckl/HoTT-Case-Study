@@ -178,7 +178,7 @@ def is_set_surjective {A : Set} {B : Set} (f : B -> A) :=
   forall a : A, image f a
 
 @[hott, instance]
-def is_set_surj_is_prop {A : Set} {B : Set} (f : B -> A): 
+def is_set_surj_is_prop {A : Set} {B : Set} (f : B -> A) : 
   is_prop (is_set_surjective f) :=
 have forall a : A, is_prop (image f a), from assume a, by apply_instance, 
 have pre_im_is_prop : is_prop (forall a : A, image f a), from
@@ -187,6 +187,32 @@ have surj_eq : forall surj1 surj2 : is_set_surjective f, surj1 = surj2, from
   assume surj1 surj2, 
   @is_prop.elim _ pre_im_is_prop surj1 surj2,  
 is_prop.mk surj_eq   
+
+/- A surjection of sets is a strong epimorphism. -/
+@[hott]
+def surj_is_strong_epi {A : Set} {B : Set} {C : Set} (p : B -> A) (p' : B -> C) :
+  (is_set_surjective p) -> (∀ b₁ b₂ : B, p(b₁) = p(b₂) -> p'(b₁) = p'(b₂)) -> 
+  Σ (f : A -> C), (∀ (a : A) (b : B), p b = a -> p' b = f a) :=
+begin
+  intros p_surj well_def, 
+  have im_prop : Π (a : A), is_prop (Σ (c : C), ∥Σ (b : B), p b = a × p' b = c∥), from 
+  begin 
+    intro a, apply is_prop.mk, intros cp₁ cp₂, fapply sigma.sigma_eq, 
+    { hinduction cp₁ with c₁ c₁_eq, hinduction c₁_eq with b_eq₁, hinduction b_eq₁ with b₁ b_eq₁, 
+      hinduction cp₂ with c₂ c₂_eq, hinduction c₂_eq with b_eq₂, hinduction b_eq₂ with b₂ b_eq₂,
+      change c₁ = c₂, rwr <- b_eq₁.2, rwr <- b_eq₂.2, apply well_def, rwr b_eq₂.1, exact b_eq₁.1 }, 
+    { apply pathover_of_tr_eq, apply is_prop.elim _ cp₂.2 } 
+  end,
+  have im_eq : Π (a : A), Σ (c : C), ∥Σ (b : B), p b = a × p' b = c∥, from 
+  begin 
+    intro a, change ↥(@to_Prop (Σ (c : C), ∥Σ (b : B), p b = a × p' b = c∥) (im_prop a)),
+    hinduction p_surj a with eq fib, apply dpair (p' fib.1), 
+    apply tr, apply dpair fib.1, fapply pair, exact fib.2, exact idp
+  end,
+  fapply dpair,
+  { intro a, exact (im_eq a).1 },
+  { intros a b q, hinduction (im_eq a).2, rwr <- a_1.2.2, apply well_def, rwr a_1.2.1, exact q } 
+end
 
 @[hott]
 class is_set_bijective {A : Set} {B : Set} (f : B -> A) := 
