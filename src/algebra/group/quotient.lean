@@ -56,6 +56,7 @@ begin
       rwr (group_laws _).mul_left_inv  } }
 end
 
+/-
 @[hott]
 def conjugate {G : Group.{u}} (H : Subgroup G) (g : G) : Subgroup G :=
 begin
@@ -738,6 +739,7 @@ begin
     apply normal_conj_el norm_N, apply subset_of_subgroup_hom H_inc_N, 
     apply tr, fapply fiber.mk, exact fib.1.2, exact idp }
 end
+-/
 
 end algebra
 
