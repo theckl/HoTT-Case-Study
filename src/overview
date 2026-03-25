@@ -46,15 +46,15 @@ algebra
    submonoid:   251 Y
    quotient :   518 Y   
   group        
-   basic    :   588 Y
-   subgroup :   363  
+   basic    :   648 Y
+   subgroup :   543 Y 
    quotient :   740 
    abelian  :   465 
   ring
    basic    :   579  
    module   :   480  
    examples :   863
-   submod   :   343  5578
+   submod   :   343  5758
                     -----
                     22145               
 
