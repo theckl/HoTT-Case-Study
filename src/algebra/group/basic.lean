@@ -331,6 +331,20 @@ structure is_ind_free_group_of (A : Set) (F : Group) :=
       Group_to_Set_functor.map g₁ (h a) = Group_to_Set_functor.map g₂ (h a)) -> g₁ = g₂)
 
 @[hott, reducible]
+def free_group_map {A : Set} {F : Group} (free : is_ind_free_group_of A F) {H : Group} (f : A -> H) : F ⟶ H :=
+  (free.map f).1
+
+@[hott]
+def free_map_comp {A : Set} {F : Group} (free : is_ind_free_group_of A F) {H : Group} (f : A -> H) :
+  Π {H' : Group} (h : H ⟶ H'), free_group_map free f ≫ h = 
+                                                   free_group_map free (Group_to_Set_functor.map h ∘ f) :=
+begin
+  intros H' h, apply free.unique, 
+  intro a, rwr Group_to_Set_functor.map_comp, change Group_to_Set_functor.map h _ = _,
+  rwr <- (free.map (Group_to_Set_functor.map h ∘ f)).2 a, rwr <- (free.map f).2 a
+end 
+
+@[hott, reducible]
 def word_Monoid (A : Set.{u}) : Monoid := List_Monoid (set.sum_Set A A)
 
 @[hott]
@@ -626,7 +640,7 @@ begin
     apply ap10 comp_eq }
 end
 
-@[hott]  --[GEVE]
+@[hott, reducible]  --[GEVE]
 def word_quot_Group_is_ind_free_group (A : Set.{u}) : 
   is_ind_free_group_of A (word_quot_Group A) :=
 begin 
