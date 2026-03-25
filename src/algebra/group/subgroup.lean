@@ -269,7 +269,7 @@ begin
           { apply pred_Set_eq, exact (group_hom_laws f).one_comp } } },
       { apply Group_to_Set_functor_is_faithful, exact idp } }, 
     { intros H' fac, fapply subgroup_hom_of_subset, 
-      intros h el_im, --change ↥(image _ _), change ↥(image _ _) at el_im,
+      intros h el_im, 
       hinduction el_im with fib, change fiber (pred_Set_map _) h at fib,
       let p : fib.1.1 = h := fib.2,
       hinduction fib.1.2 with tr_eq m_fib, rwr <- p,
@@ -307,7 +307,7 @@ end
    images; `hom_to_image` must be a strong epimorphism. This is the case in abelian categories, but we show 
    it directly for groups. -/
 @[hott]
-def hom_im_strong_univ {G H I : Group} (f : G ⟶ H) (h : H ⟶ I) {I' : Subgroup I} {p' : G ⟶ I'.obj} 
+def hom_im_strong_univ {G H I : Group.{u}} (f : G ⟶ H) (h : H ⟶ I) {I' : Subgroup I} {p' : G ⟶ I'.obj} 
   (fac : p' ≫ I'.hom = f ≫ h) : Σ (i' : (hom.image f).obj ⟶ I'.obj), 
   (hom_to_image f ≫ i' = p') × (i' ≫ I'.hom = (hom.image f).hom ≫ h) :=
 begin 
@@ -346,6 +346,19 @@ begin
             (Group_to_Set_functor.map (hom_to_image f) ≫ Group_to_Set_functor.map ((hom.image f).hom ≫ h)) g,
       rwr <- fac'.2 (Group_to_Set_functor.map (hom_to_image f) g) _ idp, 
       rwr <- Group_to_Set_functor.map_comp, rwr <- is_precat.assoc, rwr hom_to_image_eq, rwr <- fac } } 
+end
+
+@[hott]
+def group_im_comp {G H I : Group.{u}} (f : G ⟶ H) (h : H ⟶ I) : 
+  hom.image (f ≫ h) = hom.image ((hom.image f).hom ≫ h) :=
+begin
+  fapply subobj_antisymm,
+  { rwr <- hom_to_image_eq f, rwr is_precat.assoc, rwr hom_to_image_eq f, apply im_incl },
+  { fapply hom_image_univ, 
+    { exact (@hom_im_strong_univ G H I f h (hom.image (f ≫ h)) (hom_to_image (f ≫ h)) 
+                                                                  (hom_to_image_eq (f ≫ h))).1 },
+    { exact (@hom_im_strong_univ G H I f h (hom.image (f ≫ h)) (hom_to_image (f ≫ h)) 
+                                                                  (hom_to_image_eq (f ≫ h))).2.2 } }
 end
 
 @[hott]
@@ -440,142 +453,50 @@ begin
     { exact unit_subgroup_is_initial (kernel_subgroup f) } }
 end
 
-@[hott]
-def fiber_group_hom_im_hom {G G' : Group} (f : G ⟶ G') (g' : G') : 
-  fiber (Group_to_Set_functor.map (@hom.image _ _ _ _ f (group_hom_has_image f)).hom) g' -> image (Group_to_Set_functor.map f) g' :=
-begin
-  intro fib, hinduction fib with g_im g_im_eq, hinduction g_im with imf, hinduction snd with fibf,
-  apply tr, rwr <- g_im_eq, exact fibf
-end
-
-@[hott]  --[GEVE]
-def gen_subgroup_str {G : Group} {L : Set} (gen : L -> G) : 
-  subgroup_of_submon_str (gen_submonoid ((@group_to_monoid G) ∘ group_gen_to_monoid_gen_map gen)) :=
-begin
-  fapply group_of_mon_str.mk, 
-  { sorry },
-  { sorry }
-  /-intros g g_el,
-  hinduction g_el with fib, hinduction fib with h fib_eq,
-  hinduction h with h h_im, hinduction h_im with w_fib, hinduction w_fib with w w_eq,
-  apply tr, fapply fiber.mk, 
-  { fapply dpair, exact (h⁻¹ : Group_to_Set_functor.obj G), 
-    apply tr, fapply (fiber.mk (inv_word w)), 
-    change Monoid_to_Set_functor.map (word_Monoid_map _) _ = _ at w_eq, rwr <- w_eq, 
-    change Monoid_to_Set_functor.map (word_Monoid_map _) _ = _, 
-    change ↥(word_Monoid L) at w, rwr word_Monoid_map_inv },
-  { change h = g at fib_eq, change (h⁻¹ : Group_to_Set_functor.obj G) = g⁻¹, rwr fib_eq }-/
-end
-
-@[hott]  --[GEVE]
+@[hott, reducible]  --[GEVE]
 def gen_subgroup {G : Group} {L : Set} (gen : L -> G) :
   Subgroup G :=
-Subgroup_of_Submonoid (gen_submonoid ((@group_to_monoid G) ∘ group_gen_to_monoid_gen_map gen)) 
-                      (gen_subgroup_str gen)
+hom.image (word_quot_Group_free_map gen)
 
 @[hott]
-def gen_submon_subgroup_inc {G : Group} {L : Set} (gen : L -> G) (H : Subgroup G) :
-  gen_submonoid ((@group_to_monoid G) ∘ group_gen_to_monoid_gen_map gen) ≼ Subgroup.to_Submonoid H -> 
-  gen_subgroup gen ≼ H :=
-begin
-  intro submon_inc, apply subgroup_of_submon_inc, 
-  change Subgroup.to_Submonoid (Subgroup_of_Submonoid _ _) ≼ _, rwr subgroup_submon_eq,
-  exact submon_inc
-end
-
-@[hott]
-def gen_subgroup_min {G : Group} {L : Set} (gen : L -> G) :
+def gen_subgroup_min {G : Group.{u}} {L : Set.{u}} (gen : L -> G) :
   Π (H : Subgroup G), (Π l : L, gen l ∈ subset_of_subgroup H) -> (gen_subgroup gen ≼ H) :=
 begin
-  intros H gen_H, apply gen_submon_subgroup_inc, apply gen_submonoid_min,
-  intros g g_im, hinduction g_im with fib, hinduction fib with ll ll_eq, hinduction ll with l l,
-  { change gen l = g at ll_eq, rwr <- ll_eq, apply gen_H l },
-  { change (gen l)⁻¹ = g at ll_eq, rwr <- ll_eq, apply (subgroup_laws H).inv (gen_H l) } 
+  intros H gen_el, 
+  have fib_prop : Π (g : G), is_prop (fiber (Group_to_Set_functor.map H.hom) g), from 
+  begin
+    intro g, apply is_prop.mk, intros fib₁ fib₂, hinduction fib₁ with h₁ h_eq₁, hinduction fib₂ with h₂ h_eq₂,
+    fapply apd011 fiber.mk,
+    { apply (group_mon_is_inj _).1 H.is_mono, rwr h_eq₂, exact h_eq₁ },
+    { apply pathover_of_tr_eq, exact is_prop.elim _ _ }
+  end,
+  have gen_fac : Σ (gen_H : L -> H.obj), gen = (Group_to_Set_functor.map H.hom) ∘ gen_H, from 
+  begin
+    fapply dpair, 
+    { intro l, apply @fiber.point _ _ (Group_to_Set_functor.map H.hom) (gen l), 
+      fapply @trunc.rec -1 (fiber (Group_to_Set_functor.map H.hom) (gen l)) 
+                           (λ im, fiber (Group_to_Set_functor.map H.hom) (gen l)) (λ aa, fib_prop (gen l)),
+      intro fib, exact fib, exact gen_el l },
+    { apply eq_of_homotopy, intro l, hinduction gen_el l with eq fib, rwr <- fib.2, 
+      apply ap (Group_to_Set_functor.map H.hom), apply ap fiber.point, 
+      exact @is_prop.elim _ (fib_prop (gen l)) _ _ }
+  end,
+  have H_fac : word_quot_Group_free_map gen_fac.1 ≫ H.hom = word_quot_Group_free_map gen, from 
+  begin 
+    rwr ap word_quot_Group_free_map gen_fac.2, apply free_map_comp (word_quot_Group_is_ind_free_group L) 
+  end,
+  apply hom_image_univ _ _ _ H_fac
 end
 
-@[hott]
+@[hott]  --[GEVE]
 def hom_gen_im_subgroup {G G' : Group} (f : G ⟶ G') {L : Set} (gen : L -> G) :
   gen_subgroup ((Group_to_Set_functor.map f) ∘ gen) = hom.image ((gen_subgroup gen).hom ≫ f) :=
 begin
-  have p : group_to_monoid ∘ group_gen_to_monoid_gen_map (Group_to_Set_functor.map f ∘ gen) =
-             Monoid_to_Set_functor.map f.1 ∘ ((@group_to_monoid G) ∘ group_gen_to_monoid_gen_map gen), from
-      sorry,
-  fapply subobj_antisymm,
-  { --fapply gen_submon_subgroup_inc, rwr p, rwr submon_im_im_mon_hom, rwr hom_gen_im_submonoid,
-    --change _ ≼ hom.image ((Subgroup_of_Submonoid _ _).hom.1 ≫ f.1), 
-    sorry },
-  { --change _ ≼ Subgroup_of_Submonoid _ _, 
-    sorry }
+  apply eq.inverse, rwr <- group_im_comp, change _ = hom.image _, 
+  rwr free_map_comp (word_quot_Group_is_ind_free_group L)
 end
 
 /-
-@[hott]
-def gen_subgroup_subset {G : Group} (L : Subset (Group_to_Set_functor.obj G)) :
-  Π (g : G), image (Group_to_Set_functor.map (is_ind_free_group_of.map 
-            (word_quot_Group_is_ind_free_group _) (pred_Set_map L)).1 ) g -> 
-            g ∈ subset_of_subgroup (gen_subgroup L) :=
-begin 
-  intros g g_im, hinduction g_im with fib,
-  change ↥(g ∈ subset_of_subgroup (cat_image.mk _ _ _).subobj),
-  rwr Subgroup_Subset_str, exact tr fib 
-end
-
-@[hott]
-def gen_inc_gen_subgroup {G : Group} (L : Subset (Group_to_Set_functor.obj G)) :
-  L ⊆ subset_of_subgroup (gen_subgroup L) :=
-begin
-  intros g g_el, apply gen_subgroup_subset L g, apply tr, fapply fiber.mk, 
-  { apply is_ind_free_group_of.h (word_quot_Group_is_ind_free_group _),
-    exact ⟨g, g_el⟩ },
-  { change _ = pred_Set_map L ⟨g, g_el⟩, apply eq.inverse,
-    exact (is_ind_free_group_of.map 
-            (word_quot_Group_is_ind_free_group _) (pred_Set_map L)).2 ⟨g, g_el⟩ }
-end
-
-@[hott]
-def gen_subgroup_min {G : Group} {L : Set} (gen : L -> G) :
-  Π (H : Subgroup G), (Π l : L, gen l ∈ H) -> (gen_subgroup L ⟶ H) :=
-begin
-  intros H sset, fapply cat_image.univ, fapply dpair,
-  { apply λ f, (is_ind_free_group_of.map (word_quot_Group_is_ind_free_group _) f).1, 
-    intro m, 
-    exact (set.set_inj_image_to_fiber _ ((group_mon_is_inj _).1 H.is_mono) m.1 
-                                                                  (sset m.1 m.2)).1 },
-  { fapply is_ind_free_group_of.unique (word_quot_Group_is_ind_free_group _), intro n, 
-    rwr Group_to_Set_functor.map_comp, 
-    change Group_to_Set_functor.map H.hom (Group_to_Set_functor.map 
-              (is_ind_free_group_of.map (word_quot_Group_is_ind_free_group _) _).fst 
-              (is_ind_free_group_of.h (word_quot_Group_is_ind_free_group _) n)) = _,
-    rwr <- (is_ind_free_group_of.map (word_quot_Group_is_ind_free_group _) _).2 n, 
-    rwr <- (is_ind_free_group_of.map (word_quot_Group_is_ind_free_group _) _).2 n,
-    rwr (set.set_inj_image_to_fiber _ ((group_mon_is_inj _).1 H.is_mono) n.1 
-                                                                  (sset n.1 n.2)).2 }
-end 
-
-@[hott]
-def hom_gen_im_subgroup {G G' : Group} (f : G ⟶ G') {L : Set} (gen : L -> G)} :
-  gen_subgroup ((Group_to_Set_functor.map f) ∘ gen) = hom.image ((gen_subgroup gen).hom ≫ f) :=
-begin
-  fapply subobj_antisymm, 
-  { apply gen_subgroup_min, intros g' g'imfL, hinduction g'imfL with fibg', apply tr, fapply fiber.mk, 
-    { fapply dpair g', apply tr, rwr Group_to_Set_functor.map_comp, fapply comp_fiber,
-      { exact (fiber_comp fibg').1 },
-      { fapply set.set_inj_image_to_fiber, exact (group_mon_is_inj _).1 (gen_subgroup L).is_mono, 
-        apply gen_inc_gen_subgroup L, exact fibg'.1.2 } },
-    { exact idp } },
-  { fapply subgroup_hom_of_subset, intros g' imf_el, hinduction imf_el with fibg', 
-    hinduction fiber_hom_im_hom _ _ fibg' with fg_eq fibg'', clear fg_eq fibg', 
-    rwr Group_to_Set_functor.map_comp at fibg'', hinduction fiber_comp fibg'' with fib_eq fibfg' fibl, 
-    clear fib_eq fibg'',hinduction fibl with l l_eq,
-    hinduction l with g imw, hinduction imw with fibg, hinduction fibg with w w_eq,
-    hinduction set.set_class_of_is_surj _ w,
-    apply tr, fapply fiber.mk, 
-    { fapply dpair g', apply tr, fapply fiber.mk,
-      { sorry },
-      { sorry } },
-    { sorry } }
-end
-
 @[hott]
 def iInter_subgroups {G : Group.{u}} {I : Set.{v}} (f : I -> Subgroup G) :
   Subgroup G :=
