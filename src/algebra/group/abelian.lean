@@ -568,30 +568,30 @@ end
 
 @[hott]
 def commutator_Subgroup (G : Group.{u}) : Subgroup G :=
-  gen_subgroup (λ c, ∥Σ (a b : G), c = commutator a b∥)
+  gen_subgroup (λ gh : set.to_Set (G × G), commutator gh.1 gh.2)
 
 @[hott, instance]
 def commutator_Subgroup_is_normal {G : Group} : is_normal (commutator_Subgroup G) :=
 begin  
   fapply inc_conj_is_normal,
-  intro g, apply gen_subgroup_min, intros s s_el, 
-  change ↥(s ∈ subset_of_subgroup (Subgroup_of_Subset _ _)), rwr Subgroup_Subset_str,
-  apply tr, fapply dpair,
-  { exact g⁻¹ * s * g },
-  { apply prod.mk,
-    { have p : s * (s⁻¹ * g⁻¹ * (s⁻¹)⁻¹ * (g⁻¹)⁻¹) = g⁻¹ * s * g, by 
-        rwr group_inv_inv s; rwr group_inv_inv g;
-        rwr <- (group_laws _).mul_assoc s; rwr <- (group_laws _).mul_assoc s;
-        rwr <- (group_laws _).mul_assoc s; rwr Group_left_inv_is_right_inv; 
-        rwr (group_laws _).one_mul, 
-      have s_el' : ↥(s∈subset_of_subgroup (commutator_Subgroup G)), from 
-        gen_inc_gen_subgroup _ s s_el,
-      have comm_el : ↥(s⁻¹ * g⁻¹ * (s⁻¹)⁻¹ * (g⁻¹)⁻¹∈subset_of_subgroup (commutator_Subgroup G)), from 
-        begin apply gen_inc_gen_subgroup, apply tr, exact ⟨s⁻¹, ⟨g⁻¹, idp⟩⟩ end,
-      rwr <- p, exact (subgroup_laws _).mul s_el' comm_el },
-    { rwr <- (group_laws _).mul_assoc g, rwr <- (group_laws _).mul_assoc g, 
-      rwr Group_left_inv_is_right_inv, rwr (group_laws _).one_mul, 
-      rwr (group_laws _).mul_assoc, rwr Group_left_inv_is_right_inv, rwr (group_laws _).mul_one } }
+  intro g, apply gen_subgroup_min, intro gh, hinduction gh with a b, 
+  change ↥(a * b * a⁻¹ * b⁻¹ ∈ _), rwr <- conjugate_inv g⁻¹ (a * b * a⁻¹ * b⁻¹), rwr group_inv_inv,  
+  apply conj_el_el,
+  have q : Π (h₁ h₂ : G), h₁ * h₂ = h₁ * group.one G * h₂, by intros h₁ h₂; rwr (group_laws _).mul_one,
+  have p : Π (h h₁ h₂ : G), h₁ * h₂ = h₁ * h * (h⁻¹ * h₂), from 
+  begin 
+    intros h h₁ h₂, rwr q h₁ h₂, change h₁ * 1 * _ = _, rwr <- Group_left_inv_is_right_inv h, 
+    rwr <- (group_laws _).mul_assoc h₁, rwr (group_laws _).mul_assoc _ _ h₂ 
+  end,
+  rwr p g a b, rwr p g _ a⁻¹, rwr p g _ b⁻¹, 
+  rwr (group_laws _).mul_assoc _ _ g, rwr (group_laws _).mul_assoc _ _ g, 
+  rwr (group_laws _).mul_assoc _ (g⁻¹ * a⁻¹), rwr (group_laws _).mul_assoc _ (g⁻¹ * b), 
+  rwr <- (group_laws _).mul_assoc _ _ (g⁻¹ * b⁻¹ * g), rwr <- (group_laws _).mul_assoc _ _ (g⁻¹ * a⁻¹ * g),
+  rwr <- (group_laws _).mul_assoc g⁻¹ (a * g), rwr <- (group_laws _).mul_assoc g⁻¹ a g, 
+  have r : Π (c : G), g⁻¹ * c⁻¹ * g = (g⁻¹ * c * g)⁻¹, from 
+    begin intro c, rwr group_mul_inv, rwr group_mul_inv, rwr group_inv_inv, rwr (group_laws _).mul_assoc end,
+  rwr r a, rwr r b, 
+  apply group_gen_el (λ gh : set.to_Set (G × G), commutator gh.1 gh.2) ⟨g⁻¹ * a * g, g⁻¹ * b * g⟩
 end
 
 @[hott]
@@ -599,32 +599,31 @@ def commutator_AbGroup_is_id (G : Group) :
   (Π a b : G, a * b = b * a) -> commutator_Subgroup G = unit_subgroup G :=
 begin
   intro comm, fapply subobj_antisymm,
-  { apply gen_subgroup_min, intros c c_el, hinduction c_el with c_comm, 
-    hinduction c_comm with a b_comm, hinduction b_comm with b com, rwr com, 
+  { apply gen_subgroup_min, intro l, hinduction l with a b, change ↥(commutator a b ∈ _), 
     apply tr, fapply fiber.mk, exact 1, 
     apply λ p, (group_hom_laws (unit_subgroup G).hom).one_comp ⬝ p, apply eq.inverse,
     calc commutator a b = a * b * a⁻¹ * b⁻¹ : idp
          ... = b * a * a⁻¹ * b⁻¹ : by rwr comm a b
          ... = b * (a * a⁻¹) * b⁻¹ : by rwr (group_laws _).mul_assoc b _ _
          ... = b * 1 * b⁻¹ : by rwr Group_left_inv_is_right_inv
+         ... = b * (group.one G) * b⁻¹ : idp
          ... = b * b⁻¹ : by rwr (group_laws _).mul_one
          ... = 1 : Group_left_inv_is_right_inv b },
   { exact unit_subgroup_is_initial _ }
 end
 
 @[hott]
-def abelianized_Group (G : Group.{u}) : AbGroup :=
+def abelianized_Group (G : Group) : AbGroup :=
 begin
   fapply AbGroup.mk',
   { exact @quotient_Group_by_normal_subgroup G (commutator_Subgroup G) 
                                                   (@commutator_Subgroup_is_normal G) },
   { fapply set.set_quotient.prec2, change Π (a b : Group_to_Set_functor.obj G), _, intros a b, 
     change set.set_class_of _ _ = set.set_class_of _ _, apply set.eq_of_setrel, 
-    change ↥((a * b)⁻¹ * (b * a) ∈ subset_of_subgroup _), apply gen_inc_gen_subgroup,
-    apply tr, apply dpair b⁻¹, apply dpair a⁻¹, apply eq.inverse,
-    calc b⁻¹ * a⁻¹ * (b⁻¹)⁻¹ * (a⁻¹)⁻¹ = b⁻¹ * a⁻¹ * b * a : by rwr group_inv_inv; rwr group_inv_inv
-         ... = b⁻¹ * a⁻¹ * (b * a) : (group_laws _).mul_assoc _ b _
-         ... = (a * b)⁻¹ * (b * a) : by rwr (group_mul_inv _ _) }
+    change ↥((a * b)⁻¹ * (b * a) ∈ subset_of_subgroup _), rwr group_mul_inv, 
+    rwr <- (group_laws _).mul_assoc _ b _, 
+    have p : b⁻¹ * a⁻¹ * b * a = b⁻¹ * a⁻¹ * (b⁻¹)⁻¹ * (a⁻¹)⁻¹, by rwr group_inv_inv; rwr group_inv_inv,
+    rwr p, apply group_gen_el (λ gh : set.to_Set (G × G), commutator gh.1 gh.2) ⟨b⁻¹, a⁻¹⟩ }
 end
 
 @[hott, reducible]
@@ -636,10 +635,8 @@ def abelianized_Group_proj (G : Group) :
 def abelianize_adjoint_hom_inc {G : Group} {A : AbGroup} (f : G ⟶ AbGroup.to_Group A) :
   commutator_Subgroup G ≼ kernel_subgroup f :=
 begin 
-  apply gen_subgroup_min, intros g g_el, hinduction g_el with g_comm,
-  hinduction g_comm with a g_comm', hinduction g_comm' with b comm_eq,
-  change ↥(g ∈ subset_of_subgroup (Subgroup_of_Subset _ _)), rwr Subgroup_Subset_str, 
-  change Group_to_Set_functor.map f g = 1, rwr comm_eq, 
+  apply gen_subgroup_min, intro l, hinduction l with a b, 
+  change ↥(a * b * a⁻¹ * b⁻¹ ∈ subset_of_subgroup (Subgroup_of_Subset _ _)), rwr Subgroup_Subset_str,
   change Group_to_Set_functor.map f (a * b * a⁻¹ * b⁻¹) = 1,
   rwr (group_hom_laws _).mul_comp, rwr (group_hom_laws _).mul_comp, 
   rwr (group_hom_laws _).mul_comp, rwr (group_laws _).mul_assoc (Group_to_Set_functor.map f a), 
@@ -648,7 +645,7 @@ begin
   rwr <- (group_hom_laws _).mul_comp, rwr Group_left_inv_is_right_inv, 
   rwr <- (group_hom_laws _).mul_comp, rwr (group_laws _).one_mul,
   rwr <- (group_hom_laws _).mul_comp, rwr Group_left_inv_is_right_inv, 
-  exact (group_hom_laws _).one_comp 
+  exact (group_hom_laws _).one_comp
 end
 
 @[hott]
@@ -661,12 +658,12 @@ begin
      { exact ((group_quotient_is_univ _ _ (quot_Group_is_group_quot _)).factors f 
               (abelianize_adjoint_hom_inc f)).1 },
      { exact true.intro} },
-   { exact ((group_quotient_is_univ _ _ (quot_Group_is_group_quot _)).factors f 
+   { exact ((group_quotient_is_univ _ _ (@quot_Group_is_group_quot _ _ commutator_Subgroup_is_normal)).factors f 
               (abelianize_adjoint_hom_inc f)).2 } 
 end
 
 @[hott]
-def abelianize_adjoint_hom_unique {G : Group.{u}} {A : AbGroup} (g h : abelianized_Group G ⟶ A) : 
+def abelianize_adjoint_hom_unique {G : Group} {A : AbGroup} (g h : abelianized_Group G ⟶ A) : 
       abelianized_Group_proj G ≫ (AbGroup_to_Group_functor).map g = 
          abelianized_Group_proj G ≫ (AbGroup_to_Group_functor).map h -> g = h :=
 begin
@@ -676,7 +673,7 @@ begin
 end
 
 @[hott]
-def Group_to_AbGroup_functor : Group.{u} ⥤ AbGroup :=
+def Group_to_AbGroup_functor : Group ⥤ AbGroup :=
 begin
   fapply precategories.functor.mk,
   { intro G, exact abelianized_Group G },
@@ -696,7 +693,7 @@ begin
 end
 
 @[hott]
-def Group_AbGroup_adjoint_hom_bij (G : Group.{u}) (A : AbGroup) :
+def Group_AbGroup_adjoint_hom_bij (G : Group) (A : AbGroup) :
   set.bijection (Group_to_AbGroup_functor.obj G ⟶ A) (G ⟶ AbGroup_to_Group_functor.obj A) :=
 begin 
   fapply set.has_inverse_to_bijection,
