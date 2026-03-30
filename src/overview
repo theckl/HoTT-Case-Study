@@ -28,7 +28,7 @@ categories
   basic     :   595 Y        
   examples  :   559 Y        
   subcat    :   125 Y        
-  subobj    :   666 Y
+  subobj    :   671 Y
   adjoints  :   516 Y        
   strict_cat:   399 Y        
   diagrams  :   605 Y        
@@ -39,7 +39,7 @@ categories
   boolean   :   370 Y        
   sets      :   952 Y 
   concrete  :   526 Y 
-  inf_pb    :   252 Y 8802
+  inf_pb    :   252 Y 8807
 algebra
   monoid
    basic    :   611 Y
@@ -47,14 +47,14 @@ algebra
    quotient :   518 Y   
   group        
    basic    :   648 Y
-   subgroup :   543 Y 
+   subgroup :   562 Y 
    quotient :   740 
    abelian  :   465 
   ring
    basic    :   579  
    module   :   480  
    examples :   863
-   submod   :   343  5758
+   submod   :   343  5777
                     -----
                     22145               
 
