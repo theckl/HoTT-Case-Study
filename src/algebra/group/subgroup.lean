@@ -10,7 +10,7 @@ open trunc is_trunc hott.algebra hott.is_equiv subset precategories
 
 namespace algebra
 
---set_option pp.universes true
+set_option pp.universes true
 
 /- A subgroup is a subobject in the category of groups. The embedding monomorphism is
    a monomorphism of the underlying sets. So we can construct a subgroup as a subset of a 
@@ -293,6 +293,16 @@ def hom_im_subset_im {G H : Group} (f : G ⟶ H) :
 begin intros h h_el, hinduction h_el with fib, hinduction fib with h' h'_eq, rwr <- h'_eq, exact h'.2 end
 
 @[hott]
+def subset_im_hom_im {G H : Group} (f : G ⟶ H) :
+  Π {h : H}, image (Group_to_Set_functor.map f) h -> h ∈ subset_of_subgroup (hom.image f) :=
+begin 
+  intros h im_h, hinduction im_h with fib, hinduction fib with g g_eq, 
+  apply tr, apply fiber.mk (Group_to_Set_functor.map (hom_to_image f) g), 
+  change (Group_to_Set_functor.map (hom_to_image f) ≫ Group_to_Set_functor.map (hom.image f).hom) g = _, 
+  rwr <- Group_to_Set_functor.map_comp, rwr hom_to_image_eq, exact g_eq 
+end
+
+@[hott]
 def hom_to_image_is_surj {G H : Group} (f : G ⟶ H) : 
   set.is_set_surjective (Group_to_Set_functor.map (hom_to_image f)) :=
 begin
@@ -361,9 +371,9 @@ begin
                                                                   (hom_to_image_eq (f ≫ h))).2.2 } }
 end
 
-@[hott]
+@[hott, reducible]
 def conjugated_Subgroup {G : Group} (H : Subgroup G) (g : G) : Subgroup G :=
-  hom.image (conjugate G g)
+  hom.image (H.hom ≫ conjugate G g)
 
 @[hott]   --[GEVE]
 def kernel_subgroup {G H : Group} (f : G ⟶ H) : Subgroup G :=
@@ -459,6 +469,15 @@ def gen_subgroup {G : Group} {L : Set} (gen : L -> G) :
 hom.image (word_quot_Group_free_map gen)
 
 @[hott]
+def group_gen_el {G : Group} {L : Set} (gen : L -> G) :
+  Π (l : L), gen l ∈ subset_of_subgroup (gen_subgroup gen) :=
+begin 
+  intro l, apply subset_im_hom_im, apply tr, 
+  apply fiber.mk ((word_quot_Group_is_ind_free_group L).h l), 
+  rwr ((word_quot_Group_is_ind_free_group L).map gen).2
+end
+
+@[hott]
 def gen_subgroup_min {G : Group.{u}} {L : Set.{u}} (gen : L -> G) :
   Π (H : Subgroup G), (Π l : L, gen l ∈ subset_of_subgroup H) -> (gen_subgroup gen ≼ H) :=
 begin
@@ -496,7 +515,6 @@ begin
   rwr free_map_comp (word_quot_Group_is_ind_free_group L)
 end
 
-/-
 @[hott]
 def iInter_subgroups {G : Group.{u}} {I : Set.{v}} (f : I -> Subgroup G) :
   Subgroup G :=
@@ -536,7 +554,7 @@ begin
   intros g el, change ↥(g ∈ subset_of_subgroup (Subgroup_of_Subset _ _)), 
   rwr Subgroup_Subset_str, apply prop_to_prop_resize,
   intro i, exact subset_of_subgroup_hom (H_inc i) g el
-end -/
+end 
 
 end algebra
 
