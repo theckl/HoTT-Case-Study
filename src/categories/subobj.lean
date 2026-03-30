@@ -537,7 +537,7 @@ def hom_image_univ {C : Type u} [is_cat.{v} C] {c d : C} (f : c ⟶ d) [has_imag
   Π (a : subobject d) (f' : c ⟶ a.obj), f' ≫ a.hom = f -> (hom.image f ≼ a) :=
 assume a f' p, (has_image.is_im f).univ a ⟨f', p⟩ 
 
-@[hott, instance]
+@[hott]
 def subobj_has_im {C : Type u} [is_cat.{v} C] {c : C} (b : subobject c) :
   has_image b.hom :=
 have im_b : is_image b.hom b, from 
@@ -546,8 +546,13 @@ have im_b : is_image b.hom b, from
 has_image.mk b im_b
 
 @[hott]
-def subobj_is_im {C : Type u} [is_cat.{v} C] {c : C} (b : subobject c) :
-  hom.image b.hom = b := idp  
+def subobj_is_im {C : Type u} [is_cat.{v} C] {c : C} (b : subobject c) [has_image b.hom]:
+  hom.image b.hom = b := 
+begin 
+  fapply subobj_antisymm, 
+  { fapply hom_image_univ, exact 𝟙 b.obj, apply is_precat.id_comp }, 
+  { fapply hom_of_monos.mk, exact hom_to_image b.hom, exact hom_to_image_eq b.hom } 
+end  
 
 @[hott]
 def im_incl {C : Type u} [is_cat.{v} C] {a b c : C} (f : a ⟶ b) (g : b ⟶ c) 
