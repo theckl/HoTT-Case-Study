@@ -46,10 +46,10 @@ algebra
    submonoid:   251 Y
    quotient :   518 Y   
   group        
-   basic    :   648 Y
-   subgroup :   562 Y 
-   quotient :   740 
-   abelian  :   465 
+   basic    :   662 Y
+   subgroup :   561 Y 
+   quotient :   704 Y 
+   abelian  :   793 Y 4100
   ring
    basic    :   579  
    module   :   480  
@@ -62,7 +62,6 @@ algebra
 Planned changes in Files, from bottom to top: 
 ---------------------------------------------
 - [algebra.ring.submod] : quotients of modules by submodules
-- [algebra.group.abelian] : quotients of abelian groups by abelian subgroups
 - [categories.adjoints] : subobjects through forgetful functors
 
             
