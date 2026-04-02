@@ -4,7 +4,7 @@ universes u v w
 hott_theory
 
 namespace hott
-open is_trunc trunc equiv hott.is_equiv hott.prod 
+open is_trunc trunc 
 
 set_option pp.universes true
 
@@ -127,7 +127,7 @@ end
 def iff_eq {P Q : Prop} : (P <-> Q) -> (P = Q) :=
 begin
   intro iff, apply car_eq_to_prop_eq, apply ua,
-  fapply equiv.mk iff.1, fapply adjointify, exact iff.2, 
+  fapply equiv.mk iff.1, fapply is_equiv.adjointify, exact iff.2, 
   { intro q, exact is_prop.elim _ _ },
   { intro p, exact is_prop.elim _ _ }
 end
