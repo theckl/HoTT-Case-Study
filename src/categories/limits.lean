@@ -4,7 +4,7 @@ universes v v' u u' w
 hott_theory
 
 namespace hott
-open hott.eq hott.is_trunc hott.trunc hott.is_equiv hott.set hott.subset 
+open hott.is_trunc hott.trunc  hott.set hott.subset 
      hott.precategories hott.categories hott.categories.strict
 
 /- We introduce limits of diagrams mapped to categories, by using cones to 
