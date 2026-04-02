@@ -4,7 +4,7 @@ universes u v w
 hott_theory
 
 namespace hott
-open hott.is_equiv hott.is_trunc set
+open hott.is_trunc --set
 
 /- We characterize products of two types in four different ways, using their constructors, 
    induction principle, projections and universal properties, and show that they 
@@ -211,7 +211,7 @@ def product_eq {A B P Q : Type _} : Π (is_prod_P : is_product A B P)
 begin
  intros is_prod_P is_prod_Q, apply ua, fapply equiv.mk,
     { exact product_map is_prod_P is_prod_Q },
-    { fapply adjointify,
+    { fapply is_equiv.adjointify,
       { exact product_map is_prod_Q is_prod_P },
       { intro q, exact ap10 (product_map.right_inv is_prod_P is_prod_Q) q },
       { intro p, exact ap10 (product_map.left_inv is_prod_P is_prod_Q) p } }
@@ -236,7 +236,7 @@ def Set_Product_equiv_Sigma (A B : Set) :
 begin
   fapply equiv.mk, 
   { intro Product, exact dpair Product.carrier Product.is_prod },
-  { fapply adjointify,
+  { fapply is_equiv.adjointify,
     { intro Sigma_prod, exact Set_product.mk Sigma_prod.1 Sigma_prod.2 },
     { intro Sigma_prod, hinduction Sigma_prod with P is_prod_P, exact idp },
     { intro Product, hinduction Product with P is_prod_P, exact idp } }
