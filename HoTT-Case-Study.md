@@ -12,7 +12,7 @@ One solution could be to turn the Univalent Axiom into an actual computing const
 * localisations are characterised as being constructed in a higher inductive way, and
 * the standard universal property of localisations is the inductive principle of this higher inductive construction.
 
-Lots of examples of this procedure, together with explanations of higher inductive types and constructions in general, can be found in my paper [Grothendieck's Equality vs Voevodsky's Equality](https://arxiv.org/abs/2604.00747). You can find tags of the Lean definitions in the tex-file of the arXiv submission.
+Lots of examples of this procedure, together with explanations of higher inductive types and constructions in general, can be found in my paper [Grothendieck's Equality vs Voevodsky's Equality](https://arxiv.org/abs/2604.00747). Tags of the Lean definitions are contained in the tex-file of the arXiv submission.
 
 Instances of this procedure are already useful in set theory. But homotopy type theory also clarifies other aspects of sets and redefines categories in a way more consistent with usage by working mathematicians: 
 * First of all, and in marked contrast to [mathlib in Lean 3](https://leanprover-community.github.io/mathlib-overview.html), sets in HoTT are types whose derived equality types satisfy a certain property, and are not given as predicates on types. To me, having different types of sets according to the type of their elements sounds more like the concept of a subset. 
