@@ -1,10 +1,10 @@
-import hott.init hott.hit.trunc hott.types.trunc hott.types.nat.order init2
+import init2
 
 universes u v w
 hott_theory
 
 namespace hott
-open hott.is_equiv hott.is_trunc hott.trunc hott.nat unit nat
+open hott.is_equiv
 
 /- We formalize the example on the use of (computational) univalence presented in the 
    paper [Vezzosi, Abel and Mörtberg: Cubical Agda]: When calculating 
