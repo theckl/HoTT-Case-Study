@@ -1,12 +1,11 @@
-import sets.subset categories.colimits categories.pullback
+import categories.colimits categories.pullback
 
 universes v v' u u' w
 hott_theory
 
 namespace hott
-open hott.subset hott.precategories hott.categories hott.categories.limits hott.is_trunc 
-     categories.adjoints hott.set hott.trunc hott.categories.pullbacks
-     hott.categories.colimits
+open hott.categories hott.categories.limits 
+     hott.set hott.categories.pullbacks hott.categories.colimits
 
 namespace categories.boolean
 
@@ -343,21 +342,22 @@ def all_of_fibs_of_Boolean (C : Type u) [is_cat.{v} C] [H : is_Boolean C] :
   has_all_of_fibers C :=
 begin
   apply has_all_of_fibers.mk, intros a b f,
-  apply has_all_of_fiber.mk, apply has_right_adjoint.mk, fapply is_left_adjoint.mk,
+  apply has_all_of_fiber.mk, apply categories.adjoints.has_right_adjoint.mk, 
+  fapply categories.adjoints.is_left_adjoint.mk,
   { fapply precategories.functor.mk, 
     { intro c, exact 𝒞((ex_fib f).obj 𝒞(c)) },
     { intros c c' i, apply contra_pos_compl, exact (ex_fib f).map (contra_pos_compl i) },
-    { intro c, exact is_prop.elim _ _ },
-    { intros c d e f g, exact is_prop.elim _ _ } },
-  { apply adjoint_hom_to_adjoint, fapply adjoint_functors_on_hom.mk,
+    { intro c, exact is_trunc.is_prop.elim _ _ },
+    { intros c d e f g, exact is_trunc.is_prop.elim _ _ } },
+  { apply categories.adjoints.adjoint_hom_to_adjoint, fapply categories.adjoints.adjoint_functors_on_hom.mk,
     { intros c d, fapply bijection_of_props,
       { intro i₁, apply contra_pos_compl_inv, rwr compl_compl, 
         apply ex_fib_left_adj, rwr stable_complements, exact contra_pos_compl i₁ },
       { intro i₂, apply contra_pos_compl_inv, change _ ≼ 𝒞(pullback_subobject f c), 
         rwr <- stable_complements, apply ex_fib_right_adj, apply contra_pos_compl_inv,
         rwr compl_compl, exact i₂ } },
-    { intros c d c' h g, exact is_prop.elim _ _ },
-    { intros c d d' g h, exact is_prop.elim _ _ } }
+    { intros c d c' h g, exact is_trunc.is_prop.elim _ _ },
+    { intros c d d' g h, exact is_trunc.is_prop.elim _ _ } }
 end
 
 @[hott, instance]
