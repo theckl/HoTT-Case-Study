@@ -5,8 +5,8 @@ universes u u' v w
 hott_theory
 
 namespace hott
-open trunc is_trunc hott.algebra hott.relation hott.is_equiv subset precategories 
-     categories categories.sets
+open trunc is_trunc precategories hott.relation categories subset--hott.algebra -- --hott.is_equiv -- 
+     -- --categories.sets
 
 namespace algebra
 
@@ -650,15 +650,16 @@ def normal_inter_closure_is_normal_closure {G : Group} (H : Subgroup G) :
   is_normal_closure H (normal_inter_closure H) :=
 begin
   fapply is_normal_closure.mk,
-  { apply conj_el_to_normal, intros h g h_el,
-    change ↥(g * h * g⁻¹ ∈ subset_of_subgroup (Subgroup_of_Subset _ _)), 
-    rwr Subgroup_Subset_str, apply prop_to_prop_resize,
-    intro i, fapply normal_conj_el, exact i.2.2, 
-    apply subset_of_subgroup_hom (subgroup_iInter _ i) h, 
-    change ↥(h ∈ subset_of_subgroup (Subgroup_of_Subset _ _)) at h_el, 
-    rwr Subgroup_Subset_str at h_el,
-    change ↥(h ∈ subset_of_subgroup (Subgroup_of_Subset _ _)), 
-    rwr Subgroup_Subset_str, exact h_el },
+  { apply conj_el_to_normal, intros h g h_el, 
+    change ↥(g * h * g⁻¹ ∈ subset_of_subgroup (Subgroup_of_Subset _ _)),
+    rwr Subgroup_Subset_str, apply prop_to_prop_resize, 
+    intro i, fapply normal_conj_el _ i.2.2, 
+    have incl : normal_inter_closure H ≼ i.1, from
+    begin 
+      let I : Set := set.to_Set (Σ (H' : Subgroup G), (H ≼ H') × (is_normal H')),
+      change @iInter_subgroups G I (λ i : I, i.1) ≼ i.1, apply subgroup_iInter 
+    end,
+    apply subset_of_subgroup_hom incl, exact h_el },
   { apply subgroup_subgroup_iInter, intro i, exact i.2.1 },
   { let I : Set := set.to_Set (Σ (H' : Subgroup G), (H ≼ H') × (is_normal H')),
     intros N norm_N inc_N, let i := dpair N (prod.mk inc_N norm_N),
