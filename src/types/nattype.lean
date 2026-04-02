@@ -1,10 +1,10 @@
-import types2 str_id types.nat2 types.unival_ex
+import str_id types.nat2 types.unival_ex
 
 universes u v w
 hott_theory
 
 namespace hott
-open hott.is_equiv hott.is_trunc hott.trunc hott.nat unit
+open hott.is_equiv hott.is_trunc  hott.nat 
 
 
 open nat
