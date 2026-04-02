@@ -4,8 +4,7 @@ universes u u' v w
 hott_theory
 
 namespace hott
-open trunc is_trunc hott.algebra hott.is_equiv subset precategories categories categories.sets
-     categories.adjoints
+open trunc is_trunc precategories categories categories.adjoints
 
 namespace algebra
 
@@ -28,7 +27,7 @@ def AbGroup_eqv_Group_comm :
 begin
   fapply equiv.mk,
   { intro G, exact dpair (AbGroup.to_Group G) G.struct.mul_comm },
-  { fapply adjointify,
+  { fapply is_equiv.adjointify,
     { intro G, exact AbGroup.mk' G.1 G.2 },
     { intro G_comm, hinduction G_comm with G mul_comm, fapply sigma.sigma_eq,
       { hinduction G with G struct_G, hinduction struct_G, exact idp },
@@ -122,7 +121,7 @@ def AddAbGroup_eqv_AbGroup : AddAbGroup ≃ AbGroup :=
 begin
   fapply equiv.mk,
   { intro G, exact AddAbGroup.to_AbGroup G },
-  { fapply adjointify,
+  { fapply is_equiv.adjointify,
     { intro G, exact AbGroup.to_AddAbGroup G },
     { intro G, hinduction G, exact idp },
     { intro G, hinduction G, exact idp } }
@@ -133,7 +132,7 @@ def AddAbGroup_to_AbGroup_is_inj : is_injective AddAbGroup.to_AbGroup :=
 begin
   fapply equiv_map_is_injective AddAbGroup.to_AbGroup id AddAbGroup_eqv_AbGroup,
   { apply eq_of_homotopy, intro G, exact idp },
-  { fapply is_injective.mk, intros G₁ G₂, fapply adjointify,
+  { fapply is_injective.mk, intros G₁ G₂, fapply is_equiv.adjointify,
     { exact λ p, p }, 
     { intro p, change G₁ = G₂ at p, hinduction p, exact idp },
     { intro p, hinduction p, exact idp } }
