@@ -4,8 +4,7 @@ universes u u' v w
 hott_theory
 
 namespace hott
-open trunc is_trunc hott.algebra hott.eq precategories categories hott.is_equiv 
-     categories.sets subset hott.relation categories.sets
+open trunc precategories hott.relation
 
 namespace algebra
 
@@ -386,8 +385,8 @@ begin
   { intros L g₁ g₂ fac_eq, apply Monoid_to_Set_functor_is_faithful,
     fapply (@set.cons_to_ind_quotient (Monoid_to_Set_functor.obj M) R _ _ 
                                                          is_mon_quot.is_set_quot).unique,
-    change to_hom_set is_mon_quot.is_set_quot.proj ≫ Monoid_to_Set_functor.map _ =
-           to_hom_set is_mon_quot.is_set_quot.proj ≫ Monoid_to_Set_functor.map _,
+    change categories.sets.to_hom_set is_mon_quot.is_set_quot.proj ≫ Monoid_to_Set_functor.map _ =
+           categories.sets.to_hom_set is_mon_quot.is_set_quot.proj ≫ Monoid_to_Set_functor.map _,
     rwr <- is_mon_quot.proj_eq,
     change Monoid_to_Set_functor.map _ ≫ _ = Monoid_to_Set_functor.map _ ≫ _,
     rwr <- Monoid_to_Set_functor.map_comp, rwr fac_eq }
@@ -400,11 +399,11 @@ def univ_iso_monoid_quotient {M : Monoid} (R : M -> M -> Prop)
       (Monoid_cong_quotient R).is_mon_quot.proj ≫ iso.hom :=
 begin
   fapply dpair,
-  { fapply iso.mk,
+  { fapply categories.iso.mk,
     { fapply λ rel_eq, ((monoid_to_univ_quotient _ _ 
                (Monoid_cong_quotient R).is_mon_quot).factors is_mon_quot.proj rel_eq).1, 
       intros m₁ m₂, exact (is_mon_quot.rel_eq _ _).1 },
-    { fapply is_iso.mk,
+    { fapply categories.is_iso.mk,
       { fapply λ rel_eq, (is_mon_quot.factors (monoid_to_univ_quotient _ _ 
                                     (Monoid_cong_quotient R).is_mon_quot).proj rel_eq).1, 
         intros m₁ m₂, exact ((monoid_to_univ_quotient _ _ 
