@@ -1,11 +1,10 @@
-import hott.algebra.bundled hott.algebra.relation categories.concrete categories.sets
+import categories.concrete categories.sets
 
 universes u u' v w
 hott_theory
 
 namespace hott
-open trunc is_trunc hott.algebra hott.eq subset precategories categories hott.is_equiv 
-     categories.sets  hott.relation
+open is_trunc categories hott.is_equiv categories.sets
 
 namespace algebra
 
@@ -356,11 +355,11 @@ begin
 end
 
 @[hott]  --[GEVE]
-def Monoid_to_Set_functor_is_faithful : is_faithful_functor (Monoid_to_Set_functor) :=
+def Monoid_to_Set_functor_is_faithful : precategories.is_faithful_functor (Monoid_to_Set_functor) :=
 begin 
-  fapply faithful_is_trans (concrete_forget_functor (Monoid.to_Semigroup)), 
+  fapply precategories.faithful_is_trans (concrete_forget_functor (Monoid.to_Semigroup)), 
   { apply @concrete_forget_functor_is_faithful _ _ _ Monoid.to_Semigroup },
-  { fapply faithful_is_trans, 
+  { fapply precategories.faithful_is_trans, 
     { apply @concrete_forget_functor_is_faithful _ _ _ Semigroup.to_Magma },
     { apply @concrete_forget_functor_is_faithful _ _ _ Magma.to_Set } }  
 end  
