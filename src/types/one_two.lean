@@ -4,7 +4,7 @@ universes u v w
 hott_theory
 
 namespace hott
-open hott.is_equiv hott.is_trunc hott.trunc hott.nat 
+open hott.is_trunc 
 
 /- We need a set-type `Two` with two objects to deduce propositional resizing from LEM.
    To construct it we also need `Zero` and `One`. 
