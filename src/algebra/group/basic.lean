@@ -5,7 +5,7 @@ universes u u' v w
 hott_theory
 
 namespace hott
-open trunc is_trunc hott.algebra hott.is_equiv subset precategories categories categories.sets
+open trunc is_trunc categories
 
 namespace algebra
 
@@ -58,7 +58,7 @@ begin
   fapply equiv.mk,
   { intro G, exact dpair (Group.to_Monoid G) 
                          (group_of_mon_str.mk G.struct.inv G.struct.mul_left_inv) },
-  { fapply adjointify,
+  { fapply is_equiv.adjointify,
     { intros M_str, hinduction M_str with M str, exact Group_of_Monoid M str },
     { intro M_inv_law, hinduction M_inv_law with M inv_law, 
       hinduction M with M M_mon, hinduction M_mon, hinduction inv_law, exact idp },
@@ -271,9 +271,9 @@ begin
 end
 
 @[hott] 
-def Group_to_Set_functor_is_faithful : is_faithful_functor (Group_to_Set_functor) :=
+def Group_to_Set_functor_is_faithful : precategories.is_faithful_functor (Group_to_Set_functor) :=
 begin 
-  fapply faithful_is_trans (concrete_forget_functor (Group.to_Monoid)), 
+  fapply precategories.faithful_is_trans (concrete_forget_functor (Group.to_Monoid)), 
   { apply @concrete_forget_functor_is_faithful _ _ _ Group.to_Monoid },
   { apply Monoid_to_Set_functor_is_faithful }  
 end  
