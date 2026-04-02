@@ -1,11 +1,10 @@
-import sets.subset  
+import sets.examples  
 
 universes v v' v'' v''' u u' u'' u''' w 
 hott_theory
 
 namespace hott
-open hott.eq hott.sigma hott.set hott.subset hott.is_trunc 
-     hott.is_equiv hott.equiv
+open hott.sigma hott.set hott.is_trunc hott.is_equiv hott.equiv
 
 /-
 We introduce precategories and categories following the HoTT book, 
