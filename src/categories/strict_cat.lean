@@ -4,9 +4,7 @@ universes v v' u u' w
 hott_theory
 
 namespace hott
-open hott.eq hott.set hott.subset hott.is_trunc hott.is_equiv 
-     hott.equiv hott.precategories hott.categories
-     hott.categories.adjoints 
+open hott.set hott.is_trunc hott.precategories
 
 namespace categories
 
@@ -64,7 +62,7 @@ def strict_cat_eqv_sig : strict_Category ≃ strict_cat_sig :=
 begin
   fapply equiv.mk,
   { intro C, exact ⟨⟨C, @is_strict_cat.to_is_precat C.obj C.strict_cat⟩, C.strict_cat.set⟩ },
-  { fapply adjointify,
+  { fapply is_equiv.adjointify,
     { intro C_sig, exact strict_Category.mk C_sig.1.1 
                         (@is_strict_cat.mk C_sig.1.1 C_sig.1.2 C_sig.2) },
     { intro C_sig, hsimp, hinduction C_sig, hsimp, hinduction fst, refl },
@@ -79,9 +77,9 @@ sigma.subtype_eq_equiv _ _
 @[hott]
 def strict_cat_eq_eqv_precat_eq (D₁ D₂ : strict_Category) :
   (D₁ = D₂) ≃ (strict_Cat.to_Precat D₁ = strict_Cat.to_Precat D₂) :=
-eq_equiv_fn_eq_of_equiv strict_cat_eqv_sig _ _ ⬝e
+equiv.eq_equiv_fn_eq_of_equiv strict_cat_eqv_sig _ _ ⬝e
 strict_cat_sig_eq_eqv_pc_sig_eq _ _ ⬝e
-(eq_equiv_fn_eq_of_equiv Precat_str_equiv_sig _ _)⁻¹ᵉ 
+(equiv.eq_equiv_fn_eq_of_equiv Precat_str_equiv_sig _ _)⁻¹ᵉ 
 
 @[hott]
 def strict_cat_idp_to_precat_idp (D : strict_Category) :
@@ -289,7 +287,7 @@ begin
                 (@is_set.elim C _ _ _ _ (idpath y)),
         change iso.hom (idtoiso idp)  ≫ g ≫ iso.hom (idtoiso idp) = _,
         hsimp } } },
-  { fapply adjointify,
+  { fapply is_equiv.adjointify,
     { exact inv.obj },
     { intro x, exact ap10 (ap functor.obj l_inv) x },
     { intro x, exact ap10 (ap functor.obj r_inv) x } }
@@ -301,7 +299,7 @@ def strict_cat_iso_eqv_iso (C D : Type _) [sc : is_strict_cat C] [sd : is_strict
 begin
   fapply equiv.mk,
   { exact strict_cat_iso_to_iso (strict_Category.mk C sc) (strict_Category.mk D sd) },
-  { fapply adjointify,
+  { fapply is_equiv.adjointify,
     { exact iso_to_strict_cat_iso C D },
     { intro i, apply hom_eq_to_iso_eq, fapply functor_eq',
       { intro x, hinduction i with hom is_iso, hinduction is_iso, exact idp },
