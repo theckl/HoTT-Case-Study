@@ -4,7 +4,7 @@ universes u v w
 hott_theory
 
 namespace hott 
-open hott.is_trunc hott.is_equiv
+open hott.is_trunc
 
 @[hott]
 structure fin (n : nat) :=
