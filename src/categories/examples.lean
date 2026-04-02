@@ -4,9 +4,7 @@ universes v v' v'' v''' u u' u'' u''' w
 hott_theory
 
 namespace hott
-open hott.eq hott.set hott.subset hott.is_trunc hott.is_equiv 
-     hott.equiv hott.categories
-     hott.trunc hott.precategories hott.categories
+open hott.set hott.subset hott.is_trunc hott.precategories
 
 namespace categories
 
@@ -192,7 +190,7 @@ def ideqviso_op [is_cat.{v} C] : ∀ a b : Cᵒᵖ, is_equiv (@idtoiso _ _ a b) 
   assume a b,
   let f := @id_op_to_id _ _ a b, g := @idtoiso _ _ (unop a) (unop b), 
       h := @iso_to_iso_op _ _ a b in
-  have id_optoiso_op : is_equiv (h ∘ g ∘ f), from is_equiv_compose h (g ∘ f), 
+  have id_optoiso_op : is_equiv (h ∘ g ∘ f), from is_equiv.is_equiv_compose h (g ∘ f), 
   let hgf := λ (a b : Cᵒᵖ) (p : a = b), 
              iso_to_iso_op (idtoiso (id_op_to_id p)) in
   have idtoiso_eq : hgf a b = @idtoiso _ _ a b, from fn_id_rfl _ _ idtoiso_rfl_eq a b,
@@ -327,7 +325,7 @@ end
 @[hott, instance]
 def functor_is_cat [is_precat.{v} C] [HD : is_cat.{v'} D] : is_cat (C ⥤ D) :=
 begin
-  apply is_cat.mk, intros F G, fapply adjointify, 
+  apply is_cat.mk, intros F G, fapply is_equiv.adjointify, 
   { exact functor_isotoid },
   { intro i, apply hom_eq_to_iso_eq, apply nat_trans_eq, apply eq_of_homotopy, 
     intro c, rwr functor_idtoiso_comp, 
