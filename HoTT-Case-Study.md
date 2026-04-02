@@ -2,7 +2,7 @@
 
 # A Case Study
 
-This project started with the aim to exemplify how homotopy type theory can handle a common practice in informal mathematics without violating its spirit, namely "arguing up to isomorphisms".
+This project started with the aim to exemplify how homotopy type theory can handle a common practice in informal mathematics without violating its spirit, namely "identifying canonically isomorphic objects".
 
 A striking example of this practice is described by Kevin Buzzard when he [reports](https://www.icms.org.uk/downloads/bigproof/Buzzard.pdf) on his [formalization of perfectoid spaces](https://leanprover-community.github.io/lean-perfectoid-spaces/) together with Johan Commelin and Patrick Massot: When you iterate localizations of a ring by inverting several elements, you often want to work instead with a one-step localization, by inverting the product of the elements. Mathematicians immediately assert that both localized rings are uniquely isomorphic and use them interchangeably without bothering any longer - for proof checkers, this becomes a much more serious problem. In particular, it is not possible to apply rewrite-tactics as long as there is no actual equality but just isomorphisms. The same problem already occurs in more basic settings, for example calculations in quotient rings or even quotient groups. 
 
