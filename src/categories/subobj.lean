@@ -4,8 +4,7 @@ universes v v' v'' v''' u u' u'' u''' w
 hott_theory
 
 namespace hott
-open hott.eq hott.sigma hott.set hott.subset hott.is_trunc 
-     hott.is_equiv hott.trunc hott.precategories hott.categories
+open hott.is_trunc hott.precategories hott.categories
 
 /- In a category `C` we can define a subobject of an object `c` as a monomorphism `a ⟶ c`. Two 
    such subobjects are equal if and only if there is an isomorphism between the sources of the 
@@ -97,7 +96,7 @@ begin
         { apply Hf d₁ (sh₁.hom_obj ≫ sh₂.hom_obj) (𝟙 d₁), rwr is_precat.assoc, 
         rwr sh₂.fac, rwr sh₁.fac, hsimp } } },
     { hsimp, rwr sh₁.fac } },
-  { fapply adjointify, 
+  { fapply is_equiv.adjointify, 
     { intro i, fapply pair, 
       { fapply hom_of_monos.mk, exact i.iso_obj.hom, exact i.fac },
       { fapply hom_of_monos.mk, exact i.iso_obj.ih.inv, rwr iso_move_lr _ _ _ i.fac } },
@@ -214,7 +213,7 @@ def equal_subobj_eqv_iso_mono {C : Type _} [is_cat C] {c : C} (s₁ s₂ : subob
 begin
   fapply equiv.mk,
   { exact equal_subobj_to_iso_mono s₁ s₂ },
-  { fapply adjointify,
+  { fapply is_equiv.adjointify,
     { exact iso_mono_to_equal_subobj s₁ s₂ },
     { hinduction s₁ with obj₁ hom₁ is_mono₁, hinduction s₂ with obj₂ hom₂ is_mono₂,
       intro im, hinduction im with iso_obj fac, apply iso_of_monos_eq _ _, hsimp,
@@ -306,7 +305,7 @@ def iso_of_monos_eqv_iso {C : Type u} [is_cat.{v} C] {c : C} (a b : subobject c)
 begin 
   fapply equiv.mk,
   { exact iso_of_monos_to_iso a b },
-  { fapply adjointify, 
+  { fapply is_equiv.adjointify, 
     { exact iso_to_iso_of_monos a b },
     { intro i, apply hom_eq_to_iso_eq, exact is_prop.elim _ _ },
     { intro i, exact @is_prop.elim _ 
