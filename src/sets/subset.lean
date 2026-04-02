@@ -4,7 +4,7 @@ universes u v w
 hott_theory
 
 namespace hott
-open hott.set hott.is_trunc hott.is_equiv hott.eq hott.trunc hott.sigma 
+open hott.set hott.is_trunc hott.is_equiv hott.trunc hott.sigma 
 
 /- We define classes and notations that can be used to introduce `∈`, `⊆`, arbitrary 
    intersections `⋂ᵢ` and unions `⋃ᵢ` indexed by sets and complements `𝒞` for 
