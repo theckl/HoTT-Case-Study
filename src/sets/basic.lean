@@ -1,11 +1,10 @@
-import hott.hit.quotient hott.algebra.relation hott.types.nat.order hott.function types.prop_axioms types.tuple
+import types.prop_axioms types.tuple
 
 universes u u' v w
 hott_theory
 
 namespace hott
-open is_trunc trunc equiv hott.is_equiv hott.prod hott.quotient hott.sigma hott.relation 
-     nat 
+open is_trunc trunc equiv hott.prod hott.sigma
 
 namespace set
 
