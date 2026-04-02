@@ -4,7 +4,7 @@ universes u v w
 hott_theory
 
 namespace hott
-open hott.set subset prod trunc is_trunc sum
+open subset
 
 --set_option pp.universes true
 
@@ -194,7 +194,7 @@ def iUnion {A : Set.{u}} {I : Set.{v}} (f : I -> Powerset A) : Subset A :=
 hott_theory_cmd "local prefix `⋃ᵢ`:110 := hott.subset.iUnion"
 
 @[hott]
-def empty_iUnion_empty {A : Set.{u}} (f : empty_Set -> Powerset A) : 
+def empty_iUnion_empty {A : Set.{u}} (f : set.empty_Set -> Powerset A) : 
   ⋃ᵢ f = empty_Subset A :=
 begin 
   apply (sset_eq_iff_inclusion _ _).2, apply pair,
@@ -204,14 +204,14 @@ end
 
 @[hott]
 def iUnion_index_bij {A : Set.{u}} {I J : Set.{v}} (f : I -> Powerset A) 
-  (h : bijection J I) : ⋃ᵢ f = ⋃ᵢ (f ∘ h) :=
+  (h : set.bijection J I) : ⋃ᵢ f = ⋃ᵢ (f ∘ h) :=
 begin
   apply (sset_eq_iff_inclusion _ _).2, apply pair,
   { intros a el, apply prop_to_prop_resize, hinduction prop_resize_to_prop el, 
-    apply tr, fapply sigma.mk, exact (inv_bijection_of h) a_1.1, 
-    change ↥(a ∈ f (h.map ((inv_bijection_of h).map a_1.1))), rwr inv_bij_r_inv, exact a_1.2 },
+    apply trunc.tr, fapply sigma.mk, exact (set.inv_bijection_of h) a_1.1, 
+    change ↥(a ∈ f (h.map ((set.inv_bijection_of h).map a_1.1))), rwr set.inv_bij_r_inv, exact a_1.2 },
   { intros a el, apply prop_to_prop_resize, hinduction prop_resize_to_prop el, 
-    apply tr, fapply sigma.mk, exact h a_1.1, exact a_1.2 }
+    apply trunc.tr, fapply sigma.mk, exact h a_1.1, exact a_1.2 }
 end
 
 @[hott, instance]
@@ -315,7 +315,7 @@ begin
     apply (pred_elem x).2, apply prop_to_prop_resize,
     change Π (i : I), x∈𝒞(f i), intro i, apply (elem_comp_iff (f i) x).2, 
     intro el_i, apply (elem_comp_iff (⋃ᵢ f) x).1 el,
-    apply (pred_elem x).2, exact prop_to_prop_resize (tr ⟨i, el_i⟩) },
+    apply (pred_elem x).2, exact prop_to_prop_resize (trunc.tr ⟨i, el_i⟩) },
   { intros x el, change ↥(x ∉ ⋃ᵢ f), intro el_Ui, 
     have i_el : Π i : I, x∈𝒞(f i), from prop_resize_to_prop ((pred_elem x).1 el),
     hinduction prop_resize_to_prop ((pred_elem x).1 el_Ui) with el_i, 
