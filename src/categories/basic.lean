@@ -4,8 +4,7 @@ universes v v' v'' v''' u u' u'' u''' w
 hott_theory
 
 namespace hott
-open hott.eq hott.sigma hott.set hott.subset hott.is_trunc 
-     hott.is_equiv hott.precategories
+open hott.is_trunc hott.precategories
 
 /-
 We introduce precategories and categories following the HoTT book, 
@@ -155,7 +154,7 @@ def iso_eq_eqv_hom_eq {C : Type u} [is_precat.{v} C] {a b : C} {i j : a ≅ b} :
   (i = j) ≃ i.hom = j.hom :=
 begin
   fapply equiv.mk, exact ap iso.hom, 
-  fapply adjointify, exact hom_eq_to_iso_eq, 
+  fapply is_equiv.adjointify, exact hom_eq_to_iso_eq, 
   { intro h, hinduction i, hinduction j, 
     change ap _ (apd011 _ _ _) = h, rwr ap_apd011 iso.mk _ _ iso.hom (λ a b, idp), 
     rwr idp_con },
@@ -267,13 +266,13 @@ def ff_functor_iso_iso {C : Type u} [is_precat C] {D : Type u'}
   Π {x y : C} (f : x ⟶ y), is_iso (F.map f) -> is_iso f :=
 begin 
   intros x y f iso_Ff, fapply is_iso.mk,
-  { exact (inv_of_bijection (bijection.mk _ (@ffF y x))).1 iso_Ff.inv },
+  { exact (set.inv_of_bijection (set.bijection.mk _ (@ffF y x))).1 iso_Ff.inv },
   { apply (@ffF y y).inj, rwr functor.map_comp, rwr functor.map_id, 
-    change (bijection.mk _ (@ffF y x)) _ ≫ _ = _,
-    rwr (inv_of_bijection (bijection.mk _ (@ffF y x))).2.r_inv, exact iso_Ff.r_inv },
+    change (set.bijection.mk _ (@ffF y x)) _ ≫ _ = _,
+    rwr (set.inv_of_bijection (set.bijection.mk _ (@ffF y x))).2.r_inv, exact iso_Ff.r_inv },
   { apply (@ffF x x).inj, rwr functor.map_comp, rwr functor.map_id, 
-    change _ ≫ (bijection.mk _ (@ffF y x)) _ = _,
-    rwr (inv_of_bijection (bijection.mk _ (@ffF y x))).2.r_inv, exact iso_Ff.l_inv }
+    change _ ≫ (set.bijection.mk _ (@ffF y x)) _ = _,
+    rwr (set.inv_of_bijection (set.bijection.mk _ (@ffF y x))).2.r_inv, exact iso_Ff.l_inv }
 end
 
 @[hott]
@@ -515,19 +514,19 @@ begin
   intro pci, fapply precategories.functor.mk,
   { exact pci.equiv.inv },
   { intros d₁ d₂ h, 
-    fapply (inv_bijection_of (bijection.mk _ (@precat_iso.ff _ _ _ _ pci _ _))).map,
+    fapply (set.inv_bijection_of (set.bijection.mk _ (@precat_iso.ff _ _ _ _ pci _ _))).map,
     exact (idtoiso (@is_equiv.right_inv _ _ _ pci.equiv d₁)).hom ≫ h ≫ 
           (idtoiso (@is_equiv.right_inv _ _ _ pci.equiv d₂)⁻¹).hom },
-  { intro d, change (inv_bijection_of _).map (_ ≫ (𝟙 d) ≫ _) = _, rwr is_precat.id_comp,
+  { intro d, change (set.inv_bijection_of _).map (_ ≫ (𝟙 d) ≫ _) = _, rwr is_precat.id_comp,
     rwr idtoiso_comp_eq, rwr con.right_inv, apply eq.inverse,
-    apply bijection_l_to_r, change pci.functor.map _ = _, rwr functor.map_id },
-  { intros x y z f g, change (inv_bijection_of _).map _ = (inv_bijection_of _).map _ ≫ 
-                                                          (inv_bijection_of _).map _, 
-    apply eq.inverse, apply bijection_l_to_r, change pci.functor.map _ = _,
+    apply set.bijection_l_to_r, change pci.functor.map _ = _, rwr functor.map_id },
+  { intros x y z f g, change (set.inv_bijection_of _).map _ = (set.inv_bijection_of _).map _ ≫ 
+                                                          (set.inv_bijection_of _).map _, 
+    apply eq.inverse, apply set.bijection_l_to_r, change pci.functor.map _ = _,
     rwr functor.map_comp pci.functor, 
-    change (bijection.mk _ (@precat_iso.ff _ _ _ _ pci _ _)).map _ ≫ 
-           (bijection.mk _ (@precat_iso.ff _ _ _ _ pci _ _)).map _ = _, 
-    rwr inv_bij_r_inv, rwr inv_bij_r_inv, rwr is_precat.assoc, rwr is_precat.assoc f, 
+    change (set.bijection.mk _ (@precat_iso.ff _ _ _ _ pci _ _)).map _ ≫ 
+           (set.bijection.mk _ (@precat_iso.ff _ _ _ _ pci _ _)).map _ = _, 
+    rwr set.inv_bij_r_inv, rwr set.inv_bij_r_inv, rwr is_precat.assoc, rwr is_precat.assoc f, 
     rwr <- is_precat.assoc _ _ (g ≫ _), rwr idtoiso_comp_eq, rwr con.left_inv,
     rwr idtoiso_refl_eq, change _ ≫ _ ≫ 𝟙 _ ≫ _ ≫ _ = _, rwr is_precat.id_comp, 
     rwr is_precat.assoc f g }
@@ -543,13 +542,13 @@ begin
   { apply eq_of_homotopy, intro d, 
     exact @is_equiv.right_inv _ _ pci.functor.obj (precat_iso.equiv pci) d },
   { intros d₁ d₂ h, rwr ap10_eq_of_homotopy, 
-    change (bijection.mk _ (@precat_iso.ff _ _ _ _ pci _ _)).map 
-                                            ((inv_bijection_of _).map _) = _, 
-    rwr inv_bij_r_inv },
+    change (set.bijection.mk _ (@precat_iso.ff _ _ _ _ pci _ _)).map 
+                                            ((set.inv_bijection_of _).map _) = _, 
+    rwr set.inv_bij_r_inv },
   { apply eq_of_homotopy, intro c, 
     exact @is_equiv.left_inv _ _ pci.functor.obj (precat_iso.equiv pci) c },
   { intros d₁ d₂ h, rwr ap10_eq_of_homotopy, 
-    change (inv_bijection_of _).map _ = _, apply eq.inverse, apply bijection_l_to_r,
+    change (set.inv_bijection_of _).map _ = _, apply eq.inverse, apply set.bijection_l_to_r,
     change pci.functor.map _ = _, rwr pci.functor.map_comp, rwr pci.functor.map_comp,
     rwr funct_idtoiso, rwr funct_idtoiso, rwr is_equiv.adj, rwr is_equiv.adj, rwr ap_inv }
 end
@@ -568,7 +567,7 @@ idp
 def precat_equiv_cat_cat {C D : Type _} [HC : is_cat C] [HD : is_precat D] :
   precat_equiv C D -> is_cat D :=
 begin
-  intro pce, fapply is_cat.mk, intros d₁ d₂, fapply adjointify,
+  intro pce, fapply is_cat.mk, intros d₁ d₂, fapply is_equiv.adjointify,
   { intro i, 
     apply λ p, (ap10 (precat_equiv.rinv_obj pce) d₁)⁻¹ ⬝ p ⬝ 
                (ap10 (precat_equiv.rinv_obj pce) d₂),
