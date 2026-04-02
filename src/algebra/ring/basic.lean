@@ -1,11 +1,10 @@
-import int2 algebra.group.abelian
+import types.int2 algebra.group.abelian
        
 universes u u' v w
 hott_theory
 
 namespace hott
-open trunc is_trunc hott.algebra hott.relation hott.is_equiv set subset precategories 
-     categories categories.sets
+open is_trunc categories 
 
 namespace algebra
 
@@ -88,7 +87,7 @@ begin
   begin
     fapply equiv.mk, 
     { intro str, exact ⟨str.mul, str.one⟩ },
-    { fapply adjointify, 
+    { fapply is_equiv.adjointify, 
       { intro mul_one, exact mul_monoid_ops_str.mk mul_one.1 mul_one.2 },
       { intro mul_one, hinduction mul_one, exact idp },
       { intro str, hinduction str, exact idp } }
@@ -115,7 +114,7 @@ begin
   exact is_prop.elim _ _
 end
 
-@[hott, reducible, instance]
+@[hott, reducible, instance] --[GEVE]
 def CommRing_hom_system : concrete_hom_system CommRing.to_AddAbGroup.{u} :=
 begin
   fapply concrete_hom_system.mk,
@@ -188,7 +187,7 @@ begin
         R_struct.2.1.mul R_struct.2.2.mul_assoc R_struct.2.1.one R_struct.2.2.one_mul
         R_struct.2.2.mul_one R_struct.2.2.left_distrib 
         R_struct.2.2.right_distrib R_struct.2.2.mul_comm },
-  { fapply adjointify,
+  { fapply is_equiv.adjointify,
     { intro R, fapply dpair, exact CommRing.to_AddAbGroup R, fapply dpair,
       { exact mul_monoid_ops_str.mk (CommRing.struct R).mul (CommRing.struct R).one },
       { exact mul_monoid_laws_str.mk (CommRing.struct R).mul_assoc 
@@ -245,7 +244,7 @@ begin
   { intro R, exact AddAbGroup_CommRing_str_eqv_fiber R },
   { intro R, intros str₁ str₂, fapply equiv.mk,
     { intro p, change str₁ = str₂ at p, rwr p, exact 𝟙 _ },
-    { fapply adjointify,
+    { fapply is_equiv.adjointify,
       { intro h, hinduction h with h_ss h_eq, hinduction h_ss with h h_laws,
         rwr AddAbGroup_CommRing_str_to_fiber_eq str₁ at h_eq,
         rwr AddAbGroup_CommRing_str_to_fiber_eq str₂ at h_eq,
@@ -272,7 +271,7 @@ begin
       { intro h, exact is_set.elim _ _ } } }
 end
 
-@[hott, instance]
+@[hott, instance]  --[GEVE]
 def CommRing_is_cat : is_cat.{u u+1} CommRing.{u} := by apply_instance
 
 @[hott]
@@ -336,14 +335,14 @@ def comm_ring_hom.mk {R S : CommRing} (f : R -> S) :
                              true.intro⟩, ⟨str.one_comp, str.mul_comp⟩⟩ 
 
 @[hott] 
-def CommRing_to_Set_functor_is_faithful : is_faithful_functor (CommRing_to_Set_functor) :=
+def CommRing_to_Set_functor_is_faithful : precategories.is_faithful_functor (CommRing_to_Set_functor) :=
 begin 
-  fapply faithful_is_trans (concrete_forget_functor (CommRing.to_AddAbGroup)), 
-  { apply @concrete_forget_functor_is_faithful _ _ CommRing.to_AddAbGroup },
-  { fapply faithful_is_trans (concrete_forget_functor (AddAbGroup.to_AbGroup)), 
-    { apply @concrete_forget_functor_is_faithful _ _ AddAbGroup.to_AbGroup },
-    { fapply faithful_is_trans (concrete_forget_functor (AbGroup.to_Group)),
-      { apply @concrete_forget_functor_is_faithful _ _ AbGroup.to_Group },
+  fapply precategories.faithful_is_trans (concrete_forget_functor (CommRing.to_AddAbGroup)), 
+  { apply @concrete_forget_functor_is_faithful _ _ _ CommRing.to_AddAbGroup },
+  { fapply precategories.faithful_is_trans (concrete_forget_functor (AddAbGroup.to_AbGroup)), 
+    { apply @concrete_forget_functor_is_faithful _ _ _ AddAbGroup.to_AbGroup },
+    { fapply precategories.faithful_is_trans (concrete_forget_functor (AbGroup.to_Group)),
+      { apply @concrete_forget_functor_is_faithful _ _ _ AbGroup.to_Group },
       { apply Group_to_Set_functor_is_faithful } } } 
 end 
 
@@ -540,7 +539,8 @@ begin
   intros f g, apply CommRing_to_Set_functor_is_faithful, apply eq_of_homotopy, intro a,
   hinduction a with n n,
   { hinduction n, 
-    { change CommRing_to_Set_functor.map f 0 = CommRing_to_Set_functor.map g 0,
+    { have p : int.of_nat 0 = 0, from idp, rwr p,
+      --change CommRing_to_Set_functor.map f (int.of_nat 0) = CommRing_to_Set_functor.map g (int.of_nat 0),
       apply λ q, (comm_ring_hom_laws f).zero_comp ⬝ q, apply eq.inverse, 
       apply λ q, (comm_ring_hom_laws g).zero_comp ⬝ q, exact idp },
     { change CommRing_to_Set_functor.map f (int.of_nat n + 1) = 
