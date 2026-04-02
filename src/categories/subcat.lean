@@ -4,8 +4,7 @@ universes v v' v'' v''' u u' u'' u''' w
 hott_theory
 
 namespace hott
-open hott.eq hott.sigma hott.set hott.subset hott.is_trunc 
-     hott.is_equiv hott.precategories hott.categories
+open hott.sigma hott.precategories hott.categories
 
 
 /- The fully embedded category of a type injectively mapped to a category. 
@@ -76,7 +75,7 @@ def fully_embedded_category {C : Type u} [is_cat.{v} C] {D : Type u'} (f : D -> 
   [inj : is_injective f] : is_cat (ind_cat_type f) :=
 begin
   fapply is_cat.mk,
-  intros d₁ d₂, fapply adjointify, 
+  intros d₁ d₂, fapply is_equiv.adjointify, 
   { intro i, exact inj_imp inj d₁ d₂ (category.isotoid (ind_type_iso_iso f i)) },
   { intro i, apply hom_eq_to_iso_eq, 
     rwr ind_idtoiso_hom f inj (category.isotoid (ind_type_iso_iso f i)),
