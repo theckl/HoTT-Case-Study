@@ -16,8 +16,8 @@ types
  int2       :   347 Y 2447
 sets
   basic     :   802 Y 
-  examples  :   152 Y       
-  subset    :   819 Y        
+  subset    :   819 Y  
+  examples  :   152 Y               
   axioms    :   355 Y         
   algebra   :   362 Y        
   quotients :   799 Y 
@@ -49,9 +49,9 @@ algebra
    basic    :   662 Y
    subgroup :   561 Y 
    quotient :   704 Y 
-   abelian  :   793 Y 4100
+   abelian  :   793 Y 
   ring
-   basic    :   579  
+   basic    :   579 Y 4679 
    module   :   480  
    examples :   863
    submod   :   343  5777
@@ -61,8 +61,8 @@ algebra
 
 Planned changes in Files, from bottom to top: 
 ---------------------------------------------
+- [algebra.ring.module], [algebra.ring.examples]: debug & cross-reference
 - [algebra.ring.submod] : quotients of modules by submodules
-- [categories.adjoints] : subobjects through forgetful functors
 
             
  
