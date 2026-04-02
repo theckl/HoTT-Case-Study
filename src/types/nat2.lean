@@ -1,10 +1,10 @@
-import hott.hit.trunc hott.types.nat.order init2
+import init2
 
 universes u v w
 hott_theory
 
 namespace hott
-open hott.is_equiv hott.is_trunc hott.trunc hott.nat unit
+open  hott.nat 
 
 /- Facts about natural numbers not found in the [HoTT3]-library (or only as theorems). -/
 open nat
