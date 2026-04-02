@@ -4,8 +4,7 @@ universes v v' u u' w
 hott_theory
 
 namespace hott
-open hott.precategories hott.categories hott.categories.limits hott.is_trunc 
-     categories.adjoints hott.set hott.subset hott.trunc 
+open hott.precategories hott.categories hott.categories.limits 
 
 namespace categories.inf_pullbacks
 
@@ -234,8 +233,8 @@ begin
                                         (λ j, (cone_f.π.app j).hom_obj) cone_f.X.hom w,
       fapply cone_map.mk,
       { fapply hom_of_monos.mk, exact inf_pullback_lift S, exact inf_pb_lift_diag_eq S },
-      { intro j, exact is_prop.elim _ _ } }, 
-    { intros cf j, exact is_prop.elim _ _ } }
+      { intro j, exact is_trunc.is_prop.elim _ _ } }, 
+    { intros cf j, exact is_trunc.is_prop.elim _ _ } }
 end  
 
 @[hott, instance]
