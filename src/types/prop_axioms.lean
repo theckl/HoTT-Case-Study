@@ -4,7 +4,7 @@ universes u v w
 hott_theory
 
 namespace hott
-open is_trunc trunc equiv hott.is_equiv hott.prod
+open is_trunc equiv hott.is_equiv
 
 --set_option pp.universes true
 
