@@ -1,11 +1,10 @@
-import hott.prop_trunc hott.init hott.types.trunc hott.homotopy.susp sets.subset
+import hott.homotopy.susp sets.subset
 
 universes u v w
 hott_theory
 
 namespace hott
-open hott.is_trunc hott.trunc hott.equiv hott.is_equiv hott.sigma hott.susp hott.sum ulift
-     hott.subset
+open hott.is_trunc hott.trunc hott.sigma hott.susp 
 
 set_option pp.universes true
 
@@ -342,13 +341,13 @@ def AC_implies_LEM : Choice_nonempty.{u} -> ExcludedMiddle.{u} :=
    and conversely, we derive LEM from decidability of the element relation of an 
    inhabited set, namely `One_Set`. -/
 @[hott, instance]
-def has_dec_elem_of_LEM (A : Set): has_dec_elem A := 
-  begin apply has_dec_elem.mk, intros a S, exact LEM (a ∈ S) end
+def has_dec_elem_of_LEM (A : Set): subset.has_dec_elem A := 
+  begin apply subset.has_dec_elem.mk, intros a S, exact LEM (a ∈ S) end
 
 @[hott]
-def LEM_of_has_dec_elem : has_dec_elem One_Set -> ExcludedMiddle :=
+def LEM_of_has_dec_elem : subset.has_dec_elem One_Set -> ExcludedMiddle :=
 begin
-  intros H P, let S : Subset One_Set := λ s, P, exact @has_dec_elem.dec_el _ H One.star S
+  intros H P, let S : subset.Subset One_Set := λ s, P, exact @subset.has_dec_elem.dec_el _ H One.star S
 end
 
 end hott
