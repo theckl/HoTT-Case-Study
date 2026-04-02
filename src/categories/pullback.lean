@@ -4,8 +4,7 @@ universes v v' u u' w
 hott_theory
 
 namespace hott
-open hott.precategories hott.categories hott.categories.limits hott.is_trunc 
-     categories.adjoints hott.set hott.subset hott.trunc 
+open hott.precategories hott.categories hott.categories.limits hott.is_trunc categories.adjoints  
 
 namespace categories.pullbacks
 
@@ -697,7 +696,7 @@ def fib_ex_left_adj_pb_subobj {C : Type u} [is_cat.{v} C] [has_pullbacks C] [has
   adjoint_functors (ex_fib_of_stable_im f) (pb_subobj_functor f) :=
 begin
   apply adjoint_hom_to_adjoint, fapply adjoint_functors_on_hom.mk, 
-  { intros c d, fapply has_inverse_to_bijection,
+  { intros c d, fapply set.has_inverse_to_bijection,
     { intro i, fapply hom_of_monos.mk, 
       { have w : c.hom ≫ f = (@hom_to_image _ _ c.obj _ (c.hom ≫ f) _ ≫ i.hom_obj) ≫ d.hom, from 
           begin 
@@ -710,7 +709,7 @@ begin
     { intro j, fapply hom_image_univ (c.hom ≫ f) d (j.hom_obj ≫ (pullback_homo_t _ _)), 
       rwr is_precat.assoc, rwr <- pullback_eq, rwr <- is_precat.assoc, 
       change (_ ≫ ((pb_subobj_functor f).obj d).hom) ≫ _ = _, rwr j.fac },
-    { fapply is_set_inverse_of.mk, all_goals { intro h, exact is_prop.elim _ _ } } },
+    { fapply set.is_set_inverse_of.mk, all_goals { intro h, exact is_prop.elim _ _ } } },
   { intros _ _ _ _ _, exact is_prop.elim _ _ },
   { intros _ _ _ _ _, exact is_prop.elim _ _ }
 end  
@@ -841,7 +840,7 @@ begin
   { apply λ h : a ∩ (fib_all a.hom).obj (pullback_subobject a.hom b) ⟶ a ∩ b, 
             h ≫ subobj_inter_rinc a b,  
     apply subobj_inter_hom_of_pb_hom a _ b, 
-    exact (inv_bijection_of ((adjoint_to_adjoint_hom (adjoint_right_adjoint_of 
+    exact (set.inv_bijection_of ((adjoint_to_adjoint_hom (adjoint_right_adjoint_of 
                                                      (pb_subobj_functor a.hom))).hom_bij 
                              ((fib_all a.hom).obj (pullback_subobject a.hom b)) 
                              (pullback_subobject a.hom b))).map 
@@ -881,7 +880,7 @@ begin
               (pb_subobj_functor f))).hom_bij _ (a ⇒ b)).map,
       apply implication.max, change ↥(a ∩ (ex_fib_of_stable_im f).obj _ ⟶ b),
       rwr ex_fib_inter f a _,
-      apply (inv_bijection_of (((adjoint_to_adjoint_hom (adjoint_left_adjoint_of 
+      apply (set.inv_bijection_of (((adjoint_to_adjoint_hom (adjoint_left_adjoint_of 
                                         (pb_subobj_functor f))).hom_bij _ _))).map,   
       apply implication.cond } }
 end
