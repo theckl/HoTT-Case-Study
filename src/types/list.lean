@@ -4,7 +4,7 @@ universes u v w
 hott_theory
 
 namespace hott
-open hott.is_equiv hott.is_trunc hott.trunc hott.nat 
+open hott.is_trunc hott.nat 
 
 /- Some inequalities of natural numbers in the core are non-HoTT propositions, so procedures
    using them need to be rewritten.  -/
