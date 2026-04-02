@@ -1,10 +1,10 @@
-import sets.quotients categories.strict_cat categories.boolean
+import sets.quotients categories.boolean
 
 universes v v' u u' w
 hott_theory
 
 namespace hott
-open hott.is_equiv hott.equiv hott.is_trunc hott.subset hott.precategories hott.categories 
+open hott.is_equiv hott.is_trunc hott.subset hott.precategories hott.categories 
      hott.categories.limits categories.adjoints hott.set hott.trunc 
      hott.categories.pullbacks hott.categories.colimits hott.categories.strict
      hott.categories.boolean
@@ -81,7 +81,7 @@ calc (Set_isotoid i) ▸ a = ((ap (trunctype.carrier) (Set_isotoid i)) ▸[λ A 
 def Set_isotoid_eq_refl {A : Set.{u}} : 
   Set_isotoid (id_iso A) = refl A :=
   calc Set_isotoid (id_iso A) = car_eq_to_set_eq (ua (equiv.refl ↥A)) : rfl
-       ... = car_eq_to_set_eq (idpath ↥A) : by rwr ua_refl
+       ... = car_eq_to_set_eq (idpath ↥A) : by rwr equiv.ua_refl
        ... = refl A : car_idp_to_set_idp 
 
 @[hott]
