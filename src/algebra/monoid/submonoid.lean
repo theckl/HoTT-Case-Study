@@ -1,11 +1,10 @@
-import sets.product algebra.monoid.basic  
+import algebra.monoid.basic  
 
 universes u u' v w
 hott_theory
 
 namespace hott
-open trunc is_trunc hott.algebra hott.eq precategories categories hott.is_equiv 
-     categories.sets subset hott.relation categories.sets
+open trunc precategories subset
 
 namespace algebra
 
@@ -61,7 +60,7 @@ begin
     rwr p₁, rwr p₂, rwr p },
   { intro set_inj, 
     fapply λ H, @mono_is_faithful _ _ _ _ Monoid_to_Set_functor H _ _ f, 
-    apply Monoid_to_Set_functor_is_faithful, apply set_inj_is_mono _ set_inj }
+    apply Monoid_to_Set_functor_is_faithful, apply categories.sets.set_inj_is_mono _ set_inj }
 end 
 
 @[hott]
