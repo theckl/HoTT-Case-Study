@@ -1,10 +1,10 @@
-import sets.subset categories.basic
+import categories.basic
 
 universes v v' v'' v''' u u' u'' u''' w 
 hott_theory
 
 namespace hott
-open hott.eq hott.set hott.subset hott.is_trunc 
+open hott.set hott.subset hott.is_trunc 
      hott.is_equiv hott.precategories hott.categories
 
 /- We want to construct a category on a type `C` from a function from `C` to a
