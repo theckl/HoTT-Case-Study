@@ -9,8 +9,8 @@ A striking example of this practice is described by Kevin Buzzard when he [repor
 Homotopy type theory (HoTT) with its careful analysis of equality and its univalent foundations (UF) seems perfectly suited to deal with this situation: Isomorphisms will be equivalent to equalities of localized rings, and standard rewrite tactics should apply. However, a more careful look reveals a more complicated situation: The Univalence Axiom produces equalities from isomorphism without an explicit construction of equal objects, so rewrite tactics are still not possible. 
 
 One solution could be to turn the Univalent Axiom into an actual computing construction, as proposed by Cubical Type Theory (see e.g. the [paper of Vezzosi, M\"ortberg and Abel](https://staff.math.su.se/anders.mortberg/papers/cubicalagda2.pdf) with its example on calculations with natural numbers defined as unary or binary numbers, formalized in [types.unival_ex](https://github.com/theckl/HoTT-Case-Study/blob/master/src/types/unival_ex.lean)). But HoTT can reveal its power already without this bold step, by allowing the systematic generalization of a trick attributed by Kevin Buzzard to Neil Strickland that solves with localisations presented above: In HoTT terms, 
-> localisations are characterised as being constructed in a higher inductive way, and
-> the standard universal property of localisations is the inductive principle of this higher inductive construction.
+* localisations are characterised as being constructed in a higher inductive way, and
+* the standard universal property of localisations is the inductive principle of this higher inductive construction.
 
 Lots of examples of this procedure, together with explanations of higher inductive types and constructions in general, can be found in my paper [Grothendieck's Equality vs Voevodsky's Equality](https://arxiv.org/abs/2604.00747). You can find tags of the Lean definitions in the tex-file of the arXiv submission.
 
