@@ -1,10 +1,10 @@
-import sets.subset hott.types.nat.default hott.types.sigma types.list
+import sets.subset types.list
 
 universes u u' v w
 hott_theory
 
 namespace hott
-open hott.nat is_trunc trunc subset hott.sigma hott.is_equiv
+open hott.nat is_trunc trunc subset
 
 namespace set
 
