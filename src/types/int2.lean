@@ -1,10 +1,10 @@
-import hott.init hott.hit.trunc hott.types.trunc types.nat2
+import types.nat2
 
 universes u v w
 hott_theory
 
 namespace hott
-open hott.is_equiv hott.is_trunc hott.trunc hott.nat
+open hott.nat
 
 namespace int
 
