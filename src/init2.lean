@@ -1,10 +1,10 @@
-import hott.init hott.types.trunc hott_def
+import hott.types.trunc hott_def
 
 universes u u' v w
 hott_theory
 
 namespace hott
-open is_trunc trunc hott.is_equiv
+open is_trunc hott.is_equiv
 
 /- All these equalities of pathovers, concatenations and transports of 
    identities should be produced by tactics. -/
