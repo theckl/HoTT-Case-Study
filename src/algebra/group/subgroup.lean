@@ -5,8 +5,7 @@ universes u u' v w
 hott_theory
 
 namespace hott
-open trunc is_trunc hott.algebra hott.is_equiv subset precategories 
-     categories categories.sets
+open trunc is_trunc subset precategories categories categories.sets
 
 namespace algebra
 
