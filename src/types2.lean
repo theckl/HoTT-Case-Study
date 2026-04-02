@@ -4,7 +4,7 @@ universes u v w
 hott_theory
 
 namespace hott
-open hott.is_equiv hott.is_trunc hott.trunc hott.nat 
+open hott.is_equiv hott.is_trunc hott.trunc  
 
 /- Properties of the product of two types -/
 @[hott]
@@ -143,7 +143,7 @@ def equiv_map_is_injective {A : Type u} {B₁ : Type v} {B₂ : Type w} (f₁ : 
   is_injective f₁ :=
 begin 
   intros eqv f_eq f_inj₂, apply is_injective.mk, 
-  intros b₁ c₁, fapply adjointify,
+  intros b₁ c₁, fapply is_equiv.adjointify,
   { intro f₁_eq, apply eq_of_fn_eq_fn' eqv.to_fun, 
     apply (@is_injective.eqv _ _ f₂ f_inj₂ _ _).inv,
     exact (ap10 f_eq b₁)⁻¹ ⬝ f₁_eq ⬝ (ap10 f_eq c₁) },
