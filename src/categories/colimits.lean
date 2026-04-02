@@ -4,7 +4,7 @@ universes v u v' u' w
 hott_theory
 
 namespace hott
-open hott.eq hott.is_trunc hott.trunc hott.set hott.subset 
+open hott.is_trunc hott.trunc hott.set 
      hott.precategories hott.categories hott.categories.strict hott.categories.limits
 
 /- We introduce colimits of diagrams mapped to categories, by using cocones to 
