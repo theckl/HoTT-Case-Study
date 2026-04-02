@@ -4,8 +4,7 @@ universes v v' u u' w
 hott_theory
 
 namespace hott
-open hott.eq hott.set hott.subset hott.is_trunc hott.is_equiv hott.equiv 
-     hott.precategories hott.categories hott.categories.strict
+open hott.is_trunc hott.precategories hott.categories.strict
 
 namespace categories                
 
@@ -277,7 +276,7 @@ def own_is_set : is_set ow_node :=
   have l_inv : ∀ s : ow_node, Two_own (own_Two s) = s, by
     intro s; hinduction s; hsimp; hsimp,
   have own_eqv_Two: is_equiv own_Two, from
-    adjointify own_Two Two_own r_inv l_inv,
+    is_equiv.adjointify own_Two Two_own r_inv l_inv,
   @is_trunc_is_equiv_closed_rev _ _ 0 own_Two own_eqv_Two Two_is_set.{0}
 
 @[hott]
@@ -430,7 +429,7 @@ def wpp_is_set : is_set wp_pair :=
   have l_inv : ∀ s : wp_pair, Two_wpp (wpp_Two s) = s, by
     intro s; hinduction s; hsimp; hsimp,
   have wpp_eqv_Two: is_equiv wpp_Two, from
-    adjointify wpp_Two Two_wpp r_inv l_inv,
+    is_equiv.adjointify wpp_Two Two_wpp r_inv l_inv,
   @is_trunc_is_equiv_closed_rev _ _ 0 wpp_Two wpp_eqv_Two Two_is_set.{0}
 
 @[hott, instance]
@@ -440,7 +439,7 @@ def wpph_is_set : is_set wp_pair_hom :=
   have l_inv : ∀ s : wp_pair_hom, Two_wpph (wpph_Two s) = s, by
     intro s; hinduction s; hsimp; hsimp,
   have wpph_eqv_Two: is_equiv wpph_Two, from
-    adjointify wpph_Two Two_wpph r_inv l_inv,
+    is_equiv.adjointify wpph_Two Two_wpph r_inv l_inv,
   @is_trunc_is_equiv_closed_rev _ _ 0 wpph_Two wpph_eqv_Two Two_is_set.{0}
 
 @[hott]
