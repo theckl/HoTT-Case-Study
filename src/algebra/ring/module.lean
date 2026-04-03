@@ -1,18 +1,17 @@
-import algebra.ring.basic nat2 
+import algebra.ring.basic types.nat2 
        
 universes u u' v w
 hott_theory
 
 namespace hott
-open trunc is_trunc hott.algebra hott.relation hott.is_equiv subset precategories 
-     categories categories.sets hott.nat
+open is_trunc precategories categories
 
 class has_act (α : Type _) (β : Type _) := (scal_mul : α → β → β)
 infix ⬝ := has_act.scal_mul
 
 namespace algebra
 
-@[hott] 
+@[hott]  --[GEVE]
 structure module (R : CommRing.{u}) (M : Type u) extends ab_group M :=
   (scal_mul : R -> M -> M)
   (one_scal_mul : Π m : M, scal_mul 1 m = m)
@@ -218,7 +217,7 @@ begin
   begin
     fapply equiv.mk, 
     { intro str, exact str.mul },
-    { fapply adjointify, 
+    { fapply is_equiv.adjointify, 
       { intro mul, exact scal_ops_str.mk mul },
       { intro mul, exact idp },
       { intro str, hinduction str, exact idp } }
@@ -245,7 +244,7 @@ begin
   exact is_prop.elim _ _, exact is_prop.elim _ _
 end
 
-@[hott, reducible, instance]
+@[hott, reducible, instance]  --[GEVE]
 def Module_hom_system (R : CommRing.{u}) : 
   concrete_hom_system (@Module.to_AddAbGroup.{u} R) :=
 begin
@@ -304,7 +303,7 @@ begin
   { intro M_struct, apply Module.mk M_struct.1.carrier,
     exact module.mk M_struct.1.struct' M_struct.2.1.mul M_struct.2.2.one_mul
         M_struct.2.2.mul_assoc M_struct.2.2.left_distrib M_struct.2.2.right_distrib },
-  { fapply adjointify,
+  { fapply is_equiv.adjointify,
     { intro M, fapply dpair, exact Module.to_AddAbGroup M, fapply dpair,
       { exact scal_ops_str.mk M.struct.scal_mul },
       { exact scal_laws_str.mk M.struct.one_scal_mul M.struct.scal_mul_assoc 
@@ -361,7 +360,7 @@ begin
   { intro M, exact AddAbGroup_Module_str_eqv_fiber R M },
   { intro M, intros str₁ str₂, fapply equiv.mk,
     { intro p, change str₁ = str₂ at p, rwr p, exact 𝟙 _ },
-    { fapply adjointify,
+    { fapply is_equiv.adjointify,
       { intro h, hinduction h with h_ss h_eq, hinduction h_ss with h h_laws,
         rwr AddAbGroup_Module_str_to_fiber_eq str₁ at h_eq,
         rwr AddAbGroup_Module_str_to_fiber_eq str₂ at h_eq,
@@ -446,16 +445,16 @@ def module_hom.mk {R : CommRing} {M N : Module R} (f : M -> N) :
 λ str, ⟨⟨⟨⟨⟨⟨⟨f, str.add_comp⟩, true.intro⟩, str.zero_comp⟩, true.intro⟩, true.intro⟩, 
                              true.intro⟩, str.scal_mul_comp⟩ 
 
-@[hott] 
+@[hott]  --[GEVE]
 def Module_to_Set_functor_is_faithful {R : CommRing} : 
   is_faithful_functor (Module_to_Set_functor R) :=
 begin 
   fapply faithful_is_trans (concrete_forget_functor (Module.to_AddAbGroup)), 
-  { apply @concrete_forget_functor_is_faithful _ _ Module.to_AddAbGroup },
+  { apply @concrete_forget_functor_is_faithful _ _ _ Module.to_AddAbGroup },
   { fapply faithful_is_trans (concrete_forget_functor (AddAbGroup.to_AbGroup)), 
-    { apply @concrete_forget_functor_is_faithful _ _ AddAbGroup.to_AbGroup },
+    { apply @concrete_forget_functor_is_faithful _ _ _ AddAbGroup.to_AbGroup },
     { fapply faithful_is_trans (concrete_forget_functor (AbGroup.to_Group)),
-      { apply @concrete_forget_functor_is_faithful _ _ AbGroup.to_Group },
+      { apply @concrete_forget_functor_is_faithful _ _ _ AbGroup.to_Group },
       { apply Group_to_Set_functor_is_faithful } } } 
 end  
 
