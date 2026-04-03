@@ -4,9 +4,7 @@ universes u u' v w
 hott_theory
 
 namespace hott
-open trunc is_trunc hott.algebra hott.relation hott.is_equiv subset precategories 
-     categories categories.sets hott.categories.limits hott.categories.colimits 
-     hott.categories.strict
+open trunc precategories categories hott.categories.limits hott.categories.colimits 
 
 namespace algebra
 
@@ -26,7 +24,7 @@ end
 
 notation `[0]_` R := zero_Module R
 
-@[hott]
+@[hott]  --[GEVE]
 def initial_mod_hom {R : CommRing} (M : Module R) : ([0]_R) ⟶ M :=
 begin 
   fapply module_hom.mk,
@@ -37,7 +35,7 @@ begin
     { intros r o, rwr scal_mul_zero_zero } } 
 end
 
-@[hott]
+@[hott]  --[GEVE]
 def initial_mod_hom_is_unique {R : CommRing} (M : Module R) : 
   Π (f g : ([0]_R) ⟶ M), f = g :=
 begin 
@@ -48,7 +46,7 @@ begin
   rwr p o, exact eq.concat (module_hom_laws f).zero_comp (module_hom_laws g).zero_comp⁻¹
 end
 
-@[hott]
+@[hott]  --[GEVE]
 def terminal_mod_hom {R : CommRing} (M : Module R) : M ⟶ ([0]_R) :=
 begin 
   fapply module_hom.mk,
@@ -59,7 +57,7 @@ begin
     { intros r m, rwr scal_mul_zero_zero } } 
 end
 
-@[hott]
+@[hott]  --[GEVE]
 def terminal_mod_hom_is_unique {R : CommRing} (M : Module R) : 
   Π (f g : M ⟶ ([0]_R)), f = g :=
 begin 
@@ -431,7 +429,7 @@ begin
         exact ac_Module_to_cocone_map_scal_mul _ _ _ } }
 end
 
-@[hott]  
+@[hott]  --[GEVE]
 def sum_Module_is_sum {R : CommRing.{max u' u}} {J : Set.{u'}}
   (M : J -> Module_Category R) : is_colimit (sum_Module_cocone M) :=
 begin 
