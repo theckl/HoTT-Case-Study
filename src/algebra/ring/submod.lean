@@ -14,23 +14,23 @@ namespace algebra
    of modules have an underlying injective map of sets, and construct submodules from a few 
    structure axioms. -/
 @[hott]  --[GEVE]
-def Submodule {R : CommRing} (M : Module R) := @subobject (Module_Category R) M
+def Submodule {R : CommRing} (M : Module R) := @subobject (Module_Category R) _ M
 
 @[hott, instance]
 def submodule_has_hom {R : CommRing} (M : Module R) : has_hom (Submodule M) :=
-  by change has_hom (@subobject (Module_Category R) M); apply_instance
+  by change has_hom (@subobject (Module_Category R) _ M); apply_instance
 
 @[hott, instance]
 def submodule_has_order {R : CommRing} (M : Module R) : has_order (Submodule M) :=
-  by change has_order (@subobject (Module_Category R) M); apply_instance
+  by change has_order (@subobject (Module_Category R) _ M); apply_instance
 
 @[hott, instance]
 def submodule_is_set {R : CommRing} (M : Module R) : is_set (Submodule M) :=
-  by change is_set (@subobject (Module_Category R) M); apply_instance
+  by change is_set (@subobject (Module_Category R) _ M); apply_instance
 
 @[hott] --[GEVE]
 def mod_mono_is_inj {R : CommRing} {M N : Module R} : Π (f : M ⟶ N), 
-  @is_mono (Module_Category R) _ _ f <-> 
+  @is_mono (Module_Category R) _ _ _ f <-> 
   @set.is_set_injective ((Module_to_Set_functor R).obj N) ((Module_to_Set_functor R).obj M) 
                         ((Module_to_Set_functor R).map f) :=
 begin
@@ -263,7 +263,7 @@ def kernel_of_ring_hom {R S : CommRing} (f : R ⟶ S) : Ideal R :=
 
 @[hott]  --[GEVE]
 def zero_kernel_is_mono {R : CommRing} {M N : Module R} (f : M ⟶ N) : 
-  kernel_mod f = zero_submodule M <-> @is_mono (Module_Category R) _ _ f :=
+  kernel_mod f = zero_submodule M <-> @is_mono (Module_Category R) _ _ _ f :=
 begin
   fapply prod.mk,
   { intro ker_eq, apply (mod_mono_is_inj _).2, 
@@ -290,9 +290,9 @@ end
 /- Module homomorphisms have images. -/
 @[hott, instance]  
 def module_hom_has_image {R : CommRing} {M N : Module R} (f : M ⟶ N) : 
-  @has_image (Module_Category R) _ _ f :=
+  @has_image (Module_Category R) _ _ _ f :=
 begin  
-  fapply has_image.mk, fapply cat_image.mk,
+  fapply has_image.mk, --fapply cat_image.mk,
   { fapply Submodule_of_Subset,
     { exact (λ n : N.carrier, image ((Module_to_Set_functor R).map f) n) },
     { fapply submodule_str.mk,
@@ -302,29 +302,28 @@ begin
       { apply tr, apply fiber.mk (0:M), exact (module_hom_laws f).zero_comp },
       { intros r n n_el, hinduction n_el with fib, apply tr, 
         fapply fiber.mk (r ⬝ fib.1), rwr (module_hom_laws f).scal_mul_comp, rwr fib.2 } } },
-  { fapply dpair,  
-    { fapply module_hom.mk, 
-      { intro m, fapply dpair, exact (Module_to_Set_functor R).map f m, 
-        exact tr (fiber.mk m (@idp _ ((Module_to_Set_functor R).map f m))) },
-      { fapply module_hom_str.mk,
-        { intros m₁ m₂, apply pred_Set_eq, exact (module_hom_laws f).add_comp _ _ },
-        { apply pred_Set_eq, exact (module_hom_laws f).zero_comp },
-        { intros r m, apply pred_Set_eq, exact (module_hom_laws f).scal_mul_comp _ _ } } },
-    { apply Module_to_Set_functor_is_faithful, exact idp } },
-  { intros N' fac, fapply submodule_hom_of_subset, 
-    intros n el_im, change ↥(image _ _), change ↥(image _ _) at el_im,
-    hinduction el_im with fib, change fiber (pred_Set_map _) n at fib,
-    let p : fib.1.1 = n := fib.2,
-    hinduction fib.1.2 with tr_eq n_fib, rwr <- p, apply tr, fapply fiber.mk, 
-    { exact ((Module_to_Set_functor R).map fac.1) n_fib.1 },
-    { change (((Module_to_Set_functor R).map fac.fst) ≫ 
+  { fapply is_image.mk,
+    { fapply dpair,  
+      { fapply module_hom.mk, 
+        { intro m, fapply dpair, exact (Module_to_Set_functor R).map f m, 
+          exact tr (fiber.mk m (@idp _ ((Module_to_Set_functor R).map f m))) },
+        { fapply module_hom_str.mk,
+          { intros m₁ m₂, apply pred_Set_eq, exact (module_hom_laws f).add_comp _ _ },
+          { apply pred_Set_eq, exact (module_hom_laws f).zero_comp },
+          { intros r m, apply pred_Set_eq, exact (module_hom_laws f).scal_mul_comp _ _ } } },
+      { apply Module_to_Set_functor_is_faithful, exact idp } },
+    { intros N' fac, fapply submodule_hom_of_subset, 
+      intros n el_im, change ↥(image _ _), change ↥(image _ _) at el_im,
+      hinduction el_im with fib, change fiber (pred_Set_map _) n at fib,
+      let p : fib.1.1 = n := fib.2,
+      hinduction fib.1.2 with tr_eq n_fib, rwr <- p, apply tr, fapply fiber.mk, 
+      { exact ((Module_to_Set_functor R).map fac.1) n_fib.1 },
+      { change (((Module_to_Set_functor R).map fac.fst) ≫ 
                              (Module_to_Set_functor R).map N'.hom) n_fib.1 = _, 
-      rwr <- (Module_to_Set_functor R).map_comp, 
-      have q : fac.1 ≫ N'.hom = f, from fac.2,
-      rwr q, exact n_fib.2 } }
+        rwr <- (Module_to_Set_functor R).map_comp, 
+        have q : fac.1 ≫ N'.hom = f, from fac.2,
+        rwr q, exact n_fib.2 } } }
 end
-
-set_option pp.universes true
 
 /- Elements of a module generate a submodule; the sum of submodules is a submodule. -/
 @[hott]
