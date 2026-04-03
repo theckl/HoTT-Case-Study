@@ -51,17 +51,17 @@ algebra
    quotient :   704 Y 
    abelian  :   793 Y 
   ring
-   basic    :   579 Y 4679 
-   module   :   480  
-   examples :   863
-   submod   :   343  5777
-                    -----
-                    22145               
+   basic    :   579   
+   module   :   487  
+   examples :   861   
+   submod   :   342   6369
+                     -----
+                     23099               
 
 
 Planned changes in Files, from bottom to top: 
 ---------------------------------------------
-- [algebra.ring.module], [algebra.ring.examples]: debug & cross-reference
+- [algebra.ring.examples]: characterisation of direct sum
 - [algebra.ring.submod] : quotients of modules by submodules
 
             
